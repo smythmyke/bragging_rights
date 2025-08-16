@@ -1,0 +1,622 @@
+
+
+● Now let's update the Edge screen to use BR currency properly with different costs for different intel types:
+
+● Read(bragging_rights_app\lib\screens\premium\edge_screen.dart)
+  ⎿  Read 100 lines (ctrl+r to expand)
+
+● Now let's rewrite the Edge screen to use BR currency properly:
+
+● Write(bragging_rights_app\lib\screens\premium\edge_screen.dart)
+  ⎿  Updated bragging_rights_app\lib\screens\premium\edge_screen.dart with 207 additions and 111 removals
+       15      State<EdgeScreen> createState() => _EdgeScreenState();
+       16    }
+       17
+       18 -  class _EdgeScreenState extends State<EdgeScreen> with SingleTickerProviderStateMixin {
+       18 +  class _EdgeScreenState extends State<EdgeScreen> with TickerProviderStateMixin {
+       19      late AnimationController _animationController;
+       20      late Animation<double> _cardFlipAnimation;
+       21 +    late AnimationController _pulseController;
+       22 +    late Animation<double> _pulseAnimation;
+       23      
+       24      // Selected edge cards
+       25      final Set<String> _revealedCards = {};
+       26 -    int _edgeCredits = 3; // User's available edge credits
+       26 +    int _userBRBalance = 500; // User's BR balance
+       27
+       28      @override
+       29      void initState() {
+     ...
+       37          parent: _animationController,
+       38          curve: Curves.easeInOut,
+       39        ));
+       40 +      
+       41 +      _pulseController = AnimationController(
+       42 +        duration: const Duration(seconds: 2),
+       43 +        vsync: this,
+       44 +      )..repeat(reverse: true);
+       45 +      _pulseAnimation = Tween<double>(
+       46 +        begin: 0.95,
+       47 +        end: 1.05,
+       48 +      ).animate(CurvedAnimation(
+       49 +        parent: _pulseController,
+       50 +        curve: Curves.easeInOut,
+       51 +      ));
+       52      }
+       53
+       54      @override
+       55      void dispose() {
+       56        _animationController.dispose();
+       57 +      _pulseController.dispose();
+       58        super.dispose();
+       59      }
+       60
+     ...
+       58                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+       59                margin: const EdgeInsets.only(right: 8),
+       60                decoration: BoxDecoration(
+       61 -                gradient: const LinearGradient(
+       62 -                  colors: [Colors.amber, Colors.orange],
+       63 -                ),
+       61 +                color: Colors.green.shade700,
+       62                  borderRadius: BorderRadius.circular(20),
+       63                ),
+       64                child: Row(
+       65                  children: [
+       66 -                  const Icon(Icons.bolt, color: Colors.white, size: 20),
+       66 +                  const Icon(Icons.monetization_on, color: Colors.white, size: 20),
+       67                    const SizedBox(width: 4),
+       68                    Text(
+       69 -                    '$_edgeCredits Credits',
+       69 +                    '$_userBRBalance BR',
+       70                      style: const TextStyle(
+       71                        color: Colors.white,
+       72                        fontWeight: FontWeight.bold,
+     ...
+       116                      ),
+       117                      const SizedBox(height: 4),
+       118                      Text(
+       119 -                      'Each reveal costs 1 credit',
+       119 +                      'Reveal costs vary by intel value',
+       120                        style: TextStyle(
+       121                          color: Colors.amber.shade300,
+       122                          fontSize: 12,
+     ...
+       159                  ),
+       160                  child: Column(
+       161                    children: [
+       162 -                    if (_edgeCredits == 0)
+       162 +                    if (_userBRBalance < 10)
+       163                        ElevatedButton.icon(
+       164 -                        onPressed: _purchaseCredits,
+       164 +                        onPressed: _purchaseBR,
+       165                          icon: const Icon(Icons.shopping_cart),
+       166 -                        label: const Text('Buy More Credits'),
+       166 +                        label: const Text('Buy More BR'),
+       167                          style: ElevatedButton.styleFrom(
+       168 -                          backgroundColor: Colors.amber,
+       169 -                          foregroundColor: Colors.black,
+       168 +                          backgroundColor: Colors.green,
+       169 +                          foregroundColor: Colors.white,
+       170                            minimumSize: const Size(double.infinity, 48),
+       171                          ),
+       172                        ),
+     ...
+       194              EdgeCard(
+       195                id: 'injury',
+       196                title: 'Injury Report',
+       197 -              icon: Icons.local_hospital,
+       197 +              icon: Icons.healing,
+       198                color: Colors.red,
+       199 -              data: 'LeBron: Questionable (ankle)\nAD: Probable (knee)',
+       199 +              data: 'LeBron: Questionable (ankle)\nAD: Probable (knee)\nReaves: Out (hamstring)',
+       200                source: 'Team Medical Staff',
+       201 +              cost: 20,
+       202 +              hasAlert: true,
+       203 +              alertIcon: Icons.healing,
+       204              ),
+       205              EdgeCard(
+       206                id: 'sentiment',
+       207                title: 'Social Sentiment',
+       208                icon: Icons.trending_up,
+       209                color: Colors.blue,
+       210 -              data: '78% positive on Lakers\nTrending: "Lakers in 5"',
+       210 +              data: '78% positive on Lakers\nTrending: "Lakers in 5"\nCeltics fan confidence dropping',
+       211                source: 'Twitter/X Analysis',
+       212 +              cost: 10,
+       213              ),
+       214              EdgeCard(
+       215                id: 'insider',
+       216                title: 'Insider News',
+       217                icon: Icons.newspaper,
+       218                color: Colors.green,
+       219 -              data: 'Celtics flew in late\nTeam dinner drama reported',
+       219 +              data: 'Celtics flew in late\nTeam dinner drama reported\nBrown seen arguing with coach',
+       220                source: 'Beat Reporter',
+       221 +              cost: 15,
+       222 +              hasAlert: true,
+       223 +              alertIcon: Icons.warning,
+       224              ),
+       225              EdgeCard(
+       226 -              id: 'weather',
+       226 +              id: 'vegas',
+       227                title: 'Vegas Sharp',
+       228                icon: Icons.attach_money,
+       229                color: Colors.amber,
+       230 -              data: 'Line moved from -4.5 to -5.5\nSharp money on Lakers',
+       230 +              data: 'Line moved from -4.5 to -5.5\nSharp money on Lakers\n85% of big bets on LAL',
+       231                source: 'Vegas Insider',
+       232 +              cost: 25,
+       233              ),
+       234            ];
+       235          case 'MMA':
+     ...
+       233                color: Colors.red,
+       234                data: 'McGregor: 5.2 strikes/min\nChandler: 3.8 strikes/min\nTakedown Def: 78% vs 65%',
+       235                source: 'CompuBox',
+       236 +              cost: 25,
+       237              ),
+       238              EdgeCard(
+       239                id: 'camp',
+       240                title: 'Training Camp',
+       241                icon: Icons.fitness_center,
+       242                color: Colors.orange,
+       243 -              data: 'McGregor: Full camp in Dublin\nChandler: Late sparring partner change',
+       243 +              data: 'McGregor: Full camp in Dublin\nChandler: Late sparring partner change\nRumors of Chandler injury',
+       244                source: 'Camp Sources',
+       245 +              cost: 20,
+       246 +              hasAlert: true,
+       247 +              alertIcon: Icons.warning_amber,
+       248              ),
+       249              EdgeCard(
+       250                id: 'weigh',
+       251                title: 'Weigh-in Intel',
+       252                icon: Icons.monitor_weight,
+       253                color: Colors.purple,
+       254 -              data: 'McGregor looked drained\nChandler came in 2lbs under',
+       254 +              data: 'McGregor looked drained\nChandler came in 2lbs under\nBoth fighters made weight first try',
+       255                source: 'Backstage Report',
+       256 +              cost: 15,
+       257 +              hasAlert: true,
+       258 +              alertIcon: Icons.scale,
+       259              ),
+       260              EdgeCard(
+       261                id: 'judge',
+       262                title: 'Judge Tendencies',
+       263                icon: Icons.gavel,
+       264                color: Colors.blue,
+       265 -              data: 'Judge A: Favors wrestlers\nJudge B: Values aggression\nJudge C: Neutral',
+       265 +              data: 'Judge A: Favors wrestlers (65%)\nJudge B: Values aggression\nJudge C: Neutral, strict on fouls',
+       266                source: 'Historical Data',
+       267 +              cost: 30,
+       268              ),
+       269            ];
+       270          default:
+     ...
+       266                title: 'Team News',
+       267                icon: Icons.group,
+       268                color: Colors.blue,
+       269 -              data: 'Latest team updates',
+       269 +              data: 'Latest team updates and roster changes',
+       270                source: 'Team Sources',
+       271 +              cost: 15,
+       272              ),
+       273              EdgeCard(
+       274                id: 'generic2',
+       275                title: 'Analytics',
+       276                icon: Icons.analytics,
+       277                color: Colors.green,
+       278 -              data: 'Advanced statistics',
+       278 +              data: 'Advanced statistics and trends',
+       279                source: 'Data Provider',
+       280 +              cost: 20,
+       281              ),
+       282            ];
+       283        }
+     ...
+       283
+       284      Widget _buildEdgeCard(EdgeCard card) {
+       285        final isRevealed = _revealedCards.contains(card.id);
+       286 +      final canAfford = _userBRBalance >= card.cost;
+       287
+       288 -      return GestureDetector(
+       289 -        onTap: () {
+       290 -          if (!isRevealed && _edgeCredits > 0) {
+       291 -            _revealCard(card);
+       292 -          } else if (!isRevealed && _edgeCredits == 0) {
+       293 -            _showNeedCreditsDialog();
+       294 -          }
+       295 -        },
+       296 -        child: AnimatedContainer(
+       297 -          duration: const Duration(milliseconds: 300),
+       298 -          transform: isRevealed ? (Matrix4.identity()..scale(1.0)) : Matrix4.identity(),
+       299 -          child: Container(
+       300 -            decoration: BoxDecoration(
+       301 -              gradient: isRevealed
+       302 -                  ? LinearGradient(
+       303 -                      begin: Alignment.topLeft,
+       304 -                      end: Alignment.bottomRight,
+       305 -                      colors: [
+       306 -                        card.color.withOpacity(0.8),
+       307 -                        card.color.withOpacity(0.4),
+       308 -                      ],
+       309 -                    )
+       310 -                  : LinearGradient(
+       311 -                      begin: Alignment.topLeft,
+       312 -                      end: Alignment.bottomRight,
+       313 -                      colors: [
+       314 -                        Colors.grey.shade900,
+       315 -                        Colors.grey.shade800,
+       316 -                      ],
+       317 -                    ),
+       318 -              borderRadius: BorderRadius.circular(16),
+       319 -              border: Border.all(
+       320 -                color: isRevealed ? card.color : Colors.grey.shade700,
+       321 -                width: 2,
+       322 -              ),
+       323 -              boxShadow: [
+       324 -                if (isRevealed)
+       325 -                  BoxShadow(
+       326 -                    color: card.color.withOpacity(0.5),
+       327 -                    blurRadius: 12,
+       328 -                    spreadRadius: 2,
+       288 +      return AnimatedBuilder(
+       289 +        animation: card.hasAlert ? _pulseAnimation : AlwaysStoppedAnimation(1.0),
+       290 +        builder: (context, child) {
+       291 +          return Transform.scale(
+       292 +            scale: card.hasAlert && !isRevealed ? _pulseAnimation.value : 1.0,
+       293 +            child: GestureDetector(
+       294 +              onTap: () {
+       295 +                if (!isRevealed && canAfford) {
+       296 +                  _revealCard(card);
+       297 +                } else if (!isRevealed && !canAfford) {
+       298 +                  _showNeedBRDialog(card.cost);
+       299 +                }
+       300 +              },
+       301 +              child: AnimatedContainer(
+       302 +                duration: const Duration(milliseconds: 300),
+       303 +                decoration: BoxDecoration(
+       304 +                  gradient: isRevealed
+       305 +                      ? LinearGradient(
+       306 +                          begin: Alignment.topLeft,
+       307 +                          end: Alignment.bottomRight,
+       308 +                          colors: [
+       309 +                            card.color.withOpacity(0.8),
+       310 +                            card.color.withOpacity(0.4),
+       311 +                          ],
+       312 +                        )
+       313 +                      : LinearGradient(
+       314 +                          begin: Alignment.topLeft,
+       315 +                          end: Alignment.bottomRight,
+       316 +                          colors: [
+       317 +                            Colors.grey.shade900,
+       318 +                            Colors.grey.shade800,
+       319 +                          ],
+       320 +                        ),
+       321 +                  borderRadius: BorderRadius.circular(16),
+       322 +                  border: Border.all(
+       323 +                    color: isRevealed 
+       324 +                        ? card.color 
+       325 +                        : card.hasAlert 
+       326 +                            ? card.color.withOpacity(0.5) 
+       327 +                            : Colors.grey.shade700,
+       328 +                    width: card.hasAlert && !isRevealed ? 3 : 2,
+       329                    ),
+       330 -              ],
+       330 +                  boxShadow: [
+       331 +                    if (isRevealed || card.hasAlert)
+       332 +                      BoxShadow(
+       333 +                        color: card.color.withOpacity(0.5),
+       334 +                        blurRadius: 12,
+       335 +                        spreadRadius: 2,
+       336 +                      ),
+       337 +                  ],
+       338 +                ),
+       339 +                child: isRevealed
+       340 +                    ? _buildRevealedCard(card)
+       341 +                    : _buildHiddenCard(card, canAfford),
+       342 +              ),
+       343              ),
+       344 -            child: isRevealed
+       345 -                ? _buildRevealedCard(card)
+       346 -                : _buildHiddenCard(card),
+       347 -          ),
+       348 -        ),
+       344 +          );
+       345 +        },
+       346        );
+       347      }
+       348
+       349 -    Widget _buildHiddenCard(EdgeCard card) {
+       349 +    Widget _buildHiddenCard(EdgeCard card, bool canAfford) {
+       350        return Stack(
+       351          children: [
+       352            // Background pattern
+     ...
+       345                painter: CardBackPainter(),
+       346              ),
+       347            ),
+       348 +          // Alert indicator
+       349 +          if (card.hasAlert)
+       350 +            Positioned(
+       351 +              top: 8,
+       352 +              right: 8,
+       353 +              child: Container(
+       354 +                padding: const EdgeInsets.all(8),
+       355 +                decoration: BoxDecoration(
+       356 +                  color: card.color,
+       357 +                  shape: BoxShape.circle,
+       358 +                  boxShadow: [
+       359 +                    BoxShadow(
+       360 +                      color: card.color.withOpacity(0.7),
+       361 +                      blurRadius: 8,
+       362 +                      spreadRadius: 2,
+       363 +                    ),
+       364 +                  ],
+       365 +                ),
+       366 +                child: Icon(
+       367 +                  card.alertIcon ?? Icons.priority_high,
+       368 +                  color: Colors.white,
+       369 +                  size: 20,
+       370 +                ),
+       371 +              ),
+       372 +            ),
+       373            // Content
+       374            Padding(
+       375              padding: const EdgeInsets.all(16),
+     ...
+       352                mainAxisAlignment: MainAxisAlignment.center,
+       353                children: [
+       354                  Icon(
+       355 -                  Icons.lock,
+       356 -                  color: Colors.grey.shade600,
+       355 +                  canAfford ? Icons.lock_open : Icons.lock,
+       356 +                  color: canAfford ? Colors.grey.shade500 : Colors.grey.shade700,
+       357                    size: 48,
+       358                  ),
+       359                  const SizedBox(height: 12),
+     ...
+       370                  Container(
+       371                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+       372                    decoration: BoxDecoration(
+       373 -                    color: Colors.black.withOpacity(0.5),
+       373 +                    color: canAfford 
+       374 +                        ? Colors.green.withOpacity(0.3)
+       375 +                        : Colors.red.withOpacity(0.3),
+       376                      borderRadius: BorderRadius.circular(12),
+       377 +                    border: Border.all(
+       378 +                      color: canAfford ? Colors.green : Colors.red,
+       379 +                    ),
+       380                    ),
+       381                    child: Row(
+       382                      mainAxisSize: MainAxisSize.min,
+       383                      children: [
+       384 -                      Icon(Icons.bolt, color: Colors.amber.shade300, size: 16),
+       384 +                      Icon(
+       385 +                        Icons.monetization_on, 
+       386 +                        color: canAfford ? Colors.green : Colors.red,
+       387 +                        size: 16,
+       388 +                      ),
+       389                        const SizedBox(width: 4),
+       390 -                      const Text(
+       391 -                        '1 Credit',
+       390 +                      Text(
+       391 +                        '${card.cost} BR',
+       392                          style: TextStyle(
+       393 -                          color: Colors.white70,
+       393 +                          color: canAfford ? Colors.green : Colors.red,
+       394                            fontSize: 12,
+       395 +                          fontWeight: FontWeight.bold,
+       396                          ),
+       397                        ),
+       398                      ],
+       399                    ),
+       400                  ),
+       401                  const SizedBox(height: 8),
+       402 -                const Text(
+       403 -                  'TAP TO REVEAL',
+       402 +                Text(
+       403 +                  canAfford ? 'TAP TO REVEAL' : 'INSUFFICIENT BR',
+       404                    style: TextStyle(
+       405 -                    color: Colors.white54,
+       405 +                    color: canAfford ? Colors.white54 : Colors.red.shade300,
+       406                      fontSize: 10,
+       407                      letterSpacing: 2,
+       408                    ),
+     ...
+       473      void _revealCard(EdgeCard card) {
+       474        setState(() {
+       475          _revealedCards.add(card.id);
+       476 -        _edgeCredits--;
+       476 +        _userBRBalance -= card.cost;
+       477        });
+       478
+       479        // Animate the reveal
+       480        _animationController.forward().then((_) {
+       481          _animationController.reset();
+       482        });
+       483 +      
+       484 +      // Show confirmation
+       485 +      ScaffoldMessenger.of(context).showSnackBar(
+       486 +        SnackBar(
+       487 +          content: Text('Revealed ${card.title} for ${card.cost} BR'),
+       488 +          backgroundColor: Colors.green,
+       489 +          duration: const Duration(seconds: 2),
+       490 +        ),
+       491 +      );
+       492      }
+       493
+       494 -    void _showNeedCreditsDialog() {
+       494 +    void _showNeedBRDialog(int requiredBR) {
+       495        showDialog(
+       496          context: context,
+       497          builder: (context) => AlertDialog(
+       498            backgroundColor: Colors.grey.shade900,
+       499            title: const Text(
+       500 -            'Need More Credits',
+       500 +            'Insufficient BR',
+       501              style: TextStyle(color: Colors.white),
+       502            ),
+       503            content: Column(
+       504              mainAxisSize: MainAxisSize.min,
+       505              children: [
+       506 -              Icon(Icons.bolt, color: Colors.amber.shade300, size: 48),
+       506 +              Icon(Icons.monetization_on, color: Colors.red.shade300, size: 48),
+       507                const SizedBox(height: 16),
+       508 -              const Text(
+       509 -                'Purchase more Edge Credits to reveal additional intelligence cards',
+       510 -                style: TextStyle(color: Colors.white70),
+       508 +              Text(
+       509 +                'You need $requiredBR BR to reveal this intel',
+       510 +                style: const TextStyle(color: Colors.white70),
+       511                  textAlign: TextAlign.center,
+       512                ),
+       513 +              const SizedBox(height: 8),
+       514 +              Text(
+       515 +                'Your balance: $_userBRBalance BR',
+       516 +                style: TextStyle(color: Colors.grey.shade400),
+       517 +              ),
+       518              ],
+       519            ),
+       520            actions: [
+     ...
+       511              ElevatedButton(
+       512                onPressed: () {
+       513                  Navigator.pop(context);
+       514 -                _purchaseCredits();
+       514 +                _purchaseBR();
+       515                },
+       516                style: ElevatedButton.styleFrom(
+       517 -                backgroundColor: Colors.amber,
+       518 -                foregroundColor: Colors.black,
+       517 +                backgroundColor: Colors.green,
+       518 +                foregroundColor: Colors.white,
+       519                ),
+       520 -              child: const Text('Buy Credits'),
+       520 +              child: const Text('Buy BR'),
+       521              ),
+       522            ],
+       523          ),
+       524        );
+       525      }
+       526
+       527 -    void _purchaseCredits() {
+       527 +    void _purchaseBR() {
+       528        showModalBottomSheet(
+       529          context: context,
+       530          backgroundColor: Colors.grey.shade900,
+     ...
+       537              mainAxisSize: MainAxisSize.min,
+       538              children: [
+       539                const Text(
+       540 -                'Edge Credit Packages',
+       540 +                'Purchase BR',
+       541                  style: TextStyle(
+       542                    color: Colors.white,
+       543                    fontSize: 20,
+     ...
+       545                  ),
+       546                ),
+       547                const SizedBox(height: 20),
+       548 -              _buildCreditPackage('Starter', 3, 50, false),
+       549 -              _buildCreditPackage('Pro', 10, 150, true),
+       550 -              _buildCreditPackage('Elite', 25, 300, false),
+       548 +              _buildBRPackage('Starter Pack', 50, 4.99, false),
+       549 +              _buildBRPackage('Pro Pack', 500, 39.99, true),
+       550 +              _buildBRPackage('Elite Pack', 1000, 74.99, false),
+       551              ],
+       552            ),
+       553          ),
+       554        );
+       555      }
+       556
+       557 -    Widget _buildCreditPackage(String name, int credits, int brCost, bool isBestValue) {
+       557 +    Widget _buildBRPackage(String name, int brAmount, double price, bool isBestValue) {
+       558        return Container(
+       559          margin: const EdgeInsets.only(bottom: 12),
+       560          decoration: BoxDecoration(
+       561            gradient: isBestValue
+       562 -              ? const LinearGradient(colors: [Colors.amber, Colors.orange])
+       562 +              ? const LinearGradient(colors: [Colors.green, Colors.teal])
+       563                : null,
+       564            color: isBestValue ? null : Colors.grey.shade800,
+       565            borderRadius: BorderRadius.circular(12),
+       566            border: Border.all(
+       567 -            color: isBestValue ? Colors.amber : Colors.grey.shade700,
+       567 +            color: isBestValue ? Colors.green : Colors.grey.shade700,
+       568              width: 2,
+       569            ),
+       570          ),
+     ...
+       573              alignment: Alignment.center,
+       574              children: [
+       575                Icon(
+       576 -                Icons.bolt,
+       577 -                color: isBestValue ? Colors.black : Colors.amber,
+       576 +                Icons.monetization_on,
+       577 +                color: isBestValue ? Colors.white : Colors.green,
+       578                  size: 32,
+       579                ),
+       580                if (isBestValue)
+     ...
+       599            title: Text(
+       600              name,
+       601              style: TextStyle(
+       602 -              color: isBestValue ? Colors.black : Colors.white,
+       602 +              color: isBestValue ? Colors.white : Colors.white,
+       603                fontWeight: FontWeight.bold,
+       604              ),
+       605            ),
+       606            subtitle: Text(
+       607 -            '$credits Credits',
+       607 +            '$brAmount BR',
+       608              style: TextStyle(
+       609 -              color: isBestValue ? Colors.black87 : Colors.white70,
+       609 +              color: isBestValue ? Colors.white70 : Colors.white70,
+       610              ),
+       611            ),
+       612            trailing: ElevatedButton(
+       613              onPressed: () {
+       614                setState(() {
+       615 -                _edgeCredits += credits;
+       615 +                _userBRBalance += brAmount;
+       616                });
+       617                Navigator.pop(context);
+       618                ScaffoldMessenger.of(context).showSnackBar(
+       619                  SnackBar(
+       620 -                  content: Text('Purchased $credits Edge Credits!'),
+       620 +                  content: Text('Purchased $brAmount BR for \$$price!'),
+       621                    backgroundColor: Colors.green,
+       622                  ),
+       623                );
+       624              },
+       625              style: ElevatedButton.styleFrom(
+       626 -              backgroundColor: isBestValue ? Colors.black : Colors.amber,
+       627 -              foregroundColor: isBestValue ? Colors.white : Colors.black,
+       626 +              backgroundColor: isBestValue ? Colors.white : Colors.green,
+       627 +              foregroundColor: isBestValue ? Colors.green : Colors.white,
+       628              ),
+       629 -            child: Text('$brCost BR'),
+       629 +            child: Text('\$$price'),
+       630            ),
+       631          ),
+       632        );
+     ...
+       640      final Color color;
+       641      final String data;
+       642      final String source;
+       643 +    final int cost;
+       644 +    final bool hasAlert;
+       645 +    final IconData? alertIcon;
+       646
+       647      EdgeCard({
+       648        required this.id,
+     ...
+       648        required this.color,
+       649        required this.data,
+       650        required this.source,
+       651 +      required this.cost,
+       652 +      this.hasAlert = false,
+       653 +      this.alertIcon,
+       654      });
+       655    }

@@ -1,0 +1,81 @@
+### "Bragging Rights" Application Build Plan
+
+This document outlines a phased build plan for the "Bragging Rights" mobile application, designed to serve as a comprehensive guide for development. It assumes a Flutter frontend, a Node.js backend, and Firebase for authentication and data management.
+
+---
+
+### Phase 1: Planning & Design
+
+This phase focuses on defining the application's core functionality and user experience before any code is written.
+
+* **Task 1.1: Feature Specification:** Finalize the complete list of features for the MVP (Minimum Viable Product). This includes user profiles, game pools, wagering system, leaderboards, and the social invite system.
+* **Task 1.2: UX/UI Design:** Create wireframes and mockups for all key screens. This includes the home screen, game details, leaderboards, user profile, and the Hall of Fame. 
+* **Task 1.3: Data Modeling:** Design the database schemas for Firestore. Define collections for `users`, `games`, `wagers`, `pools`, and `champions`. This is a critical step to ensure a scalable and efficient data structure.
+
+---
+
+### Phase 2: Technology & Environment Setup
+
+This phase involves setting up the development environment and all necessary services.
+
+* **Task 2.1: Local Environment Setup:**
+    * Install **VS Code** with the Flutter, Dart, and Node.js extensions.
+    * Install the **Flutter SDK**.
+    * Install **Android Studio** for the Android SDK and Emulator.
+    * Install **Xcode** (on macOS) for the iOS Simulator.
+* **Task 2.2: Cloud Service Configuration:**
+    * Set up a new project in the **Firebase Console**.
+    * Enable **Firebase Authentication** for email/password and social logins (Google, Apple).
+    * Initialize **Cloud Firestore** and set up the initial security rules.
+    * Enable **Firebase Cloud Functions** and **Cloud Messaging (FCM)**.
+* **Task 2.3: Third-Party API Integration:**
+    * Sign up for a sports data API (e.g., **SportsDataIO, The Odds API**) and a sentiment analysis API if a premium feature is planned for the MVP.
+    * Store API keys securely in a `.env` file on the backend.
+
+---
+
+### Phase 3: Backend & API Development
+
+The backend will handle all core business logic, from data ingestion to wager settlement.
+
+* **Task 3.1: Core API Endpoints:**
+    * Create REST API endpoints using Node.js/Express for user registration and profile management.
+    * Develop a cron job or scheduled Cloud Function to ingest sports data and odds from external APIs.
+* **Task 3.2: Game & Wager Logic:**
+    * Create endpoints for users to join a pool and place a wager.
+    * Develop a Cloud Function triggered by a new wager to update the real-time "peak" user sentiment data in Firestore.
+    * Write the primary game resolution function: This function, triggered after a game is complete, will calculate winnings, update user "Brag Coin" balances, and settle the pool.
+* **Task 3.3: In-App Purchase and Hall of Fame Logic:**
+    * Set up backend endpoints to handle and validate in-app purchase receipts from the mobile app.
+    * Develop a final Cloud Function to determine the season champion based on pre-defined requirements (e.g., `user.participation.nfl_2025_regular_season >= 17`) and write the winner to the `champions` collection.
+
+---
+
+### Phase 4: Mobile App Development
+
+This phase focuses on building the user-facing application in Flutter.
+
+* **Task 4.1: Authentication Flow:**
+    * Implement user sign-up and login with Firebase Authentication.
+    * Develop a welcome screen and a user profile screen to display user stats and "Brag Coins".
+* **Task 4.2: Game and Wager UI:**
+    * Build a main dashboard to show current and upcoming events for all sports.
+    * Create a detailed game screen that displays teams, odds, and the real-time "peak" user sentiment data using a chart library like `fl_chart`.
+    * Implement the user flow for placing wagers and joining pools.
+* **Task 4.3: Social & Leaderboard UI:**
+    * Develop the friend-invite feature using phone contacts.
+    * Build a comprehensive leaderboard screen that can be filtered by sport, region, and friend groups.
+    * Create the "Bragging Rights Hall of Fame" screen, which queries and displays the `champions` collection.
+* **Task 4.4: Premium Feature Integration:**
+    * Integrate the `in_app_purchase` package.
+    * Create a "Store" screen where users can purchase "Brag Coins" and premium stat packs.
+    * Build the UI for the advanced stats (e.g., Compubox data, player props) that are unlocked after a purchase.
+
+---
+
+### Phase 5: Testing & Launch
+
+* **Task 5.1: Unit & Integration Testing:** Write automated tests for both the backend and frontend to ensure all logic is sound.
+* **Task 5.2: QA Testing:** Perform manual testing on both the Android and iOS emulators/simulators to check for UI bugs and user experience issues.
+* **Task 5.3: App Store Submission:** Prepare the app for submission to the **Apple App Store** and **Google Play Store**, including screenshots and a detailed description.
+* **Task 5.4: Launch & Maintenance:** Launch the app and set up a monitoring system for performance and bug tracking (e.g., Firebase Crashlytics). Begin planning for future updates and features.

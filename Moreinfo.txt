@@ -1,0 +1,75 @@
+The previous build plan was a great outline but intentionally left out granular details to stay concise. The main missing components were:
+1.  **A detailed application flow** that maps the user's journey from start to finish.
+2.  **A specific breakdown of features** beyond the high-level descriptions.
+3.  **The monetization strategy** for the in-app purchases.
+
+This document serves as a second file to address those details, providing a clearer roadmap for the development team.
+
+---
+
+### **"Bragging Rights" Application File 2: Features & Application Flow**
+
+### Feature Breakdown
+
+This list categorizes all features by their purpose, from the core functionality to premium offerings.
+
+**1. Core Features (MVP)**
+* **User Onboarding & Authentication:** Sign-up/login via Firebase with email and password, Google, or Apple accounts. 
+* **Game & Pool Management:** Display upcoming and live sporting events from sports data APIs. Users can join "pools" for specific games or seasons.
+* **Wagering System:** Users can place wagers on game outcomes (win/loss), with odds provided by external APIs. The currency is "Brag Coins," which have no monetary value.
+* **Brag Coin Management:** A user's coin balance is displayed on their profile. Coins are awarded for winning wagers and debited for losing ones.
+* **Leaderboards:** Simple leaderboards display top players by "Brag Coins" for specific pools, events, or overall.
+
+**2. Social Features**
+* **Contact Integration:** Users can invite friends from their phone contacts to join the app or a specific pool.
+* **Community Pick ("Peak" Feature):** On a game's detail page, a real-time bar or pie chart displays the percentage of users who have wagered on each outcome, showing what the community is leaning towards.
+* **Friend Groups:** Users can create private pools and compete exclusively with friends.
+* **User Profiles:** Users can view their friends' win-loss records, coin balances, and top accomplishments.
+
+**3. Premium & Monetization Features**
+* **"Analyst Tier" In-App Purchase:** A non-consumable purchase (or subscription) that unlocks premium data.
+* **Advanced Stats:** Access to metrics like Compubox data for MMA/Boxing, EPA for NFL, and advanced player props (e.g., points, rebounds).
+* **Sentiment Analysis:** A real-time dashboard showing public opinion (positive/negative sentiment) from social media for teams or players.
+* **Injury Reports:** Real-time updates on player injuries, crucial for informed wagering.
+* **Coin Packs:** Consumable in-app purchases allowing users to buy more "Brag Coins" when they run out, enabling them to participate in more games.
+
+**4. Legacy Features**
+* **Championship Tournaments:** Automatic qualification for top-performing players from local pools to state, regional, and national tournaments.
+* **Bragging Rights Hall of Fame:** A permanent, in-app record of all season champions, celebrating their victories.
+* **Season Winner Recognition:** The national champion for a season (e.g., NBA, NFL) is awarded a digital trophy and is inducted into the Hall of Fame.
+
+---
+
+### Application Flow
+
+This is a step-by-step walkthrough of a user's journey through the "Bragging Rights" application.
+
+**Step 1: Onboarding & Profile Creation 📲**
+* A new user opens the app and is greeted by a welcome screen.
+* They choose their preferred sign-in method: email/password, Google, or Apple.
+* They create a profile, choose a display name, and are given a starting balance of "Brag Coins."
+
+**Step 2: Discovering Games & Pools 🔎**
+* The user lands on the **Home Screen**, which displays a feed of upcoming games.
+* The games are categorized by sport (NFL, NBA, etc.) and can be filtered by location (e.g., "Texas Pools").
+* The user taps on a game to see more details, including the odds and the "Community Pick" feature.
+
+**Step 3: Placing a Wager & Inviting Friends 💸**
+* On the game's detail page, the user selects a team to win.
+* They enter the amount of "Brag Coins" they want to wager. The app shows the potential payout based on the odds.
+* After placing the wager, the user is prompted to invite friends from their contacts to join the same pool.
+
+**Step 4: Real-Time Results & The "Peak" Experience 📊**
+* Once a game is live, the user can watch the "Brag Coins" change in real time.
+* They can also view the **"Community Pick"** chart, which updates live as more users place their wagers.
+* When the game is over, the app settles all wagers, and the user's "Brag Coin" balance is automatically updated. A notification informs them of their win or loss.
+
+**Step 5: The Road to the Championship 📈**
+* The user's performance is tracked on local and overall leaderboards.
+* As they win more games and accumulate "Brag Coins," they climb the ranks.
+* By fulfilling the requirements (e.g., playing every game in a season), they become eligible for a spot in the national championship.
+
+**Step 6: Securing a Legacy in the Hall of Fame 👑**
+* At the end of a sports season, the app's backend runs its final calculation.
+* The top-ranked, eligible user is crowned the **Bragging Rights Champion**.
+* A push notification is sent out to all users announcing the new champion, and their name, title, and "Brag Coin" count are permanently added to the **Hall of Fame**.
