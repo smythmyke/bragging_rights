@@ -18,7 +18,10 @@ class _LottieSplashScreenState extends State<LottieSplashScreen>
   // Randomly select animation
   final List<String> _animations = [
     'assets/animations/trophy_animation.json',
-    'assets/animations/winner_animation.json',
+    'assets/animations/medal_animation.json',
+    'assets/animations/championship_animation.json',
+    'assets/animations/podium_animation.json',
+    'assets/animations/fireworks_animation.json',
   ];
   
   late String _selectedAnimation;

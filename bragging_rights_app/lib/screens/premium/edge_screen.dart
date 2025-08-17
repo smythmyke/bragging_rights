@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'edge_detail_screen.dart';
 
 class EdgeScreen extends StatefulWidget {
   final String gameTitle;
@@ -318,8 +319,11 @@ class _EdgeScreenState extends State<EdgeScreen> with TickerProviderStateMixin {
                 _revealCard(card);
               } else if (!isRevealed && !canAfford) {
                 _showNeedBRDialog(card.cost);
+              } else if (isRevealed) {
+                _showDetailedView(card);
               }
             },
+            onLongPress: isRevealed ? () => _showDetailedView(card) : null,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               decoration: BoxDecoration(
@@ -489,6 +493,8 @@ class _EdgeScreenState extends State<EdgeScreen> with TickerProviderStateMixin {
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -505,12 +511,14 @@ class _EdgeScreenState extends State<EdgeScreen> with TickerProviderStateMixin {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Text(
-                      card.data,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        height: 1.4,
+                    child: SingleChildScrollView(
+                      child: Text(
+                        card.data,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          height: 1.3,
+                        ),
                       ),
                     ),
                   ),
@@ -519,11 +527,15 @@ class _EdgeScreenState extends State<EdgeScreen> with TickerProviderStateMixin {
                     children: [
                       Icon(Icons.verified, color: Colors.green.shade300, size: 14),
                       const SizedBox(width: 4),
-                      Text(
-                        'Source: ${card.source}',
-                        style: TextStyle(
-                          color: Colors.grey.shade400,
-                          fontSize: 10,
+                      Expanded(
+                        child: Text(
+                          'Source: ${card.source}',
+                          style: TextStyle(
+                            color: Colors.grey.shade400,
+                            fontSize: 10,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -630,6 +642,19 @@ class _EdgeScreenState extends State<EdgeScreen> with TickerProviderStateMixin {
             _buildBRPackage('Pro Pack', 500, 39.99, true),
             _buildBRPackage('Elite Pack', 1000, 74.99, false),
           ],
+        ),
+      ),
+    );
+  }
+  
+  void _showDetailedView(EdgeCard card) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EdgeDetailScreen(
+          card: card,
+          gameTitle: widget.gameTitle,
+          sport: widget.sport,
         ),
       ),
     );

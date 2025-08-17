@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'dart:async';
 
 class HomeScreen extends StatefulWidget {
@@ -71,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Row(
               children: [
                 Icon(
-                  Icons.monetization_on,
+                  PhosphorIconsRegular.coins,
                   color: Theme.of(context).colorScheme.onPrimary,
                   size: 20,
                 ),
@@ -87,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.notifications),
+            icon: const Icon(PhosphorIconsRegular.bell),
             onPressed: () {
               // TODO: Show notifications
             },
@@ -114,23 +115,23 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
+            icon: Icon(PhosphorIconsRegular.house),
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.pool),
+            icon: Icon(PhosphorIconsRegular.swimmingPool),
             label: 'My Pools',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.explore),
+            icon: Icon(PhosphorIconsRegular.compass),
             label: 'Discover',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.leaderboard),
+            icon: Icon(PhosphorIconsRegular.trophy),
             label: 'Leaderboard',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person),
+            icon: Icon(PhosphorIconsRegular.user),
             label: 'Profile',
           ),
         ],
@@ -157,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   _buildQuickActionCard(
                     'Quick Play',
-                    Icons.flash_on,
+                    PhosphorIconsRegular.lightning,
                     Colors.orange,
                     () {
                       // TODO: Quick play
@@ -165,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   _buildQuickActionCard(
                     'Create Pool',
-                    Icons.add_circle,
+                    PhosphorIconsRegular.plusCircle,
                     Colors.green,
                     () {
                       // TODO: Create pool
@@ -173,7 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   _buildQuickActionCard(
                     'Find Friends',
-                    Icons.people,
+                    PhosphorIconsRegular.usersFour,
                     Colors.blue,
                     () {
                       // TODO: Find friends
@@ -181,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   _buildQuickActionCard(
                     'Get BR',
-                    Icons.shopping_cart,
+                    PhosphorIconsRegular.wallet,
                     Colors.purple,
                     () {
                       // TODO: In-app purchase
@@ -226,8 +227,8 @@ class _HomeScreenState extends State<HomeScreen> {
             
             const SizedBox(height: 24),
             
-            // Your Active Pools
-            _buildSectionHeader('🎯 Your Active Pools', '2 active'),
+            // Your Active Pools - using Stack icon instead of target
+            _buildSectionHeader('🎲 Your Active Pools', '2 active'),
             const SizedBox(height: 12),
             _buildPoolCard('NFL Sunday Pool', '25 BR', '12 players', Colors.brown),
             _buildPoolCard('Friends NBA League', '50 BR', '8 players', Colors.orange),
@@ -339,7 +340,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(
               children: [
                 Icon(
-                  isLive ? Icons.live_tv : Icons.timer,
+                  isLive ? PhosphorIconsRegular.broadcast : PhosphorIconsRegular.timer,
                   size: 16,
                   color: isUrgent ? Colors.red : Colors.grey,
                 ),
@@ -356,11 +357,11 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 4),
             Row(
               children: [
-                Icon(Icons.people, size: 14, color: Colors.grey[500]),
+                Icon(PhosphorIconsRegular.users, size: 14, color: Colors.grey[500]),
                 const SizedBox(width: 4),
                 Text('234 in pool', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
                 const SizedBox(width: 12),
-                Icon(Icons.monetization_on, size: 14, color: Colors.grey[500]),
+                Icon(PhosphorIconsRegular.coins, size: 14, color: Colors.grey[500]),
                 const SizedBox(width: 4),
                 Text('Min: 25 BR', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
               ],
@@ -402,7 +403,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: color.withOpacity(0.2),
-          child: Icon(Icons.pool, color: color),
+          child: Icon(PhosphorIconsRegular.stack, color: color),
         ),
         title: Text(
           name,
@@ -410,7 +411,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         subtitle: Text('Buy-in: $buyIn • $players'),
         trailing: IconButton(
-          icon: const Icon(Icons.arrow_forward),
+          icon: const Icon(PhosphorIconsRegular.arrowRight),
           onPressed: () {
             // TODO: Navigate to pool details
           },

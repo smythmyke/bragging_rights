@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class SportsSelectionScreen extends StatefulWidget {
   const SportsSelectionScreen({super.key});
@@ -7,21 +8,48 @@ class SportsSelectionScreen extends StatefulWidget {
   State<SportsSelectionScreen> createState() => _SportsSelectionScreenState();
 }
 
-class _SportsSelectionScreenState extends State<SportsSelectionScreen> {
+class _SportsSelectionScreenState extends State<SportsSelectionScreen> 
+    with TickerProviderStateMixin {
   final Set<String> _selectedSports = {};
+  late AnimationController _backgroundController;
+  late Animation<double> _backgroundAnimation;
 
   final List<SportItem> sports = [
-    SportItem('NBA', Icons.sports_basketball, Colors.orange),
-    SportItem('NFL', Icons.sports_football, Colors.brown),
-    SportItem('NHL', Icons.sports_hockey, Colors.blue),
-    SportItem('Tennis', Icons.sports_tennis, Colors.green),
-    SportItem('MMA', Icons.sports_mma, Colors.red),
-    SportItem('Golf', Icons.golf_course, Colors.teal),
-    SportItem('MLB', Icons.sports_baseball, Colors.indigo),
-    SportItem('Soccer', Icons.sports_soccer, Colors.purple),
+    SportItem('NBA', Icons.sports_basketball, const Color(0xFFF97316)),
+    SportItem('NFL', Icons.sports_football, const Color(0xFF8B4513)),
+    SportItem('NHL', Icons.sports_hockey, const Color(0xFF3B82F6)),
+    SportItem('Tennis', Icons.sports_tennis, const Color(0xFF10B981)),
+    SportItem('MMA', Icons.sports_mma, const Color(0xFFEF4444)),
+    SportItem('Golf', Icons.golf_course, const Color(0xFF14B8A6)),
+    SportItem('MLB', Icons.sports_baseball, const Color(0xFF6366F1)),
+    SportItem('Soccer', Icons.sports_soccer, const Color(0xFFA855F7)),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _backgroundController = AnimationController(
+      duration: const Duration(seconds: 10),
+      vsync: this,
+    )..repeat(reverse: true);
+    
+    _backgroundAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _backgroundController,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _backgroundController.dispose();
+    super.dispose();
+  }
+
   void _toggleSport(String sport) {
+    HapticFeedback.lightImpact();
     setState(() {
       if (_selectedSports.contains(sport)) {
         _selectedSports.remove(sport);
@@ -49,17 +77,37 @@ class _SportsSelectionScreenState extends State<SportsSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Theme.of(context).colorScheme.primary.withOpacity(0.1),
-              Theme.of(context).colorScheme.surface,
-            ],
-          ),
-        ),
+      body: AnimatedBuilder(
+        animation: _backgroundAnimation,
+        builder: (context, child) {
+          return Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color.lerp(
+                    const Color(0xFF1E293B),
+                    const Color(0xFF0F172A),
+                    _backgroundAnimation.value,
+                  )!,
+                  Color.lerp(
+                    const Color(0xFF334155),
+                    const Color(0xFF1E293B),
+                    _backgroundAnimation.value,
+                  )!,
+                  Color.lerp(
+                    const Color(0xFF475569),
+                    const Color(0xFF334155),
+                    _backgroundAnimation.value,
+                  )!,
+                ],
+                stops: const [0.0, 0.5, 1.0],
+              ),
+            ),
+            child: child,
+          );
+        },
         child: SafeArea(
           child: Column(
             children: [
@@ -68,28 +116,59 @@ class _SportsSelectionScreenState extends State<SportsSelectionScreen> {
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
-                    Text(
-                      'Choose Your Sports',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                    ShaderMask(
+                      shaderCallback: (bounds) => LinearGradient(
+                        colors: [
+                          Colors.white,
+                          Colors.white.withOpacity(0.9),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ).createShader(bounds),
+                      child: Text(
+                        'Choose Your Sports',
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              fontSize: 32,
+                            ),
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Select sports to receive notifications and see relevant pools',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Colors.grey[600],
+                            color: Colors.white70,
                           ),
                     ),
                     const SizedBox(height: 16),
                     if (_selectedSports.isNotEmpty)
-                      Chip(
-                        label: Text(
-                          '${_selectedSports.length} sport${_selectedSports.length > 1 ? 's' : ''} selected',
-                          style: const TextStyle(color: Colors.white),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.greenAccent.withOpacity(0.8),
+                              Colors.tealAccent.withOpacity(0.8),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.greenAccent.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        child: Text(
+                          '${_selectedSports.length} sport${_selectedSports.length > 1 ? 's' : ''} selected',
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                   ],
                 ),
@@ -114,48 +193,123 @@ class _SportsSelectionScreenState extends State<SportsSelectionScreen> {
                       return GestureDetector(
                         onTap: () => _toggleSport(sport.name),
                         child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOutBack,
+                          transform: Matrix4.identity()
+                            ..scale(isSelected ? 1.05 : 1.0),
                           decoration: BoxDecoration(
-                            color: isSelected
-                                ? sport.color.withOpacity(0.2)
-                                : Colors.white,
-                            borderRadius: BorderRadius.circular(16),
+                            gradient: isSelected
+                                ? LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      sport.color.withOpacity(0.3),
+                                      sport.color.withOpacity(0.1),
+                                    ],
+                                  )
+                                : null,
+                            color: !isSelected
+                                ? Colors.white.withOpacity(0.1)
+                                : null,
+                            borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: isSelected ? sport.color : Colors.grey.shade300,
-                              width: isSelected ? 3 : 1,
+                              color: isSelected 
+                                  ? sport.color 
+                                  : Colors.white.withOpacity(0.3),
+                              width: isSelected ? 2.5 : 1.5,
                             ),
                             boxShadow: [
-                              BoxShadow(
-                                color: isSelected
-                                    ? sport.color.withOpacity(0.3)
-                                    : Colors.grey.withOpacity(0.2),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
+                              if (isSelected)
+                                BoxShadow(
+                                  color: sport.color.withOpacity(0.4),
+                                  blurRadius: 12,
+                                  spreadRadius: 1,
+                                  offset: const Offset(0, 4),
+                                ),
                             ],
                           ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          child: Stack(
+                            alignment: Alignment.center,
                             children: [
-                              Icon(
-                                sport.icon,
-                                size: 48,
-                                color: isSelected ? sport.color : Colors.grey,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                sport.name,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: isSelected ? sport.color : Colors.grey[700],
-                                ),
+                              Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  AnimatedScale(
+                                    scale: isSelected ? 1.2 : 1.0,
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeOutBack,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            sport.color.withOpacity(0.8),
+                                            sport.color,
+                                          ],
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: sport.color.withOpacity(0.4),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Icon(
+                                        sport.icon,
+                                        size: 36,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    sport.name,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: isSelected 
+                                          ? Colors.white 
+                                          : Colors.white70,
+                                      shadows: isSelected
+                                          ? [
+                                              Shadow(
+                                                color: Colors.black26,
+                                                blurRadius: 2,
+                                                offset: const Offset(0, 1),
+                                              ),
+                                            ]
+                                          : null,
+                                    ),
+                                  ),
+                                ],
                               ),
                               if (isSelected)
-                                Icon(
-                                  Icons.check_circle,
-                                  color: sport.color,
-                                  size: 20,
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.greenAccent,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.greenAccent.withOpacity(0.5),
+                                          blurRadius: 8,
+                                          spreadRadius: 1,
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      Icons.check,
+                                      color: Colors.black,
+                                      size: 16,
+                                    ),
+                                  ),
                                 ),
                             ],
                           ),
@@ -170,12 +324,19 @@ class _SportsSelectionScreenState extends State<SportsSelectionScreen> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.7),
+                      Colors.black.withOpacity(0.9),
+                    ],
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.2),
-                      blurRadius: 10,
-                      offset: const Offset(0, -5),
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, -10),
                     ),
                   ],
                 ),
@@ -184,20 +345,39 @@ class _SportsSelectionScreenState extends State<SportsSelectionScreen> {
                     SizedBox(
                       width: double.infinity,
                       height: 56,
-                      child: ElevatedButton(
-                        onPressed: _continueToApp,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.greenAccent,
+                              Colors.tealAccent,
+                            ],
                           ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.greenAccent.withOpacity(0.4),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        child: const Text(
-                          'Continue to App',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                        child: ElevatedButton(
+                          onPressed: _continueToApp,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'Continue to App',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
                           ),
                         ),
                       ),
@@ -210,7 +390,8 @@ class _SportsSelectionScreenState extends State<SportsSelectionScreen> {
                       child: Text(
                         'Skip for now',
                         style: TextStyle(
-                          color: Colors.grey[600],
+                          color: Colors.white54,
+                          fontSize: 14,
                         ),
                       ),
                     ),
