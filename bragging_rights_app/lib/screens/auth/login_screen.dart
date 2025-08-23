@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,20 +11,97 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  final _displayNameController = TextEditingController();
+  final _authService = AuthService();
   bool _isLogin = true;
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _displayNameController.dispose();
     super.dispose();
   }
 
-  void _handleAuth() {
-    // TODO: Implement Firebase authentication
-    // For now, just navigate to sports selection
-    Navigator.pushReplacementNamed(context, '/sports-selection');
+  void _handleAuth() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      if (_isLogin) {
+        // Sign in
+        print('Attempting sign in for: ${_emailController.text.trim()}');
+        await _authService.signIn(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
+        print('Sign in successful');
+      } else {
+        // Sign up
+        print('Attempting sign up for: ${_emailController.text.trim()}');
+        if (_passwordController.text != _confirmPasswordController.text) {
+          throw Exception('Passwords do not match');
+        }
+        print('Creating user with display name: ${_displayNameController.text.trim()}');
+        await _authService.signUp(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          displayName: _displayNameController.text.trim().isEmpty 
+              ? _emailController.text.split('@')[0] 
+              : _displayNameController.text.trim(),
+        );
+        print('Sign up successful');
+      }
+      
+      if (mounted) {
+        print('Navigating to sports selection');
+        Navigator.pushReplacementNamed(context, '/sports-selection');
+      }
+    } catch (e, stackTrace) {
+      print('Auth error: $e');
+      print('Stack trace: $stackTrace');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+  
+  void _handleGoogleSignIn() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      final credential = await _authService.signInWithGoogle();
+      
+      if (credential != null && mounted) {
+        Navigator.pushReplacementNamed(context, '/sports-selection');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -119,10 +197,22 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           
-                          // Confirm Password for Registration
+                          // Additional fields for Registration
                           if (!_isLogin) ...[
                             const SizedBox(height: 16),
                             TextField(
+                              controller: _displayNameController,
+                              decoration: InputDecoration(
+                                labelText: 'Display Name',
+                                prefixIcon: const Icon(Icons.person),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            TextField(
+                              controller: _confirmPasswordController,
                               obscureText: _obscurePassword,
                               decoration: InputDecoration(
                                 labelText: 'Confirm Password',
@@ -141,19 +231,73 @@ class _LoginScreenState extends State<LoginScreen> {
                             width: double.infinity,
                             height: 48,
                             child: ElevatedButton(
-                              onPressed: _handleAuth,
+                              onPressed: _isLoading ? null : _handleAuth,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Theme.of(context).colorScheme.primary,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              child: Text(
-                                _isLogin ? 'Login' : 'Create Account',
+                              child: _isLoading 
+                                  ? const CircularProgressIndicator(color: Colors.white)
+                                  : Text(
+                                      _isLogin ? 'Login' : 'Create Account',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context).colorScheme.onPrimary,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          
+                          const SizedBox(height: 16),
+                          
+                          // OR Divider
+                          Row(
+                            children: [
+                              Expanded(child: Divider(color: Colors.grey.shade400)),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: Text(
+                                  'OR',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              Expanded(child: Divider(color: Colors.grey.shade400)),
+                            ],
+                          ),
+                          
+                          const SizedBox(height: 16),
+                          
+                          // Google Sign-In Button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: OutlinedButton.icon(
+                              onPressed: _isLoading ? null : _handleGoogleSignIn,
+                              style: OutlinedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                side: BorderSide(color: Colors.grey.shade400),
+                              ),
+                              icon: Image.network(
+                                'https://www.google.com/favicon.ico',
+                                height: 24,
+                                width: 24,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(Icons.g_mobiledata, size: 24);
+                                },
+                              ),
+                              label: const Text(
+                                'Continue with Google',
                                 style: TextStyle(
                                   fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.onPrimary,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'dart:async';
+import '../../services/bet_service.dart';
+import '../../services/wallet_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,12 +15,30 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   Timer? _countdownTimer;
   final Map<String, Duration> _countdowns = {};
+  
+  // Services
+  final BetService _betService = BetService();
+  final WalletService _walletService = WalletService();
+  
+  // Track games with bets
+  List<String> _gamesWithBets = [];
 
   @override
   void initState() {
     super.initState();
     _initializeCountdowns();
     _startCountdownTimer();
+    _loadGamesWithBets();
+  }
+  
+  void _loadGamesWithBets() {
+    _betService.getGamesWithBets().listen((games) {
+      if (mounted) {
+        setState(() {
+          _gamesWithBets = games;
+        });
+      }
+    });
   }
 
   void _initializeCountdowns() {
@@ -77,12 +97,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   size: 20,
                 ),
                 const SizedBox(width: 4),
-                Text(
-                  '500 BR',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
+                StreamBuilder<int>(
+                  stream: _walletService.getBalanceStream(),
+                  builder: (context, snapshot) {
+                    final balance = snapshot.data ?? 0;
+                    return Text(
+                      '$balance BR',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -165,11 +191,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                   _buildQuickActionCard(
-                    'Create Pool',
-                    PhosphorIconsRegular.plusCircle,
+                    'My Bets',
+                    PhosphorIconsRegular.chartLine,
+                    Colors.indigo,
+                    () {
+                      Navigator.pushNamed(context, '/active-bets');
+                    },
+                    showBadge: true,
+                    badgeCount: 3, // This will be dynamic based on active bets
+                  ),
+                  _buildQuickActionCard(
+                    'My Pools',
+                    PhosphorIconsRegular.trophy,
                     Colors.green,
                     () {
-                      // TODO: Create pool
+                      Navigator.pushNamed(context, '/my-pools');
                     },
                   ),
                   _buildQuickActionCard(
@@ -238,7 +274,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildQuickActionCard(String title, IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildQuickActionCard(
+    String title, 
+    IconData icon, 
+    Color color, 
+    VoidCallback onTap, 
+    {bool showBadge = false, int badgeCount = 0}
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -249,20 +291,51 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: color.withOpacity(0.3)),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack(
           children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: color,
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, color: color, size: 32),
+                  const SizedBox(height: 8),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
-              textAlign: TextAlign.center,
             ),
+            if (showBadge && badgeCount > 0)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 20,
+                    minHeight: 20,
+                  ),
+                  child: Text(
+                    badgeCount.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -306,91 +379,158 @@ class _HomeScreenState extends State<HomeScreen> {
     final countdownStr = _formatDuration(countdown);
     final isUrgent = countdown.inMinutes < 10;
     
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 3,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(12),
-        leading: CircleAvatar(
-          backgroundColor: sportColor.withOpacity(0.2),
-          radius: 28,
-          child: Text(
-            sport,
-            style: TextStyle(
-              color: sportColor,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
+    // Generate game ID to check for bets (matching the format in bet_selection_screen)
+    final gameId = '${sport}_${title}_';
+    final hasBet = _gamesWithBets.any((id) => id.startsWith(gameId.substring(0, gameId.length - 1)));
+    
+    return Stack(
+      children: [
+        Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          elevation: 3,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: hasBet 
+                ? BorderSide(color: Colors.green.withOpacity(0.5), width: 2)
+                : BorderSide.none,
           ),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(
-                  isLive ? PhosphorIconsRegular.broadcast : PhosphorIconsRegular.timer,
-                  size: 16,
-                  color: isUrgent ? Colors.red : Colors.grey,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  isLive ? 'LIVE NOW' : 'Closes in: $countdownStr',
+          child: Container(
+            decoration: hasBet
+                ? BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: LinearGradient(
+                      begin: Alignment.topRight,
+                      end: Alignment.bottomLeft,
+                      colors: [
+                        Colors.green.withOpacity(0.05),
+                        Colors.transparent,
+                      ],
+                    ),
+                  )
+                : null,
+            child: ListTile(
+              contentPadding: const EdgeInsets.all(12),
+              leading: CircleAvatar(
+                backgroundColor: sportColor.withOpacity(0.2),
+                radius: 28,
+                child: Text(
+                  sport,
                   style: TextStyle(
-                    color: isUrgent ? Colors.red : Colors.grey[600],
-                    fontWeight: isUrgent ? FontWeight.bold : FontWeight.normal,
+                    color: sportColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(PhosphorIconsRegular.users, size: 14, color: Colors.grey[500]),
-                const SizedBox(width: 4),
-                Text('234 in pool', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-                const SizedBox(width: 12),
-                Icon(PhosphorIconsRegular.coins, size: 14, color: Colors.grey[500]),
-                const SizedBox(width: 4),
-                Text('Min: 25 BR', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-              ],
-            ),
-          ],
-        ),
-        trailing: ElevatedButton(
-          onPressed: () {
-            Navigator.pushNamed(
-              context,
-              '/pool-selection',
-              arguments: {
-                'gameTitle': title,
-                'sport': sport,
-              },
-            );
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: isLive ? Colors.green : Theme.of(context).colorScheme.primary,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+              ),
+              title: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  if (hasBet)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(Icons.check, color: Colors.white, size: 12),
+                          SizedBox(width: 4),
+                          Text(
+                            'BET PLACED',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        isLive ? PhosphorIconsRegular.broadcast : PhosphorIconsRegular.timer,
+                        size: 16,
+                        color: isUrgent ? Colors.red : Colors.grey,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        isLive ? 'LIVE NOW' : 'Closes in: $countdownStr',
+                        style: TextStyle(
+                          color: isUrgent ? Colors.red : Colors.grey[600],
+                          fontWeight: isUrgent ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(PhosphorIconsRegular.users, size: 14, color: Colors.grey[500]),
+                      const SizedBox(width: 4),
+                      Text('234 in pool', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                      const SizedBox(width: 12),
+                      Icon(PhosphorIconsRegular.coins, size: 14, color: Colors.grey[500]),
+                      const SizedBox(width: 4),
+                      Text('Min: 25 BR', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                    ],
+                  ),
+                ],
+              ),
+              trailing: hasBet 
+                  ? ElevatedButton.icon(
+                      onPressed: null,
+                      icon: const Icon(Icons.check, size: 16),
+                      label: const Text('View Bet'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green.withOpacity(0.2),
+                        foregroundColor: Colors.green,
+                        disabledBackgroundColor: Colors.green.withOpacity(0.2),
+                        disabledForegroundColor: Colors.green,
+                      ),
+                    )
+                  : ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/pool-selection',
+                          arguments: {
+                            'gameTitle': title,
+                            'sport': sport,
+                          },
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isLive ? Colors.green : Theme.of(context).colorScheme.primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      child: Text(
+                        isLive ? 'View' : 'Join',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
             ),
           ),
-          child: Text(
-            isLive ? 'View' : 'Join',
-            style: const TextStyle(color: Colors.white),
-          ),
         ),
-      ),
+      ],
     );
   }
 

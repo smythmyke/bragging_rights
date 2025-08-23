@@ -6,7 +6,9 @@
       "Bash(flutter:*)",
       "Bash(dart pub global activate:*)",
       "Bash(C:/flutter/bin/flutter clean)",
-      "Bash(C:/flutter/bin/flutter pub get)"
+      "Bash(C:/flutter/bin/flutter pub get)",
+      "Bash(gradlew:*)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": [],

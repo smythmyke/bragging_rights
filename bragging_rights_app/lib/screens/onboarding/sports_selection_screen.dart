@@ -218,15 +218,23 @@ class _SportsSelectionScreenState extends State<SportsSelectionScreen>
                                   : Colors.white.withOpacity(0.3),
                               width: isSelected ? 2.5 : 1.5,
                             ),
-                            boxShadow: [
-                              if (isSelected)
-                                BoxShadow(
-                                  color: sport.color.withOpacity(0.4),
-                                  blurRadius: 12,
-                                  spreadRadius: 1,
-                                  offset: const Offset(0, 4),
-                                ),
-                            ],
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: sport.color.withOpacity(0.4),
+                                      blurRadius: 12,
+                                      spreadRadius: 1,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ]
+                                : [
+                                    BoxShadow(
+                                      color: Colors.transparent,
+                                      blurRadius: 0,
+                                      spreadRadius: 0,
+                                      offset: const Offset(0, 0),
+                                    ),
+                                  ],
                           ),
                           child: Stack(
                             alignment: Alignment.center,

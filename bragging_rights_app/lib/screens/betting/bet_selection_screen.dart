@@ -1,17 +1,25 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math' as Math;
+import '../../services/bet_service.dart';
+import '../../services/wallet_service.dart';
+import '../../services/bet_storage_service.dart';
+import '../../widgets/info_edge_carousel.dart';
 
 class BetSelectionScreen extends StatefulWidget {
   final String gameTitle;
   final String sport;
   final String poolName;
+  final String? poolId;
+  final String? gameId;
   
   const BetSelectionScreen({
     super.key,
     required this.gameTitle,
     required this.sport,
     required this.poolName,
+    this.poolId,
+    this.gameId,
   });
 
   @override
@@ -25,14 +33,24 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   Timer? _countdownTimer;
   Duration _gameStartCountdown = const Duration(hours: 1, minutes: 15);
   
+  // Services
+  final BetService _betService = BetService();
+  final WalletService _walletService = WalletService();
+  
   // Selected team/fighter
   String? _selectedTeam;
   
   // Multiple bets for parlay
   List<SelectedBet> _selectedBets = [];
   
+  // Track all bets made across tabs
+  final Map<String, List<SelectedBet>> _allTabBets = {};
+  
   // Wager amount
   int _wagerAmount = 50;
+  
+  // Loading state
+  bool _isLockingBets = false;
   
   // Track picks made per tab - initialized based on sport
   late Map<String, bool> _tabPicks;
@@ -42,6 +60,10 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   
   // Live betting
   bool _isLiveBetting = false;
+  
+  // Bet storage
+  late BetStorageService _betStorage;
+  List<UserBet> _existingBets = [];
   
   // Available intel (for pulsing indicators)
   final Map<String, String> _availableIntel = {
@@ -67,6 +89,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       curve: Curves.easeInOut,
     ));
     _startCountdownTimer();
+    _loadExistingBets();
   }
   
   void _initializeTabPicks() {
@@ -131,6 +154,81 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     });
   }
   
+  Future<void> _loadExistingBets() async {
+    _betStorage = await BetStorageService.create();
+    
+    if (widget.poolId != null && widget.gameId != null) {
+      _existingBets = await _betStorage.getGameBets(widget.poolId!, widget.gameId!);
+      
+      // Load existing selections back into _selectedBets
+      for (final bet in _existingBets) {
+        final existingSelection = SelectedBet(
+          id: bet.selection, // Use selection as ID for matching
+          title: bet.selection,
+          odds: bet.odds,
+          type: _getBetTypeFromString(bet.betType),
+        );
+        _selectedBets.add(existingSelection);
+        
+        // Mark the tab as picked based on bet type
+        final tabKey = _getTabKeyFromBetType(bet.betType);
+        if (tabKey != null) {
+          _tabPicks[tabKey] = true;
+        }
+      }
+      
+      setState(() {});
+    }
+  }
+  
+  BetType _getBetTypeFromString(String type) {
+    switch (type.toLowerCase()) {
+      case 'moneyline':
+      case 'winner':
+        return BetType.moneyline;
+      case 'spread':
+        return BetType.spread;
+      case 'total':
+      case 'totals':
+        return BetType.total;
+      case 'prop':
+      case 'props':
+        return BetType.prop;
+      case 'method':
+        return BetType.method;
+      case 'rounds':
+        return BetType.rounds;
+      case 'live':
+        return BetType.live;
+      default:
+        return BetType.prop;
+    }
+  }
+  
+  String? _getTabKeyFromBetType(String betType) {
+    switch (betType.toLowerCase()) {
+      case 'moneyline':
+      case 'winner':
+        return 'winner';
+      case 'spread':
+        return 'spread';
+      case 'total':
+      case 'totals':
+        return 'totals';
+      case 'prop':
+      case 'props':
+        return 'props';
+      case 'method':
+        return 'method';
+      case 'rounds':
+        return 'rounds';
+      case 'live':
+        return 'live';
+      default:
+        return null;
+    }
+  }
+  
   @override
   void dispose() {
     _betTypeController.removeListener(_onTabChanged);
@@ -164,6 +262,10 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         ),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
+          // Progress indicator
+          _buildQuickProgress(),
+          const SizedBox(width: 8),
+          // Timer or Live indicator
           if (_isLiveBetting)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -196,19 +298,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
-          child: Stack(
-            children: [
-              _buildBetTypeTabs(),
-              Positioned(
-                right: 8,
-                top: 0,
-                bottom: 0,
-                child: Center(
-                  child: _buildQuickProgress(),
-                ),
-              ),
-            ],
-          ),
+          child: _buildBetTypeTabs(),
         ),
       ),
       body: Column(
@@ -226,6 +316,9 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
           
           // Bet Slip
           _buildBetSlip(),
+          
+          // Lock In Bets Button
+          _buildLockInBetsButton(),
         ],
       ),
     );
@@ -461,13 +554,49 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   }
   
   Widget _buildMoneylineTab() {
+    // For MMA/Boxing, show fighter names
+    if (widget.sport.toUpperCase() == 'MMA' || widget.sport.toUpperCase() == 'BOXING') {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          InfoEdgeCarousel(
+            title: 'Winner (Moneyline)',
+            description: 'Pick which fighter will win the bout. Negative odds mean favorite, positive odds mean underdog.',
+            icon: Icons.emoji_events,
+            onEdgePressed: _navigateToEdge,
+            autoScrollDelay: const Duration(seconds: 3),
+          ),
+          const SizedBox(height: 16),
+          _buildBetCard(
+            'Conor McGregor to Win',
+            '-175',
+            'Bet 175 to win 100',
+            Colors.green,
+            BetType.moneyline,
+            'McGregor ML',
+          ),
+          _buildBetCard(
+            'Michael Chandler to Win',
+            '+155',
+            'Bet 100 to win 155',
+            Colors.red,
+            BetType.moneyline,
+            'Chandler ML',
+          ),
+        ],
+      );
+    }
+    
+    // Default for team sports
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _buildBetTypeInfo(
-          'Winner (Moneyline)',
-          'Pick which team will win the game outright. Negative odds (-150) mean you bet more to win less (favorite). Positive odds (+130) mean you bet less to win more (underdog).',
-          Icons.emoji_events,
+        InfoEdgeCarousel(
+          title: 'Winner (Moneyline)',
+          description: 'Pick which team will win the game outright. Negative odds (-150) mean you bet more to win less (favorite). Positive odds (+130) mean you bet less to win more (underdog).',
+          icon: Icons.emoji_events,
+          onEdgePressed: _navigateToEdge,
+          autoScrollDelay: const Duration(seconds: 3),
         ),
         const SizedBox(height: 16),
         _buildBetCard(
@@ -486,8 +615,6 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
           BetType.moneyline,
           'Celtics ML',
         ),
-        const SizedBox(height: 24),
-        _buildEdgeButton(),
       ],
     );
   }
@@ -496,10 +623,12 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _buildBetTypeInfo(
-          'Point Spread',
-          'Bet on the margin of victory. Favorites (-5.5) must win by more than the spread. Underdogs (+5.5) can lose by less than the spread or win outright.',
-          Icons.trending_up,
+        InfoEdgeCarousel(
+          title: 'Point Spread',
+          description: 'Bet on the margin of victory. Favorites (-5.5) must win by more than the spread. Underdogs (+5.5) can lose by less than the spread or win outright.',
+          icon: Icons.trending_up,
+          onEdgePressed: _navigateToEdge,
+          autoScrollDelay: const Duration(seconds: 3),
         ),
         const SizedBox(height: 16),
         _buildBetCard(
@@ -523,8 +652,6 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         const SizedBox(height: 8),
         _buildBetCard('Lakers -3.5', '+105', 'Better odds, harder to hit', Colors.purple, BetType.spread, 'Lakers -3.5'),
         _buildBetCard('Lakers -7.5', '+125', 'Best odds, hardest to hit', Colors.purple, BetType.spread, 'Lakers -7.5'),
-        const SizedBox(height: 24),
-        _buildEdgeButton(),
       ],
     );
   }
@@ -533,10 +660,12 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _buildBetTypeInfo(
-          'Over/Under (Totals)',
-          'Bet on the total combined score of both teams. Over means the total will be higher than the line, Under means it will be lower.',
-          Icons.add_circle_outline,
+        InfoEdgeCarousel(
+          title: 'Over/Under (Totals)',
+          description: 'Bet on the total combined score of both teams. Over means the total will be higher than the line, Under means it will be lower.',
+          icon: Icons.add_circle_outline,
+          onEdgePressed: _navigateToEdge,
+          autoScrollDelay: const Duration(seconds: 3),
         ),
         const SizedBox(height: 16),
         const Text('Game Total', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -562,8 +691,6 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         const SizedBox(height: 8),
         _buildBetCard('Lakers Over 111.5', '-105', 'Lakers score 112+', Colors.purple, BetType.total, 'LAL O111.5'),
         _buildBetCard('Celtics Over 107.5', '-115', 'Celtics score 108+', Colors.green, BetType.total, 'BOS O107.5'),
-        const SizedBox(height: 24),
-        _buildEdgeButton(),
       ],
     );
   }
@@ -572,10 +699,12 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _buildBetTypeInfo(
-          'Prop Bets',
-          'Bet on specific events or player performances within the game. Higher risk, but more fun and engaging throughout!',
-          Icons.star_outline,
+        InfoEdgeCarousel(
+          title: 'Prop Bets',
+          description: 'Bet on specific events or player performances within the game. Higher risk, but more fun and engaging throughout!',
+          icon: Icons.star_outline,
+          onEdgePressed: _navigateToEdge,
+          autoScrollDelay: const Duration(seconds: 3),
         ),
         const SizedBox(height: 16),
         
@@ -623,9 +752,6 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         _buildBetCard('AD Double-Double & Lakers Win', '+140', '10+ pts/reb & W', Colors.purple, BetType.prop, 'AD Dbl-Dbl & Win'),
         _buildBetCard('Tatum 30+ & Celtics Cover', '+280', 'Points + Spread', Colors.green, BetType.prop, 'Tatum 30+ & Cover'),
         _buildBetCard('Both Teams 100+ Points', '-130', 'High scoring game', Colors.orange, BetType.prop, 'Both 100+'),
-        
-        const SizedBox(height: 24),
-        _buildEdgeButton(),
       ],
     );
   }
@@ -634,10 +760,12 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _buildBetTypeInfo(
-          'Method of Victory',
-          'Bet on how the fight will end: KO/TKO (knockout), Submission, or Decision (goes to judges).',
-          Icons.sports_mma,
+        InfoEdgeCarousel(
+          title: 'Method of Victory',
+          description: 'Bet on how the fight will end: KO/TKO (knockout), Submission, or Decision (goes to judges).',
+          icon: Icons.sports_mma,
+          onEdgePressed: _navigateToEdge,
+          autoScrollDelay: const Duration(seconds: 3),
         ),
         const SizedBox(height: 16),
         _buildBetCard('McGregor by KO/TKO', '+150', 'Knockout or Technical Knockout', Colors.red, BetType.method, 'McGregor KO/TKO'),
@@ -647,8 +775,6 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         _buildBetCard('Chandler by KO/TKO', '+200', 'Knockout or Technical Knockout', Colors.red, BetType.method, 'Chandler KO/TKO'),
         _buildBetCard('Chandler by Submission', '+550', 'Submission victory', Colors.orange, BetType.method, 'Chandler SUB'),
         _buildBetCard('Chandler by Decision', '+400', 'Goes to judges', Colors.blue, BetType.method, 'Chandler DEC'),
-        const SizedBox(height: 24),
-        _buildEdgeButton(),
       ],
     );
   }
@@ -657,10 +783,12 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _buildBetTypeInfo(
-          'Round Betting',
-          'Bet on when the fight will end or if it will go the full distance. Higher risk, higher reward.',
-          Icons.timer,
+        InfoEdgeCarousel(
+          title: 'Round Betting',
+          description: 'Bet on when the fight will end or if it will go the full distance. Higher risk, higher reward.',
+          icon: Icons.timer,
+          onEdgePressed: _navigateToEdge,
+          autoScrollDelay: const Duration(seconds: 3),
         ),
         const SizedBox(height: 16),
         const Text('Fight Duration', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -674,8 +802,6 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         _buildBetCard('Round 2', '+450', 'Fight ends in Round 2', Colors.orange, BetType.rounds, 'Round 2'),
         _buildBetCard('Round 3', '+600', 'Fight ends in Round 3', Colors.yellow[700]!, BetType.rounds, 'Round 3'),
         _buildBetCard('Goes Distance', '-150', 'Full 3 rounds', Colors.green, BetType.rounds, 'Distance'),
-        const SizedBox(height: 24),
-        _buildEdgeButton(),
       ],
     );
   }
@@ -688,9 +814,11 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
           children: [
             Icon(Icons.timer, size: 64, color: Colors.grey[400]),
             const SizedBox(height: 16),
-            const Text(
-              'Live Betting Available When Game Starts',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Text(
+              widget.sport.toUpperCase() == 'MMA' || widget.sport.toUpperCase() == 'BOXING'
+                  ? 'Live Betting Available When Fight Starts'
+                  : 'Live Betting Available When Game Starts',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -702,35 +830,42 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       );
     }
     
+    // MMA/Boxing live betting
+    if (widget.sport.toUpperCase() == 'MMA' || widget.sport.toUpperCase() == 'BOXING') {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          InfoEdgeCarousel(
+            title: 'Live Betting',
+            description: 'Place bets while watching the fight. Odds update in real-time based on fight flow.',
+            icon: Icons.live_tv,
+            onEdgePressed: _navigateToEdge,
+            autoScrollDelay: const Duration(seconds: 3),
+          ),
+          const SizedBox(height: 16),
+          _buildBetCard('Next Round Winner', '-110', 'Round 2: McGregor', Colors.green, BetType.live, 'R2 McGregor'),
+          _buildBetCard('Fight Ends This Round', '+250', 'Current: Round 2', Colors.red, BetType.live, 'Ends R2'),
+          _buildBetCard('Next Knockdown', '+180', 'Either fighter', Colors.orange, BetType.live, 'Next KD'),
+          _buildBetCard('Fight Goes to Decision', '-140', 'Updated odds', Colors.blue, BetType.live, 'Goes Decision'),
+        ],
+      );
+    }
+    
+    // Default team sports live betting
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.red),
-          ),
-          child: const Row(
-            children: [
-              Icon(Icons.live_tv, color: Colors.red),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'LIVE BETTING - Odds update in real-time',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
+        InfoEdgeCarousel(
+          title: 'Live Betting',
+          description: 'Place bets while watching the game. Odds update in real-time based on game flow.',
+          icon: Icons.live_tv,
+          onEdgePressed: _navigateToEdge,
+          autoScrollDelay: const Duration(seconds: 3),
         ),
         const SizedBox(height: 16),
         _buildBetCard('Next Team to Score', '+105', 'Lakers', Colors.purple, BetType.live, 'LAL Next Score'),
         _buildBetCard('Next Quarter Winner', '-110', 'Q2: Lakers', Colors.purple, BetType.live, 'Q2 Winner LAL'),
         _buildBetCard('Race to 50 Points', '-120', 'First to 50', Colors.orange, BetType.live, 'Race to 50'),
-        const SizedBox(height: 24),
-        _buildEdgeButton(),
       ],
     );
   }
@@ -741,6 +876,17 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     );
   }
   
+  void _navigateToEdge() {
+    Navigator.pushNamed(
+      context,
+      '/edge',
+      arguments: {
+        'gameTitle': widget.gameTitle,
+        'sport': widget.sport,
+      },
+    );
+  }
+  
   Widget _buildEdgeButton() {
     return AnimatedBuilder(
       animation: _pulseAnimation,
@@ -748,16 +894,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         return Transform.scale(
           scale: _pulseAnimation.value,
           child: GestureDetector(
-            onTap: () {
-              Navigator.pushNamed(
-                context,
-                '/edge',
-                arguments: {
-                  'gameTitle': widget.gameTitle,
-                  'sport': widget.sport,
-                },
-              );
-            },
+            onTap: _navigateToEdge,
             child: Container(
               height: 80,
               decoration: BoxDecoration(
@@ -862,11 +999,20 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     bool isPremium = false,
   }) {
     final isSelected = _selectedBets.any((bet) => bet.id == betId);
+    final wasAlreadyPlaced = _existingBets.any((bet) => bet.selection == betId);
     
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        onTap: () {
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: wasAlreadyPlaced 
+          ? Border.all(color: Colors.green, width: 2)
+          : null,
+      ),
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: ListTile(
+        onTap: wasAlreadyPlaced ? null : () {
           setState(() {
             if (isSelected) {
               _selectedBets.removeWhere((bet) => bet.id == betId);
@@ -880,13 +1026,36 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
             }
           });
         },
-        leading: CircleAvatar(
-          backgroundColor: isSelected ? color : color.withOpacity(0.2),
-          child: Icon(
-            _getBetTypeIcon(type),
-            color: isSelected ? Colors.white : color,
-            size: 20,
-          ),
+        leading: Stack(
+          children: [
+            CircleAvatar(
+              backgroundColor: isSelected || wasAlreadyPlaced ? color : color.withOpacity(0.2),
+              child: Icon(
+                _getBetTypeIcon(type),
+                color: isSelected || wasAlreadyPlaced ? Colors.white : color,
+                size: 20,
+              ),
+            ),
+            if (wasAlreadyPlaced)
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: const Icon(
+                    Icons.check,
+                    size: 10,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+          ],
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(description, style: const TextStyle(fontSize: 12)),
@@ -904,6 +1073,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
             ),
           ),
         ),
+      ),
       ),
     );
   }
@@ -1143,10 +1313,127 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     final tabOrder = _getTabOrder();
     
     if (currentIndex < tabOrder.length) {
+      final currentTab = tabOrder[currentIndex];
       setState(() {
-        _tabPicks[tabOrder[currentIndex]] = true;
+        _tabPicks[currentTab] = true;
+        // Store the current bets for this tab
+        if (_selectedBets.isNotEmpty) {
+          _allTabBets[currentTab] = List.from(_selectedBets);
+        }
       });
     }
+  }
+  
+  // Check if any bets have been made across all tabs
+  bool _hasAnyBets() {
+    return _allTabBets.values.any((bets) => bets.isNotEmpty);
+  }
+  
+  // Get all bets from all tabs
+  List<SelectedBet> _getAllBets() {
+    final allBets = <SelectedBet>[];
+    _allTabBets.values.forEach((tabBets) {
+      allBets.addAll(tabBets);
+    });
+    return allBets;
+  }
+  
+  // Lock in all bets and save to Firestore
+  Future<void> _lockInBets() async {
+    setState(() => _isLockingBets = true);
+    
+    try {
+      final allBets = _getAllBets();
+      if (allBets.isEmpty) {
+        throw Exception('No bets selected');
+      }
+      
+      // Calculate total wager and potential payout
+      final totalWager = _wagerAmount * allBets.length;
+      final totalOdds = _calculateTotalOdds(allBets);
+      final potentialPayout = (totalWager * totalOdds).round();
+      
+      // Create bet details
+      final betDetails = allBets.map((bet) => BetDetail(
+        title: bet.title,
+        selection: bet.title, // You might want to parse this better
+        odds: bet.odds,
+        type: bet.type.toString(),
+      )).toList();
+      
+      // Generate a unique game ID (you might want to get this from actual game data)
+      final gameId = '${widget.sport}_${widget.gameTitle}_${DateTime.now().millisecondsSinceEpoch}';
+      
+      // Place the bet
+      await _betService.placeBet(
+        gameId: gameId,
+        gameTitle: widget.gameTitle,
+        sport: widget.sport,
+        poolName: widget.poolName,
+        bets: betDetails,
+        wagerAmount: totalWager,
+        totalOdds: totalOdds,
+        potentialPayout: potentialPayout,
+      );
+      
+      // Save bets to local storage
+      if (widget.poolId != null && widget.gameId != null) {
+        final userBets = allBets.map((bet) => UserBet(
+          id: DateTime.now().millisecondsSinceEpoch.toString() + bet.id,
+          poolId: widget.poolId!,
+          poolName: widget.poolName,
+          gameId: widget.gameId!,
+          gameTitle: widget.gameTitle,
+          sport: widget.sport,
+          betType: bet.type.toString().split('.').last,
+          selection: bet.title,
+          odds: bet.odds,
+          amount: _wagerAmount.toDouble(),
+          placedAt: DateTime.now(),
+          description: bet.title, // Using title as description since subtitle doesn't exist
+        )).toList();
+        
+        await _betStorage.saveBets(userBets);
+      }
+      
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Bets locked in! Potential payout: $potentialPayout BR'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Navigate back to home screen
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLockingBets = false);
+      }
+    }
+  }
+  
+  double _calculateTotalOdds(List<SelectedBet> bets) {
+    // Simple calculation - you might want to improve this
+    double totalOdds = 1.0;
+    for (var bet in bets) {
+      // Parse odds (assuming format like "+150" or "-110")
+      final oddsStr = bet.odds.replaceAll('+', '').replaceAll('-', '');
+      final odds = double.tryParse(oddsStr) ?? 100;
+      totalOdds *= (odds / 100);
+    }
+    return totalOdds;
   }
   
   void _showBetConfirmationAndNavigate(String betType) {
@@ -1503,6 +1790,66 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
           ),
         ],
       ),
+    );
+  }
+  
+  Widget _buildLockInBetsButton() {
+    final hasAnyBets = _hasAnyBets();
+    
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      height: hasAnyBets ? 100 : 0,  // Increased height from 80 to 100
+      child: hasAnyBets
+          ? Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),  // Added extra bottom padding
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: ElevatedButton(
+                onPressed: _isLockingBets ? null : _lockInBets,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 4,
+                ),
+                child: _isLockingBets
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.lock, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Lock In All Bets (${_getAllBets().length} selections)',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+            )
+          : const SizedBox.shrink(),
     );
   }
 }

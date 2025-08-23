@@ -1,8 +1,9 @@
 # Bragging Rights - Global Development Checklist
 
-## Last Updated: 2025-08-17
+## Last Updated: 2025-08-23
 
-### Summary of Today's Accomplishments:
+### Summary of Recent Accomplishments:
+**2025-08-17:**
 - ✅ Fixed splash screen animations (removed dog, added 4 sports-themed animations)
 - ✅ Implemented smart navigation system for betting tabs
 - ✅ Added progress tracking (shows actual tabs with bets placed)
@@ -11,6 +12,18 @@
 - ✅ Added Edge button to all betting tabs
 - ✅ Built celebration summary screen for completed picks
 - ✅ Created comprehensive run instructions document
+
+**2025-08-23:**
+- ✅ Fixed Firebase authentication (updated package versions, resolved build errors)
+- ✅ Connected physical device (Pixel 8a) for testing
+- ✅ Created comprehensive deployment guide
+- ✅ Fixed Gradle/JDK compatibility issues
+- ✅ Created pool data models with full structure
+- ✅ Built pool service with wallet integration
+- ✅ Enhanced pool selection screen with dynamic data
+- ✅ Added real-time pool tracking capabilities
+- ✅ Implemented player count and buy-in displays
+- ✅ Added pool fill percentages and countdown timers
 
 ## Pre-Development Checklist
 ### Legal & Compliance
@@ -31,26 +44,26 @@
 
 ## Technical Setup Checklist
 ### Development Environment
-- [ ] Install Flutter SDK (latest stable version)
-- [ ] Install Android Studio with emulators
+- [x] Install Flutter SDK (latest stable version)
+- [x] Install Android Studio with emulators
 - [ ] Install Xcode and iOS simulators (Mac only)
-- [ ] Set up VS Code with extensions:
-  - [ ] Flutter
-  - [ ] Dart
-  - [ ] Firebase
-  - [ ] GitLens
+- [x] Set up VS Code with extensions:
+  - [x] Flutter
+  - [x] Dart
+  - [x] Firebase
+  - [x] GitLens
 - [ ] Install Node.js (LTS version)
-- [ ] Install Firebase CLI tools
-- [ ] Configure Git with proper .gitignore
+- [x] Install Firebase CLI tools
+- [x] Configure Git with proper .gitignore
 
 ### Cloud Services
-- [ ] Create Firebase project
-- [ ] Enable Authentication (Email, Google, Apple)
-- [ ] Initialize Cloud Firestore
+- [x] Create Firebase project (bragging-rights-ea6e1)
+- [x] Enable Authentication (Email, Google configured)
+- [x] Initialize Cloud Firestore
 - [ ] Enable Cloud Functions
 - [ ] Set up Cloud Messaging (FCM)
-- [ ] Configure Firebase Storage (for avatars)
-- [ ] Set up Firebase Analytics
+- [x] Configure Firebase Storage (for avatars)
+- [x] Set up Firebase Analytics
 - [ ] Enable Crashlytics
 
 ### External Services
@@ -91,10 +104,10 @@
 - [ ] Create API key management
 
 ### BR Economy System
-- [ ] Build wallet creation on signup (500 BR)
-- [ ] Implement transaction service
-- [ ] Create weekly allowance function (25 BR)
-- [ ] Add balance check middleware
+- [x] Build wallet creation on signup (500 BR)
+- [x] Implement transaction service (WalletService)
+- [x] Create weekly allowance function (25 BR)
+- [x] Add balance check middleware
 - [ ] Build transaction history endpoint
 - [ ] Implement fraud detection
 - [ ] Create admin adjustment tools
@@ -157,7 +170,7 @@
 - [x] Implement game detail page
 - [x] Build wagering interface (Winner, Spread, O/U, Props tabs)
 - [x] Create pool selection UI (with buy-in tiers)
-- [ ] Add BR balance display
+- [x] Add BR balance display (integrated in multiple screens)
 - [ ] Implement transaction history
 
 ### Betting Features (NEW - Completed Today)
