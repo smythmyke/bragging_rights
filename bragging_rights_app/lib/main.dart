@@ -11,6 +11,8 @@ import 'screens/premium/edge_screen.dart';
 import 'screens/splash/lottie_splash_screen.dart';
 import 'screens/bets/active_bets_screen.dart';
 import 'screens/pools/my_pools_screen.dart';
+import 'screens/transactions/transaction_history_screen.dart';
+import 'screens/wagers/active_wagers_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -87,6 +89,14 @@ class BraggingRightsApp extends StatelessWidget {
         } else if (settings.name == '/my-pools') {
           return MaterialPageRoute(
             builder: (context) => const MyPoolsScreen(),
+          );
+        } else if (settings.name == '/transactions') {
+          return MaterialPageRoute(
+            builder: (context) => const TransactionHistoryScreen(),
+          );
+        } else if (settings.name == '/active-wagers') {
+          return MaterialPageRoute(
+            builder: (context) => const ActiveWagersScreen(),
           );
         }
         return null;

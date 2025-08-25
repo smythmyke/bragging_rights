@@ -25,6 +25,83 @@
 - ✅ Implemented player count and buy-in displays
 - ✅ Added pool fill percentages and countdown timers
 
+## Current Development Focus (Priority Order)
+
+### IMMEDIATE PRIORITIES - Backend Core
+1. **Wagering Engine** 🔴 HIGH PRIORITY
+   - [ ] Create wager placement endpoint with validation
+   - [ ] Implement pool join logic with buy-in collection  
+   - [ ] Build minimum buy-in validation
+   - [ ] Add concurrent wager handling
+   - [ ] Create wager history endpoint
+   - [ ] Implement cutoff time enforcement
+   - [ ] Build real-time bet tracking
+   - [ ] Add wager cancellation rules
+
+2. **Settlement System** 🔴 HIGH PRIORITY
+   - [ ] Build automated settlement Cloud Function
+   - [ ] Create payout calculator with odds
+   - [ ] Implement batch processing for large pools
+   - [ ] Add settlement verification
+   - [ ] Create rollback mechanism  
+   - [ ] Build settlement notifications
+   - [ ] Implement dispute resolution
+
+3. **Transaction History & BR Tracking** 🔴 HIGH PRIORITY
+   - [ ] Build transaction history endpoint
+   - [ ] Create balance validation middleware
+   - [ ] Implement audit logging for all BR movements
+   - [ ] Add transaction filtering and search
+   - [ ] Build transaction export functionality
+   - [ ] Create admin adjustment tools
+   - [ ] Implement fraud detection
+
+### SECONDARY PRIORITIES - Enhanced Features
+4. **Friend System & Social Features** 🟡 MEDIUM PRIORITY
+   - [ ] Build friend invitation flow
+   - [ ] Create contacts permission handler
+   - [ ] Implement friend list management
+   - [ ] Build private pool creation
+   - [ ] Add friend activity feed
+   - [ ] Create social sharing functionality
+   - [ ] Implement friend challenges
+
+5. **Leaderboards & Rankings** 🟡 MEDIUM PRIORITY  
+   - [ ] Build global leaderboard with animations
+   - [ ] Create sport-specific rankings
+   - [ ] Implement friend-only leaderboards
+   - [ ] Add regional/local rankings
+   - [ ] Build historical performance tracking
+   - [ ] Create achievement displays
+   - [ ] Add personal stats page
+
+6. **Push Notifications** 🟡 MEDIUM PRIORITY
+   - [ ] Implement FCM for push notifications
+   - [ ] Create in-app notification center
+   - [ ] Build notification preference settings
+   - [ ] Add notification badges
+   - [ ] Implement deep linking
+   - [ ] Create notification templates
+   - [ ] Build notification scheduling
+
+7. **In-App Purchases** 🟡 MEDIUM PRIORITY
+   - [ ] Integrate IAP packages (StoreKit/Google Play Billing)
+   - [ ] Build BR coin packages store interface
+   - [ ] Create purchase flow UI
+   - [ ] Implement receipt validation
+   - [ ] Build subscription management
+   - [ ] Add purchase history tracking
+   - [ ] Create restore purchases functionality
+
+### DEFERRED - Sports API Integration (Hold for now)
+- [ ] Register for sports data API accounts
+- [ ] Build sports data ingestion pipeline  
+- [ ] Create odds update mechanism
+- [ ] Implement game status tracking
+- [ ] Build caching layer for performance
+
+---
+
 ## Pre-Development Checklist
 ### Legal & Compliance
 - [ ] Consult legal counsel on virtual currency regulations

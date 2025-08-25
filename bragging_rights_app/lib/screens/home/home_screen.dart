@@ -191,14 +191,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                   _buildQuickActionCard(
-                    'My Bets',
+                    'My Wagers',
                     PhosphorIconsRegular.chartLine,
                     Colors.indigo,
                     () {
-                      Navigator.pushNamed(context, '/active-bets');
+                      Navigator.pushNamed(context, '/active-wagers');
                     },
                     showBadge: true,
-                    badgeCount: 3, // This will be dynamic based on active bets
+                    badgeCount: 3, // This will be dynamic based on active wagers
                   ),
                   _buildQuickActionCard(
                     'My Pools',
@@ -209,11 +209,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                   _buildQuickActionCard(
-                    'Find Friends',
-                    PhosphorIconsRegular.usersFour,
+                    'History',
+                    PhosphorIconsRegular.receipt,
                     Colors.blue,
                     () {
-                      // TODO: Find friends
+                      Navigator.pushNamed(context, '/transactions');
                     },
                   ),
                   _buildQuickActionCard(
