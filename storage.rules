@@ -1,0 +1,264 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // ========================================
+    // HELPER FUNCTIONS
+    // ========================================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user owns the resource
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Check if user is admin
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Validate image file
+    function isValidImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    // Validate file size (in bytes)
+    function isValidSize(maxSizeBytes) {
+      return request.resource.size <= maxSizeBytes;
+    }
+    
+    // Validate video file
+    function isValidVideo() {
+      return request.resource.contentType.matches('video/.*');
+    }
+    
+    // Validate document file (PDFs, etc.)
+    function isValidDocument() {
+      return request.resource.contentType.matches('application/pdf');
+    }
+    
+    // ========================================
+    // USER AVATARS / PROFILE PICTURES
+    // ========================================
+    
+    // User profile pictures stored in: /avatars/{userId}/{fileName}
+    match /avatars/{userId}/{fileName} {
+      // Anyone can view avatars (public profiles)
+      allow read: if true;
+      
+      // Users can only upload their own avatar
+      allow create: if isOwner(userId) && 
+        isValidImage() && 
+        isValidSize(5 * 1024 * 1024); // 5MB max
+      
+      // Users can update their own avatar
+      allow update: if isOwner(userId) && 
+        isValidImage() && 
+        isValidSize(5 * 1024 * 1024);
+      
+      // Users can delete their own avatar
+      allow delete: if isOwner(userId);
+    }
+    
+    // ========================================
+    // TEAM LOGOS & SPORTS IMAGERY
+    // ========================================
+    
+    // Team logos stored in: /teams/{sport}/{teamId}/{fileName}
+    match /teams/{sport}/{teamId}/{fileName} {
+      // Public read access for all team logos
+      allow read: if true;
+      
+      // Only admins can upload/modify team logos
+      allow write: if isAdmin();
+    }
+    
+    // Sports category images: /sports/{sport}/{fileName}
+    match /sports/{sport}/{fileName} {
+      // Public read access
+      allow read: if true;
+      
+      // Only admins can manage sports images
+      allow write: if isAdmin();
+    }
+    
+    // ========================================
+    // ACHIEVEMENT BADGES & REWARDS
+    // ========================================
+    
+    // Achievement badges: /achievements/{achievementId}/{fileName}
+    match /achievements/{achievementId}/{fileName} {
+      // Public read access for all badges
+      allow read: if true;
+      
+      // Only admins can upload achievement assets
+      allow write: if isAdmin();
+    }
+    
+    // User earned badges: /user_achievements/{userId}/{achievementId}/{fileName}
+    match /user_achievements/{userId}/{achievementId}/{fileName} {
+      // Users can view their own achievements
+      allow read: if isAuthenticated();
+      
+      // Only system (via Cloud Functions) can award achievements
+      allow write: if false;
+    }
+    
+    // ========================================
+    // POOL IMAGES & THUMBNAILS
+    // ========================================
+    
+    // Pool cover images: /pools/{poolId}/cover/{fileName}
+    match /pools/{poolId}/cover/{fileName} {
+      // Anyone can view pool images
+      allow read: if isAuthenticated();
+      
+      // Pool creator can upload cover image
+      // Note: You'd need to verify pool ownership via Firestore
+      allow create: if isAuthenticated() && 
+        isValidImage() && 
+        isValidSize(3 * 1024 * 1024); // 3MB max
+      
+      // Only pool creator or admin can update
+      allow update: if isAuthenticated() && 
+        isValidImage() && 
+        isValidSize(3 * 1024 * 1024);
+      
+      // Only pool creator or admin can delete
+      allow delete: if isAuthenticated();
+    }
+    
+    // ========================================
+    // PROMOTIONAL MATERIALS & BANNERS
+    // ========================================
+    
+    // Promotional banners: /promotions/{promoId}/{fileName}
+    match /promotions/{promoId}/{fileName} {
+      // Public read access for promotions
+      allow read: if true;
+      
+      // Only admins can manage promotional materials
+      allow write: if isAdmin();
+    }
+    
+    // ========================================
+    // APP ASSETS & RESOURCES
+    // ========================================
+    
+    // App resources: /app_assets/{category}/{fileName}
+    match /app_assets/{category}/{fileName} {
+      // Public read access for app assets
+      allow read: if true;
+      
+      // Only admins can update app assets
+      allow write: if isAdmin();
+    }
+    
+    // Lottie animations: /animations/{fileName}
+    match /animations/{fileName} {
+      // Public read access
+      allow read: if true;
+      
+      // Only admins can upload animations
+      allow write: if isAdmin();
+    }
+    
+    // ========================================
+    // VERIFICATION DOCUMENTS (KYC/Compliance)
+    // ========================================
+    
+    // User verification docs: /verification/{userId}/{documentType}/{fileName}
+    match /verification/{userId}/{documentType}/{fileName} {
+      // Only the user and admins can view verification docs
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // Users can upload their own verification documents
+      allow create: if isOwner(userId) && 
+        (isValidImage() || isValidDocument()) && 
+        isValidSize(10 * 1024 * 1024); // 10MB max
+      
+      // Prevent updates (for audit trail)
+      allow update: if false;
+      
+      // Only admins can delete (after review)
+      allow delete: if isAdmin();
+    }
+    
+    // ========================================
+    // TEMPORARY UPLOADS
+    // ========================================
+    
+    // Temporary upload area: /temp/{userId}/{sessionId}/{fileName}
+    match /temp/{userId}/{sessionId}/{fileName} {
+      // Users can only access their own temp files
+      allow read: if isOwner(userId);
+      
+      // Users can upload to their temp area
+      allow create: if isOwner(userId) && 
+        isValidSize(10 * 1024 * 1024); // 10MB max
+      
+      // Users can delete their own temp files
+      allow delete: if isOwner(userId);
+      
+      // No updates to temp files
+      allow update: if false;
+    }
+    
+    // ========================================
+    // CHAT & MESSAGING ATTACHMENTS
+    // ========================================
+    
+    // Chat attachments: /chat/{poolId}/messages/{messageId}/{fileName}
+    match /chat/{poolId}/messages/{messageId}/{fileName} {
+      // Authenticated users in the pool can view attachments
+      allow read: if isAuthenticated();
+      
+      // Authenticated users can upload attachments
+      allow create: if isAuthenticated() && 
+        (isValidImage() || isValidDocument()) && 
+        isValidSize(5 * 1024 * 1024); // 5MB max
+      
+      // No updates to sent attachments
+      allow update: if false;
+      
+      // Message sender can delete
+      allow delete: if isAuthenticated();
+    }
+    
+    // ========================================
+    // REPORTS & EXPORTS
+    // ========================================
+    
+    // User-generated reports: /reports/{userId}/{reportId}/{fileName}
+    match /reports/{userId}/{reportId}/{fileName} {
+      // Users can only access their own reports
+      allow read: if isOwner(userId);
+      
+      // System generates reports (via Cloud Functions)
+      allow write: if false;
+    }
+    
+    // ========================================
+    // BACKUPS (Admin Only)
+    // ========================================
+    
+    // System backups: /backups/{date}/{fileName}
+    match /backups/{date}/{fileName} {
+      // Only admins can access backups
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+    
+    // ========================================
+    // DEFAULT DENY RULE
+    // ========================================
+    
+    // Deny all other paths not explicitly defined
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

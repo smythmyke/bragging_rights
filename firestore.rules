@@ -1,0 +1,265 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ========================================
+    // HELPER FUNCTIONS
+    // ========================================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user owns the resource
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Check if user is admin (you'll need to set custom claims in Firebase Auth)
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Get user's current balance from wallet
+    function getUserBalance() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)/wallet/current).data.balance;
+    }
+    
+    // Check if user has enough balance for transaction
+    function hasEnoughBalance(amount) {
+      return getUserBalance() >= amount;
+    }
+    
+    // Validate bet amount is within allowed range
+    function isValidBetAmount(amount) {
+      return amount >= 10 && amount <= 1000;
+    }
+    
+    // Check if game hasn't started yet
+    function gameNotStarted(gameId) {
+      return get(/databases/$(database)/documents/games/$(gameId)).data.status == 'scheduled';
+    }
+    
+    // Check if pool is open for joining
+    function poolIsOpen(poolId) {
+      return get(/databases/$(database)/documents/pools/$(poolId)).data.status == 'open';
+    }
+    
+    // ========================================
+    // USER COLLECTION RULES
+    // ========================================
+    
+    match /users/{userId} {
+      // Users can read their own profile
+      allow read: if isOwner(userId);
+      
+      // Users can create their own profile during signup
+      allow create: if isOwner(userId) && 
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.email == request.auth.token.email;
+      
+      // Users can update their profile (except critical fields)
+      allow update: if isOwner(userId) && 
+        !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['uid', 'email', 'createdAt', 'isPremium']);
+      
+      // Only admins can delete user accounts
+      allow delete: if isAdmin();
+      
+      // WALLET SUBCOLLECTION
+      match /wallet/{walletDoc} {
+        // Users can read their own wallet
+        allow read: if isOwner(userId);
+        
+        // Only server/admin can write to wallet (prevents cheating)
+        allow write: if false;
+      }
+      
+      // STATS SUBCOLLECTION  
+      match /stats/{statDoc} {
+        // Users can read their own stats
+        allow read: if isOwner(userId);
+        
+        // Only server can update stats (automated by Cloud Functions)
+        allow write: if false;
+      }
+    }
+    
+    // ========================================
+    // GAMES COLLECTION RULES
+    // ========================================
+    
+    match /games/{gameId} {
+      // All authenticated users can read games
+      allow read: if isAuthenticated();
+      
+      // Only admins can write game data
+      allow write: if isAdmin();
+    }
+    
+    // ========================================
+    // BETS COLLECTION RULES
+    // ========================================
+    
+    match /bets/{betId} {
+      // Users can read their own bets
+      allow read: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+      
+      // Users can create bets with validation
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.userId &&
+        request.resource.data.status == 'pending' &&
+        isValidBetAmount(request.resource.data.wagerAmount) &&
+        hasEnoughBalance(request.resource.data.wagerAmount) &&
+        gameNotStarted(request.resource.data.gameId) &&
+        request.resource.data.keys().hasAll([
+          'userId', 'gameId', 'betType', 'selection', 
+          'odds', 'wagerAmount', 'status', 'placedAt'
+        ]);
+      
+      // Users cannot update bets once placed (only server can settle)
+      allow update: if false;
+      
+      // Only allow cancellation before game starts
+      allow delete: if isOwner(resource.data.userId) && 
+        gameNotStarted(resource.data.gameId) &&
+        resource.data.status == 'pending';
+    }
+    
+    // ========================================
+    // POOLS COLLECTION RULES  
+    // ========================================
+    
+    match /pools/{poolId} {
+      // All authenticated users can read pools
+      allow read: if isAuthenticated();
+      
+      // Users can create pools
+      allow create: if isAuthenticated() &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.participants.size() == 0 &&
+        request.resource.data.totalPot == 0 &&
+        request.resource.data.status == 'open';
+      
+      // Only allow specific updates (joining pool)
+      allow update: if isAuthenticated() &&
+        poolIsOpen(poolId) &&
+        // Only allow adding to participants and updating pot
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['participants', 'totalPot', 'status']) &&
+        // Ensure pot increases by buy-in amount
+        request.resource.data.totalPot == resource.data.totalPot + resource.data.buyIn;
+      
+      // Only pool creator or admin can delete
+      allow delete: if isOwner(resource.data.createdBy) || isAdmin();
+    }
+    
+    // ========================================
+    // TRANSACTIONS COLLECTION RULES
+    // ========================================
+    
+    match /transactions/{transactionId} {
+      // Users can only read their own transactions
+      allow read: if isOwner(resource.data.userId);
+      
+      // Only server can create transactions (maintains integrity)
+      allow write: if false;
+    }
+    
+    // ========================================
+    // LEADERBOARDS COLLECTION RULES
+    // ========================================
+    
+    match /leaderboards/{leaderboardId} {
+      // Public read access for leaderboards
+      allow read: if true;
+      
+      // Only server can update leaderboards
+      allow write: if false;
+    }
+    
+    // ========================================
+    // NOTIFICATIONS COLLECTION RULES
+    // ========================================
+    
+    match /notifications/{userId}/messages/{messageId} {
+      // Users can read their own notifications
+      allow read: if isOwner(userId);
+      
+      // Users can mark notifications as read
+      allow update: if isOwner(userId) &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['read', 'readAt']);
+      
+      // Users can delete their own notifications
+      allow delete: if isOwner(userId);
+      
+      // Only server can create notifications
+      allow create: if false;
+    }
+    
+    // ========================================
+    // FRIEND REQUESTS COLLECTION RULES
+    // ========================================
+    
+    match /friendRequests/{requestId} {
+      // Users can read requests they sent or received
+      allow read: if isAuthenticated() &&
+        (resource.data.fromUserId == request.auth.uid ||
+         resource.data.toUserId == request.auth.uid);
+      
+      // Users can send friend requests
+      allow create: if isAuthenticated() &&
+        request.resource.data.fromUserId == request.auth.uid &&
+        request.resource.data.status == 'pending';
+      
+      // Recipients can accept/reject requests
+      allow update: if isAuthenticated() &&
+        resource.data.toUserId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'respondedAt']);
+      
+      // Either party can delete the request
+      allow delete: if isAuthenticated() &&
+        (resource.data.fromUserId == request.auth.uid ||
+         resource.data.toUserId == request.auth.uid);
+    }
+    
+    // ========================================
+    // SYSTEM CONFIG COLLECTION RULES
+    // ========================================
+    
+    match /config/{configDoc} {
+      // All users can read config (app settings, maintenance mode, etc.)
+      allow read: if true;
+      
+      // Only admins can modify config
+      allow write: if isAdmin();
+    }
+    
+    // ========================================
+    // SPORTS DATA COLLECTION RULES
+    // ========================================
+    
+    match /sports/{sport}/teams/{teamId} {
+      // Public read access for sports data
+      allow read: if true;
+      
+      // Only admins can modify sports data
+      allow write: if isAdmin();
+    }
+    
+    // ========================================
+    // AUDIT LOG COLLECTION RULES
+    // ========================================
+    
+    match /auditLogs/{logId} {
+      // Only admins can read audit logs
+      allow read: if isAdmin();
+      
+      // Nobody can write directly (only Cloud Functions)
+      allow write: if false;
+    }
+  }
+}
