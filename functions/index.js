@@ -787,4 +787,56 @@ exports.getUserRankings = leaderboard.getUserRankings;
 exports.getFriendsLeaderboard = leaderboard.getFriendsLeaderboard;
 exports.forceUpdateLeaderboard = leaderboard.forceUpdateLeaderboard;
 
+// ============================================
+// EXPORT NOTIFICATION FUNCTIONS
+// ============================================
+
+const notifications = require('./notifications');
+
+// Triggered notifications
+exports.onBetSettledNotification = notifications.onBetSettledNotification;
+exports.onPoolInvitation = notifications.onPoolInvitation;
+exports.onWeeklyAllowanceNotification = notifications.onWeeklyAllowanceNotification;
+exports.onFriendRequest = notifications.onFriendRequest;
+exports.onLeaderboardRankChange = notifications.onLeaderboardRankChange;
+
+// Scheduled notifications
+exports.sendGameReminders = notifications.sendGameReminders;
+
+// Callable functions
+exports.registerFCMToken = notifications.registerFCMToken;
+exports.updateNotificationPreferences = notifications.updateNotificationPreferences;
+exports.sendTestNotification = notifications.sendTestNotification;
+exports.markNotificationsRead = notifications.markNotificationsRead;
+
+// ============================================
+// EXPORT PURCHASE FUNCTIONS
+// ============================================
+
+const purchases = require('./purchases');
+
+// Callable functions
+exports.verifyPurchase = purchases.verifyPurchase;
+exports.grantPromotionalCoins = purchases.grantPromotionalCoins;
+exports.applyReferralBonus = purchases.applyReferralBonus;
+
+// Scheduled functions
+exports.checkPremiumStatus = purchases.checkPremiumStatus;
+
+// ============================================
+// EXPORT SPORTS DATA FUNCTIONS
+// ============================================
+
+const sportsData = require('./sportsData');
+
+// Scheduled functions
+exports.updateLiveGames = sportsData.updateLiveGames;
+exports.updateGameSchedules = sportsData.updateGameSchedules;
+exports.updateOdds = sportsData.updateOdds;
+
+// Callable functions
+exports.getLiveGames = sportsData.getLiveGames;
+exports.getUpcomingGames = sportsData.getUpcomingGames;
+exports.forceUpdateGames = sportsData.forceUpdateGames;
+
 console.log('Cloud Functions initialized for Bragging Rights');

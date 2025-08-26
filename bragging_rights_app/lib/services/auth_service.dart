@@ -1,13 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-// Google Sign-In causing JLink issues in release mode
-// import 'package:google_sign_in/google_sign_in.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  // final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   // Get current user
   User? get currentUser => _auth.currentUser;
@@ -102,41 +101,36 @@ class AuthService {
     }
   }
 
-  // Sign in with Google (temporarily disabled due to JLink build issues)
+  // Sign in with Google
   Future<UserCredential?> signInWithGoogle() async {
-    // Temporarily disabled - Google Sign-In causing JLink issues in release mode
-    throw Exception('Google Sign-In temporarily unavailable. Please use email/password login.');
-    
-    // Original implementation commented out:
-    // try {
-    //   final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-    //   if (googleUser == null) return null;
-    //   final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-    //   final credential = GoogleAuthProvider.credential(
-    //     accessToken: googleAuth.accessToken,
-    //     idToken: googleAuth.idToken,
-    //   );
-    //   final userCredential = await _auth.signInWithCredential(credential);
-    //   await _ensureUserDocument(
-    //     userCredential.user!,
-    //     displayName: googleUser.displayName,
-    //     photoUrl: googleUser.photoUrl,
-    //   );
-    //   return userCredential;
-    // } on FirebaseAuthException catch (e) {
-    //   throw _handleAuthException(e);
-    // } catch (e) {
-    //   throw Exception('Google sign-in failed: $e');
-    // }
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) return null;
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      final userCredential = await _auth.signInWithCredential(credential);
+      await _ensureUserDocument(
+        userCredential.user!,
+        displayName: googleUser.displayName,
+        photoUrl: googleUser.photoUrl,
+      );
+      return userCredential;
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    } catch (e) {
+      throw Exception('Google sign-in failed: $e');
+    }
   }
 
   // Sign out
   Future<void> signOut() async {
     try {
-      // Google Sign-In disabled due to build issues
-      // if (await _googleSignIn.isSignedIn()) {
-      //   await _googleSignIn.signOut();
-      // }
+      if (await _googleSignIn.isSignedIn()) {
+        await _googleSignIn.signOut();
+      }
       await _auth.signOut();
     } catch (e) {
       throw Exception('Failed to sign out: $e');
