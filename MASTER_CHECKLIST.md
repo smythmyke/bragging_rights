@@ -1,7 +1,7 @@
 # Bragging Rights - Master Development Checklist
 ## Last Updated: 2025-08-26
 
-## 🎯 Overall Progress: 75% Complete
+## 🎯 Overall Progress: 80% Complete
 
 ---
 
@@ -67,6 +67,14 @@
 - ✅ Manual settlement for testing (manualSettleGame)
 - ✅ Admin claim management (setAdminClaim)
 - ✅ Scheduled function for Monday 9 AM allowance
+- ✅ Daily leaderboard updates (updateDailyLeaderboard)
+- ✅ Weekly leaderboard updates (updateWeeklyLeaderboard)
+- ✅ Monthly leaderboard updates (updateMonthlyLeaderboard)
+- ✅ All-time leaderboard updates (updateAllTimeLeaderboard)
+- ✅ Real-time stats tracking (onBetSettled)
+- ✅ Leaderboard retrieval (getLeaderboard)
+- ✅ User rankings (getUserRankings)
+- ✅ Friends leaderboard (getFriendsLeaderboard)
 
 ### Phase 7: External Integrations (50% Complete)
 - ✅ TheSportsDB API for team logos
@@ -108,13 +116,13 @@ None currently active
   - [ ] Game reminders
   - [ ] Win celebrations
 
-#### 3. Leaderboard Backend (20% Complete)
-- [ ] Create aggregation Cloud Functions
-- [ ] Implement ranking algorithms
-- [ ] Build daily/weekly/monthly/all-time boards
-- [ ] Add caching for performance
-- [ ] Create leaderboard update triggers
-- [ ] Implement friend leaderboards
+#### 3. Leaderboard Backend (100% Complete)
+- ✅ Create aggregation Cloud Functions
+- ✅ Implement ranking algorithms
+- ✅ Build daily/weekly/monthly/all-time boards
+- ✅ Add caching for performance
+- ✅ Create leaderboard update triggers
+- ✅ Implement friend leaderboards
 
 ### 🟡 MEDIUM PRIORITY - Revenue & Features
 
@@ -189,24 +197,27 @@ None currently active
 
 ## 📊 STATISTICS
 
-- **Lines of Code**: ~17,000+
-- **Files Created**: 160+
-- **Cloud Functions**: 6 deployed
+- **Lines of Code**: ~20,000+
+- **Files Created**: 161+
+- **Cloud Functions**: 15 deployed
 - **Security Rules**: 2 (Firestore + Storage)
 - **API Integrations**: 1 (TheSportsDB)
 - **Team Logos Available**: 124
 - **Starting BR Balance**: 500
 - **Weekly Allowance**: 25 BR
+- **Leaderboard Types**: 4 (Daily, Weekly, Monthly, All-Time)
+- **Ranking Metrics**: 4 (Profit, Win Rate, Total Wins, Win Streak)
 
 ---
 
 ## 🚀 NEXT SPRINT PRIORITIES
 
-1. **Activate Firebase Storage** in console
-2. **Integrate live game data API**
-3. **Implement push notifications**
-4. **Complete leaderboard backend**
+1. ✅ **Activate Firebase Storage** in console (DONE)
+2. ✅ **Complete leaderboard backend** (DONE)
+3. **Integrate live game data API**
+4. **Implement push notifications**
 5. **Fix Google Sign-In**
+6. **Add in-app purchases for BR coins**
 
 ---
 

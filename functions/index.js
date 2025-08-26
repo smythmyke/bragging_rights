@@ -766,4 +766,25 @@ exports.setAdminClaim = functions.https.onCall(async (data, context) => {
   }
 });
 
+// ============================================
+// EXPORT LEADERBOARD FUNCTIONS
+// ============================================
+
+const leaderboard = require('./leaderboard');
+
+// Scheduled functions
+exports.updateDailyLeaderboard = leaderboard.updateDailyLeaderboard;
+exports.updateWeeklyLeaderboard = leaderboard.updateWeeklyLeaderboard;
+exports.updateMonthlyLeaderboard = leaderboard.updateMonthlyLeaderboard;
+exports.updateAllTimeLeaderboard = leaderboard.updateAllTimeLeaderboard;
+
+// Triggered functions
+exports.onBetSettled = leaderboard.onBetSettled;
+
+// Callable functions
+exports.getLeaderboard = leaderboard.getLeaderboard;
+exports.getUserRankings = leaderboard.getUserRankings;
+exports.getFriendsLeaderboard = leaderboard.getFriendsLeaderboard;
+exports.forceUpdateLeaderboard = leaderboard.forceUpdateLeaderboard;
+
 console.log('Cloud Functions initialized for Bragging Rights');
