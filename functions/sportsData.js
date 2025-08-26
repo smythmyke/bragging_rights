@@ -34,7 +34,7 @@ const API_CONFIG = {
   // The Odds API (has free tier - 500 requests/month)
   ODDS_API: {
     base_url: 'https://api.the-odds-api.com/v4',
-    key: process.env.ODDS_API_KEY || '', // Add your key
+    key: functions.config().odds_api?.key || process.env.ODDS_API_KEY || 'a07a990fba881f317ae71ea131cc8223',
   }
 };
 
