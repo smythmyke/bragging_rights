@@ -1,0 +1,51 @@
+=== GOOGLE PLAY CONSOLE SETUP GUIDE ===
+
+STEP 1: ACCOUNT TYPE SELECTION
+-------------------------------
+
+Choose based on your situation:
+
+SELECT 'YOURSELF' IF:
+- You're a solo developer
+- Using personal bank account
+- Don't have business entity/LLC
+- Want simpler tax handling
+
+SELECT 'ORGANIZATION' IF:
+- You have LLC/Corporation
+- Using business bank account
+- Want liability protection
+- Planning to have employees/partners
+
+RECOMMENDATION: Start with 'Yourself' - you can change later
+
+STEP 2: AFTER ACCOUNT TYPE
+-------------------------------
+
+You'll need to:
+1. Pay 5 one-time registration fee
+2. Enter developer name (shown on store)
+3. Verify identity (may take 48 hours)
+
+DEVELOPER NAME SUGGESTIONS:
+- Your Name Games
+- Your Name Apps
+- Something unique but professional
+- This will show as 'by [Developer Name]' on Play Store
+
+STEP 3: COMPLETE REGISTRATION
+-------------------------------
+
+1. PAYMENT ():
+   - Use any credit/debit card
+   - One-time fee (never again)
+
+2. DEVELOPER NAME:
+   - This appears as 'by [Name]' on Play Store
+   - Keep it short and professional
+   - Examples: 'SmythMyke', 'SM Games', 'Bragging Rights Dev'
+
+3. IDENTITY VERIFICATION:
+   - Upload driver's license or passport
+   - Must match payment method name
+   - Usually approved in 24-48 hours

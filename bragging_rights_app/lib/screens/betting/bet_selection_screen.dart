@@ -4,6 +4,9 @@ import 'dart:math' as Math;
 import '../../services/bet_service.dart';
 import '../../services/wallet_service.dart';
 import '../../services/bet_storage_service.dart';
+import '../../services/sports_api_service.dart';
+import '../../models/game_model.dart';
+import '../../models/odds_model.dart';
 import '../../widgets/info_edge_carousel.dart';
 
 class BetSelectionScreen extends StatefulWidget {
@@ -36,6 +39,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   // Services
   final BetService _betService = BetService();
   final WalletService _walletService = WalletService();
+  final SportsApiService _sportsApiService = SportsApiService();
   
   // Selected team/fighter
   String? _selectedTeam;
@@ -65,11 +69,15 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   late BetStorageService _betStorage;
   List<UserBet> _existingBets = [];
   
-  // Available intel (for pulsing indicators)
-  final Map<String, String> _availableIntel = {
-    'injury': 'Lakers',
-    'news': 'Celtics',
-  };
+  // Available intel (for pulsing indicators) - populated from real data
+  final Map<String, String> _availableIntel = {};
+  
+  // Game and odds data
+  GameModel? _gameData;
+  OddsModel? _oddsData;
+  bool _isLoadingData = true;
+  String? _homeTeam;
+  String? _awayTeam;
   
   @override
   void initState() {
@@ -90,6 +98,43 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     ));
     _startCountdownTimer();
     _loadExistingBets();
+    _loadGameAndOddsData();
+  }
+  
+  Future<void> _loadGameAndOddsData() async {
+    if (widget.gameId == null) {
+      setState(() {
+        _isLoadingData = false;
+      });
+      return;
+    }
+    
+    try {
+      // Load game data
+      final game = await _sportsApiService.getGameDetails(widget.gameId!);
+      if (game != null) {
+        // Load odds data
+        final odds = await _sportsApiService.getGameOdds(widget.gameId!);
+        
+        setState(() {
+          _gameData = game;
+          _oddsData = odds;
+          _homeTeam = game.homeTeam;
+          _awayTeam = game.awayTeam;
+          _gameStartCountdown = game.timeUntilGame;
+          _isLoadingData = false;
+        });
+      } else {
+        setState(() {
+          _isLoadingData = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading game/odds data: $e');
+      setState(() {
+        _isLoadingData = false;
+      });
+    }
   }
   
   void _initializeTabPicks() {
@@ -390,12 +435,15 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   }
   
   Widget _buildTeamSelection() {
-    // For combat sports, show fighters
-    if (widget.sport == 'MMA' || widget.sport == 'BOXING') {
-      return _buildFighterSelection();
+    if (_isLoadingData) {
+      return Container(
+        padding: const EdgeInsets.all(32),
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
     
-    // For team sports - just show game info, no selection
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -408,31 +456,78 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
           end: Alignment.bottomCenter,
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      child: Column(
         children: [
-          _buildTeamInfo('Lakers', 'LAL', Colors.purple, '-150'),
-          Column(
-            children: [
-              const Text('VS', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(8),
+          Text(
+            widget.gameTitle,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (_gameData != null) ...[  
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildTeamInfo(
+                  _awayTeam ?? 'Away',
+                  _getTeamAbbr(_awayTeam ?? 'AWAY'),
+                  Theme.of(context).colorScheme.secondary,
+                  _oddsData?.formatMoneyline(_oddsData?.awayMoneyline) ?? '--',
                 ),
-                child: const Text(
-                  'O/U 218.5',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                Column(
+                  children: [
+                    const Text('VS', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    if (_oddsData?.totalPoints != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'O/U ${_oddsData!.formatTotal(_oddsData!.totalPoints)}',
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                  ],
+                ),
+                _buildTeamInfo(
+                  _homeTeam ?? 'Home',
+                  _getTeamAbbr(_homeTeam ?? 'HOME'),
+                  Theme.of(context).colorScheme.primary,
+                  _oddsData?.formatMoneyline(_oddsData?.homeMoneyline) ?? '--',
+                ),
+              ],
+            ),
+          ] else ...[  
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.orange.withOpacity(0.3)),
+              ),
+              child: const Text(
+                'Game data not available',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.orange,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-            ],
-          ),
-          _buildTeamInfo('Celtics', 'BOS', Colors.green, '+130'),
+            ),
+          ],
         ],
       ),
     );
+  }
+  
+  String _getTeamAbbr(String teamName) {
+    if (teamName.length <= 3) return teamName.toUpperCase();
+    return teamName.substring(0, 3).toUpperCase();
   }
   
   Widget _buildFighterSelection() {
@@ -445,19 +540,36 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
           end: Alignment.bottomCenter,
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildFighterCard('McGregor', 'The Notorious', Colors.green, '-180'),
-          const Column(
-            children: [
-              Icon(Icons.sports_mma, size: 32, color: Colors.red),
-              SizedBox(height: 4),
-              Text('UFC 310', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-            ],
-          ),
-          _buildFighterCard('Chandler', 'Iron', Colors.blue, '+155'),
-        ],
+      child: Center(
+        child: Column(
+          children: [
+            Icon(Icons.sports_mma, size: 32, color: Colors.red),
+            const SizedBox(height: 8),
+            Text(
+              widget.gameTitle,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'Fighter data loading...',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.orange,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -554,67 +666,43 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   }
   
   Widget _buildMoneylineTab() {
-    // For MMA/Boxing, show fighter names
-    if (widget.sport.toUpperCase() == 'MMA' || widget.sport.toUpperCase() == 'BOXING') {
-      return ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          InfoEdgeCarousel(
-            title: 'Winner (Moneyline)',
-            description: 'Pick which fighter will win the bout. Negative odds mean favorite, positive odds mean underdog.',
-            icon: Icons.emoji_events,
-            onEdgePressed: _navigateToEdge,
-            autoScrollDelay: const Duration(seconds: 3),
-          ),
-          const SizedBox(height: 16),
-          _buildBetCard(
-            'Conor McGregor to Win',
-            '-175',
-            'Bet 175 to win 100',
-            Colors.green,
-            BetType.moneyline,
-            'McGregor ML',
-          ),
-          _buildBetCard(
-            'Michael Chandler to Win',
-            '+155',
-            'Bet 100 to win 155',
-            Colors.red,
-            BetType.moneyline,
-            'Chandler ML',
-          ),
-        ],
-      );
-    }
-    
-    // Default for team sports
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         InfoEdgeCarousel(
           title: 'Winner (Moneyline)',
-          description: 'Pick which team will win the game outright. Negative odds (-150) mean you bet more to win less (favorite). Positive odds (+130) mean you bet less to win more (underdog).',
+          description: 'Pick who will win. Negative odds mean favorite, positive odds mean underdog.',
           icon: Icons.emoji_events,
           onEdgePressed: _navigateToEdge,
           autoScrollDelay: const Duration(seconds: 3),
         ),
         const SizedBox(height: 16),
-        _buildBetCard(
-          'Lakers to Win',
-          '-150',
-          'Bet 150 to win 100',
-          Colors.purple,
-          BetType.moneyline,
-          'Lakers ML',
-        ),
-        _buildBetCard(
-          'Celtics to Win',
-          '+130',
-          'Bet 100 to win 130',
-          Colors.green,
-          BetType.moneyline,
-          'Celtics ML',
-        ),
+        if (_oddsData != null && _oddsData!.homeMoneyline != null && _oddsData!.awayMoneyline != null) ...[
+          _buildBetCard(
+            '${_awayTeam ?? "Away"} to Win',
+            _oddsData!.formatMoneyline(_oddsData!.awayMoneyline),
+            _oddsData!.awayMoneyline! > 0 
+                ? 'Bet 100 to win ${_oddsData!.awayMoneyline!.toStringAsFixed(0)}'
+                : 'Bet ${_oddsData!.awayMoneyline!.abs().toStringAsFixed(0)} to win 100',
+            Theme.of(context).colorScheme.secondary,
+            BetType.moneyline,
+            '${_awayTeam ?? "Away"} ML',
+          ),
+          _buildBetCard(
+            '${_homeTeam ?? "Home"} to Win',
+            _oddsData!.formatMoneyline(_oddsData!.homeMoneyline),
+            _oddsData!.homeMoneyline! > 0
+                ? 'Bet 100 to win ${_oddsData!.homeMoneyline!.toStringAsFixed(0)}'
+                : 'Bet ${_oddsData!.homeMoneyline!.abs().toStringAsFixed(0)} to win 100',
+            Theme.of(context).colorScheme.primary,
+            BetType.moneyline,
+            '${_homeTeam ?? "Home"} ML',
+          ),
+        ] else
+          _buildEmptyBettingState(
+            'No moneyline bets available',
+            'Odds data will appear when available',
+          ),
       ],
     );
   }
@@ -625,33 +713,34 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       children: [
         InfoEdgeCarousel(
           title: 'Point Spread',
-          description: 'Bet on the margin of victory. Favorites (-5.5) must win by more than the spread. Underdogs (+5.5) can lose by less than the spread or win outright.',
+          description: 'Bet on the margin of victory. Favorites must win by more than the spread.',
           icon: Icons.trending_up,
           onEdgePressed: _navigateToEdge,
           autoScrollDelay: const Duration(seconds: 3),
         ),
         const SizedBox(height: 16),
-        _buildBetCard(
-          'Lakers -5.5',
-          '-110',
-          'Lakers win by 6 or more',
-          Colors.purple,
-          BetType.spread,
-          'Lakers -5.5',
-        ),
-        _buildBetCard(
-          'Celtics +5.5',
-          '-110',
-          'Celtics lose by 5 or less, or win',
-          Colors.green,
-          BetType.spread,
-          'Celtics +5.5',
-        ),
-        const SizedBox(height: 16),
-        const Text('Alternative Spreads', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        _buildBetCard('Lakers -3.5', '+105', 'Better odds, harder to hit', Colors.purple, BetType.spread, 'Lakers -3.5'),
-        _buildBetCard('Lakers -7.5', '+125', 'Best odds, hardest to hit', Colors.purple, BetType.spread, 'Lakers -7.5'),
+        if (_oddsData != null && _oddsData!.spread != null) ...[
+          _buildBetCard(
+            '${_awayTeam ?? "Away"} ${_oddsData!.formatSpread(_oddsData!.spread, isHome: false)}',
+            _oddsData!.formatMoneyline(_oddsData!.spreadAwayOdds ?? -110),
+            'Cover the spread',
+            Theme.of(context).colorScheme.secondary,
+            BetType.spread,
+            '${_awayTeam ?? "Away"} ${_oddsData!.formatSpread(_oddsData!.spread, isHome: false)}',
+          ),
+          _buildBetCard(
+            '${_homeTeam ?? "Home"} ${_oddsData!.formatSpread(_oddsData!.spread, isHome: true)}',
+            _oddsData!.formatMoneyline(_oddsData!.spreadHomeOdds ?? -110),
+            'Cover the spread',
+            Theme.of(context).colorScheme.primary,
+            BetType.spread,
+            '${_homeTeam ?? "Home"} ${_oddsData!.formatSpread(_oddsData!.spread, isHome: true)}',
+          ),
+        ] else
+          _buildEmptyBettingState(
+            'No spread bets available',
+            'Spread betting options will appear when data is available',
+          ),
       ],
     );
   }
@@ -662,35 +751,36 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       children: [
         InfoEdgeCarousel(
           title: 'Over/Under (Totals)',
-          description: 'Bet on the total combined score of both teams. Over means the total will be higher than the line, Under means it will be lower.',
+          description: 'Bet on the total combined score.',
           icon: Icons.add_circle_outline,
           onEdgePressed: _navigateToEdge,
           autoScrollDelay: const Duration(seconds: 3),
         ),
         const SizedBox(height: 16),
-        const Text('Game Total', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        _buildBetCard(
-          'Over 218.5',
-          '-110',
-          'Combined score 219 or more',
-          Colors.orange,
-          BetType.total,
-          'Over 218.5',
-        ),
-        _buildBetCard(
-          'Under 218.5',
-          '-110',
-          'Combined score 218 or less',
-          Colors.blue,
-          BetType.total,
-          'Under 218.5',
-        ),
-        const SizedBox(height: 16),
-        const Text('Team Totals', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        _buildBetCard('Lakers Over 111.5', '-105', 'Lakers score 112+', Colors.purple, BetType.total, 'LAL O111.5'),
-        _buildBetCard('Celtics Over 107.5', '-115', 'Celtics score 108+', Colors.green, BetType.total, 'BOS O107.5'),
+        if (_oddsData != null && _oddsData!.totalPoints != null) ...[
+          const Text('Game Total', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          _buildBetCard(
+            'Over ${_oddsData!.formatTotal(_oddsData!.totalPoints)}',
+            _oddsData!.formatMoneyline(_oddsData!.overOdds ?? -110),
+            'Combined score over ${_oddsData!.totalPoints}',
+            Colors.orange,
+            BetType.total,
+            'Over ${_oddsData!.totalPoints}',
+          ),
+          _buildBetCard(
+            'Under ${_oddsData!.formatTotal(_oddsData!.totalPoints)}',
+            _oddsData!.formatMoneyline(_oddsData!.underOdds ?? -110),
+            'Combined score under ${_oddsData!.totalPoints}',
+            Colors.blue,
+            BetType.total,
+            'Under ${_oddsData!.totalPoints}',
+          ),
+        ] else
+          _buildEmptyBettingState(
+            'No totals bets available',
+            'Over/Under options will appear when data is available',
+          ),
       ],
     );
   }
@@ -701,57 +791,16 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       children: [
         InfoEdgeCarousel(
           title: 'Prop Bets',
-          description: 'Bet on specific events or player performances within the game. Higher risk, but more fun and engaging throughout!',
+          description: 'Bet on specific events or player performances within the game.',
           icon: Icons.star_outline,
           onEdgePressed: _navigateToEdge,
           autoScrollDelay: const Duration(seconds: 3),
         ),
         const SizedBox(height: 16),
-        
-        // Player Performance Props
-        const Text('⭐ Player Performance', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        _buildBetCard('LeBron Over 27.5 Points', '-120', 'Season avg: 28.2', Colors.purple, BetType.prop, 'LeBron O27.5 Pts'),
-        _buildBetCard('LeBron Triple-Double', '+250', 'Yes/No', Colors.purple, BetType.prop, 'LeBron Triple-Dbl'),
-        _buildBetCard('AD Over 11.5 Rebounds', '-105', 'Season avg: 12.1', Colors.purple, BetType.prop, 'AD O11.5 Reb'),
-        _buildBetCard('Tatum Over 4.5 Assists', '+110', 'Season avg: 4.8', Colors.green, BetType.prop, 'Tatum O4.5 Ast'),
-        _buildBetCard('Jaylen Brown 3+ Threes', '-140', 'Made 3+ in last 5 games', Colors.green, BetType.prop, 'Brown 3+ Threes'),
-        
-        const SizedBox(height: 20),
-        // Head to Head Props
-        const Text('👥 Head-to-Head', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        _buildBetCard('LeBron vs Tatum Points', '-115', 'Who scores more?', Colors.orange, BetType.prop, 'LeBron vs Tatum Pts'),
-        _buildBetCard('AD vs R.Williams Rebounds', '+105', 'Who gets more boards?', Colors.orange, BetType.prop, 'AD vs Williams Reb'),
-        
-        const SizedBox(height: 20),
-        // Team Props
-        const Text('🏀 Team Props', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        _buildBetCard('Lakers Most 3-Pointers', '+120', 'Which team hits more?', Colors.purple, BetType.prop, 'LAL Most 3s'),
-        _buildBetCard('First Team to 20 Points', '-105', 'Lakers favored', Colors.purple, BetType.prop, 'LAL First to 20'),
-        _buildBetCard('Highest Scoring Quarter', '+150', '3rd Quarter', Colors.blue, BetType.prop, 'Q3 Highest'),
-        _buildBetCard('Total Team Turnovers O/U 13.5', '-110', 'Lakers turnovers', Colors.purple, BetType.prop, 'LAL TO O13.5'),
-        
-        const SizedBox(height: 20),
-        // Game Flow Props
-        const Text('🎯 Game Flow', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        _buildBetCard('First Basket Scorer', '+350', 'Anthony Davis', Colors.purple, BetType.prop, 'AD First Basket'),
-        _buildBetCard('Will There Be OT?', '+600', 'Yes pays 6-to-1', Colors.red, BetType.prop, 'Overtime Yes'),
-        _buildBetCard('Race to 50 Points', '-120', 'Lakers', Colors.purple, BetType.prop, 'LAL Race to 50'),
-        _buildBetCard('Largest Lead O/U 14.5', '-105', 'Any team', Colors.blue, BetType.prop, 'Lead O14.5'),
-        _buildBetCard('Total Dunks O/U 7.5', '+100', 'Combined both teams', Colors.orange, BetType.prop, 'Dunks O7.5'),
-        
-        const SizedBox(height: 20),
-        // Special Combo Props
-        const Text('🔥 Combo Props', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const Text('Higher odds, bigger payouts!', style: TextStyle(fontSize: 12, color: Colors.grey)),
-        const SizedBox(height: 8),
-        _buildBetCard('LeBron 25+ Pts & Lakers Win', '+175', 'Player + Team combo', Colors.purple, BetType.prop, 'LBJ 25+ & LAL Win'),
-        _buildBetCard('AD Double-Double & Lakers Win', '+140', '10+ pts/reb & W', Colors.purple, BetType.prop, 'AD Dbl-Dbl & Win'),
-        _buildBetCard('Tatum 30+ & Celtics Cover', '+280', 'Points + Spread', Colors.green, BetType.prop, 'Tatum 30+ & Cover'),
-        _buildBetCard('Both Teams 100+ Points', '-130', 'High scoring game', Colors.orange, BetType.prop, 'Both 100+'),
+        _buildEmptyBettingState(
+          'No prop bets available',
+          'Player and game prop bets will appear when live data is connected',
+        ),
       ],
     );
   }
@@ -762,19 +811,16 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       children: [
         InfoEdgeCarousel(
           title: 'Method of Victory',
-          description: 'Bet on how the fight will end: KO/TKO (knockout), Submission, or Decision (goes to judges).',
+          description: 'Bet on how the fight will end.',
           icon: Icons.sports_mma,
           onEdgePressed: _navigateToEdge,
           autoScrollDelay: const Duration(seconds: 3),
         ),
         const SizedBox(height: 16),
-        _buildBetCard('McGregor by KO/TKO', '+150', 'Knockout or Technical Knockout', Colors.red, BetType.method, 'McGregor KO/TKO'),
-        _buildBetCard('McGregor by Submission', '+450', 'Submission victory', Colors.orange, BetType.method, 'McGregor SUB'),
-        _buildBetCard('McGregor by Decision', '+300', 'Goes to judges', Colors.blue, BetType.method, 'McGregor DEC'),
-        const Divider(),
-        _buildBetCard('Chandler by KO/TKO', '+200', 'Knockout or Technical Knockout', Colors.red, BetType.method, 'Chandler KO/TKO'),
-        _buildBetCard('Chandler by Submission', '+550', 'Submission victory', Colors.orange, BetType.method, 'Chandler SUB'),
-        _buildBetCard('Chandler by Decision', '+400', 'Goes to judges', Colors.blue, BetType.method, 'Chandler DEC'),
+        _buildEmptyBettingState(
+          'No method of victory bets available',
+          'Betting options will appear when fight data is connected',
+        ),
       ],
     );
   }
@@ -785,23 +831,16 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       children: [
         InfoEdgeCarousel(
           title: 'Round Betting',
-          description: 'Bet on when the fight will end or if it will go the full distance. Higher risk, higher reward.',
+          description: 'Bet on when the fight will end.',
           icon: Icons.timer,
           onEdgePressed: _navigateToEdge,
           autoScrollDelay: const Duration(seconds: 3),
         ),
         const SizedBox(height: 16),
-        const Text('Fight Duration', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        _buildBetCard('Over 2.5 Rounds', '-130', 'Fight goes to Round 3', Colors.blue, BetType.rounds, 'Over 2.5'),
-        _buildBetCard('Under 2.5 Rounds', '+110', 'Ends in Round 1 or 2', Colors.red, BetType.rounds, 'Under 2.5'),
-        const SizedBox(height: 16),
-        const Text('Exact Round', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        _buildBetCard('Round 1', '+300', 'Fight ends in Round 1', Colors.red, BetType.rounds, 'Round 1'),
-        _buildBetCard('Round 2', '+450', 'Fight ends in Round 2', Colors.orange, BetType.rounds, 'Round 2'),
-        _buildBetCard('Round 3', '+600', 'Fight ends in Round 3', Colors.yellow[700]!, BetType.rounds, 'Round 3'),
-        _buildBetCard('Goes Distance', '-150', 'Full 3 rounds', Colors.green, BetType.rounds, 'Distance'),
+        _buildEmptyBettingState(
+          'No round betting available',
+          'Round betting options will appear when fight data is connected',
+        ),
       ],
     );
   }
@@ -830,42 +869,22 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       );
     }
     
-    // MMA/Boxing live betting
-    if (widget.sport.toUpperCase() == 'MMA' || widget.sport.toUpperCase() == 'BOXING') {
-      return ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          InfoEdgeCarousel(
-            title: 'Live Betting',
-            description: 'Place bets while watching the fight. Odds update in real-time based on fight flow.',
-            icon: Icons.live_tv,
-            onEdgePressed: _navigateToEdge,
-            autoScrollDelay: const Duration(seconds: 3),
-          ),
-          const SizedBox(height: 16),
-          _buildBetCard('Next Round Winner', '-110', 'Round 2: McGregor', Colors.green, BetType.live, 'R2 McGregor'),
-          _buildBetCard('Fight Ends This Round', '+250', 'Current: Round 2', Colors.red, BetType.live, 'Ends R2'),
-          _buildBetCard('Next Knockdown', '+180', 'Either fighter', Colors.orange, BetType.live, 'Next KD'),
-          _buildBetCard('Fight Goes to Decision', '-140', 'Updated odds', Colors.blue, BetType.live, 'Goes Decision'),
-        ],
-      );
-    }
-    
-    // Default team sports live betting
+    // Live betting when available
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         InfoEdgeCarousel(
           title: 'Live Betting',
-          description: 'Place bets while watching the game. Odds update in real-time based on game flow.',
+          description: 'Place bets while watching. Odds update in real-time.',
           icon: Icons.live_tv,
           onEdgePressed: _navigateToEdge,
           autoScrollDelay: const Duration(seconds: 3),
         ),
         const SizedBox(height: 16),
-        _buildBetCard('Next Team to Score', '+105', 'Lakers', Colors.purple, BetType.live, 'LAL Next Score'),
-        _buildBetCard('Next Quarter Winner', '-110', 'Q2: Lakers', Colors.purple, BetType.live, 'Q2 Winner LAL'),
-        _buildBetCard('Race to 50 Points', '-120', 'First to 50', Colors.orange, BetType.live, 'Race to 50'),
+        _buildEmptyBettingState(
+          'No live bets available',
+          'Live betting options will appear during the event',
+        ),
       ],
     );
   }
@@ -988,6 +1007,42 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     );
   }
   
+  Widget _buildEmptyBettingState(String title, String subtitle) {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.sports,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
   
   Widget _buildBetCard(
     String title,

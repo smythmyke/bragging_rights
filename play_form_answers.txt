@@ -1,0 +1,18 @@
+=== GOOGLE PLAY CONSOLE FORM ANSWERS ===
+
+1. YOUR PLAY CONSOLE AND ANDROID EXPERIENCE:
+---------------------------------------------
+I have created govtoolspro.com with a Chrome extension. I have also built apeximagegas.net. This is my first Android application I have built using Flutter and Firebase. I have experience with web development and am expanding into mobile app development with Bragging Rights, a sports betting social app.
+
+2. OTHER GOOGLE ACCOUNTS:
+--------------------------
+Answer: NO (unless you have used other accounts)
+
+3. WEBSITE:
+-----------
+OPTIONS:
+  A) Use existing: https://govtoolspro.com
+  B) Use existing: https://apeximagegas.net
+  C) Create quick landing page (30 minutes)
+
+RECOMMENDATION: Use https://govtoolspro.com for now

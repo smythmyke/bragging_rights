@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import '../../services/transaction_service.dart';
 import '../../widgets/br_app_bar.dart';
 import 'package:intl/intl.dart';

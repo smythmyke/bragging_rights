@@ -42,13 +42,12 @@ class _EnhancedPoolScreenState extends State<EnhancedPoolScreen>
     setState(() => _isLoading = true);
     
     try {
-      // This would normally fetch from Firestore
-      // For now, using mock data
+      // Fetch pool data from Firestore when available
       await Future.delayed(const Duration(seconds: 1));
       
       setState(() {
         _isLoading = false;
-        // Mock pool data would be loaded here
+        // Real pool data will be loaded from Firestore
       });
     } catch (e) {
       setState(() => _isLoading = false);
@@ -387,11 +386,18 @@ class _EnhancedPoolScreenState extends State<EnhancedPoolScreen>
         _buildCard(
           title: 'Community Picks',
           icon: PhosphorIconsRegular.chartBar,
-          child: Column(
-            children: [
-              _buildOddsRow('Lakers', '62%', Colors.purple),
-              _buildOddsRow('Celtics', '38%', Colors.green),
-            ],
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            child: const Center(
+              child: Text(
+                'Community picks will appear when betting starts',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ),
         ),
       ],

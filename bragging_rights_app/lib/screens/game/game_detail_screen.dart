@@ -19,15 +19,12 @@ class _GameDetailScreenState extends State<GameDetailScreen> with SingleTickerPr
   int _wagerAmount = 50;
   final TextEditingController _customWagerController = TextEditingController();
   
-  // Community picks (mock data)
-  final double _team1Percentage = 65;
-  double get _team2Percentage => 100 - _team1Percentage;
+  // Community picks - will be populated from real data
+  final double _team1Percentage = 0;
+  double get _team2Percentage => 0;
 
-  // Mock odds
-  final Map<String, double> _odds = {
-    'Lakers': 1.85,
-    'Celtics': 2.10,
-  };
+  // Odds - will be populated from real data
+  final Map<String, double> _odds = {};
 
   @override
   void initState() {
@@ -68,7 +65,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> with SingleTickerPr
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Lakers vs Celtics'),
+        title: const Text('Game Details'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         bottom: TabBar(
           controller: _tabController,
@@ -134,13 +131,34 @@ class _GameDetailScreenState extends State<GameDetailScreen> with SingleTickerPr
                 const SizedBox(height: 16),
                 
                 // Teams
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildTeamCard('Lakers', 'LAL', Colors.purple, _odds['Lakers']!),
-                    const Text('VS', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    _buildTeamCard('Celtics', 'BOS', Colors.green, _odds['Celtics']!),
-                  ],
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Column(
+                    children: [
+                      Icon(Icons.sports, size: 48, color: Colors.grey),
+                      SizedBox(height: 8),
+                      Text(
+                        'Game data loading...',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Team information will appear when connected',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -488,27 +506,30 @@ class _GameDetailScreenState extends State<GameDetailScreen> with SingleTickerPr
   }
 
   Widget _buildStatsTab() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        _buildStatCard('Team Stats', [
-          _buildStatRow('Lakers', 'Win Streak', '5 games'),
-          _buildStatRow('Lakers', 'Home Record', '15-3'),
-          _buildStatRow('Celtics', 'Away Record', '12-6'),
-          _buildStatRow('Celtics', 'Last 5', 'W-W-L-W-W'),
-        ]),
-        _buildStatCard('Head to Head', [
-          _buildStatRow('Last Meeting', 'Lakers', '112-108'),
-          _buildStatRow('Season Series', 'Tied', '1-1'),
-          _buildStatRow('Last 10', 'Lakers', '6-4'),
-        ]),
-        _buildStatCard('Key Players', [
-          _buildStatRow('Lakers', 'LeBron James', '28.5 PPG'),
-          _buildStatRow('Lakers', 'Anthony Davis', '24.2 PPG'),
-          _buildStatRow('Celtics', 'Jayson Tatum', '27.8 PPG'),
-          _buildStatRow('Celtics', 'Jaylen Brown', '25.1 PPG'),
-        ]),
-      ],
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.analytics, size: 64, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          const Text(
+            'No stats available',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Game statistics will appear when data is available',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -560,12 +581,32 @@ class _GameDetailScreenState extends State<GameDetailScreen> with SingleTickerPr
             reverse: true,
             padding: const EdgeInsets.all(16),
             children: [
-              _buildChatMessage('Mike', 'Lakers all day! 💜', true),
-              _buildChatMessage('Sarah', 'Celtics gonna destroy them ☘️', false),
-              _buildChatMessage('System', 'John placed 100 BR on Lakers', false, isSystem: true),
-              _buildChatMessage('Alex', 'This is gonna be close!', false),
-              _buildChatMessage('You', 'Just put 50 BR on Lakers! LFG!', true),
-              _buildChatMessage('System', '234 users in this pool', false, isSystem: true),
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Column(
+                    children: [
+                      Icon(Icons.chat_bubble_outline, size: 48, color: Colors.grey[400]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No messages yet',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Be the first to start the conversation!',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ].reversed.toList(),
           ),
         ),

@@ -1,0 +1,25 @@
+=== GOOGLE PLAY CONSOLE - PAGE 2 ANSWERS ===
+
+QUESTION 1: Do you plan to earn money from apps?
+-------------------------------------------------
+ANSWER: YES
+
+Why: You have in-app purchases for BR coins
+
+QUESTION 2: App categories (select all that apply):
+---------------------------------------------------
+
+SELECT: None of the above
+
+WHY NOT 'Real-money gambling apps'?
+------------------------------------
+- Bragging Rights uses VIRTUAL CURRENCY (BR coins)
+- NO real money betting/gambling
+- NO cash withdrawals
+- Similar to fantasy sports (skill-based)
+- Users buy virtual currency for entertainment
+
+IMPORTANT:
+----------
+DO NOT select 'Real-money gambling' - that requires special licenses
+Your app is SOCIAL GAMING with virtual currency, NOT gambling

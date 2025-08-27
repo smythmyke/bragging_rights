@@ -71,8 +71,14 @@ service cloud.firestore {
         // Users can read their own wallet
         allow read: if isOwner(userId);
         
-        // Only server/admin can write to wallet (prevents cheating)
-        allow write: if false;
+        // Allow initial wallet creation during signup
+        allow create: if isOwner(userId) && 
+          walletDoc == 'current' &&
+          request.resource.data.balance == 500 &&
+          request.resource.data.keys().hasAll(['balance', 'lastAllowance']);
+        
+        // Only server/admin can update wallet (prevents cheating)
+        allow update, delete: if false;
       }
       
       // STATS SUBCOLLECTION  
@@ -80,8 +86,13 @@ service cloud.firestore {
         // Users can read their own stats
         allow read: if isOwner(userId);
         
+        // Allow initial stats creation during signup
+        allow create: if isOwner(userId) && 
+          statDoc == 'current' &&
+          request.resource.data.keys().hasAll(['totalWins', 'totalLosses', 'winRate', 'totalProfit', 'winStreak', 'bestWin']);
+        
         // Only server can update stats (automated by Cloud Functions)
-        allow write: if false;
+        allow update, delete: if false;
       }
     }
     

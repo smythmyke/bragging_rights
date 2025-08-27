@@ -424,7 +424,7 @@ class WagerService {
       final status = data['status'];
       final amount = data['wagerAmount'] ?? 0;
 
-      totalWagered += amount;
+      totalWagered = (totalWagered + amount).toInt();
 
       switch (status) {
         case 'won':

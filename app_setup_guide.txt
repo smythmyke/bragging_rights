@@ -1,0 +1,21 @@
+=== GOOGLE PLAY CONSOLE - APP SETUP GUIDE ===
+
+CURRENT STATUS: App Created
+NEXT: Finish Setup + Testing
+
+STEP 1: FINISH SETTING UP YOUR GAME
+====================================
+
+Click 'Finish setting up your game' and complete:
+
+1. APP CONTENT:
+   • Privacy policy URL (we'll create one)
+   • App access (All functionality available)
+   • Ads (No - we don't have ads)
+
+2. CONTENT RATING:
+   • Start questionnaire
+   • Email: smythmyke@gmail.com
+   • Category: Games
+   • Simulated gambling: YES
+   • Everything else: NO

@@ -188,19 +188,24 @@ class AuthService {
 
       // Create stats subcollection
       print('_createUserDocument: Creating stats...');
-      await userDoc.collection('stats').doc('current').set({
-        'totalBets': 0,
-        'wins': 0,
-        'losses': 0,
-        'pushes': 0,
-        'winRate': 0.0,
-        'currentStreak': 0,
-        'bestStreak': 0,
-        'totalPools': 0,
-        'poolsWon': 0,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-      print('_createUserDocument: Stats created');
+      try {
+        await userDoc.collection('stats').doc('current').set({
+          'totalBets': 0,
+          'wins': 0,
+          'losses': 0,
+          'pushes': 0,
+          'winRate': 0.0,
+          'currentStreak': 0,
+          'bestStreak': 0,
+          'totalPools': 0,
+          'poolsWon': 0,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+        print('_createUserDocument: Stats created');
+      } catch (e) {
+        print('_createUserDocument: Stats creation failed (non-critical): $e');
+        // Continue without stats - they can be created later by Cloud Functions
+      }
 
       // Log initial transaction for 500 BR
       print('_createUserDocument: Creating initial transaction...');

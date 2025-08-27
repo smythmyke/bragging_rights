@@ -33,8 +33,8 @@ class _PoolSelectionScreenV2State extends State<PoolSelectionScreenV2> with Sing
   Timer? _countdownTimer;
   final Map<String, Duration> _poolCountdowns = {};
   
-  // Mock data flags - will be replaced with real data later
-  bool _useMockData = true;
+  // Real data only - no mock data
+  bool _useMockData = false;
   List<Pool> _mockQuickPools = [];
   List<Pool> _mockRegionalPools = [];
   List<Pool> _mockPrivatePools = [];
@@ -45,7 +45,7 @@ class _PoolSelectionScreenV2State extends State<PoolSelectionScreenV2> with Sing
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
     _loadUserBalance();
-    _initializeMockPools();
+    // Mock pools removed - using real data from Firestore
     _startCountdownTimer();
     _loadBetStorage();
   }

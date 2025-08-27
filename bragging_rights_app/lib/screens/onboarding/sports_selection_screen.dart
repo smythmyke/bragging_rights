@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SportsSelectionScreen extends StatefulWidget {
   const SportsSelectionScreen({super.key});
@@ -59,7 +61,7 @@ class _SportsSelectionScreenState extends State<SportsSelectionScreen>
     });
   }
 
-  void _continueToApp() {
+  void _continueToApp() async {
     if (_selectedSports.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -68,6 +70,32 @@ class _SportsSelectionScreenState extends State<SportsSelectionScreen>
         ),
       );
       return;
+    }
+    
+    // Save selected sports to Firestore
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .update({
+          'selectedSports': _selectedSports,
+          'favoriteSports': _selectedSports,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sports preferences saved!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error saving sports preferences: $e');
+      // Continue anyway - preferences can be updated later
     }
     
     // Navigate to home screen

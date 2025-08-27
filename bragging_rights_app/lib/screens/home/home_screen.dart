@@ -3,6 +3,8 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'dart:async';
 import '../../services/bet_service.dart';
 import '../../services/wallet_service.dart';
+import '../../services/sports_api_service.dart';
+import '../../models/game_model.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,9 +21,15 @@ class _HomeScreenState extends State<HomeScreen> {
   // Services
   final BetService _betService = BetService();
   final WalletService _walletService = WalletService();
+  final SportsApiService _sportsApiService = SportsApiService();
   
   // Track games with bets
   List<String> _gamesWithBets = [];
+  
+  // Games data
+  List<GameModel> _liveGames = [];
+  List<GameModel> _upcomingGames = [];
+  bool _isLoadingGames = true;
 
   @override
   void initState() {
@@ -29,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _initializeCountdowns();
     _startCountdownTimer();
     _loadGamesWithBets();
+    _loadGamesData();
   }
   
   void _loadGamesWithBets() {
@@ -42,10 +51,46 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _initializeCountdowns() {
-    // Initialize with some example countdowns
-    _countdowns['Lakers vs Celtics'] = const Duration(hours: 2, minutes: 15, seconds: 30);
-    _countdowns['Cowboys vs Eagles'] = const Duration(minutes: 45, seconds: 23);
-    _countdowns['McGregor vs Chandler'] = const Duration(hours: 1, minutes: 30, seconds: 45);
+    // Countdowns will be populated from real game data
+  }
+  
+  Future<void> _loadGamesData() async {
+    setState(() {
+      _isLoadingGames = true;
+    });
+    
+    try {
+      // Load live games
+      final liveGames = await _sportsApiService.getLiveGames();
+      
+      // Load upcoming games from user's favorite sports
+      final upcomingGames = <GameModel>[];
+      final sports = ['NFL', 'NBA', 'NHL', 'MLB']; // TODO: Get from user preferences
+      
+      for (final sport in sports) {
+        final games = await _sportsApiService.getUpcomingGames(sport, limit: 5);
+        upcomingGames.addAll(games);
+      }
+      
+      // Sort upcoming games by time
+      upcomingGames.sort((a, b) => a.gameTime.compareTo(b.gameTime));
+      
+      setState(() {
+        _liveGames = liveGames;
+        _upcomingGames = upcomingGames.take(10).toList(); // Limit to 10 games
+        _isLoadingGames = false;
+        
+        // Initialize countdowns for upcoming games
+        for (final game in _upcomingGames) {
+          _countdowns[game.id] = game.timeUntilGame;
+        }
+      });
+    } catch (e) {
+      print('Error loading games: $e');
+      setState(() {
+        _isLoadingGames = false;
+      });
+    }
   }
 
   void _startCountdownTimer() {
@@ -233,41 +278,85 @@ class _HomeScreenState extends State<HomeScreen> {
             // Live Now Section
             _buildSectionHeader('🔴 Live Now', 'Games in progress'),
             const SizedBox(height: 12),
-            _buildGameCard(
-              'Lakers vs Celtics',
-              'NBA',
-              _countdowns['Lakers vs Celtics'] ?? Duration.zero,
-              Colors.orange,
-              true,
-            ),
+            _isLoadingGames
+                ? const Center(child: CircularProgressIndicator())
+                : _liveGames.isEmpty
+                    ? Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[900],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[800]!),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'No live games at the moment',
+                            style: TextStyle(color: Colors.grey, fontSize: 14),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      )
+                    : SizedBox(
+                        height: 140,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _liveGames.length,
+                          itemBuilder: (context, index) {
+                            final game = _liveGames[index];
+                            return _buildLiveGameCard(game);
+                          },
+                        ),
+                      ),
             
             const SizedBox(height: 24),
             
             // Starting Soon Section
-            _buildSectionHeader('⏰ Starting Soon', 'Pool closes soon!'),
+            _buildSectionHeader('⏰ Starting Soon', 'Upcoming games'),
             const SizedBox(height: 12),
-            _buildGameCard(
-              'Cowboys vs Eagles',
-              'NFL',
-              _countdowns['Cowboys vs Eagles'] ?? Duration.zero,
-              Colors.brown,
-              false,
-            ),
-            _buildGameCard(
-              'McGregor vs Chandler',
-              'MMA',
-              _countdowns['McGregor vs Chandler'] ?? Duration.zero,
-              Colors.red,
-              false,
-            ),
+            _isLoadingGames
+                ? const Center(child: CircularProgressIndicator())
+                : _upcomingGames.isEmpty
+                    ? Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[900],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[800]!),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'No upcoming games scheduled',
+                            style: TextStyle(color: Colors.grey, fontSize: 14),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      )
+                    : Column(
+                        children: _upcomingGames.take(3).map((game) {
+                          return _buildUpcomingGameCard(game);
+                        }).toList(),
+                      ),
             
             const SizedBox(height: 24),
             
-            // Your Active Pools - using Stack icon instead of target
-            _buildSectionHeader('🎲 Your Active Pools', '2 active'),
+            // Your Active Pools
+            _buildSectionHeader('🎲 Your Active Pools', 'Join pools to see them here'),
             const SizedBox(height: 12),
-            _buildPoolCard('NFL Sunday Pool', '25 BR', '12 players', Colors.brown),
-            _buildPoolCard('Friends NBA League', '50 BR', '8 players', Colors.orange),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[900],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[800]!),
+              ),
+              child: const Center(
+                child: Text(
+                  'Your active pools will appear here\nJoin a pool from the Pools tab',
+                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -558,6 +647,240 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+  
+  Widget _buildLiveGameCard(GameModel game) {
+    return Container(
+      width: 280,
+      margin: const EdgeInsets.only(right: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.red.withOpacity(0.8),
+            Colors.orange.withOpacity(0.8),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.pushNamed(
+              context,
+              '/pool-selection',
+              arguments: {
+                'gameId': game.id,
+                'gameTitle': game.gameTitle,
+                'sport': game.sport,
+                'homeTeam': game.homeTeam,
+                'awayTeam': game.awayTeam,
+              },
+            );
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        game.sport,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    const Icon(Icons.circle, color: Colors.red, size: 8),
+                    const SizedBox(width: 4),
+                    const Text(
+                      'LIVE',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  game.gameTitle,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  game.formattedScore,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (game.period != null) ...[  
+                  const SizedBox(height: 4),
+                  Text(
+                    game.period!,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildUpcomingGameCard(GameModel game) {
+    final countdown = _countdowns[game.id] ?? Duration.zero;
+    
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.pushNamed(
+            context,
+            '/pool-selection',
+            arguments: {
+              'gameId': game.id,
+              'gameTitle': game.gameTitle,
+              'sport': game.sport,
+              'homeTeam': game.homeTeam,
+              'awayTeam': game.awayTeam,
+            },
+          );
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _getSportIcon(game.sport),
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      game.gameTitle,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${game.sport} • ${game.venue ?? "Venue TBD"}',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      _formatDuration(countdown),
+                      style: const TextStyle(
+                        color: Colors.orange,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/pool-selection',
+                        arguments: {
+                          'gameId': game.id,
+                          'gameTitle': game.gameTitle,
+                          'sport': game.sport,
+                          'homeTeam': game.homeTeam,
+                          'awayTeam': game.awayTeam,
+                        },
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(50, 20),
+                    ),
+                    child: const Text('View Pools'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  IconData _getSportIcon(String sport) {
+    switch (sport.toUpperCase()) {
+      case 'NFL':
+        return Icons.sports_football;
+      case 'NBA':
+        return Icons.sports_basketball;
+      case 'MLB':
+        return Icons.sports_baseball;
+      case 'NHL':
+        return Icons.sports_hockey;
+      case 'MMA':
+      case 'BOXING':
+        return Icons.sports_mma;
+      case 'SOCCER':
+        return Icons.sports_soccer;
+      case 'TENNIS':
+        return Icons.sports_tennis;
+      case 'GOLF':
+        return Icons.golf_course;
+      default:
+        return Icons.sports;
+    }
   }
 
   Widget _buildMyPoolsTab() {
