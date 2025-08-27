@@ -1,12 +1,14 @@
 import 'package:flutter/foundation.dart';
 import '../api_gateway.dart';
 import '../event_matcher.dart';
+import '../cache/edge_cache_service.dart';
 
 /// ESPN NBA Service - Primary NBA data source
 /// Using ESPN's free API that actually works
 class EspnNbaService {
   final ApiGateway _gateway = ApiGateway();
   final EventMatcher _matcher = EventMatcher();
+  final EdgeCacheService _cache = EdgeCacheService();
   
   static const String _apiName = 'espn';
   
@@ -17,27 +19,34 @@ class EspnNbaService {
   static const String _standingsEndpoint = '/basketball/nba/standings';
   static const String _scheduleEndpoint = '/basketball/nba/schedule';
 
-  /// Get today's NBA games from ESPN
+  /// Get today's NBA games from ESPN (with caching)
   Future<EspnScoreboard?> getTodaysGames() async {
-    try {
-      debugPrint('🏀 Fetching NBA games from ESPN...');
-      
-      final response = await _gateway.request(
-        apiName: _apiName,
-        endpoint: _scoreboardEndpoint,
-        queryParams: {
-          'dates': DateTime.now().toIso8601String().split('T')[0].replaceAll('-', ''),
-        },
-      );
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    
+    return await _cache.getCachedData<EspnScoreboard>(
+      collection: 'games',
+      documentId: 'nba_$today',
+      dataType: 'scores',
+      sport: 'nba',
+      gameState: {'status': 'live'}, // Will use appropriate TTL
+      fetchFunction: () async {
+        debugPrint('🏀 Fetching NBA games from ESPN API...');
+        
+        final response = await _gateway.request(
+          apiName: _apiName,
+          endpoint: _scoreboardEndpoint,
+          queryParams: {
+            'dates': today.replaceAll('-', ''),
+          },
+        );
 
-      if (response.data != null) {
-        debugPrint('✅ ESPN NBA data received');
-        return EspnScoreboard.fromJson(response.data);
-      }
-    } catch (e) {
-      debugPrint('❌ Error fetching ESPN NBA games: $e');
-    }
-    return null;
+        if (response.data != null) {
+          debugPrint('✅ ESPN NBA data received');
+          return EspnScoreboard.fromJson(response.data);
+        }
+        throw Exception('No data from ESPN');
+      },
+    );
   }
 
   /// Get NBA teams
