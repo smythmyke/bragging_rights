@@ -23,7 +23,7 @@ class ApiGateway {
       baseUrl: 'https://stats.nba.com',
       rateLimit: 100,
       rateLimitWindow: const Duration(minutes: 1),
-      timeout: const Duration(seconds: 10),
+      timeout: const Duration(seconds: 30), // NBA API can be slow
       cacheDuration: const Duration(minutes: 5),
     ),
     'nhl_api': ApiConfig(
@@ -53,7 +53,7 @@ class ApiGateway {
       rateLimitWindow: const Duration(hours: 24),
       timeout: const Duration(seconds: 10),
       cacheDuration: const Duration(minutes: 30),
-      apiKey: 'YOUR_NEWS_API_KEY', // TODO: Move to environment config
+      apiKey: '3386d47aa3fe4a7f8375643727fa5afe',
     ),
     'openweather': ApiConfig(
       baseUrl: 'https://api.openweathermap.org/data/2.5',
@@ -70,6 +70,14 @@ class ApiGateway {
       timeout: const Duration(seconds: 10),
       cacheDuration: const Duration(minutes: 5),
       apiKey: 'YOUR_ODDS_API_KEY', // Already integrated
+    ),
+    'balldontlie': ApiConfig(
+      baseUrl: 'https://api.balldontlie.io/v1',
+      rateLimit: 5, // Free tier limit
+      rateLimitWindow: const Duration(minutes: 1),
+      timeout: const Duration(seconds: 10),
+      cacheDuration: const Duration(minutes: 10), // Cache longer due to rate limits
+      apiKey: '978b1ba9-9847-40cc-93d1-abca911cf822',
     ),
   };
 
