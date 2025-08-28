@@ -152,6 +152,50 @@ class EdgeCardConfigs {
   static EdgeCardConfig getConfig(EdgeCardCategory category) {
     return configs[category]!;
   }
+  
+  /// Get generic teaser text for a category (non-revealing)
+  static String getGenericTeaser(EdgeCardCategory category) {
+    switch (category) {
+      case EdgeCardCategory.injury:
+        return 'Player health intelligence detected';
+      case EdgeCardCategory.weather:
+        return 'Environmental factors may impact game';
+      case EdgeCardCategory.social:
+        return 'Fan sentiment data available';
+      case EdgeCardCategory.matchup:
+        return 'Historical pattern identified';
+      case EdgeCardCategory.breaking:
+        return 'Time-sensitive information available';
+      case EdgeCardCategory.betting:
+        return 'Market movement detected';
+      case EdgeCardCategory.insider:
+        return 'Exclusive source intelligence';
+      case EdgeCardCategory.clutch:
+        return 'Critical moment analysis available';
+    }
+  }
+  
+  /// Get obfuscated title for a category (non-revealing)
+  static String getObfuscatedTitle(EdgeCardCategory category, String teamName) {
+    switch (category) {
+      case EdgeCardCategory.injury:
+        return '$teamName - Health Intel';
+      case EdgeCardCategory.weather:
+        return 'Game Environment Alert';
+      case EdgeCardCategory.social:
+        return '$teamName - Sentiment Data';
+      case EdgeCardCategory.matchup:
+        return 'Matchup Intelligence';
+      case EdgeCardCategory.breaking:
+        return 'Breaking Intel - $teamName';
+      case EdgeCardCategory.betting:
+        return 'Market Alert';
+      case EdgeCardCategory.insider:
+        return '$teamName - Inside Info';
+      case EdgeCardCategory.clutch:
+        return 'Performance Metrics';
+    }
+  }
 
   /// Get rarity color
   static Color getRarityColor(EdgeCardRarity rarity) {

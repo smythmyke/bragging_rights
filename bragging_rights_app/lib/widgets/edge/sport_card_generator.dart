@@ -56,8 +56,8 @@ class SportCardGenerator {
         cards.add(EdgeCardData(
           id: 'nba_injury_${DateTime.now().millisecondsSinceEpoch}',
           category: EdgeCardCategory.injury,
-          title: injury['player'] ?? 'Player Injury',
-          teaserText: injury['status'] ?? 'Injury reported',
+          title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.injury, intelligence.homeTeam.split(' ').last),
+          teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.injury),
           fullContent: '${injury['player']} - ${injury['status']}\n'
               'Impact: ${injury['impact'] ?? 'Unknown'}\n'
               'Last update: ${injury['lastUpdate'] ?? 'Recently'}',
@@ -78,8 +78,8 @@ class SportCardGenerator {
       cards.add(EdgeCardData(
         id: 'nba_rest_${DateTime.now().millisecondsSinceEpoch}',
         category: EdgeCardCategory.matchup,
-        title: 'Rest Advantage',
-        teaserText: '${rest['team']} well-rested',
+        title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.matchup, intelligence.homeTeam.split(' ').last),
+        teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.matchup),
         fullContent: '${rest['team']} has ${rest['daysRest']} days rest\n'
             'Opponent: ${rest['opponentDaysRest']} days rest\n'
             'Historical win rate with rest advantage: ${rest['winRate'] ?? 'N/A'}%',
@@ -99,8 +99,8 @@ class SportCardGenerator {
       cards.add(EdgeCardData(
         id: 'nba_clutch_${DateTime.now().millisecondsSinceEpoch}',
         category: EdgeCardCategory.clutch,
-        title: 'Clutch Time Analysis',
-        teaserText: 'Last 5 min performance data',
+        title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.clutch, intelligence.homeTeam.split(' ').last),
+        teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.clutch),
         fullContent: 'Clutch Net Rating: ${clutch['netRating']}\n'
             'FG% in clutch: ${clutch['fgPercentage']}%\n'
             'Key player: ${clutch['keyPlayer'] ?? 'Team'}\n'
@@ -132,8 +132,8 @@ class SportCardGenerator {
         cards.add(EdgeCardData(
           id: 'nfl_weather_${DateTime.now().millisecondsSinceEpoch}',
           category: EdgeCardCategory.weather,
-          title: 'Severe Weather Alert',
-          teaserText: weather['conditions'] ?? 'Weather impact detected',
+          title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.weather, 'Game'),
+          teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.weather),
           fullContent: 'Conditions: ${weather['conditions']}\n'
               'Temperature: ${weather['temperature']}°F\n'
               'Wind: ${weather['wind']}\n'
@@ -156,8 +156,8 @@ class SportCardGenerator {
       cards.add(EdgeCardData(
         id: 'nfl_qb_${DateTime.now().millisecondsSinceEpoch}',
         category: EdgeCardCategory.matchup,
-        title: 'QB Matchup Intel',
-        teaserText: '${qb['quarterback']} analysis',
+        title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.matchup, intelligence.homeTeam.split(' ').last),
+        teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.matchup),
         fullContent: 'QB: ${qb['quarterback']}\n'
             'Passer Rating: ${qb['passerRating']}\n'
             'vs Defense Rank: ${qb['defenseRank']}\n'
@@ -187,8 +187,8 @@ class SportCardGenerator {
       cards.add(EdgeCardData(
         id: 'mlb_pitcher_${DateTime.now().millisecondsSinceEpoch}',
         category: EdgeCardCategory.matchup,
-        title: 'Pitching Matchup',
-        teaserText: '${pitchers['home']} vs ${pitchers['away']}',
+        title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.matchup, intelligence.homeTeam.split(' ').last),
+        teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.matchup),
         fullContent: 'Home: ${pitchers['home']} (${pitchers['homeERA']} ERA)\n'
             'Away: ${pitchers['away']} (${pitchers['awayERA']} ERA)\n'
             'H2H History: ${pitchers['h2h'] ?? 'No previous matchups'}\n'
@@ -209,8 +209,8 @@ class SportCardGenerator {
       cards.add(EdgeCardData(
         id: 'mlb_park_${DateTime.now().millisecondsSinceEpoch}',
         category: EdgeCardCategory.matchup,
-        title: 'Ballpark Factor',
-        teaserText: park['name'] ?? 'Park analysis',
+        title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.matchup, 'Ballpark'),
+        teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.matchup),
         fullContent: 'Park: ${park['name']}\n'
             'Type: ${park['type']} park\n'
             'Wind: ${park['wind'] ?? 'N/A'}\n'
@@ -240,8 +240,8 @@ class SportCardGenerator {
       cards.add(EdgeCardData(
         id: 'nhl_goalie_${DateTime.now().millisecondsSinceEpoch}',
         category: EdgeCardCategory.matchup,
-        title: 'Goalie Matchup',
-        teaserText: 'Starting goalies confirmed',
+        title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.matchup, intelligence.homeTeam.split(' ').last),
+        teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.matchup),
         fullContent: 'Home: ${goalies['home']} (${goalies['homeSV']} SV%)\n'
             'Away: ${goalies['away']} (${goalies['awaySV']} SV%)\n'
             'Recent form: ${goalies['form'] ?? 'N/A'}\n'
@@ -262,8 +262,8 @@ class SportCardGenerator {
       cards.add(EdgeCardData(
         id: 'nhl_special_${DateTime.now().millisecondsSinceEpoch}',
         category: EdgeCardCategory.matchup,
-        title: 'Special Teams Analysis',
-        teaserText: 'PP vs PK breakdown',
+        title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.matchup, 'Teams'),
+        teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.matchup),
         fullContent: 'Home PP: ${special['homePP']}%\n'
             'Away PK: ${special['awayPK']}%\n'
             'Home PK: ${special['homePK']}%\n'
@@ -295,8 +295,8 @@ class SportCardGenerator {
           cards.add(EdgeCardData(
             id: 'mma_camp_${DateTime.now().millisecondsSinceEpoch}',
             category: EdgeCardCategory.insider,
-            title: '$fighter Camp Report',
-            teaserText: 'Training at ${profile['camp']}',
+            title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.insider, fighter),
+            teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.insider),
             fullContent: 'Fighter: $fighter\n'
                 'Camp: ${profile['camp']}\n'
                 'Coach: ${profile['coach'] ?? 'Unknown'}\n'
@@ -321,8 +321,8 @@ class SportCardGenerator {
       cards.add(EdgeCardData(
         id: 'mma_weight_${DateTime.now().millisecondsSinceEpoch}',
         category: EdgeCardCategory.insider,
-        title: 'Weigh-In Report',
-        teaserText: weight['status'] ?? 'Weight cut analysis',
+        title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.insider, 'Fight'),
+        teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.insider),
         fullContent: 'Fighter: ${weight['fighter']}\n'
             'Weight: ${weight['weight']} lbs\n'
             'Cut difficulty: ${weight['difficulty'] ?? 'Normal'}\n'
@@ -353,8 +353,8 @@ class SportCardGenerator {
       cards.add(EdgeCardData(
         id: 'boxing_belts_${DateTime.now().millisecondsSinceEpoch}',
         category: EdgeCardCategory.breaking,
-        title: 'Championship Stakes',
-        teaserText: '${belts.length} belts on the line',
+        title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.breaking, 'Title'),
+        teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.breaking),
         fullContent: belts.map((b) => '• ${b['belts'].join(', ')}').join('\n'),
         metadata: {'belts': belts},
         timestamp: DateTime.now(),
@@ -372,8 +372,8 @@ class SportCardGenerator {
       cards.add(EdgeCardData(
         id: 'boxing_judges_${DateTime.now().millisecondsSinceEpoch}',
         category: EdgeCardCategory.insider,
-        title: 'Judge Tendencies',
-        teaserText: judges['type'] ?? 'Scoring analysis',
+        title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.insider, 'Officials'),
+        teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.insider),
         fullContent: 'Analysis: ${judges['note']}\n'
             'Recommendation: ${judges['recommendation']}\n'
             'Historical bias: ${judges['bias'] ?? 'None detected'}',
@@ -393,8 +393,8 @@ class SportCardGenerator {
       cards.add(EdgeCardData(
         id: 'boxing_style_${DateTime.now().millisecondsSinceEpoch}',
         category: EdgeCardCategory.matchup,
-        title: 'Style Analysis',
-        teaserText: 'Orthodox vs Southpaw detected',
+        title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.matchup, 'Fighters'),
+        teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.matchup),
         fullContent: styles.entries
             .map((e) => '${e.key}: ${e.value}')
             .join('\n'),
@@ -462,13 +462,14 @@ class SportCardGenerator {
       // Skip if confidence too low
       if (insight.confidence < 0.5) continue;
       
+      // Get team name for title (use home team as default)
+      final teamName = intelligence.homeTeam.split(' ').last; // Get last word (e.g., "Lakers" from "Los Angeles Lakers")
+      
       cards.add(EdgeCardData(
         id: 'insight_${insight.type}_${DateTime.now().millisecondsSinceEpoch}',
         category: category,
-        title: insight.type.replaceAll('_', ' ').toUpperCase(),
-        teaserText: insight.message.length > 50 
-            ? insight.message.substring(0, 50) + '...'
-            : insight.message,
+        title: EdgeCardConfigs.getObfuscatedTitle(category, teamName),
+        teaserText: EdgeCardConfigs.getGenericTeaser(category),
         fullContent: insight.message,
         metadata: insight.data ?? {},
         timestamp: DateTime.now(),
@@ -488,8 +489,8 @@ class SportCardGenerator {
         cards.add(EdgeCardData(
           id: 'social_reddit_${DateTime.now().millisecondsSinceEpoch}',
           category: EdgeCardCategory.social,
-          title: 'Reddit Buzz',
-          teaserText: 'Fan excitement: ${(excitement * 100).toInt()}%',
+          title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.social, intelligence.homeTeam.split(' ').last),
+          teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.social),
           fullContent: 'Reddit community engagement:\n'
               'Excitement level: ${(excitement * 100).toInt()}%\n'
               'Trending topics: ${reddit['trendingTopics']?.join(', ') ?? 'N/A'}\n'
