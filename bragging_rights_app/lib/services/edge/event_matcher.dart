@@ -65,8 +65,8 @@ class EventMatcher {
     required String sport,
     Map<String, dynamic>? additionalData,
   }) async {
-    final normalizedHome = _normalizeTeamName(homeTeam);
-    final normalizedAway = _normalizeTeamName(awayTeam);
+    final normalizedHome = normalizeTeamName(homeTeam);
+    final normalizedAway = normalizeTeamName(awayTeam);
     
     final match = EventMatch(
       eventId: eventId,
@@ -87,7 +87,7 @@ class EventMatcher {
   }
 
   /// Normalize team name to standard format
-  String _normalizeTeamName(String teamName) {
+  String normalizeTeamName(String teamName) {
     final cleaned = teamName.trim();
     
     // Check if it's already a standard name
@@ -284,10 +284,10 @@ class EventMatcher {
     }
 
     // Team matching (40% weight)
-    final home1 = _normalizeTeamName(event1['homeTeam'].toString());
-    final home2 = _normalizeTeamName(event2['homeTeam'].toString());
-    final away1 = _normalizeTeamName(event1['awayTeam'].toString());
-    final away2 = _normalizeTeamName(event2['awayTeam'].toString());
+    final home1 = normalizeTeamName(event1['homeTeam'].toString());
+    final home2 = normalizeTeamName(event2['homeTeam'].toString());
+    final away1 = normalizeTeamName(event1['awayTeam'].toString());
+    final away2 = normalizeTeamName(event2['awayTeam'].toString());
     
     if (home1 == home2 && away1 == away2) {
       confidence += 0.4;

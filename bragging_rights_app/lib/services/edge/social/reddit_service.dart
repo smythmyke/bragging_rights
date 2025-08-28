@@ -288,11 +288,11 @@ class RedditService {
     for (final post in posts) {
       final data = post['data'];
       final title = data['title'].toString().toLowerCase();
-      final score = data['score'] ?? 0;
-      final comments = data['num_comments'] ?? 0;
+      final score = (data['score'] ?? 0) as num;
+      final comments = (data['num_comments'] ?? 0) as num;
       
       totalScore += score;
-      totalComments += comments;
+      totalComments = totalComments + comments.toInt();
 
       // Simple sentiment based on keywords and engagement
       if (_containsPositive(title)) {
@@ -337,13 +337,13 @@ class RedditService {
       if (comment['kind'] != 't1') continue;
       
       final body = comment['data']['body'].toString().toLowerCase();
-      final score = comment['data']['score'] ?? 0;
+      final score = (comment['data']['score'] ?? 0) as num;
       
       // Weight by score
       if (_containsPositive(body)) {
-        positive += score.abs();
+        positive = positive + score.abs().toInt();
       } else if (_containsNegative(body)) {
-        negative += score.abs();
+        negative = negative + score.abs().toInt();
       }
     }
 
