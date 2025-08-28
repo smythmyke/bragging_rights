@@ -5,6 +5,7 @@ import 'sports/nhl_api_service.dart';
 import 'sports/espn_nhl_service.dart';
 import 'sports/espn_nfl_service.dart';
 import 'sports/espn_mlb_service.dart';
+import 'sports/espn_mma_service.dart';
 import 'news/news_api_service.dart';
 import 'social/reddit_service.dart';
 import 'event_matcher.dart';
@@ -21,6 +22,7 @@ class EdgeIntelligenceService {
   final EspnNhlService _espnNhlService = EspnNhlService();
   final EspnNflService _espnNflService = EspnNflService();
   final EspnMlbService _espnMlbService = EspnMlbService();
+  final EspnMmaService _espnMmaService = EspnMmaService();
   final NewsApiService _newsService = NewsApiService();
   final RedditService _redditService = RedditService();
 
@@ -70,6 +72,15 @@ class EdgeIntelligenceService {
       case 'nhl':
       case 'hockey':
         await _gatherNhlIntelligence(intelligence, eventId);
+        break;
+      case 'mma':
+      case 'ufc':
+      case 'bellator':
+      case 'pfl':
+      case 'one':
+      case 'bkfc':
+      case 'boxing':
+        await _gatherMmaIntelligence(intelligence, eventId, sport);
         break;
       default:
         debugPrint('⚠️ Sport $sport not yet supported');
@@ -975,6 +986,291 @@ class EdgeIntelligenceService {
       
     } catch (e) {
       debugPrint('Error gathering NHL intelligence: $e');
+      intelligence.addDataPoint(
+        source: 'System',
+        type: 'error',
+        data: {'error': e.toString()},
+        confidence: 0.0,
+      );
+    }
+  }
+
+  /// Gather MMA/Combat Sports intelligence
+  Future<void> _gatherMmaIntelligence(
+    EdgeIntelligence intelligence,
+    String eventId,
+    String promotion,
+  ) async {
+    debugPrint('🥊 Gathering MMA intelligence for ${intelligence.homeTeam}');
+    
+    // For MMA, we use event name instead of team vs team
+    // The homeTeam field contains the event name (e.g., "UFC 295")
+    final eventName = intelligence.homeTeam;
+    
+    // Determine promotion from sport parameter
+    final mmaPromotion = promotion.toLowerCase() == 'mma' ? 'ufc' : promotion.toLowerCase();
+    
+    try {
+      // Get MMA event data
+      final mmaData = await _espnMmaService.getEventIntelligence(
+        eventName: eventName,
+        promotion: mmaPromotion,
+      );
+      
+      if (mmaData.isNotEmpty) {
+        // Add main event intelligence
+        if (mmaData['mainEvent'] != null && mmaData['mainEvent'].isNotEmpty) {
+          intelligence.addDataPoint(
+            source: 'ESPN MMA',
+            type: 'main_event',
+            data: mmaData['mainEvent'],
+            confidence: 0.95,
+          );
+          
+          // Extract main event fighters
+          final fighter1 = mmaData['mainEvent']['fighter1'];
+          final fighter2 = mmaData['mainEvent']['fighter2'];
+          
+          if (fighter1 != null && fighter2 != null) {
+            intelligence.addInsight(
+              category: 'main_event',
+              insight: '${fighter1['name']} (${fighter1['record']}) vs ${fighter2['name']} (${fighter2['record']})',
+              impact: 'high',
+            );
+            
+            // Add odds insight if available
+            if (mmaData['mainEvent']['odds'] != null) {
+              final odds = mmaData['mainEvent']['odds'];
+              intelligence.addInsight(
+                category: 'betting_line',
+                insight: 'Odds: ${fighter1['name']} ${odds['fighter1']} | ${fighter2['name']} ${odds['fighter2']}',
+                impact: 'medium',
+              );
+            }
+          }
+          
+          // Championship fight insight
+          if (mmaData['mainEvent']['rounds'] == 5) {
+            intelligence.addInsight(
+              category: 'championship',
+              insight: '5-round championship fight - cardio crucial',
+              impact: 'high',
+            );
+          }
+        }
+        
+        // Add co-main event
+        if (mmaData['coMainEvent'] != null && mmaData['coMainEvent'].isNotEmpty) {
+          intelligence.addDataPoint(
+            source: 'ESPN MMA',
+            type: 'co_main_event',
+            data: mmaData['coMainEvent'],
+            confidence: 0.90,
+          );
+        }
+        
+        // Add main card fights
+        if (mmaData['mainCard'] != null && mmaData['mainCard'].isNotEmpty) {
+          intelligence.addDataPoint(
+            source: 'ESPN MMA',
+            type: 'main_card',
+            data: mmaData['mainCard'],
+            confidence: 0.85,
+          );
+          
+          intelligence.addInsight(
+            category: 'card_depth',
+            insight: '${mmaData['mainCard'].length} fights on main card',
+            impact: 'low',
+          );
+        }
+        
+        // Add fighter profiles if available
+        if (mmaData['fighterProfiles'] != null && mmaData['fighterProfiles'].isNotEmpty) {
+          intelligence.addDataPoint(
+            source: 'ESPN MMA',
+            type: 'fighter_profiles',
+            data: mmaData['fighterProfiles'],
+            confidence: 0.85,
+          );
+          
+          // Analyze fighter stats for insights
+          for (final profile in mmaData['fighterProfiles'].values) {
+            if (profile['stats'] != null) {
+              // Check for high finish rate fighters
+              final finishRate = profile['stats']['finishRate'];
+              if (finishRate != null && finishRate > 70) {
+                intelligence.addInsight(
+                  category: 'finisher',
+                  insight: '${profile['name']} has ${finishRate}% finish rate',
+                  impact: 'medium',
+                );
+              }
+            }
+          }
+        }
+        
+        // Add camp intelligence
+        if (mmaData['campIntelligence'] != null) {
+          intelligence.addDataPoint(
+            source: 'ESPN MMA',
+            type: 'camp_analysis',
+            data: mmaData['campIntelligence'],
+            confidence: 0.75,
+          );
+          
+          // Add top camp insights
+          if (mmaData['campIntelligence']['topCamps'] != null) {
+            intelligence.addInsight(
+              category: 'camps',
+              insight: 'Elite camps represented on this card',
+              impact: 'low',
+            );
+          }
+        }
+        
+        // Add betting lines
+        if (mmaData['bettingLines'] != null && mmaData['bettingLines'].isNotEmpty) {
+          intelligence.addDataPoint(
+            source: 'ESPN MMA',
+            type: 'betting_odds',
+            data: mmaData['bettingLines'],
+            confidence: 0.95,
+          );
+        }
+        
+        // Add weigh-in report
+        if (mmaData['weighInReport'] != null) {
+          intelligence.addDataPoint(
+            source: 'ESPN MMA',
+            type: 'weigh_in',
+            data: mmaData['weighInReport'],
+            confidence: 0.90,
+          );
+          
+          // Check for weight cutting issues
+          final concerns = mmaData['weighInReport']['concerns'] ?? [];
+          if (concerns.isNotEmpty) {
+            intelligence.addInsight(
+              category: 'weight_cut',
+              insight: 'Weight cutting concerns reported',
+              impact: 'high',
+            );
+          }
+        }
+        
+        // Add injury report
+        if (mmaData['injuryReport'] != null && mmaData['injuryReport'].isNotEmpty) {
+          intelligence.addDataPoint(
+            source: 'ESPN MMA',
+            type: 'injuries',
+            data: mmaData['injuryReport'],
+            confidence: 0.85,
+          );
+          
+          intelligence.addInsight(
+            category: 'injuries',
+            insight: '${mmaData['injuryReport'].length} injury concerns on card',
+            impact: 'medium',
+          );
+        }
+        
+        // Add MMA-specific insights from the service
+        if (mmaData['insights'] != null) {
+          for (final insight in mmaData['insights']) {
+            intelligence.addInsight(
+              category: insight['category'] ?? 'general',
+              insight: insight['insight'] ?? '',
+              impact: insight['confidence'] > 0.8 ? 'high' : 'medium',
+            );
+          }
+        }
+      }
+      
+      // Get MMA news
+      final newsData = await _newsService.getGameNews(
+        homeTeam: eventName, // Use event name for news search
+        awayTeam: '',
+        sport: mmaPromotion.toUpperCase(),
+      );
+      
+      if (newsData != null && newsData.articles.isNotEmpty) {
+        intelligence.addDataPoint(
+          source: 'NewsAPI',
+          type: 'recent_news',
+          data: {
+            'articleCount': newsData.articles.length,
+            'headlines': newsData.articles.take(3).map((a) => a.title).toList(),
+          },
+          confidence: 0.75,
+        );
+      }
+      
+      // Get Reddit sentiment from r/MMA
+      final redditData = await _redditService.getGameIntelligence(
+        homeTeam: eventName,
+        awayTeam: '', // No away team for MMA
+        sport: 'mma',
+        gameDate: intelligence.eventDate,
+      );
+      
+      if (redditData.isNotEmpty) {
+        intelligence.addDataPoint(
+          source: 'Reddit r/MMA',
+          type: 'fan_sentiment',
+          data: redditData,
+          confidence: 0.70,
+        );
+        
+        // Add fan sentiment insights
+        if (redditData['homeSentiment'] != null) {
+          final sentiment = redditData['homeSentiment']['overall'];
+          if (sentiment == 'positive') {
+            intelligence.addInsight(
+              category: 'social',
+              insight: 'Fans excited about this card',
+              impact: 'low',
+            );
+          }
+        }
+      }
+      
+      // MMA-specific predictions
+      intelligence.predictions = {
+        'suggestedBets': [],
+        'confidence': intelligence.overallConfidence,
+      };
+      
+      final suggestions = intelligence.predictions['suggestedBets'] as List;
+      
+      // Add betting suggestions based on insights
+      if (intelligence.insights.any((i) => i.category == 'finisher')) {
+        suggestions.add({
+          'type': 'Fight Doesn\'t Go Distance',
+          'reasoning': 'High finish rate fighters on card',
+          'confidence': 0.75,
+        });
+      }
+      
+      if (intelligence.insights.any((i) => i.category == 'championship')) {
+        suggestions.add({
+          'type': 'Over 2.5 Rounds',
+          'reasoning': 'Championship fights often go longer',
+          'confidence': 0.70,
+        });
+      }
+      
+      // Style matchup suggestions
+      suggestions.add({
+        'type': 'Method of Victory Props',
+        'reasoning': 'Check fighter finishing tendencies',
+        'confidence': 0.65,
+      });
+      
+      intelligence.predictions['suggestedBets'] = suggestions;
+      
+    } catch (e) {
+      debugPrint('Error gathering MMA intelligence: $e');
       intelligence.addDataPoint(
         source: 'System',
         type: 'error',

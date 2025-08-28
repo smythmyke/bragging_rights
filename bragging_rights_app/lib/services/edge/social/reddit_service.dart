@@ -18,6 +18,12 @@ class RedditService {
     'nhl': 'hockey',
     'soccer': 'soccer',
     'mma': 'MMA',
+    'ufc': 'ufc',
+    'boxing': 'Boxing',
+    'bellator': 'bellator',
+    'onefc': 'ONEHQ',
+    'pfl': 'PFLmma',
+    'bkfc': 'bareknuckleboxing',
   };
 
   // Team-specific subreddits
@@ -148,6 +154,227 @@ class RedditService {
     }
     
     return topics.take(10).toList();
+  }
+
+  /// Get MMA/Combat sports fight card discussion
+  Future<Map<String, dynamic>> getFightCardIntelligence({
+    required String eventName,
+    required String mainEvent,
+    String? promotion,
+  }) async {
+    debugPrint('🥊 Gathering Reddit intelligence for $eventName');
+    
+    final intelligence = <String, dynamic>{
+      'eventThread': null,
+      'fighterSentiment': {},
+      'predictions': [],
+      'trendingTopics': [],
+      'fanExcitement': 0.0,
+      'keyDiscussions': [],
+    };
+
+    try {
+      final subreddit = promotion != null 
+          ? (_sportsSubs[promotion.toLowerCase()] ?? 'MMA')
+          : 'MMA';
+      
+      // Search for event discussion
+      final searchQuery = Uri.encodeComponent(eventName);
+      final url = '$_baseUrl/r/$subreddit/search.json'
+          '?q=$searchQuery&restrict_sr=on&sort=relevance&t=week&limit=10';
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'User-Agent': 'BraggingRights:Edge:v1.0'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final posts = data['data']['children'] as List;
+        
+        // Analyze event discussions
+        for (final post in posts) {
+          final postData = post['data'];
+          final title = postData['title'].toString().toLowerCase();
+          
+          if (title.contains('thread') || title.contains('discussion') ||
+              title.contains('prediction') || title.contains('breakdown')) {
+            intelligence['eventThread'] = {
+              'title': postData['title'],
+              'url': 'https://reddit.com${postData['permalink']}',
+              'score': postData['score'],
+              'comments': postData['num_comments'],
+            };
+            
+            // Extract predictions and sentiment
+            if (title.contains('prediction')) {
+              intelligence['predictions'].add({
+                'source': postData['title'],
+                'upvotes': postData['score'],
+              });
+            }
+          }
+        }
+        
+        // Calculate fan excitement based on engagement
+        int totalScore = 0;
+        int totalComments = 0;
+        for (final post in posts) {
+          totalScore += (post['data']['score'] ?? 0) as int;
+          totalComments += (post['data']['num_comments'] ?? 0) as int;
+        }
+        intelligence['fanExcitement'] = _calculateExcitement(totalScore, totalComments);
+      }
+      
+      // Get fighter-specific sentiment
+      final fighters = mainEvent.split(' vs ').map((f) => f.trim()).toList();
+      if (fighters.length >= 2) {
+        intelligence['fighterSentiment'] = await _getFighterSentiment(
+          fighters[0], 
+          fighters[1],
+          subreddit,
+        );
+      }
+      
+      // Get MMA betting sentiment
+      await _getMmaBettingSentiment(eventName, intelligence);
+      
+    } catch (e) {
+      debugPrint('Error gathering fight card intelligence: $e');
+    }
+    
+    return intelligence;
+  }
+
+  /// Get fighter-specific sentiment
+  Future<Map<String, dynamic>> _getFighterSentiment(
+    String fighter1,
+    String fighter2,
+    String subreddit,
+  ) async {
+    final sentiment = <String, dynamic>{
+      fighter1: {'positive': 0, 'negative': 0, 'mentions': 0},
+      fighter2: {'positive': 0, 'negative': 0, 'mentions': 0},
+    };
+    
+    try {
+      // Search for fighter discussions
+      final searchQuery = Uri.encodeComponent('$fighter1 OR $fighter2');
+      final url = '$_baseUrl/r/$subreddit/search.json'
+          '?q=$searchQuery&restrict_sr=on&sort=new&t=week&limit=25';
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'User-Agent': 'BraggingRights:Edge:v1.0'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final posts = data['data']['children'] as List;
+        
+        for (final post in posts) {
+          final title = post['data']['title'].toString();
+          final body = post['data']['selftext'].toString();
+          final content = '$title $body'.toLowerCase();
+          
+          // Analyze sentiment for each fighter
+          for (final fighter in [fighter1, fighter2]) {
+            if (content.contains(fighter.toLowerCase())) {
+              sentiment[fighter]['mentions']++;
+              
+              // Check for positive/negative sentiment
+              if (_containsPositiveFightPrediction(content, fighter)) {
+                sentiment[fighter]['positive']++;
+              } else if (_containsNegativeFightPrediction(content, fighter)) {
+                sentiment[fighter]['negative']++;
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error analyzing fighter sentiment: $e');
+    }
+    
+    return sentiment;
+  }
+
+  /// Get MMA betting subreddit sentiment
+  Future<void> _getMmaBettingSentiment(
+    String eventName,
+    Map<String, dynamic> intelligence,
+  ) async {
+    try {
+      final searchQuery = Uri.encodeComponent(eventName);
+      final url = '$_baseUrl/r/mmabetting/search.json'
+          '?q=$searchQuery&restrict_sr=on&sort=relevance&t=week&limit=10';
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'User-Agent': 'BraggingRights:Edge:v1.0'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final posts = data['data']['children'] as List;
+        
+        final bettingInsights = <String>[];
+        for (final post in posts) {
+          final title = post['data']['title'] ?? '';
+          if (title.toLowerCase().contains('parlay') ||
+              title.toLowerCase().contains('pick') ||
+              title.toLowerCase().contains('bet')) {
+            bettingInsights.add(title);
+          }
+        }
+        
+        intelligence['bettingInsights'] = bettingInsights;
+      }
+    } catch (e) {
+      debugPrint('Error fetching MMA betting sentiment: $e');
+    }
+  }
+
+  /// Check for positive fight predictions
+  bool _containsPositiveFightPrediction(String text, String fighter) {
+    final fighterLower = fighter.toLowerCase();
+    final positive = [
+      '$fighterLower wins',
+      '$fighterLower by',
+      '$fighterLower ko',
+      '$fighterLower tko',
+      '$fighterLower submission',
+      '$fighterLower decision',
+      'bet on $fighterLower',
+      '$fighterLower will win',
+      '$fighterLower is going to',
+    ];
+    return positive.any((phrase) => text.contains(phrase));
+  }
+
+  /// Check for negative fight predictions
+  bool _containsNegativeFightPrediction(String text, String fighter) {
+    final fighterLower = fighter.toLowerCase();
+    final negative = [
+      '$fighterLower loses',
+      '$fighterLower gets',
+      'against $fighterLower',
+      '$fighterLower is done',
+      '$fighterLower will lose',
+      'fade $fighterLower',
+      '$fighterLower overrated',
+    ];
+    return negative.any((phrase) => text.contains(phrase));
+  }
+
+  /// Calculate excitement level
+  double _calculateExcitement(int totalScore, int totalComments) {
+    // Normalize scores to 0-1 range
+    final scoreExcitement = (totalScore / 1000).clamp(0.0, 1.0);
+    final commentExcitement = (totalComments / 500).clamp(0.0, 1.0);
+    
+    // Weight comments more heavily for fight cards
+    return (scoreExcitement * 0.3 + commentExcitement * 0.7);
   }
 
   /// Get comprehensive Reddit intelligence for a game
