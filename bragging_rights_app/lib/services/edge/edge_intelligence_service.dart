@@ -6,6 +6,7 @@ import 'sports/espn_nhl_service.dart';
 import 'sports/espn_nfl_service.dart';
 import 'sports/espn_mlb_service.dart';
 import 'sports/espn_mma_service.dart';
+import 'sports/espn_boxing_service.dart';
 import 'news/news_api_service.dart';
 import 'social/reddit_service.dart';
 import 'event_matcher.dart';
@@ -23,6 +24,7 @@ class EdgeIntelligenceService {
   final EspnNflService _espnNflService = EspnNflService();
   final EspnMlbService _espnMlbService = EspnMlbService();
   final EspnMmaService _espnMmaService = EspnMmaService();
+  final EspnBoxingService _espnBoxingService = EspnBoxingService();
   final NewsApiService _newsService = NewsApiService();
   final RedditService _redditService = RedditService();
 
@@ -79,8 +81,10 @@ class EdgeIntelligenceService {
       case 'pfl':
       case 'one':
       case 'bkfc':
-      case 'boxing':
         await _gatherMmaIntelligence(intelligence, eventId, sport);
+        break;
+      case 'boxing':
+        await _gatherBoxingIntelligence(intelligence, eventId);
         break;
       default:
         debugPrint('⚠️ Sport $sport not yet supported');
@@ -1278,6 +1282,424 @@ class EdgeIntelligenceService {
         confidence: 0.0,
       );
     }
+  }
+
+  /// Gather boxing-specific intelligence
+  Future<void> _gatherBoxingIntelligence(
+    EdgeIntelligence intelligence,
+    String eventId,
+  ) async {
+    debugPrint('🥊 Gathering boxing intelligence for ${intelligence.homeTeam} vs ${intelligence.awayTeam}');
+    
+    try {
+      final boxingData = <String, dynamic>{
+        'mainEvent': {},
+        'undercard': [],
+        'fighterProfiles': {},
+        'odds': {},
+        'judgeAnalysis': {},
+        'venueAdvantage': {},
+        'beltImplications': [],
+        'styleMatchup': {},
+        'predictions': [],
+      };
+
+      // Get boxing event data from ESPN
+      final espnData = await _espnBoxingService.getBoxingIntelligence(
+        fighter1: intelligence.homeTeam,
+        fighter2: intelligence.awayTeam,
+        eventContext: {'eventId': eventId},
+      );
+
+      if (espnData.isNotEmpty) {
+        // Merge ESPN data
+        boxingData.addAll(espnData);
+        
+        // Extract key boxing metrics
+        final mainEvent = espnData['mainEvent'] ?? {};
+        final profiles = espnData['fighterProfiles'] ?? {};
+        
+        // Add boxing-specific insights
+        if (mainEvent.isNotEmpty) {
+          // Round information
+          final rounds = mainEvent['rounds'] ?? 10;
+          intelligence.insights.add(
+            EdgeInsight(
+              message: '$rounds-round ${mainEvent['titleFight'] == true ? 'championship' : 'bout'}',
+              type: 'fight_format',
+              confidence: 1.0,
+              data: {'rounds': rounds, 'title': mainEvent['titleFight'] ?? false},
+            ),
+          );
+          
+          // Belt implications
+          if (mainEvent['belts'] != null && (mainEvent['belts'] as List).isNotEmpty) {
+            final belts = mainEvent['belts'] as List;
+            intelligence.insights.add(
+              EdgeInsight(
+                message: '${belts.join('/')} ${belts.length > 1 ? 'unification' : 'title'} on the line',
+                type: 'championship',
+                confidence: 1.0,
+                data: {'belts': belts},
+              ),
+            );
+          }
+        }
+        
+        // Fighter profiles analysis
+        profiles.forEach((fighterName, profile) {
+          final koRate = profile['koPercentage'] ?? 0.0;
+          final record = profile['record'] ?? 'N/A';
+          final stance = profile['stance'] ?? 'Unknown';
+          
+          // KO threat analysis
+          if (koRate > 65) {
+            intelligence.insights.add(
+              EdgeInsight(
+                message: '$fighterName: ${koRate.toStringAsFixed(1)}% KO rate - dangerous puncher',
+                type: 'ko_threat',
+                confidence: 0.85,
+                data: profile,
+              ),
+            );
+          }
+          
+          // Stance matchup
+          if (stance != 'Unknown') {
+            boxingData['styleMatchup']['$fighterName-stance'] = stance;
+          }
+        });
+        
+        // Style matchup analysis
+        final fighter1Stance = profiles[intelligence.homeTeam]?['stance'];
+        final fighter2Stance = profiles[intelligence.awayTeam]?['stance'];
+        
+        if (fighter1Stance != null && fighter2Stance != null) {
+          if (fighter1Stance != fighter2Stance) {
+            intelligence.insights.add(
+              EdgeInsight(
+                message: '$fighter1Stance vs $fighter2Stance - expect awkward exchanges',
+                type: 'style_matchup',
+                confidence: 0.75,
+                data: {'fighter1': fighter1Stance, 'fighter2': fighter2Stance},
+              ),
+            );
+          }
+        }
+        
+        // Age and experience factors
+        profiles.forEach((fighterName, profile) {
+          final age = profile['age'] ?? 0;
+          final record = profile['record']?.toString() ?? '0-0';
+          final parts = record.split('-');
+          final totalFights = parts.length >= 2 
+              ? (int.tryParse(parts[0]) ?? 0) + (int.tryParse(parts[1]) ?? 0)
+              : 0;
+          
+          // Age concern
+          if (age > 36) {
+            intelligence.insights.add(
+              EdgeInsight(
+                message: '$fighterName is $age - age could impact stamina in later rounds',
+                type: 'age_factor',
+                confidence: 0.70,
+                data: {'age': age, 'fighter': fighterName},
+              ),
+            );
+          }
+          
+          // Experience advantage
+          if (totalFights > 30) {
+            intelligence.insights.add(
+              EdgeInsight(
+                message: '$fighterName: $totalFights pro fights - veteran experience',
+                type: 'experience',
+                confidence: 0.75,
+                data: {'fights': totalFights, 'record': record},
+              ),
+            );
+          }
+        });
+      }
+
+      // Get boxing odds from ESPN (includes method of victory, rounds)
+      if (espnData['odds'] != null && espnData['odds'].isNotEmpty) {
+        boxingData['odds'] = espnData['odds'];
+        
+        // Analyze betting lines
+        final moneyline = espnData['odds']['moneyline'] ?? {};
+        if (moneyline.isNotEmpty) {
+          // Find favorite
+          String favorite = '';
+          double bestOdds = 999;
+          moneyline.forEach((fighter, odds) {
+            final oddsValue = double.tryParse(odds.toString()) ?? 999;
+            if (oddsValue < bestOdds) {
+              bestOdds = oddsValue;
+              favorite = fighter;
+            }
+          });
+          
+          if (favorite.isNotEmpty && bestOdds < -200) {
+            intelligence.insights.add(
+              EdgeInsight(
+                message: '$favorite heavy favorite at ${bestOdds.toStringAsFixed(0)}',
+                type: 'betting_favorite',
+                confidence: 0.80,
+                data: moneyline,
+              ),
+            );
+          }
+        }
+        
+        // Method of victory odds
+        final methodOdds = espnData['odds']['methodOfVictory'] ?? {};
+        if (methodOdds.isNotEmpty) {
+          // Find most likely outcome
+          String likelyMethod = '';
+          double bestMethodOdds = 999;
+          methodOdds.forEach((method, odds) {
+            final oddsValue = double.tryParse(odds.toString()) ?? 999;
+            if (oddsValue < bestMethodOdds) {
+              bestMethodOdds = oddsValue;
+              likelyMethod = method;
+            }
+          });
+          
+          if (likelyMethod.isNotEmpty) {
+            intelligence.insights.add(
+              EdgeInsight(
+                message: 'Most likely outcome: $likelyMethod',
+                type: 'method_prediction',
+                confidence: 0.65,
+                data: methodOdds,
+              ),
+            );
+          }
+        }
+      }
+
+      // Get boxing news
+      final newsQuery = '${intelligence.homeTeam} ${intelligence.awayTeam} boxing';
+      final newsData = await _newsService.getSportNews(newsQuery);
+      
+      if (newsData != null && newsData['articles'] != null) {
+        final articles = newsData['articles'] as List;
+        boxingData['news'] = {
+          'articleCount': articles.length,
+          'headlines': articles.take(3).map((a) => a['title']).toList(),
+        };
+        
+        // Look for injury or training camp news
+        for (final article in articles) {
+          final headline = article['title']?.toString().toLowerCase() ?? '';
+          final description = article['description']?.toString().toLowerCase() ?? '';
+          final content = '$headline $description';
+          
+          if (content.contains('injur') || content.contains('pull out') || content.contains('withdraw')) {
+            intelligence.insights.add(
+              EdgeInsight(
+                message: 'Injury concern reported in news',
+                type: 'injury_alert',
+                confidence: 0.60,
+                data: {'headline': article['title']},
+              ),
+            );
+          }
+          
+          if (content.contains('sparring') || content.contains('camp') || content.contains('train')) {
+            boxingData['trainingCamp'] = {
+              'recentNews': article['title'],
+              'source': article['source']?['name'] ?? 'Unknown',
+            };
+          }
+        }
+      }
+
+      // Get Reddit sentiment for boxing
+      final redditData = await _redditService.getFightCardIntelligence(
+        eventName: '${intelligence.homeTeam} vs ${intelligence.awayTeam}',
+        mainEvent: '${intelligence.homeTeam} vs ${intelligence.awayTeam}',
+        promotion: 'boxing',
+      );
+
+      if (redditData.isNotEmpty) {
+        boxingData['reddit'] = redditData;
+        
+        // Analyze fighter sentiment
+        final fighterSentiment = redditData['fighterSentiment'] ?? {};
+        if (fighterSentiment.isNotEmpty) {
+          String fanFavorite = '';
+          int maxPositive = 0;
+          
+          fighterSentiment.forEach((fighter, data) {
+            final positive = data['positive'] ?? 0;
+            if (positive > maxPositive) {
+              maxPositive = positive;
+              fanFavorite = fighter;
+            }
+          });
+          
+          if (fanFavorite.isNotEmpty && maxPositive > 5) {
+            intelligence.insights.add(
+              EdgeInsight(
+                message: 'Reddit favoring $fanFavorite ($maxPositive positive mentions)',
+                type: 'social_sentiment',
+                confidence: 0.60,
+                data: fighterSentiment,
+              ),
+            );
+          }
+        }
+        
+        // Fan excitement level
+        final excitement = redditData['fanExcitement'] ?? 0.0;
+        if (excitement > 0.7) {
+          intelligence.insights.add(
+            EdgeInsight(
+              message: 'High fan excitement - ${(excitement * 100).toStringAsFixed(0)}% engagement',
+              type: 'fan_interest',
+              confidence: 0.65,
+              data: {'excitement': excitement},
+            ),
+          );
+        }
+      }
+
+      // Judge analysis for title fights
+      if (espnData['mainEvent']?['titleFight'] == true) {
+        boxingData['judgeAnalysis'] = {
+          'type': 'championship_scoring',
+          'note': 'Title fights often favor champions in close rounds',
+          'recommendation': 'Consider champion bias in decision betting',
+        };
+        
+        intelligence.insights.add(
+          EdgeInsight(
+            message: 'Championship bout - incumbent champion may get benefit in close rounds',
+            type: 'judge_bias',
+            confidence: 0.65,
+            data: boxingData['judgeAnalysis'],
+          ),
+        );
+      }
+
+      // Generate boxing-specific predictions
+      final predictions = _generateBoxingPredictions(boxingData, intelligence);
+      boxingData['predictions'] = predictions;
+      
+      // Add predictions as insights
+      for (final prediction in predictions.take(3)) {
+        intelligence.insights.add(
+          EdgeInsight(
+            message: prediction['insight'],
+            type: prediction['type'],
+            confidence: prediction['confidence'],
+            data: prediction,
+          ),
+        );
+      }
+
+      // Store all boxing data
+      intelligence.data['boxing'] = boxingData;
+
+      debugPrint('✅ Boxing intelligence gathered: ${intelligence.insights.length} insights');
+
+    } catch (e) {
+      debugPrint('❌ Error gathering boxing intelligence: $e');
+      intelligence.insights.add(
+        EdgeInsight(
+          message: 'Limited boxing data available',
+          type: 'error',
+          confidence: 0.0,
+          data: {'error': e.toString()},
+        ),
+      );
+    }
+  }
+
+  /// Generate boxing-specific predictions
+  List<Map<String, dynamic>> _generateBoxingPredictions(
+    Map<String, dynamic> boxingData,
+    EdgeIntelligence intelligence,
+  ) {
+    final predictions = <Map<String, dynamic>>[];
+    
+    // Analyze for upset potential
+    final odds = boxingData['odds']?['moneyline'] ?? {};
+    if (odds.isNotEmpty) {
+      // Check for close odds (potential upset)
+      final values = odds.values.map((v) => double.tryParse(v.toString()) ?? 0).toList();
+      if (values.length >= 2) {
+        final diff = (values[0] - values[1]).abs();
+        if (diff < 100) {
+          predictions.add({
+            'type': 'close_fight',
+            'insight': 'Odds suggest competitive fight - consider underdog value',
+            'confidence': 0.70,
+          });
+        } else if (values.any((v) => v > 300)) {
+          predictions.add({
+            'type': 'upset_potential',
+            'insight': 'Large underdog could provide value if stylistic matchup favors',
+            'confidence': 0.55,
+          });
+        }
+      }
+    }
+    
+    // Rounds prediction based on KO rates
+    final profiles = boxingData['fighterProfiles'] ?? {};
+    double avgKoRate = 0;
+    int fighterCount = 0;
+    
+    profiles.forEach((name, profile) {
+      final koRate = profile['koPercentage'] ?? 0;
+      avgKoRate += koRate;
+      fighterCount++;
+    });
+    
+    if (fighterCount > 0) {
+      avgKoRate /= fighterCount;
+      
+      if (avgKoRate > 60) {
+        predictions.add({
+          'type': 'distance_prediction',
+          'insight': 'High combined KO rate (${avgKoRate.toStringAsFixed(0)}%) - unlikely to go distance',
+          'confidence': 0.75,
+        });
+      } else if (avgKoRate < 30) {
+        predictions.add({
+          'type': 'distance_prediction',
+          'insight': 'Low KO rate - likely to go to decision',
+          'confidence': 0.70,
+        });
+      }
+    }
+    
+    // Championship rounds factor
+    final rounds = boxingData['mainEvent']?['rounds'] ?? 10;
+    if (rounds == 12) {
+      predictions.add({
+        'type': 'championship_rounds',
+        'insight': '12-round fight - conditioning crucial in rounds 10-12',
+        'confidence': 0.80,
+      });
+    }
+    
+    // Style matchup predictions
+    if (boxingData['styleMatchup'] != null && boxingData['styleMatchup'].isNotEmpty) {
+      final stances = boxingData['styleMatchup'];
+      if (stances.values.contains('Southpaw') && stances.values.contains('Orthodox')) {
+        predictions.add({
+          'type': 'tactical_fight',
+          'insight': 'Orthodox vs Southpaw - expect tactical, technical fight',
+          'confidence': 0.70,
+        });
+      }
+    }
+    
+    return predictions;
   }
 
   /// Gather universal intelligence (weather, news, social)
