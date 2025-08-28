@@ -272,5 +272,17 @@ service cloud.firestore {
       // Nobody can write directly (only Cloud Functions)
       allow write: if false;
     }
+    
+    // ========================================
+    // EDGE CACHE COLLECTION RULES
+    // ========================================
+    
+    match /edge_cache/{cacheType}/{document=**} {
+      // All authenticated users can read cache
+      allow read: if isAuthenticated();
+      
+      // All authenticated users can write cache (for caching API responses)
+      allow write: if isAuthenticated();
+    }
   }
 }

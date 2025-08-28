@@ -343,13 +343,14 @@ class EdgeIntelligenceService {
         sport: 'NFL',
       );
       
-      if (newsData != null && newsData.articles.isNotEmpty) {
+      if (newsData != null && newsData['articles'] != null && (newsData['articles'] as List).isNotEmpty) {
+        final articles = newsData['articles'] as List;
         intelligence.addDataPoint(
           source: 'NewsAPI',
           type: 'recent_news',
           data: {
-            'articleCount': newsData.articles.length,
-            'headlines': newsData.articles.take(3).map((a) => a.title).toList(),
+            'articleCount': articles.length,
+            'headlines': articles.take(3).map((a) => a['title']).toList(),
           },
           confidence: 0.75,
         );
@@ -670,13 +671,14 @@ class EdgeIntelligenceService {
         sport: 'MLB',
       );
       
-      if (newsData != null && newsData.articles.isNotEmpty) {
+      if (newsData != null && newsData['articles'] != null && (newsData['articles'] as List).isNotEmpty) {
+        final articles = newsData['articles'] as List;
         intelligence.addDataPoint(
           source: 'NewsAPI',
           type: 'recent_news',
           data: {
-            'articleCount': newsData.articles.length,
-            'headlines': newsData.articles.take(3).map((a) => a.title).toList(),
+            'articleCount': articles.length,
+            'headlines': articles.take(3).map((a) => a['title']).toList(),
           },
           confidence: 0.75,
         );
@@ -855,6 +857,7 @@ class EdgeIntelligenceService {
       
       // Get ESPN NHL data for odds and additional info
       final espnData = await _espnNhlService.getGameIntelligence(
+        gameId: eventId,
         homeTeam: intelligence.homeTeam,
         awayTeam: intelligence.awayTeam,
       );
@@ -925,13 +928,14 @@ class EdgeIntelligenceService {
         sport: 'NHL',
       );
       
-      if (newsData != null && newsData.articles.isNotEmpty) {
+      if (newsData != null && newsData['articles'] != null && (newsData['articles'] as List).isNotEmpty) {
+        final articles = newsData['articles'] as List;
         intelligence.addDataPoint(
           source: 'NewsAPI',
           type: 'recent_news',
           data: {
-            'articleCount': newsData.articles.length,
-            'headlines': newsData.articles.take(3).map((a) => a.title).toList(),
+            'articleCount': articles.length,
+            'headlines': articles.take(3).map((a) => a['title']).toList(),
           },
           confidence: 0.75,
         );
@@ -1198,13 +1202,14 @@ class EdgeIntelligenceService {
         sport: mmaPromotion.toUpperCase(),
       );
       
-      if (newsData != null && newsData.articles.isNotEmpty) {
+      if (newsData != null && newsData['articles'] != null && (newsData['articles'] as List).isNotEmpty) {
+        final articles = newsData['articles'] as List;
         intelligence.addDataPoint(
           source: 'NewsAPI',
           type: 'recent_news',
           data: {
-            'articleCount': newsData.articles.length,
-            'headlines': newsData.articles.take(3).map((a) => a.title).toList(),
+            'articleCount': articles.length,
+            'headlines': articles.take(3).map((a) => a['title']).toList(),
           },
           confidence: 0.75,
         );
@@ -1481,19 +1486,19 @@ class EdgeIntelligenceService {
 
       // Get boxing news
       final newsQuery = '${intelligence.homeTeam} ${intelligence.awayTeam} boxing';
-      final newsData = await _newsService.getSportNews(newsQuery);
+      final newsData = await _newsService.getTeamNews(query: newsQuery);
       
-      if (newsData != null && newsData['articles'] != null) {
-        final articles = newsData['articles'] as List;
+      if (newsData != null && newsData.articles.isNotEmpty) {
+        final articles = newsData.articles;
         boxingData['news'] = {
           'articleCount': articles.length,
-          'headlines': articles.take(3).map((a) => a['title']).toList(),
+          'headlines': articles.take(3).map((a) => a.title).toList(),
         };
         
         // Look for injury or training camp news
         for (final article in articles) {
-          final headline = article['title']?.toString().toLowerCase() ?? '';
-          final description = article['description']?.toString().toLowerCase() ?? '';
+          final headline = article.title?.toLowerCase() ?? '';
+          final description = article.description?.toLowerCase() ?? '';
           final content = '$headline $description';
           
           if (content.contains('injur') || content.contains('pull out') || content.contains('withdraw')) {
@@ -1502,15 +1507,15 @@ class EdgeIntelligenceService {
                 message: 'Injury concern reported in news',
                 type: 'injury_alert',
                 confidence: 0.60,
-                data: {'headline': article['title']},
+                data: {'headline': article.title},
               ),
             );
           }
           
           if (content.contains('sparring') || content.contains('camp') || content.contains('train')) {
             boxingData['trainingCamp'] = {
-              'recentNews': article['title'],
-              'source': article['source']?['name'] ?? 'Unknown',
+              'recentNews': article.title,
+              'source': article.source ?? 'Unknown',
             };
           }
         }
@@ -1823,6 +1828,7 @@ class EdgeIntelligence {
   
   final List<DataPoint> dataPoints = [];
   final List<EdgeInsight> insights = [];
+  final Map<String, dynamic> data = {};  // Storage for sport-specific data
   Map<String, dynamic> predictions = {};
   double overallConfidence = 0.0;
 
@@ -1858,9 +1864,9 @@ class EdgeIntelligence {
     required String impact,
   }) {
     insights.add(EdgeInsight(
-      category: category,
-      insight: insight,
-      impact: impact,
+      message: insight,
+      type: category,
+      confidence: impact == 'high' ? 0.9 : impact == 'medium' ? 0.7 : 0.5,
     ));
   }
 
@@ -1974,17 +1980,29 @@ class DataPoint {
 
 /// Actionable insight
 class EdgeInsight {
-  final String category;
-  final String insight;
-  final String impact; // high, medium, low
+  final String message;
+  final String type;
+  final double confidence;
+  final Map<String, dynamic>? data;
+  
+  // Legacy properties for compatibility
+  String get category => type;
+  String get insight => message;
+  String get impact => confidence > 0.8 ? 'high' : confidence > 0.6 ? 'medium' : 'low';
 
   EdgeInsight({
-    required this.category,
-    required this.insight,
-    required this.impact,
+    required this.message,
+    required this.type,
+    required this.confidence,
+    this.data,
   });
 
   Map<String, dynamic> toMap() => {
+    'message': message,
+    'type': type,
+    'confidence': confidence,
+    'data': data,
+    // Legacy compatibility
     'category': category,
     'insight': insight,
     'impact': impact,
@@ -1992,9 +2010,10 @@ class EdgeInsight {
 
   factory EdgeInsight.fromMap(Map<String, dynamic> map) {
     return EdgeInsight(
-      category: map['category'],
-      insight: map['insight'],
-      impact: map['impact'],
+      message: map['message'] ?? map['insight'] ?? '',
+      type: map['type'] ?? map['category'] ?? '',
+      confidence: map['confidence'] ?? 0.5,
+      data: map['data'],
     );
   }
 }

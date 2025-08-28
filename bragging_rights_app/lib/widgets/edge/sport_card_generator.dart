@@ -1,5 +1,5 @@
 import 'edge_card_types.dart';
-import 'package:bragging_rights_app/models/edge_intelligence.dart';
+import '../../services/edge/edge_intelligence_service.dart';
 
 /// Generates Edge Cards from intelligence data for different sports
 class SportCardGenerator {
@@ -470,13 +470,13 @@ class SportCardGenerator {
             ? insight.message.substring(0, 50) + '...'
             : insight.message,
         fullContent: insight.message,
-        metadata: insight.data,
+        metadata: insight.data ?? {},
         timestamp: DateTime.now(),
         rarity: rarity,
         badges: badges,
         currentCost: EdgeCardConfigs.getConfig(category).baseCost,
         confidence: insight.confidence,
-        impactText: insight.data['impact']?.toString(),
+        impactText: insight.data?['impact']?.toString(),
       ));
     }
     

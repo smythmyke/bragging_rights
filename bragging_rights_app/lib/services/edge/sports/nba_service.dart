@@ -625,7 +625,7 @@ class NbaPlayerInfo {
     if (resultSets.isNotEmpty) {
       final infoData = resultSets[0]['rowSet']?[0] ?? [];
       final statsData = resultSets.length > 1 
-          ? resultSets[1]['rowSet']?[0] ?? []
+          ? (resultSets[1]['rowSet']?[0] ?? [])
           : [];
       
       return NbaPlayerInfo(

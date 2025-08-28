@@ -8,7 +8,7 @@ import 'screens/home/home_screen.dart' as home;
 import 'screens/pools/pool_selection_screen.dart';
 import 'screens/game/game_detail_screen.dart';
 import 'screens/betting/bet_selection_screen.dart';
-import 'screens/premium/edge_screen.dart';
+import 'screens/premium/edge_screen_v2.dart';
 import 'screens/splash/lottie_splash_screen.dart';
 import 'screens/bets/active_bets_screen.dart';
 import 'screens/pools/my_pools_screen.dart';
@@ -81,9 +81,10 @@ class BraggingRightsApp extends StatelessWidget {
         } else if (settings.name == '/edge') {
           final args = settings.arguments as Map<String, String>;
           return MaterialPageRoute(
-            builder: (context) => EdgeScreen(
+            builder: (context) => EdgeScreenV2(
               gameTitle: args['gameTitle'] ?? 'Game',
-              sport: args['sport'] ?? 'Sport',
+              gameId: args['gameId'] ?? '',
+              sport: args['sport'] ?? 'nba',
             ),
           );
         } else if (settings.name == '/active-bets') {
