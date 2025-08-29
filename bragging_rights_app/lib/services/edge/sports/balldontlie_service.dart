@@ -1,17 +1,16 @@
 import 'package:flutter/foundation.dart';
-import '../api_gateway.dart';
+import '../../cloud_api_service.dart';
 import '../event_matcher.dart';
 import 'package:intl/intl.dart';
 
 /// Balldontlie NBA Service
+/// Now uses Cloud Functions proxy for secure API access
 /// Free tier provides: Teams, Players, Games (5 req/min limit)
-/// Paid features NOT available: Stats, Season Averages, Box Scores, Standings
 class BalldontlieService {
-  final ApiGateway _gateway = ApiGateway();
+  final CloudApiService _cloudApi = CloudApiService();
   final EventMatcher _matcher = EventMatcher();
   
-  static const String _apiName = 'balldontlie';
-  static const String _apiKey = '978b1ba9-9847-40cc-93d1-abca911cf822';
+  // No more hardcoded API key!
   
   // Balldontlie endpoints
   static const String _gamesEndpoint = '/games';
@@ -28,24 +27,20 @@ class BalldontlieService {
     try {
       final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
       
-      debugPrint('🏀 Fetching NBA games from Balldontlie for $today...');
+      debugPrint('🏀 Fetching NBA games via Cloud Functions for $today...');
       
-      final response = await _gateway.request(
-        apiName: _apiName,
-        endpoint: _gamesEndpoint,
-        queryParams: {
-          'dates[]': today,
-          'per_page': '100',
-        },
-        headers: _getHeaders(),
+      // Use Cloud Functions proxy instead of direct API call
+      final data = await _cloudApi.getNBAGames(
+        season: DateTime.now().year,
+        perPage: 100,
       );
 
-      if (response.data != null) {
-        debugPrint('✅ Balldontlie data received');
-        return BalldontlieGamesResponse.fromJson(response.data);
+      if (data != null) {
+        debugPrint('✅ NBA games received from Cloud Functions');
+        return BalldontlieGamesResponse.fromJson(data);
       }
     } catch (e) {
-      debugPrint('❌ Error fetching Balldontlie games: $e');
+      debugPrint('❌ Error fetching NBA games: $e');
     }
     return null;
   }
@@ -372,14 +367,7 @@ class BalldontlieService {
     return insights;
   }
 
-  /// Get proper headers with API key
-  Map<String, String> _getHeaders() {
-    return {
-      'Authorization': _apiKey,
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-    };
-  }
+  // Headers no longer needed - Cloud Functions handle authentication
 }
 
 // Balldontlie Data Models

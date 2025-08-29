@@ -186,6 +186,15 @@ None currently active
   - ✅ Add fallback chains (ESPN/Official API fallback)
   - ✅ Weather impact analysis for outdoor games
   - ✅ ALL 6 MAJOR SPORTS NOW SUPPORTED (NBA, NHL, NFL, MLB, MMA, Boxing)!
+  - [ ] **TENNIS INTEGRATION** (New sport - In Progress)
+    - [ ] Integrate SportDevs Tennis API (free tier)
+    - [ ] Add tennis-specific game models
+    - [ ] Implement tennis scoring system (sets, games, points)
+    - [ ] Add tennis betting types (match winner, set betting, total games)
+    - [ ] Create tennis Edge intelligence cards
+    - [ ] Add surface type analysis (clay, grass, hard court)
+    - [ ] Head-to-head history tracking
+    - [ ] Player form and ranking intelligence
   - ✅ **Edge Cards UI System COMPLETE** (Gamified intelligence presentation!)
     - ✅ 8 distinct card categories with visual identities
     - ✅ Locked/unlocked states with blur effects

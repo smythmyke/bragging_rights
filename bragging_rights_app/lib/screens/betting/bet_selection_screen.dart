@@ -117,8 +117,8 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         final odds = await _sportsApiService.getGameOdds(widget.gameId!);
         
         setState(() {
-          _gameData = game;
-          _oddsData = odds;
+          _gameData = game.toGameModel();
+          _oddsData = odds?.toOddsModel();
           _homeTeam = game.homeTeam;
           _awayTeam = game.awayTeam;
           _gameStartCountdown = game.timeUntilGame;

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
@@ -11,7 +12,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 /// Uses The-Sports-DB API for complete team coverage
 class TeamLogoService {
   static const String _apiBaseUrl = 'https://www.thesportsdb.com/api/v1/json/3';
-  static const String _apiKey = '3'; // Free tier key, replace with your own
+  static const String _apiKey = '3'; // TheSportsDB free tier key (public)
   
   // Cache duration in days
   static const int _cacheDurationDays = 30;

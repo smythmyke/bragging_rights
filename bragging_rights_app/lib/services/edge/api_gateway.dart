@@ -53,7 +53,7 @@ class ApiGateway {
       rateLimitWindow: const Duration(hours: 24),
       timeout: const Duration(seconds: 10),
       cacheDuration: const Duration(minutes: 30),
-      apiKey: '3386d47aa3fe4a7f8375643727fa5afe',
+      apiKey: '', // Now handled by Cloud Functions
     ),
     'openweather': ApiConfig(
       baseUrl: 'https://api.openweathermap.org/data/2.5',
@@ -61,7 +61,7 @@ class ApiGateway {
       rateLimitWindow: const Duration(minutes: 1),
       timeout: const Duration(seconds: 10),
       cacheDuration: const Duration(minutes: 30),
-      apiKey: 'YOUR_OPENWEATHER_API_KEY', // TODO: Move to environment config
+      apiKey: '', // Now handled by Cloud Functions
     ),
     'odds_api': ApiConfig(
       baseUrl: 'https://api.the-odds-api.com/v4',
@@ -69,7 +69,7 @@ class ApiGateway {
       rateLimitWindow: const Duration(days: 30),
       timeout: const Duration(seconds: 10),
       cacheDuration: const Duration(minutes: 5),
-      apiKey: 'YOUR_ODDS_API_KEY', // Already integrated
+      apiKey: '', // Now handled by Cloud Functions
     ),
     'balldontlie': ApiConfig(
       baseUrl: 'https://api.balldontlie.io/v1',
@@ -77,7 +77,7 @@ class ApiGateway {
       rateLimitWindow: const Duration(minutes: 1),
       timeout: const Duration(seconds: 10),
       cacheDuration: const Duration(minutes: 10), // Cache longer due to rate limits
-      apiKey: '978b1ba9-9847-40cc-93d1-abca911cf822',
+      apiKey: '', // Now handled by Cloud Functions
     ),
   };
 

@@ -213,6 +213,6 @@ class TestEdgeCacheSystem {
     debugPrint('  Cost savings:');
     debugPrint('    NewsAPI: 100/day limit → Stay within free tier');
     debugPrint('    Balldontlie: 5/min limit → Never exceeded');
-    debugPrint('    Total cost: $0/month 🎉');
+    debugPrint('    Total cost: \$0/month 🎉');
   }
 }

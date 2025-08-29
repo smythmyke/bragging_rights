@@ -226,7 +226,7 @@ class TeamLogoLarge extends StatelessWidget {
                 end: Alignment.bottomRight,
                 colors: [
                   Theme.of(context).primaryColor.withOpacity(0.3),
-                  Theme.of(context).accentColor.withOpacity(0.3),
+                  Theme.of(context).colorScheme.secondary.withOpacity(0.3),
                 ],
               ),
             ),

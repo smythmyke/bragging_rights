@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'edge_detail_screen.dart';
+// import 'edge_detail_screen.dart'; // Removed - using EdgeScreenV2 now
 import '../../services/edge/sports/espn_nba_service.dart';
 import '../../services/edge/sports/espn_nhl_service.dart';
 import '../../services/edge/sports/nhl_api_service.dart';
@@ -1105,14 +1105,65 @@ class _EdgeScreenState extends State<EdgeScreen> with TickerProviderStateMixin {
   }
   
   void _showDetailedView(EdgeCard card) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EdgeDetailScreen(
-          card: card,
-          gameTitle: widget.gameTitle,
-          sport: widget.sport,
+    // EdgeDetailScreen is not implemented yet
+    // TODO: Implement EdgeDetailScreen or use a dialog instead
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(card.icon, color: card.color),
+            const SizedBox(width: 8),
+            Expanded(child: Text(card.title)),
+          ],
         ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                card.data,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Icon(Icons.source, size: 16, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Source: ${card.source}',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+              if (card.hasAlert) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Icon(card.alertIcon ?? Icons.warning, 
+                         size: 20, 
+                         color: Colors.orange),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'High Impact Alert',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }

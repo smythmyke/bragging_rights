@@ -292,8 +292,8 @@ class SettlementService {
       for (int i = 0; i < winners.length && i < 3; i++) {
         final position = '${i + 1}';
         final prize = prizeStructure[position] ?? 0;
-        winners[i].payout = prize;
-        totalPayout += prize;
+        winners[i].payout = prize.toInt();
+        totalPayout += prize.toInt();
       }
     } else {
       // Equal distribution among winners

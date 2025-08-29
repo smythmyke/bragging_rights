@@ -4,6 +4,7 @@ import 'dart:async';
 import '../../services/bet_service.dart';
 import '../../services/wallet_service.dart';
 import '../../services/sports_api_service.dart';
+import '../../services/wager_service.dart';
 import '../../models/game_model.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -22,6 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final BetService _betService = BetService();
   final WalletService _walletService = WalletService();
   final SportsApiService _sportsApiService = SportsApiService();
+  final WagerService _wagerService = WagerService();
   
   // Track games with bets
   List<String> _gamesWithBets = [];
@@ -60,8 +62,9 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     
     try {
-      // Load live games
-      final liveGames = await _sportsApiService.getLiveGames();
+      // Load live games and convert to GameModel
+      final liveGamesData = await _sportsApiService.getLiveGames();
+      final liveGames = liveGamesData.map((game) => game.toGameModel()).toList();
       
       // Load upcoming games from user's favorite sports
       final upcomingGames = <GameModel>[];
@@ -69,7 +72,8 @@ class _HomeScreenState extends State<HomeScreen> {
       
       for (final sport in sports) {
         final games = await _sportsApiService.getUpcomingGames(sport, limit: 5);
-        upcomingGames.addAll(games);
+        // Convert Game objects to GameModel objects
+        upcomingGames.addAll(games.map((game) => game.toGameModel()));
       }
       
       // Sort upcoming games by time
@@ -169,11 +173,11 @@ class _HomeScreenState extends State<HomeScreen> {
       body: IndexedStack(
         index: _selectedIndex,
         children: [
-          _buildHomeTab(),
-          _buildMyPoolsTab(),
-          _buildDiscoverTab(),
-          _buildLeaderboardTab(),
-          _buildProfileTab(),
+          _buildGamesTab(),
+          _buildBetsTab(),
+          _buildPoolsTab(),
+          _buildEdgeTab(),
+          _buildMoreTab(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -186,31 +190,31 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(PhosphorIconsRegular.house),
-            label: 'Home',
+            icon: Icon(PhosphorIconsRegular.gameController),
+            label: 'Games',
           ),
           BottomNavigationBarItem(
-            icon: Icon(PhosphorIconsRegular.swimmingPool),
-            label: 'My Pools',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(PhosphorIconsRegular.compass),
-            label: 'Discover',
+            icon: Icon(PhosphorIconsRegular.currencyDollar),
+            label: 'Bets',
           ),
           BottomNavigationBarItem(
             icon: Icon(PhosphorIconsRegular.trophy),
-            label: 'Leaderboard',
+            label: 'Pools',
           ),
           BottomNavigationBarItem(
-            icon: Icon(PhosphorIconsRegular.user),
-            label: 'Profile',
+            icon: Icon(PhosphorIconsRegular.lightning),
+            label: 'Edge',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(PhosphorIconsRegular.dotsThreeOutline),
+            label: 'More',
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHomeTab() {
+  Widget _buildGamesTab() {
     return RefreshIndicator(
       onRefresh: () async {
         // TODO: Refresh data
@@ -235,15 +239,20 @@ class _HomeScreenState extends State<HomeScreen> {
                       // TODO: Quick play
                     },
                   ),
-                  _buildQuickActionCard(
-                    'My Wagers',
-                    PhosphorIconsRegular.chartLine,
-                    Colors.indigo,
-                    () {
-                      Navigator.pushNamed(context, '/active-wagers');
+                  StreamBuilder<int>(
+                    stream: _getActiveWagerCount(),
+                    builder: (context, snapshot) {
+                      return _buildQuickActionCard(
+                        'My Wagers',
+                        PhosphorIconsRegular.chartLine,
+                        Colors.indigo,
+                        () {
+                          Navigator.pushNamed(context, '/active-wagers');
+                        },
+                        showBadge: snapshot.data != null && snapshot.data! > 0,
+                        badgeCount: snapshot.data ?? 0,
+                      );
                     },
-                    showBadge: true,
-                    badgeCount: 3, // This will be dynamic based on active wagers
                   ),
                   _buildQuickActionCard(
                     'My Pools',
@@ -883,27 +892,31 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Widget _buildMyPoolsTab() {
+  Widget _buildBetsTab() {
     return const Center(
       child: Text('My Pools - Coming Soon'),
     );
   }
 
-  Widget _buildDiscoverTab() {
+  Widget _buildPoolsTab() {
     return const Center(
       child: Text('Discover - Coming Soon'),
     );
   }
 
-  Widget _buildLeaderboardTab() {
+  Widget _buildEdgeTab() {
     return const Center(
       child: Text('Leaderboard - Coming Soon'),
     );
   }
 
-  Widget _buildProfileTab() {
+  Widget _buildMoreTab() {
     return const Center(
       child: Text('Profile - Coming Soon'),
     );
+  }
+
+  Stream<int> _getActiveWagerCount() {
+    return _wagerService.getActiveWagersStream().map((wagers) => wagers.length);
   }
 }

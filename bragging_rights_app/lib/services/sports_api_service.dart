@@ -229,6 +229,27 @@ class Game {
   bool get isLive => status == 'live';
   bool get isFinal => status == 'final';
   bool get isScheduled => status == 'scheduled';
+  
+  Duration get timeUntilGame => gameTime.difference(DateTime.now());
+  
+  // Convert to GameModel for compatibility
+  GameModel toGameModel() {
+    return GameModel(
+      id: id,
+      sport: sport,
+      homeTeam: homeTeam,
+      awayTeam: awayTeam,
+      gameTime: gameTime,
+      status: status,
+      homeScore: homeScore,
+      awayScore: awayScore,
+      period: period,
+      timeRemaining: timeRemaining,
+      odds: odds,
+      venue: venue,
+      broadcast: broadcast,
+    );
+  }
 }
 
 // Odds Model
@@ -268,6 +289,21 @@ class OddsData {
       lastUpdated: map['lastUpdated'] != null
           ? (map['lastUpdated'] as Timestamp).toDate()
           : null,
+    );
+  }
+  
+  // Convert to OddsModel for compatibility
+  OddsModel toOddsModel() {
+    return OddsModel(
+      homeMoneyline: homeMoneyline,
+      awayMoneyline: awayMoneyline,
+      spread: spread,
+      spreadHomeOdds: spreadHomeOdds,
+      spreadAwayOdds: spreadAwayOdds,
+      totalPoints: totalPoints,
+      overOdds: overOdds,
+      underOdds: underOdds,
+      lastUpdated: lastUpdated,
     );
   }
 }

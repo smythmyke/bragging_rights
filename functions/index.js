@@ -839,4 +839,15 @@ exports.getLiveGames = sportsData.getLiveGames;
 exports.getUpcomingGames = sportsData.getUpcomingGames;
 exports.forceUpdateGames = sportsData.forceUpdateGames;
 
+// Sports API Proxy Functions
+const sportsApiProxy = require('./sports-api-proxy');
+exports.getNBAGames = sportsApiProxy.getNBAGames;
+exports.getNBAStats = sportsApiProxy.getNBAStats;
+exports.getOdds = sportsApiProxy.getOdds;
+exports.getSportsInSeason = sportsApiProxy.getSportsInSeason;
+exports.getSportsNews = sportsApiProxy.getSportsNews;
+exports.getESPNScoreboard = sportsApiProxy.getESPNScoreboard;
+exports.getNHLSchedule = sportsApiProxy.getNHLSchedule;
+exports.getTennisMatches = sportsApiProxy.getTennisMatches;
+
 console.log('Cloud Functions initialized for Bragging Rights');
