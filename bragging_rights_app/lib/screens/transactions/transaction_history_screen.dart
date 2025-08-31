@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../services/transaction_service.dart';
+import '../../services/purchase_service.dart';
 import '../../widgets/br_app_bar.dart';
 import 'package:intl/intl.dart';
 
@@ -14,6 +16,7 @@ class TransactionHistoryScreen extends StatefulWidget {
 class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     with SingleTickerProviderStateMixin {
   final TransactionService _transactionService = TransactionService();
+  final PurchaseService _purchaseService = PurchaseService();
   late TabController _tabController;
   TransactionType? _selectedType;
   DateTimeRange? _dateRange;
@@ -97,6 +100,220 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     }
   }
 
+  void _showPurchaseOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Get BR Coins',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Purchase BR to place bets and join pools',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Builder(
+              builder: (context) {
+                final products = _purchaseService.getProducts();
+                
+                if (products.isEmpty) {
+                  return Center(
+                    child: Column(
+                      children: [
+                        Icon(Icons.shopping_cart_outlined, color: Colors.grey[400], size: 48),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No products available',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                
+                return Column(
+                  children: products.map((product) {
+                    final bool isPopular = product.id == 'br_coins_500';
+                    final productInfo = _purchaseService.getProductInfo(product.id);
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: isPopular ? Colors.green : Colors.grey[300]!,
+                          width: isPopular ? 2 : 1,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        color: isPopular ? Colors.green.withOpacity(0.05) : null,
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () async {
+                            Navigator.pop(context);
+                            
+                            // Show loading dialog
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (context) => const Center(
+                                child: Card(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(20),
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                ),
+                              ),
+                            );
+                            
+                            try {
+                              final success = await _purchaseService.purchaseProduct(product.id);
+                              
+                              // Close loading dialog
+                              if (context.mounted) Navigator.pop(context);
+                              
+                              if (success && context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Successfully purchased ${productInfo?['coins'] ?? ''} BR!'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              // Close loading dialog
+                              if (context.mounted) Navigator.pop(context);
+                              
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Purchase failed: ${e.toString()}'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 50,
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    PhosphorIconsRegular.currencyCircleDollar,
+                                    color: Colors.green,
+                                    size: 28,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(
+                                            '${productInfo?['coins'] ?? ''} BR',
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          if (isPopular) ...[
+                                            const SizedBox(width: 8),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                                vertical: 2,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.green,
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: const Text(
+                                                'POPULAR',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        productInfo?['description'] ?? product.title,
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                  product.price,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -106,6 +323,11 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
         title: 'Transaction History',
         showBackButton: true,
         actions: [
+          TextButton.icon(
+            onPressed: () => _showPurchaseOptions(context),
+            icon: const Icon(PhosphorIconsRegular.plus, size: 16, color: Colors.white),
+            label: const Text('Get BR Coins', style: TextStyle(color: Colors.white)),
+          ),
           IconButton(
             icon: const Icon(Icons.calendar_today),
             onPressed: _selectDateRange,

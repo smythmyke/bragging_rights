@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -57,8 +58,34 @@ class _LoginScreenState extends State<LoginScreen> {
       }
       
       if (mounted) {
-        print('Navigating to sports selection');
-        Navigator.pushReplacementNamed(context, '/sports-selection');
+        print('Checking if user needs sports selection');
+        // Check if user has already selected sports
+        final user = _authService.currentUser;
+        if (user != null) {
+          try {
+            final userDoc = await FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .get();
+            
+            final hasSelectedSports = userDoc.data()?['selectedSports'] != null && 
+                (userDoc.data()?['selectedSports'] as List).isNotEmpty;
+            
+            if (hasSelectedSports) {
+              print('User has already selected sports, going to home');
+              Navigator.pushReplacementNamed(context, '/home');
+            } else {
+              print('First time user, going to sports selection');
+              Navigator.pushReplacementNamed(context, '/sports-selection');
+            }
+          } catch (e) {
+            print('Error checking sports selection: $e');
+            // Default to sports selection on error
+            Navigator.pushReplacementNamed(context, '/sports-selection');
+          }
+        } else {
+          Navigator.pushReplacementNamed(context, '/sports-selection');
+        }
       }
     } catch (e, stackTrace) {
       print('Auth error: $e');
@@ -86,7 +113,28 @@ class _LoginScreenState extends State<LoginScreen> {
       final credential = await _authService.signInWithGoogle();
       
       if (credential != null && mounted) {
-        Navigator.pushReplacementNamed(context, '/sports-selection');
+        // Check if user has already selected sports
+        try {
+          final userDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(credential.user!.uid)
+              .get();
+          
+          final hasSelectedSports = userDoc.data()?['selectedSports'] != null && 
+              (userDoc.data()?['selectedSports'] as List).isNotEmpty;
+          
+          if (hasSelectedSports) {
+            print('User has already selected sports, going to home');
+            Navigator.pushReplacementNamed(context, '/home');
+          } else {
+            print('First time user, going to sports selection');
+            Navigator.pushReplacementNamed(context, '/sports-selection');
+          }
+        } catch (e) {
+          print('Error checking sports selection: $e');
+          // Default to sports selection on error
+          Navigator.pushReplacementNamed(context, '/sports-selection');
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -132,13 +180,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: Theme.of(context).colorScheme.onPrimary,
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    'Bragging Rights',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    ),
+                  Image.asset(
+                    'assets/images/bragging_rights_logo.png',
+                    height: 160,
+                    fit: BoxFit.contain,
                   ),
                   const SizedBox(height: 8),
                   Text(

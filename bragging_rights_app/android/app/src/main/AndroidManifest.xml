@@ -1,4 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <!-- Required for Google Play Billing (In-App Purchases) -->
+    <uses-permission android:name="com.android.vending.BILLING" />
+    <!-- Internet permission for API calls -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    
     <application
         android:label="bragging_rights_app"
         android:name="${applicationName}"

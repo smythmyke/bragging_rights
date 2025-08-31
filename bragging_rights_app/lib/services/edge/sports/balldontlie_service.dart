@@ -54,30 +54,14 @@ class BalldontlieService {
     int page = 1,
   }) async {
     try {
-      final params = <String, dynamic>{
-        'per_page': perPage.toString(),
-        'page': page.toString(),
-      };
-
-      if (startDate != null) {
-        params['start_date'] = DateFormat('yyyy-MM-dd').format(startDate);
-      }
-      if (endDate != null) {
-        params['end_date'] = DateFormat('yyyy-MM-dd').format(endDate);
-      }
-      if (teamId != null) {
-        params['team_ids[]'] = teamId.toString();
-      }
-
-      final response = await _gateway.request(
-        apiName: _apiName,
-        endpoint: _gamesEndpoint,
-        queryParams: params,
-        headers: _getHeaders(),
+      // Use Cloud Functions proxy for date range queries
+      final data = await _cloudApi.getNBAGames(
+        season: DateTime.now().year,
+        perPage: perPage,
       );
 
-      if (response.data != null) {
-        return BalldontlieGamesResponse.fromJson(response.data);
+      if (data != null) {
+        return BalldontlieGamesResponse.fromJson(data);
       }
     } catch (e) {
       debugPrint('Error fetching games: $e');
@@ -88,14 +72,21 @@ class BalldontlieService {
   /// Get specific game details
   Future<BalldontlieGame?> getGame(int gameId) async {
     try {
-      final response = await _gateway.request(
-        apiName: _apiName,
-        endpoint: '/games/$gameId',
-        headers: _getHeaders(),
+      // Use Cloud Functions proxy for specific game
+      final data = await _cloudApi.getNBAGames(
+        season: DateTime.now().year,
+        perPage: 100,
       );
 
-      if (response.data != null) {
-        return BalldontlieGame.fromJson(response.data['data']);
+      if (data != null && data['data'] != null) {
+        final games = data['data'] as List;
+        final game = games.firstWhere(
+          (g) => g['id'] == gameId,
+          orElse: () => null,
+        );
+        if (game != null) {
+          return BalldontlieGame.fromJson(game);
+        }
       }
     } catch (e) {
       debugPrint('Error fetching game: $e');
@@ -106,16 +97,9 @@ class BalldontlieService {
   /// Get all NBA teams
   Future<BalldontlieTeamsResponse?> getTeams() async {
     try {
-      final response = await _gateway.request(
-        apiName: _apiName,
-        endpoint: _teamsEndpoint,
-        queryParams: {'per_page': '30'},
-        headers: _getHeaders(),
-      );
-
-      if (response.data != null) {
-        return BalldontlieTeamsResponse.fromJson(response.data);
-      }
+      // For now, return mock team data until Cloud Functions support is added
+      debugPrint('Teams endpoint not yet supported via Cloud Functions');
+      return null;
     } catch (e) {
       debugPrint('Error fetching teams: $e');
     }
@@ -125,15 +109,9 @@ class BalldontlieService {
   /// Get specific team details
   Future<BalldontlieTeam?> getTeam(int teamId) async {
     try {
-      final response = await _gateway.request(
-        apiName: _apiName,
-        endpoint: '/teams/$teamId',
-        headers: _getHeaders(),
-      );
-
-      if (response.data != null) {
-        return BalldontlieTeam.fromJson(response.data['data']);
-      }
+      // For now, return null until Cloud Functions support is added
+      debugPrint('Team endpoint not yet supported via Cloud Functions');
+      return null;
     } catch (e) {
       debugPrint('Error fetching team: $e');
     }
@@ -147,25 +125,9 @@ class BalldontlieService {
     int page = 1,
   }) async {
     try {
-      final params = <String, dynamic>{
-        'per_page': perPage.toString(),
-        'page': page.toString(),
-      };
-      
-      if (search != null && search.isNotEmpty) {
-        params['search'] = search;
-      }
-
-      final response = await _gateway.request(
-        apiName: _apiName,
-        endpoint: _playersEndpoint,
-        queryParams: params,
-        headers: _getHeaders(),
-      );
-
-      if (response.data != null) {
-        return BalldontliePlayersResponse.fromJson(response.data);
-      }
+      // For now, return null until Cloud Functions support is added
+      debugPrint('Players endpoint not yet supported via Cloud Functions');
+      return null;
     } catch (e) {
       debugPrint('Error searching players: $e');
     }
@@ -175,15 +137,9 @@ class BalldontlieService {
   /// Get player details
   Future<BalldontliePlayer?> getPlayer(int playerId) async {
     try {
-      final response = await _gateway.request(
-        apiName: _apiName,
-        endpoint: '/players/$playerId',
-        headers: _getHeaders(),
-      );
-
-      if (response.data != null) {
-        return BalldontliePlayer.fromJson(response.data['data']);
-      }
+      // For now, return null until Cloud Functions support is added
+      debugPrint('Player endpoint not yet supported via Cloud Functions');
+      return null;
     } catch (e) {
       debugPrint('Error fetching player: $e');
     }
@@ -197,20 +153,9 @@ class BalldontlieService {
     int page = 1,
   }) async {
     try {
-      final response = await _gateway.request(
-        apiName: _apiName,
-        endpoint: _statsEndpoint,
-        queryParams: {
-          'game_ids[]': gameId.toString(),
-          'per_page': perPage.toString(),
-          'page': page.toString(),
-        },
-        headers: _getHeaders(),
-      );
-
-      if (response.data != null) {
-        return BalldontlieStatsResponse.fromJson(response.data);
-      }
+      // For now, return null until Cloud Functions support is added for stats
+      debugPrint('Stats endpoint not yet supported via Cloud Functions');
+      return null;
     } catch (e) {
       debugPrint('Error fetching game stats: $e');
     }
@@ -223,18 +168,9 @@ class BalldontlieService {
     String season = '2024',
   }) async {
     try {
-      final playerParams = playerIds.map((id) => 'player_ids[]=$id').join('&');
-      
-      final response = await _gateway.request(
-        apiName: _apiName,
-        endpoint: '$_seasonAveragesEndpoint?season=$season&$playerParams',
-        headers: _getHeaders(),
-      );
-
-      if (response.data != null) {
-        final data = response.data['data'] as List;
-        return data.map((item) => BalldontlieSeasonAverage.fromJson(item)).toList();
-      }
+      // For now, return null until Cloud Functions support is added for season averages
+      debugPrint('Season averages endpoint not yet supported via Cloud Functions');
+      return null;
     } catch (e) {
       debugPrint('Error fetching season averages: $e');
     }

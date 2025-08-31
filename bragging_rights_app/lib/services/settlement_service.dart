@@ -292,12 +292,12 @@ class SettlementService {
       for (int i = 0; i < winners.length && i < 3; i++) {
         final position = '${i + 1}';
         final prize = prizeStructure[position] ?? 0;
-        winners[i].payout = prize.toInt();
-        totalPayout += prize.toInt();
+        winners[i].payout = (prize as num).toInt();
+        totalPayout += (prize as num).toInt();
       }
     } else {
       // Equal distribution among winners
-      final prizePerWinner = (prizePool / winners.length).round();
+      final prizePerWinner = ((prizePool as num) / winners.length).round();
       for (final winner in winners) {
         winner.payout = prizePerWinner;
         totalPayout += prizePerWinner;

@@ -208,12 +208,13 @@ None currently active
   - [ ] Performance optimization (optional)
   - [ ] Deploy Edge feature to production
 
-#### iOS Configuration
-- [ ] Download GoogleService-Info.plist from Firebase
-- [ ] Add to iOS project in Xcode
-- [ ] Configure iOS bundle identifier
-- [ ] Test on iOS simulator
-- [ ] Set up Apple Developer certificates
+#### iOS Configuration (SKIPPED - Windows Development)
+- ⏭️ Download GoogleService-Info.plist from Firebase (Requires Mac)
+- ⏭️ Add to iOS project in Xcode (Requires Mac)
+- ⏭️ Configure iOS bundle identifier (Requires Mac)
+- ⏭️ Test on iOS simulator (Requires Mac)
+- ⏭️ Set up Apple Developer certificates (Requires Mac)
+- **Note: iOS deployment will be handled post-launch with Mac access or cloud build service**
 
 #### Testing & Quality Assurance
 - [ ] Test in-app purchases in sandbox mode
@@ -283,7 +284,7 @@ None currently active
 2. ~~**Firebase Storage not activated**~~ - ACTIVATED & deployed
 3. ~~**The Odds API integration**~~ - COMPLETED & TESTED
 4. ~~**Edge_cache Firestore permissions**~~ - FIXED & deployed
-5. **Game/GameModel type mismatches** - Affecting betting & home screens
+5. ~~**Game/GameModel type mismatches**~~ - FIXED (BalldontlieService & SettlementService compilation errors resolved)
 6. **No automated testing** - Need test pipeline
 7. **No offline support** - Need caching implementation
 8. **No error recovery** - Need retry mechanisms
@@ -342,7 +343,7 @@ None currently active
    - ✅ Connect Edge Cards to Edge Screen (EdgeScreenV2 fully integrated)
    - ✅ BR purchase flow for cards (deductFromWallet implemented)
    - [ ] Test with live game data (optional - APIs working)
-2. **Fix Game/GameModel type mismatches** in betting & home screens
+2. ✅ **Fix compilation errors** (DONE! BalldontlieService & SettlementService fixed)
 3. **Configure iOS** GoogleService-Info.plist
 4. **Test in-app purchases** in sandbox mode
 5. **Create staging environment**

@@ -107,114 +107,233 @@ class _EdgeScreenV2State extends State<EdgeScreenV2> with TickerProviderStateMix
   }
   
   void _addDemoCards() {
+    // Convert real intelligence data to EdgeCardData
+    if (_intelligence != null) {
+      _createCardsFromIntelligence();
+    } else {
+      // Only use demo cards as absolute fallback
+      _createFallbackCards();
+    }
+  }
+  
+  void _createCardsFromIntelligence() {
+    if (_intelligence == null) return;
+    
+    final realCards = <EdgeCardData>[];
+    final now = DateTime.now();
+    
+    // Create cards from insights
+    for (final insight in _intelligence!.insights) {
+      EdgeCardCategory category;
+      EdgeCardRarity rarity;
+      int cost;
+      List<EdgeCardBadge> badges = [];
+      
+      // Map insight category to card category
+      switch (insight.category) {
+        case 'injuries':
+          category = EdgeCardCategory.injury;
+          rarity = insight.impact == 'high' ? EdgeCardRarity.epic : EdgeCardRarity.rare;
+          cost = insight.impact == 'high' ? 20 : 15;
+          badges.add(EdgeCardBadge.verified);
+          if (insight.insight.toLowerCase().contains('questionable') || 
+              insight.insight.toLowerCase().contains('doubtful')) {
+            badges.add(EdgeCardBadge.breaking);
+          }
+          break;
+        case 'weather':
+          category = EdgeCardCategory.weather;
+          rarity = insight.impact == 'high' ? EdgeCardRarity.rare : EdgeCardRarity.uncommon;
+          cost = insight.impact == 'high' ? 15 : 10;
+          badges.add(EdgeCardBadge.verified);
+          break;
+        case 'momentum':
+        case 'home_advantage':
+        case 'matchup':
+          category = EdgeCardCategory.matchup;
+          rarity = EdgeCardRarity.uncommon;
+          cost = 10;
+          badges.add(EdgeCardBadge.trending);
+          break;
+        case 'betting_line':
+          category = EdgeCardCategory.betting;
+          rarity = EdgeCardRarity.rare;
+          cost = 15;
+          badges.add(EdgeCardBadge.hot);
+          break;
+        default:
+          category = EdgeCardCategory.social;
+          rarity = EdgeCardRarity.common;
+          cost = 5;
+      }
+      
+      // Create detailed content from data points
+      String fullContent = insight.insight;
+      
+      // Add related data points
+      for (final dataPoint in _intelligence!.dataPoints) {
+        if (dataPoint.type.contains(insight.category) || 
+            (insight.category == 'injuries' && dataPoint.type == 'injury_report') ||
+            (insight.category == 'weather' && dataPoint.type == 'weather_conditions')) {
+          fullContent += '\n\nSource: ${dataPoint.source}';
+          if (dataPoint.data is Map) {
+            final data = dataPoint.data as Map<String, dynamic>;
+            data.forEach((key, value) {
+              if (value != null && value.toString().isNotEmpty) {
+                fullContent += '\n• ${_formatKey(key)}: $value';
+              }
+            });
+          }
+          fullContent += '\nConfidence: ${(dataPoint.confidence * 100).toStringAsFixed(0)}%';
+        }
+      }
+      
+      realCards.add(EdgeCardData(
+        id: 'real_${insight.category}_${DateTime.now().millisecondsSinceEpoch}_${realCards.length}',
+        category: category,
+        title: _getTitleForInsight(insight),
+        teaserText: insight.insight.length > 50 
+            ? insight.insight.substring(0, 50) + '...' 
+            : insight.insight,
+        fullContent: fullContent,
+        metadata: {'impact': insight.impact, 'source': 'Live API'},
+        timestamp: now.subtract(Duration(minutes: realCards.length * 15)),
+        rarity: rarity,
+        badges: badges,
+        currentCost: cost,
+        confidence: _intelligence!.overallConfidence,
+        impactText: _getImpactText(insight),
+      ));
+    }
+    
+    // Add betting suggestions as cards if available
+    if (_intelligence!.predictions['suggestedBets'] != null) {
+      final suggestions = _intelligence!.predictions['suggestedBets'] as List;
+      for (final suggestion in suggestions) {
+        if (suggestion is Map<String, dynamic>) {
+          realCards.add(EdgeCardData(
+            id: 'suggestion_${DateTime.now().millisecondsSinceEpoch}_${realCards.length}',
+            category: EdgeCardCategory.betting,
+            title: 'Betting Insight',
+            teaserText: suggestion['type'] ?? 'Strategic bet suggestion',
+            fullContent: 'Suggested Bet: ${suggestion['type']}\n\n'
+                'Reasoning: ${suggestion['reasoning']}\n\n'
+                'Confidence: ${((suggestion['confidence'] ?? 0.5) * 100).toStringAsFixed(0)}%\n\n'
+                'Based on current game intelligence and statistical analysis.',
+            metadata: suggestion,
+            timestamp: now.subtract(Duration(minutes: realCards.length * 10)),
+            rarity: EdgeCardRarity.rare,
+            badges: [EdgeCardBadge.exclusive, EdgeCardBadge.verified],
+            currentCost: 15,
+            confidence: suggestion['confidence'] ?? 0.5,
+            impactText: 'Strategic edge',
+          ));
+        }
+      }
+    }
+    
+    // Add social sentiment if available
+    for (final dataPoint in _intelligence!.dataPoints) {
+      if (dataPoint.source.toLowerCase().contains('reddit') && dataPoint.data is Map) {
+        final data = dataPoint.data as Map<String, dynamic>;
+        String sentimentText = 'Community sentiment analysis';
+        String fullContent = 'Reddit Analysis from ${dataPoint.source}\n\n';
+        
+        data.forEach((key, value) {
+          fullContent += '• ${_formatKey(key)}: $value\n';
+          if (key.toLowerCase().contains('sentiment') && value is num) {
+            sentimentText = '${(value * 100).toStringAsFixed(0)}% positive sentiment';
+          }
+        });
+        
+        realCards.add(EdgeCardData(
+          id: 'social_reddit_${DateTime.now().millisecondsSinceEpoch}',
+          category: EdgeCardCategory.social,
+          title: 'Reddit Community',
+          teaserText: sentimentText,
+          fullContent: fullContent,
+          metadata: data,
+          timestamp: now.subtract(Duration(hours: 1)),
+          rarity: EdgeCardRarity.common,
+          badges: [EdgeCardBadge.trending, EdgeCardBadge.hot],
+          currentCost: 5,
+          confidence: dataPoint.confidence,
+          impactText: 'Fan insights',
+        ));
+        break; // Only add one Reddit card
+      }
+    }
+    
+    // If we have real cards, use them
+    if (realCards.isNotEmpty) {
+      setState(() {
+        _cards.addAll(realCards);
+      });
+    } else {
+      // Fallback to minimal demo cards if no real data
+      _createFallbackCards();
+    }
+  }
+  
+  String _formatKey(String key) {
+    return key
+        .replaceAll('_', ' ')
+        .split(' ')
+        .map((word) => word.isNotEmpty 
+            ? word[0].toUpperCase() + word.substring(1).toLowerCase()
+            : '')
+        .join(' ');
+  }
+  
+  String _getTitleForInsight(EdgeInsight insight) {
+    switch (insight.category) {
+      case 'injuries':
+        return 'Injury Update';
+      case 'weather':
+        return 'Weather Impact';
+      case 'momentum':
+        return 'Team Momentum';
+      case 'home_advantage':
+        return 'Home Advantage';
+      case 'matchup':
+        return 'Key Matchup';
+      case 'betting_line':
+        return 'Line Movement';
+      default:
+        return 'Game Intelligence';
+    }
+  }
+  
+  String _getImpactText(EdgeInsight insight) {
+    switch (insight.impact) {
+      case 'high':
+        return 'Major impact';
+      case 'medium':
+        return 'Moderate impact';
+      case 'low':
+        return 'Minor factor';
+      default:
+        return 'Game factor';
+    }
+  }
+  
+  void _createFallbackCards() {
+    // Minimal fallback cards only if no real data available
     final demoCards = [
       EdgeCardData(
-        id: 'demo_injury_${DateTime.now().millisecondsSinceEpoch}',
+        id: 'demo_loading_${DateTime.now().millisecondsSinceEpoch}',
         category: EdgeCardCategory.injury,
-        title: 'Injury Report',
-        teaserText: 'Key player questionable',
-        fullContent: 'Star player listed as questionable with ankle injury.\n'
-            'Participated in limited practice.\n'
-            'Game-time decision expected.\n'
-            'Backup has performed well in previous starts.',
-        metadata: {'severity': 'moderate', 'player': 'Star Player'},
-        timestamp: DateTime.now().subtract(Duration(hours: 1)),
-        rarity: EdgeCardRarity.rare,
-        badges: [EdgeCardBadge.verified, EdgeCardBadge.newItem],
-        currentCost: 15,
-        confidence: 0.85,
-        impactText: '-3.5 points if out',
-      ),
-      EdgeCardData(
-        id: 'demo_weather_${DateTime.now().millisecondsSinceEpoch}',
-        category: EdgeCardCategory.weather,
-        title: 'Weather Impact',
-        teaserText: '15+ mph winds expected',
-        fullContent: 'Wind speeds: 15-20 mph\n'
-            'Direction: Crosswind\n'
-            'Temperature: 42°F\n'
-            'Precipitation: 30% chance\n'
-            'Impact: Affects passing game and field goals',
-        metadata: {'windSpeed': 18, 'temperature': 42},
-        timestamp: DateTime.now().subtract(Duration(minutes: 30)),
-        rarity: EdgeCardRarity.uncommon,
-        badges: [EdgeCardBadge.verified],
-        currentCost: 10,
-        confidence: 0.90,
-        impactText: 'Favor under',
-      ),
-      EdgeCardData(
-        id: 'demo_social_${DateTime.now().millisecondsSinceEpoch}',
-        category: EdgeCardCategory.social,
-        title: 'Reddit Sentiment',
-        teaserText: '78% bullish on home team',
-        fullContent: 'r/${widget.sport.toLowerCase()} Analysis:\n'
-            '• 78% positive sentiment for home team\n'
-            '• Key discussion: Recent win streak\n'
-            '• Concerns about road performance\n'
-            '• 2.3k comments in game thread',
-        metadata: {'sentiment': 0.78, 'comments': 2300},
-        timestamp: DateTime.now().subtract(Duration(hours: 2)),
+        title: 'Loading Intelligence',
+        teaserText: 'Gathering real-time data...',
+        fullContent: 'Edge Intelligence is gathering real-time data for this game.\n'
+            'Please check back in a few moments for live insights.',
+        metadata: {'type': 'placeholder'},
+        timestamp: DateTime.now(),
         rarity: EdgeCardRarity.common,
-        badges: [EdgeCardBadge.hot, EdgeCardBadge.trending],
+        badges: [EdgeCardBadge.newItem],
         currentCost: 5,
-        confidence: 0.65,
-        impactText: 'High fan confidence',
-      ),
-      EdgeCardData(
-        id: 'demo_matchup_${DateTime.now().millisecondsSinceEpoch}',
-        category: EdgeCardCategory.matchup,
-        title: 'Key Matchup',
-        teaserText: 'Historical advantage detected',
-        fullContent: 'Head-to-Head History:\n'
-            '• Home team: 7-3 last 10 meetings\n'
-            '• Average margin: +8.5 points\n'
-            '• Home court: 5-0 last 5\n'
-            '• Key factor: Defense vs offense clash',
-        metadata: {'h2h': '7-3', 'margin': 8.5},
-        timestamp: DateTime.now().subtract(Duration(hours: 3)),
-        rarity: EdgeCardRarity.uncommon,
-        badges: [EdgeCardBadge.verified],
-        currentCost: 10,
-        confidence: 0.75,
-        impactText: 'Historical edge',
-      ),
-      EdgeCardData(
-        id: 'demo_breaking_${DateTime.now().millisecondsSinceEpoch}',
-        category: EdgeCardCategory.breaking,
-        title: 'Breaking News',
-        teaserText: 'Lineup change announced',
-        fullContent: 'BREAKING: Starting lineup change\n'
-            '• Rookie promoted to starting five\n'
-            '• Coach cites matchup advantages\n'
-            '• First career start\n'
-            '• Veteran moved to bench',
-        metadata: {'type': 'lineup', 'impact': 'moderate'},
-        timestamp: DateTime.now().subtract(Duration(minutes: 15)),
-        rarity: EdgeCardRarity.epic,
-        badges: [EdgeCardBadge.breaking, EdgeCardBadge.newItem, EdgeCardBadge.exclusive],
-        currentCost: 20,
-        confidence: 1.0,
-        impactText: 'Lineup volatility',
-      ),
-      EdgeCardData(
-        id: 'demo_betting_${DateTime.now().millisecondsSinceEpoch}',
-        category: EdgeCardCategory.betting,
-        title: 'Sharp Money',
-        teaserText: 'Line movement detected',
-        fullContent: 'Betting Line Movement:\n'
-            '• Open: -3.5\n'
-            '• Current: -5.5\n'
-            '• Sharp money on favorite\n'
-            '• Public: 65% on underdog\n'
-            '• Total dropped from 220 to 216',
-        metadata: {'lineMove': 2, 'sharpSide': 'favorite'},
-        timestamp: DateTime.now().subtract(Duration(hours: 1)),
-        rarity: EdgeCardRarity.rare,
-        badges: [EdgeCardBadge.trending, EdgeCardBadge.verified],
-        currentCost: 15,
-        confidence: 0.80,
-        impactText: 'Sharp action',
+        confidence: 0.0,
+        impactText: 'Pending',
       ),
     ];
     

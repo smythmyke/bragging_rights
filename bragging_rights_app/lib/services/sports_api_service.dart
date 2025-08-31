@@ -123,6 +123,58 @@ class SportsApiService {
       print('Error triggering data update: $e');
     }
   }
+  
+  // Force refresh all games from APIs via Cloud Functions
+  Future<bool> refreshAllGames() async {
+    try {
+      print('Refreshing all games data...');
+      
+      // Try to call forceUpdateGames function first
+      try {
+        final callable = _functions.httpsCallable('forceUpdateGames');
+        final result = await callable.call();
+        print('Force update completed: ${result.data}');
+        
+        // Wait a moment for Firestore to update
+        await Future.delayed(const Duration(seconds: 1));
+        return true;
+      } catch (e) {
+        print('forceUpdateGames failed, trying alternative: $e');
+      }
+      
+      // Fallback: Call individual functions
+      final sports = ['NFL', 'NBA', 'NHL', 'MLB'];
+      for (final sport in sports) {
+        try {
+          print('Fetching $sport games...');
+          final callable = _functions.httpsCallable('getESPNScoreboard');
+          final result = await callable.call({'sport': sport.toLowerCase()});
+          
+          if (result.data != null) {
+            print('Got ${sport} data: ${result.data}');
+          }
+        } catch (e) {
+          print('Error fetching $sport: $e');
+        }
+      }
+      
+      // Also try to get upcoming games
+      try {
+        final upcomingCallable = _functions.httpsCallable('getUpcomingGames');
+        await upcomingCallable.call();
+      } catch (e) {
+        print('Error fetching upcoming games: $e');
+      }
+      
+      // Wait for Firestore to update
+      await Future.delayed(const Duration(seconds: 1));
+      return true;
+      
+    } catch (e) {
+      print('Error refreshing games: $e');
+      return false;
+    }
+  }
 
   // Get all games for multiple sports
   Future<Map<String, List<Game>>> getAllSportsGames() async {

@@ -18,70 +18,49 @@ class PurchaseService {
   final List<ProductDetails> _products = [];
   bool _available = false;
   
-  // Product IDs for BR coin packages
+  // Product IDs for BR Coins packages (1 BR Coin = $0.02)
   static const Set<String> _productIds = {
-    'br_coins_100',    // 100 BR coins
-    'br_coins_500',    // 500 BR coins
-    'br_coins_1000',   // 1000 BR coins
-    'br_coins_2500',   // 2500 BR coins
-    'br_coins_5000',   // 5000 BR coins
-    'br_coins_10000',  // 10000 BR coins - Best Value!
+    'br_coins_250',    // 250 BR Coins for $5.00
+    'br_coins_500',    // 500 BR Coins for $10.00
   };
 
-  // Product details
+  // Product details (1 BR Coin = $0.02 exactly)
   static const Map<String, Map<String, dynamic>> _productDetails = {
-    'br_coins_100': {
-      'coins': 100,
-      'price': 0.99,
-      'name': 'Starter Pack',
-      'description': '100 BR Coins',
+    'br_coins_250': {
+      'coins': 250,
+      'price': 5.00,
+      'name': '250 BR Coins',
+      'description': 'Get 250 BR Coins',
       'bonus': 0,
+      'popularTag': false,
+      'bestValue': false,
     },
     'br_coins_500': {
-      'coins': 500,
-      'price': 4.99,
-      'name': 'Popular Choice',
-      'description': '500 BR Coins',
-      'bonus': 0,
-    },
-    'br_coins_1000': {
-      'coins': 1100,
-      'price': 9.99,
-      'name': 'Value Pack',
-      'description': '1000 BR Coins + 100 Bonus',
-      'bonus': 100,
-    },
-    'br_coins_2500': {
-      'coins': 2750,
-      'price': 24.99,
-      'name': 'Pro Pack',
-      'description': '2500 BR Coins + 250 Bonus',
-      'bonus': 250,
-    },
-    'br_coins_5000': {
-      'coins': 5500,
-      'price': 49.99,
-      'name': 'Champion Pack',
-      'description': '5000 BR Coins + 500 Bonus',
-      'bonus': 500,
-    },
-    'br_coins_10000': {
-      'coins': 12000,
-      'price': 99.99,
-      'name': 'Legend Pack',
-      'description': '10000 BR Coins + 2000 Bonus',
-      'bonus': 2000,
+      'coins': 550,  // 500 + 50 bonus (10% bonus)
+      'price': 10.00,
+      'name': '500 BR Coins',
+      'description': 'Get 500 BR Coins + 50 Bonus',
+      'bonus': 50,
+      'popularTag': true,
+      'bestValue': true,
     },
   };
 
   /// Initialize the purchase service
   Future<void> initialize() async {
     try {
+      print('Starting PurchaseService initialization...');
+      
       // Check if in-app purchases are available
       _available = await _inAppPurchase.isAvailable();
+      print('In-app purchases available: $_available');
       
       if (!_available) {
-        print('In-app purchases not available');
+        print('In-app purchases not available on this device');
+        print('Make sure:');
+        print('  1. Google Play Store is installed and updated');
+        print('  2. Device has internet connection');
+        print('  3. Google Play services are available');
         return;
       }
       
@@ -94,24 +73,33 @@ class PurchaseService {
         onError: _onPurchaseError,
       );
       
-      print('Purchase service initialized');
+      print('Purchase service initialization complete');
+      print('Products available: ${_products.length}');
     } catch (e) {
       print('Error initializing purchase service: $e');
+      print('Stack trace: ${StackTrace.current}');
     }
   }
 
   /// Load available products
   Future<void> _loadProducts() async {
     try {
+      print('Attempting to load products: $_productIds');
+      
       final ProductDetailsResponse response = await _inAppPurchase.queryProductDetails(_productIds);
       
       if (response.error != null) {
         print('Error loading products: ${response.error}');
+        print('Error details: ${response.error!.message}');
         return;
       }
       
       if (response.notFoundIDs.isNotEmpty) {
-        print('Products not found: ${response.notFoundIDs}');
+        print('Products not found in store: ${response.notFoundIDs}');
+        print('Make sure these product IDs exist in Google Play Console:');
+        for (final id in response.notFoundIDs) {
+          print('  - $id');
+        }
       }
       
       _products.clear();
@@ -120,9 +108,13 @@ class PurchaseService {
       // Sort products by price
       _products.sort((a, b) => a.rawPrice.compareTo(b.rawPrice));
       
-      print('Loaded ${_products.length} products');
+      print('Successfully loaded ${_products.length} products:');
+      for (final product in _products) {
+        print('  - ${product.id}: ${product.title} - ${product.price}');
+      }
     } catch (e) {
-      print('Error loading products: $e');
+      print('Exception loading products: $e');
+      print('Stack trace: ${StackTrace.current}');
     }
   }
 
@@ -343,7 +335,7 @@ class BRCoinPackage {
       bonus: info['bonus'],
       price: product.rawPrice,
       priceString: product.price,
-      isBestValue: product.id == 'br_coins_10000',
+      isBestValue: info['bestValue'] ?? false,
     );
   }
 }

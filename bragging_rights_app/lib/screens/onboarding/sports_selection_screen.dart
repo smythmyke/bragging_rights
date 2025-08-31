@@ -42,6 +42,31 @@ class _SportsSelectionScreenState extends State<SportsSelectionScreen>
       parent: _backgroundController,
       curve: Curves.easeInOut,
     ));
+    
+    _loadExistingPreferences();
+  }
+  
+  Future<void> _loadExistingPreferences() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        
+        if (userDoc.exists && userDoc.data()?['selectedSports'] != null) {
+          setState(() {
+            _selectedSports.addAll(
+              List<String>.from(userDoc.data()!['selectedSports'])
+            );
+          });
+          print('Loaded existing sports preferences: $_selectedSports');
+        }
+      }
+    } catch (e) {
+      print('Error loading existing preferences: $e');
+    }
   }
 
   @override
@@ -164,7 +189,7 @@ class _SportsSelectionScreenState extends State<SportsSelectionScreen>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Select sports to receive notifications and see relevant pools',
+                      'Your favorite sports appear first in games and pools',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                             color: Colors.white70,

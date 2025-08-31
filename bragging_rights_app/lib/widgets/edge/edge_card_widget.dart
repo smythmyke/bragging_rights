@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'edge_card_types.dart';
+import '../../screens/premium/edge_detail_screen.dart';
 
 /// Main Edge Card Widget
 class EdgeCardWidget extends StatefulWidget {
@@ -28,6 +29,7 @@ class _EdgeCardWidgetState extends State<EdgeCardWidget>
   late Animation<double> _glowAnimation;
   bool _isHovered = false;
   bool _isPressed = false;
+  bool _isExpanded = false; // Track if card is in preview state
 
   @override
   void initState() {
@@ -75,7 +77,28 @@ class _EdgeCardWidgetState extends State<EdgeCardWidget>
         onTapDown: (_) => setState(() => _isPressed = true),
         onTapUp: (_) => setState(() => _isPressed = false),
         onTapCancel: () => setState(() => _isPressed = false),
-        onTap: widget.cardData.isLocked ? widget.onUnlock : widget.onTap,
+        onTap: () {
+          if (widget.cardData.isLocked) {
+            widget.onUnlock();
+          } else {
+            if (!_isExpanded) {
+              // First tap: expand to show preview
+              setState(() {
+                _isExpanded = true;
+              });
+            } else {
+              // Second tap: navigate to detail page
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EdgeDetailScreen(
+                    cardData: widget.cardData,
+                  ),
+                ),
+              );
+            }
+          }
+        },
         child: AnimatedBuilder(
           animation: _animationController,
           builder: (context, child) {
@@ -207,8 +230,9 @@ class _EdgeCardWidgetState extends State<EdgeCardWidget>
   }
 
   Widget _buildUnlockedCard(EdgeCardConfig config) {
-    return Container(
-      height: 200,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      height: _isExpanded ? 280 : 200,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -232,81 +256,145 @@ class _EdgeCardWidgetState extends State<EdgeCardWidget>
                 
                 const SizedBox(height: 12),
                 
-                // Full content
+                // Content based on expanded state
                 Expanded(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  child: _isExpanded 
+                    ? _buildExpandedContent()
+                    : _buildCollapsedContent(),
+                ),
+                
+                // Tap hint
+                if (_isExpanded)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          widget.cardData.title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Icon(
+                          Icons.touch_app,
+                          color: Colors.white70,
+                          size: 14,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(width: 6),
                         Text(
-                          widget.cardData.fullContent,
+                          'Tap for full details',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.95),
-                            fontSize: 14,
-                            height: 1.4,
+                            color: Colors.white70,
+                            fontSize: 12,
                           ),
                         ),
-                        if (widget.cardData.impactText != null) ...[
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'Impact: ${widget.cardData.impactText}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   ),
-                ),
-                
-                // Confidence indicator
-                _buildConfidenceBar(),
               ],
             ),
           ),
           
           // Rarity indicator
           _buildRarityIndicator(),
-          
-          // Unlocked checkmark
-          Positioned(
-            top: 8,
-            right: 8,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.green,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check,
-                color: Colors.white,
-                size: 16,
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildCollapsedContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.cardData.title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          widget.cardData.teaserText,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.9),
+            fontSize: 14,
+          ),
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const Spacer(),
+        Row(
+          children: [
+            Icon(
+              Icons.touch_app,
+              color: Colors.white54,
+              size: 12,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'Tap to preview',
+              style: TextStyle(
+                color: Colors.white54,
+                fontSize: 11,
               ),
             ),
+          ],
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildExpandedContent() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.cardData.title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
+          const SizedBox(height: 8),
+          Text(
+            widget.cardData.fullContent,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.95),
+              fontSize: 14,
+              height: 1.4,
+            ),
+            maxLines: 8,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (widget.cardData.impactText != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 4,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'Impact: ${widget.cardData.impactText}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

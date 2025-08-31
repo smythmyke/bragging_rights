@@ -15,6 +15,8 @@ class GameModel {
   final String? venue;
   final String? broadcast;
   final String? league;
+  final String? homeTeamLogo;
+  final String? awayTeamLogo;
 
   GameModel({
     required this.id,
@@ -31,6 +33,8 @@ class GameModel {
     this.venue,
     this.broadcast,
     this.league,
+    this.homeTeamLogo,
+    this.awayTeamLogo,
   });
 
   factory GameModel.fromFirestore(DocumentSnapshot doc) {
@@ -50,11 +54,18 @@ class GameModel {
       venue: data['venue'],
       broadcast: data['broadcast'],
       league: data['league'],
+      homeTeamLogo: data['homeTeamLogo'],
+      awayTeamLogo: data['awayTeamLogo'],
     );
   }
 
-  String get gameTitle => '$awayTeam @ $homeTeam';
-  String get shortTitle => '${_getTeamAbbr(awayTeam)} @ ${_getTeamAbbr(homeTeam)}';
+  // Check if this is an individual sport
+  bool get isIndividualSport => ['MMA', 'BOXING', 'TENNIS', 'GOLF'].contains(sport.toUpperCase());
+  
+  String get gameTitle => isIndividualSport ? '$awayTeam vs $homeTeam' : '$awayTeam @ $homeTeam';
+  String get shortTitle => isIndividualSport 
+    ? '${_getNameAbbr(awayTeam)} vs ${_getNameAbbr(homeTeam)}'
+    : '${_getTeamAbbr(awayTeam)} @ ${_getTeamAbbr(homeTeam)}';
   
   bool get isLive => status == 'live';
   bool get isFinal => status == 'final';
@@ -65,6 +76,15 @@ class GameModel {
     // For now, return first 3 letters
     if (teamName.length <= 3) return teamName.toUpperCase();
     return teamName.substring(0, 3).toUpperCase();
+  }
+  
+  String _getNameAbbr(String name) {
+    // For individual sports, use last name if available
+    if (name.contains(' ')) {
+      final parts = name.split(' ');
+      return parts.last.length > 8 ? parts.last.substring(0, 8) : parts.last;
+    }
+    return name.length > 8 ? name.substring(0, 8) : name;
   }
 
   Duration get timeUntilGame {

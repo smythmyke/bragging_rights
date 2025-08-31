@@ -109,15 +109,11 @@ class _LottieSplashScreenState extends State<LottieSplashScreen>
               ),
             ),
             const SizedBox(height: 40),
-            // App Title
-            const Text(
-              'BRAGGING RIGHTS',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 2,
-              ),
+            // App Logo
+            Image.asset(
+              'assets/images/bragging_rights_logo.png',
+              height: 200,
+              fit: BoxFit.contain,
             ),
             const SizedBox(height: 10),
             // Tagline
