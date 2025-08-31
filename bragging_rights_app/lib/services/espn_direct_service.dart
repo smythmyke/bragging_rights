@@ -10,7 +10,9 @@ class ESPNDirectService {
     'NFL': 'football/nfl',
     'NBA': 'basketball/nba', 
     'NHL': 'hockey/nhl',
-    'MMA': 'mma/ufc',
+    'UFC': 'mma/ufc',
+    'BELLATOR': 'mma/bellator',
+    'PFL': 'mma/pfl',
     'BOXING': 'boxing',
   };
   
@@ -42,8 +44,19 @@ class ESPNDirectService {
         return [];
       }
       
-      final url = '$baseUrl/$endpoint/scoreboard';
-      print('Fetching $sport games from: $url');
+      // For MMA/UFC and Boxing, fetch a wider date range since events are less frequent
+      String url;
+      if (sport == 'UFC' || sport == 'BELLATOR' || sport == 'PFL' || sport == 'BOXING') {
+        final now = DateTime.now();
+        final endDate = now.add(Duration(days: 60)); // Look 60 days ahead for combat sports to catch all events
+        final startStr = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+        final endStr = '${endDate.year}${endDate.month.toString().padLeft(2, '0')}${endDate.day.toString().padLeft(2, '0')}';
+        url = '$baseUrl/$endpoint/scoreboard?dates=$startStr-$endStr';
+        print('Fetching $sport events for next 60 days from: $url');
+      } else {
+        url = '$baseUrl/$endpoint/scoreboard';
+        print('Fetching $sport games from: $url');
+      }
       final response = await http.get(Uri.parse(url));
       
       if (response.statusCode == 200) {
@@ -107,7 +120,7 @@ class ESPNDirectService {
   
   // Check if this is an individual sport (MMA, Boxing, Tennis, Golf)
   bool _isIndividualSport(String sport) {
-    return ['MMA', 'BOXING', 'TENNIS', 'GOLF'].contains(sport.toUpperCase());
+    return ['UFC', 'BELLATOR', 'PFL', 'MMA', 'BOXING', 'TENNIS', 'GOLF'].contains(sport.toUpperCase());
   }
 
   // Parse ESPN event to GameModel

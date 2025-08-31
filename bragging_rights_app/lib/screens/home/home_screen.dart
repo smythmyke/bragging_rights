@@ -531,7 +531,7 @@ class _HomeScreenState extends State<HomeScreen> {
           alignment: Alignment.centerLeft,
           child: Image.asset(
             'assets/images/bragging_rights_logo.png',
-            height: 50,
+            height: 75,
             fit: BoxFit.contain,
           ),
         ),
