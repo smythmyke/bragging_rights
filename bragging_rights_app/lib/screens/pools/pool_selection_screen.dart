@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import '../../services/pool_service.dart';
+import '../../services/wallet_service.dart';
+import '../../models/pool_model.dart';
 
 class PoolSelectionScreen extends StatefulWidget {
   final String gameTitle;
@@ -17,15 +20,20 @@ class PoolSelectionScreen extends StatefulWidget {
 
 class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final PoolService _poolService = PoolService();
+  final WalletService _walletService = WalletService();
   String _selectedPoolType = 'quick';
   Timer? _countdownTimer;
   Duration _poolCloseCountdown = const Duration(minutes: 15, seconds: 30);
+  String? gameId;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
     _startCountdownTimer();
+    // Generate game ID from title and sport
+    gameId = '${widget.gameTitle}_${widget.sport}'.replaceAll(' ', '_').toLowerCase();
   }
 
   void _startCountdownTimer() {
@@ -147,46 +155,78 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
           ),
         ),
         Expanded(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _buildQuickPlayOption(
-                'Beginner Pool',
-                '10-25 BR',
-                '234 players',
-                Colors.blue,
-                10,
-                true,
-              ),
-              _buildQuickPlayOption(
-                'Standard Pool',
-                '50 BR',
-                '156 players',
-                Colors.green,
-                50,
-                true,
-              ),
-              _buildQuickPlayOption(
-                'High Stakes',
-                '200 BR',
-                '45 players',
-                Colors.orange,
-                200,
-                true,
-              ),
-              _buildQuickPlayOption(
-                'VIP Pool',
-                '500 BR',
-                '12 players',
-                Colors.purple,
-                500,
-                false,
-              ),
-            ],
+          child: StreamBuilder<List<Pool>>(
+            stream: _poolService.getPoolsByType(gameId ?? '', PoolType.quick),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final pools = snapshot.data ?? [];
+              
+              if (pools.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.pool, size: 64, color: Colors.grey[400]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No quick play pools available',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Check back soon!',
+                        style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: pools.length,
+                itemBuilder: (context, index) {
+                  final pool = pools[index];
+                  return FutureBuilder<int>(
+                    future: _walletService.getCurrentBalance(),
+                    builder: (context, walletSnapshot) {
+                      final balance = walletSnapshot.data ?? 0;
+                      final canAfford = balance >= pool.buyIn;
+                      
+                      return _buildQuickPlayOption(
+                        pool.name,
+                        '${pool.buyIn} BR',
+                        '${pool.currentPlayers}/${pool.maxPlayers} players',
+                        _getPoolColor(pool.tier ?? PoolTier.standard),
+                        pool.buyIn,
+                        canAfford,
+                        poolId: pool.id,
+                      );
+                    },
+                  );
+                },
+              );
+            },
           ),
         ),
       ],
     );
+  }
+  
+  Color _getPoolColor(PoolTier tier) {
+    switch (tier) {
+      case PoolTier.beginner:
+        return Colors.blue;
+      case PoolTier.standard:
+        return Colors.green;
+      case PoolTier.high:
+        return Colors.orange;
+      case PoolTier.vip:
+        return Colors.purple;
+    }
   }
 
   Widget _buildQuickPlayOption(
@@ -195,8 +235,9 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
     String players,
     Color color,
     int brRequired,
-    bool canAfford,
-  ) {
+    bool canAfford, {
+    String? poolId,
+  }) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
@@ -230,7 +271,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
           ],
         ),
         trailing: ElevatedButton(
-          onPressed: canAfford ? () => _joinPool(title, brRequired) : null,
+          onPressed: canAfford && poolId != null ? () => _joinPool(title, brRequired, poolId) : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: canAfford ? color : Colors.grey,
           ),
@@ -247,45 +288,68 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _buildRegionalSection('Neighborhood (Zip: 10001)', [
-          _buildPoolCard('Local Champions', '25 BR', '8/20 players', Colors.teal),
-          _buildPoolCard('Block Party Pool', '10 BR', '15/30 players', Colors.indigo),
-        ]),
-        _buildRegionalSection('City (New York)', [
-          _buildPoolCard('NYC Elite', '100 BR', '45/100 players', Colors.red),
-          _buildPoolCard('Big Apple Showdown', '50 BR', '78/150 players', Colors.blue),
-        ]),
-        _buildRegionalSection('State (New York)', [
-          _buildPoolCard('Empire State Pool', '75 BR', '234/500 players', Colors.purple),
-        ]),
-        _buildRegionalSection('National', [
-          _buildPoolCard('USA Championship', '200 BR', '1,234/5,000 players', Colors.green),
-        ]),
+        _buildRegionalSection('Neighborhood', RegionalLevel.neighborhood),
+        _buildRegionalSection('City', RegionalLevel.city),
+        _buildRegionalSection('State', RegionalLevel.state),
+        _buildRegionalSection('National', RegionalLevel.national),
       ],
     );
   }
 
-  Widget _buildRegionalSection(String title, List<Widget> pools) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+  Widget _buildRegionalSection(String title, RegionalLevel level) {
+    return StreamBuilder<List<Pool>>(
+      stream: _poolService.getRegionalPools(gameId ?? '', level.toString().split('.').last),
+      builder: (context, snapshot) {
+        final pools = snapshot.data ?? [];
+        
+        if (pools.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
-          ),
-        ),
-        ...pools,
-        const SizedBox(height: 16),
-      ],
+            ...pools.map((pool) => _buildPoolCard(
+              pool.name,
+              '${pool.buyIn} BR',
+              '${pool.currentPlayers}/${pool.maxPlayers} players',
+              _getRegionalColor(level),
+              poolId: pool.id,
+              buyInAmount: pool.buyIn,
+            )),
+            const SizedBox(height: 16),
+          ],
+        );
+      },
     );
+  }
+  
+  Color _getRegionalColor(RegionalLevel level) {
+    switch (level) {
+      case RegionalLevel.neighborhood:
+        return Colors.teal;
+      case RegionalLevel.city:
+        return Colors.blue;
+      case RegionalLevel.state:
+        return Colors.purple;
+      case RegionalLevel.national:
+        return Colors.green;
+    }
   }
 
   Widget _buildPrivateTab() {
+    final TextEditingController _codeController = TextEditingController();
+    
     return Column(
       children: [
         Container(
@@ -311,17 +375,19 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
               ),
               const SizedBox(height: 8),
               TextField(
+                controller: _codeController,
                 decoration: InputDecoration(
                   hintText: 'Enter pool code',
                   prefixIcon: const Icon(Icons.vpn_key),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.arrow_forward),
-                    onPressed: () {},
+                    onPressed: () => _joinWithCode(_codeController.text),
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+                textCapitalization: TextCapitalization.characters,
               ),
               const SizedBox(height: 24),
               const Text(
@@ -329,9 +395,39 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              _buildFriendPoolCard('Mike\'s Pool', '50 BR', '5/10 friends', 'MIK123'),
-              _buildFriendPoolCard('Office League', '25 BR', '12/20 friends', 'OFF456'),
-              _buildFriendPoolCard('Family Throwdown', '10 BR', '8/15 friends', 'FAM789'),
+              StreamBuilder<List<Pool>>(
+                stream: _poolService.getFriendPools(gameId ?? ''),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  
+                  final pools = snapshot.data ?? [];
+                  
+                  if (pools.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Text(
+                          'No friend pools available',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ),
+                    );
+                  }
+                  
+                  return Column(
+                    children: pools.map<Widget>((pool) => _buildFriendPoolCard(
+                      pool.name,
+                      '${pool.buyIn} BR',
+                      '${pool.currentPlayers}/${pool.maxPlayers} friends',
+                      pool.code ?? '',
+                      poolId: pool.id,
+                      buyInAmount: pool.buyIn,
+                    )).toList(),
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -339,7 +435,10 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
     );
   }
 
-  Widget _buildFriendPoolCard(String name, String buyIn, String friends, String code) {
+  Widget _buildFriendPoolCard(String name, String buyIn, String friends, String code, {
+    String? poolId,
+    int? buyInAmount,
+  }) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
@@ -353,18 +452,21 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
           children: [
             Text('Buy-in: $buyIn • $friends'),
             const SizedBox(height: 2),
-            Text(
-              'Code: $code',
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.bold,
+            if (code.isNotEmpty)
+              Text(
+                'Code: $code',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
           ],
         ),
         trailing: ElevatedButton(
-          onPressed: () => _joinPool(name, 50),
+          onPressed: poolId != null && buyInAmount != null 
+              ? () => _joinPool(name, buyInAmount, poolId)
+              : null,
           child: const Text('Join'),
         ),
       ),
@@ -372,55 +474,102 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
   }
 
   Widget _buildTournamentTab() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Container(
+    return StreamBuilder<List<Pool>>(
+      stream: _poolService.getTournamentPools(gameId ?? ''),
+      builder: (context, snapshot) {
+        final pools = snapshot.data ?? [];
+        
+        // Find the main championship if it exists
+        Pool? championship = pools.isNotEmpty ? pools.first : null;
+        
+        return ListView(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.amber, Colors.orange],
-            ),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            children: [
-              const Icon(Icons.emoji_events, color: Colors.white, size: 48),
-              const SizedBox(height: 8),
-              const Text(
-                'Championship Tournament',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+          children: [
+            if (championship != null)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.amber, Colors.orange],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(Icons.emoji_events, color: Colors.white, size: 48),
+                    const SizedBox(height: 8),
+                    Text(
+                      championship.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Prize Pool: ${championship.prizePool} BR',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => _joinPool(
+                        championship.name,
+                        championship.buyIn,
+                        championship.id,
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.orange,
+                      ),
+                      child: Text('Enter Tournament (${championship.buyIn} BR)'),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 4),
-              const Text(
-                'Top 3 win massive BR prizes!',
-                style: TextStyle(color: Colors.white),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.orange,
+            const SizedBox(height: 16),
+            ...pools.skip(1).map((pool) => _buildTournamentCard(
+              pool.name,
+              '${pool.buyIn} BR',
+              '${pool.currentPlayers}/${pool.maxPlayers} players',
+              _formatPrizeStructure(pool.prizeStructure),
+              poolId: pool.id,
+              buyInAmount: pool.buyIn,
+            )),
+            if (pools.isEmpty)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    children: [
+                      Icon(Icons.emoji_events, size: 64, color: Colors.grey[400]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No tournaments available',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
                 ),
-                child: const Text('Enter Tournament (100 BR)'),
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        _buildTournamentCard('Weekly Championship', '50 BR', '128/256 players', '1st: 5000 BR'),
-        _buildTournamentCard('Daily Bracket', '25 BR', '45/64 players', '1st: 1000 BR'),
-        _buildTournamentCard('Survivor Pool', '100 BR', '89/100 players', 'Last one standing wins all'),
-      ],
+          ],
+        );
+      },
     );
   }
+  
+  String _formatPrizeStructure(Map<String, dynamic>? prizeStructure) {
+    if (prizeStructure == null || prizeStructure.isEmpty) {
+      return 'Winner takes all';
+    }
+    final firstPrize = prizeStructure['1'] ?? 0;
+    return '1st: $firstPrize BR';
+  }
 
-  Widget _buildTournamentCard(String title, String buyIn, String players, String prize) {
+  Widget _buildTournamentCard(String title, String buyIn, String players, String prize, {
+    String? poolId,
+    int? buyInAmount,
+  }) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
@@ -445,13 +594,18 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
         ),
         trailing: IconButton(
           icon: const Icon(Icons.arrow_forward),
-          onPressed: () {},
+          onPressed: poolId != null && buyInAmount != null
+              ? () => _joinPool(title, buyInAmount, poolId)
+              : null,
         ),
       ),
     );
   }
 
-  Widget _buildPoolCard(String name, String buyIn, String players, Color color) {
+  Widget _buildPoolCard(String name, String buyIn, String players, Color color, {
+    String? poolId,
+    int? buyInAmount,
+  }) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
@@ -463,13 +617,15 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
         subtitle: Text('Buy-in: $buyIn • $players'),
         trailing: IconButton(
           icon: const Icon(Icons.arrow_forward),
-          onPressed: () => _joinPool(name, 50),
+          onPressed: poolId != null && buyInAmount != null
+              ? () => _joinPool(name, buyInAmount, poolId)
+              : null,
         ),
       ),
     );
   }
 
-  void _joinPool(String poolName, int buyIn) {
+  void _joinPool(String poolName, int buyIn, String poolId) async {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -508,17 +664,32 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       Navigator.pop(context);
-                      Navigator.pushNamed(
-                        context,
-                        '/bet-selection',
-                        arguments: {
-                          'gameTitle': widget.gameTitle,
-                          'sport': widget.sport,
-                          'poolName': poolName,
-                        },
-                      );
+                      
+                      // Actually join the pool
+                      final success = await _poolService.joinPool(poolId, buyIn);
+                      
+                      if (success) {
+                        // Navigate to bet selection
+                        Navigator.pushNamed(
+                          context,
+                          '/bet-selection',
+                          arguments: {
+                            'gameTitle': widget.gameTitle,
+                            'sport': widget.sport,
+                            'poolName': poolName,
+                            'poolId': poolId,
+                          },
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Failed to join pool. Please try again.'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.primary,
@@ -542,5 +713,35 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Create Private Pool - Coming Soon')),
     );
+  }
+  
+  void _joinWithCode(String code) async {
+    if (code.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a pool code'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    
+    final success = await _poolService.joinPoolWithCode(code);
+    
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Successfully joined pool!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid pool code'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

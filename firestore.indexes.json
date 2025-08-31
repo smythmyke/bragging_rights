@@ -1,1 +1,147 @@
-{"indexes":[{"collectionGroup":"games","queryScope":"COLLECTION","fields":[{"fieldPath":"sport","order":"ASCENDING"},{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"gameTime","order":"ASCENDING"}]},{"collectionGroup":"wagers","queryScope":"COLLECTION","fields":[{"fieldPath":"userId","order":"ASCENDING"},{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"placedAt","order":"DESCENDING"}]},{"collectionGroup":"pools","queryScope":"COLLECTION","fields":[{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"buyIn","order":"ASCENDING"}]}],"fieldOverrides":[]}
+{
+  "indexes": [
+    {
+      "collectionGroup": "wagers",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "placedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "transactions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pools",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "gameId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pools",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "gameId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pools",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "gameId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "region",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pools",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "prizePool",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pools",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "code",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pools",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "createdBy",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "games",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "gameTime",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

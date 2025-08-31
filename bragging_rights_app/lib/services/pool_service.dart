@@ -2,11 +2,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/pool_model.dart';
 import 'wallet_service.dart';
+import 'location_service.dart' as location;
 
 class PoolService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final WalletService _walletService = WalletService();
+  final location.LocationService _locationService = location.LocationService();
+  
+  // 75% minimum player rule
+  static const double MINIMUM_PLAYER_PERCENTAGE = 0.75;
 
   // Get pools for a specific game
   Stream<List<Pool>> getPoolsForGame(String gameId) {
@@ -490,6 +495,301 @@ class PoolService {
     } catch (e) {
       print('Error deleting pool: $e');
       return false;
+    }
+  }
+
+  // Check and activate pools that meet minimum requirements
+  Future<void> checkPoolActivation(String poolId) async {
+    try {
+      final poolDoc = await _firestore.collection('pools').doc(poolId).get();
+      if (!poolDoc.exists) return;
+
+      final pool = Pool.fromFirestore(poolDoc);
+      final now = DateTime.now();
+
+      // Check if it's time to activate or cancel the pool
+      if (pool.status == PoolStatus.open && now.isAfter(pool.closeTime)) {
+        // Calculate 75% of max players as minimum requirement
+        final minimumRequired = (pool.maxPlayers * MINIMUM_PLAYER_PERCENTAGE).ceil();
+        
+        if (pool.currentPlayers >= minimumRequired) {
+          // Activate the pool
+          await _activatePool(poolId, pool);
+        } else {
+          // Cancel the pool and refund players
+          await _cancelPool(poolId, pool);
+        }
+      }
+    } catch (e) {
+      print('Error checking pool activation: $e');
+    }
+  }
+
+  // Activate a pool when minimum players are met
+  Future<void> _activatePool(String poolId, Pool pool) async {
+    try {
+      await _firestore.runTransaction((transaction) async {
+        // Calculate final prize structure
+        final prizeStructure = _calculatePrizeStructure(pool.prizePool);
+
+        // Update pool status to active
+        transaction.update(_firestore.collection('pools').doc(poolId), {
+          'status': 'active',
+          'activatedAt': FieldValue.serverTimestamp(),
+          'finalPlayerCount': pool.currentPlayers,
+          'finalPrizePool': pool.prizePool,
+          'prizeStructure': prizeStructure,
+        });
+
+        // Notify all players that the pool is active
+        // This would trigger push notifications in production
+        print('Pool $poolId activated with ${pool.currentPlayers} players');
+      });
+    } catch (e) {
+      print('Error activating pool: $e');
+    }
+  }
+
+  // Cancel a pool when minimum players are not met
+  Future<void> _cancelPool(String poolId, Pool pool) async {
+    try {
+      await _firestore.runTransaction((transaction) async {
+        // Update pool status to cancelled
+        transaction.update(_firestore.collection('pools').doc(poolId), {
+          'status': 'cancelled',
+          'cancelledAt': FieldValue.serverTimestamp(),
+          'cancellationReason': 'Minimum players not met',
+        });
+
+        // Refund all players
+        for (final playerId in pool.playerIds) {
+          // Get the user's pool entry to know how much to refund
+          final entryDoc = await transaction.get(
+            _firestore.collection('user_pools').doc('${playerId}_$poolId'),
+          );
+
+          if (entryDoc.exists) {
+            final buyIn = entryDoc.data()?['buyIn'] ?? pool.buyIn;
+
+            // Refund the buy-in
+            await _walletService.addToWallet(
+              playerId,
+              buyIn,
+              'Pool cancelled refund: ${pool.name}',
+              metadata: {
+                'poolId': poolId,
+                'poolName': pool.name,
+                'reason': 'Minimum players not met',
+              },
+            );
+
+            // Delete the user pool entry
+            transaction.delete(entryDoc.reference);
+          }
+        }
+
+        print('Pool $poolId cancelled and ${pool.playerIds.length} players refunded');
+      });
+    } catch (e) {
+      print('Error cancelling pool: $e');
+    }
+  }
+
+  // Check all open pools for activation or cancellation
+  Future<void> checkAllPoolsForActivation() async {
+    try {
+      final now = DateTime.now();
+      
+      // Get all open pools that have passed their close time
+      final poolsQuery = await _firestore
+          .collection('pools')
+          .where('status', isEqualTo: 'open')
+          .get();
+
+      for (final poolDoc in poolsQuery.docs) {
+        final pool = Pool.fromFirestore(poolDoc);
+        if (now.isAfter(pool.closeTime)) {
+          await checkPoolActivation(poolDoc.id);
+        }
+      }
+    } catch (e) {
+      print('Error checking pools for activation: $e');
+    }
+  }
+
+  // Automatically generate pools based on demand
+  Future<void> generatePoolsForGame({
+    required String gameId,
+    required String gameTitle,
+    required String sport,
+    required DateTime gameStartTime,
+  }) async {
+    try {
+      // Check existing pools for this game
+      final existingPoolsQuery = await _firestore
+          .collection('pools')
+          .where('gameId', isEqualTo: gameId)
+          .where('status', isEqualTo: 'open')
+          .get();
+
+      final existingPools = existingPoolsQuery.docs
+          .map((doc) => Pool.fromFirestore(doc))
+          .toList();
+
+      // Generate Quick Play pools if none exist
+      if (existingPools.where((p) => p.type == PoolType.quick).isEmpty) {
+        await _generateQuickPlayPools(gameId, gameTitle, sport, gameStartTime);
+      }
+
+      // Generate Regional pools based on user location
+      // This would use user's location in production
+      if (existingPools.where((p) => p.type == PoolType.regional).isEmpty) {
+        await _generateRegionalPools(gameId, gameTitle, sport, gameStartTime);
+      }
+    } catch (e) {
+      print('Error generating pools: $e');
+    }
+  }
+
+  // Generate Quick Play pools with different buy-in levels
+  Future<void> _generateQuickPlayPools(
+    String gameId,
+    String gameTitle,
+    String sport,
+    DateTime gameStartTime,
+  ) async {
+    final templates = [
+      QuickPlayPoolTemplate.beginner(gameId: gameId, gameTitle: gameTitle, sport: sport),
+      QuickPlayPoolTemplate.standard(gameId: gameId, gameTitle: gameTitle, sport: sport),
+      QuickPlayPoolTemplate.highStakes(gameId: gameId, gameTitle: gameTitle, sport: sport),
+      QuickPlayPoolTemplate.vip(gameId: gameId, gameTitle: gameTitle, sport: sport),
+    ];
+
+    for (final template in templates) {
+      // Calculate 75% minimum for each pool
+      final minimumRequired = (template.maxPlayers * MINIMUM_PLAYER_PERCENTAGE).ceil();
+      
+      // Set proper timing based on game start time and update minimum
+      final pool = template.copyWith(
+        startTime: gameStartTime,
+        closeTime: gameStartTime.subtract(const Duration(minutes: 15)),
+        minPlayers: minimumRequired,
+      );
+
+      await _firestore.collection('pools').add(pool.toFirestore());
+    }
+
+    print('Generated ${templates.length} Quick Play pools for game $gameId with 75% minimum rule');
+  }
+
+  // Generate Regional pools for different geographic levels
+  Future<void> _generateRegionalPools(
+    String gameId,
+    String gameTitle,
+    String sport,
+    DateTime gameStartTime,
+  ) async {
+    // Detect user's region
+    final regionInfo = await _locationService.detectRegion();
+    
+    // Pool configurations for each regional level
+    final poolConfigs = [
+      {
+        'level': location.RegionalLevel.neighborhood,
+        'name': '${regionInfo.city} Neighborhood',
+        'buyIn': 25,
+        'maxPlayers': 20,
+        'region': '${regionInfo.city}-neighborhood',
+      },
+      {
+        'level': location.RegionalLevel.city,
+        'name': '${regionInfo.city} Metro',
+        'buyIn': 50,
+        'maxPlayers': 50,
+        'region': regionInfo.city,
+      },
+      {
+        'level': location.RegionalLevel.state,
+        'name': regionInfo.state,
+        'buyIn': 100,
+        'maxPlayers': 100,
+        'region': regionInfo.state,
+      },
+      {
+        'level': location.RegionalLevel.national,
+        'name': '${regionInfo.country} National',
+        'buyIn': 200,
+        'maxPlayers': 200,
+        'region': regionInfo.country,
+      },
+    ];
+
+    for (final config in poolConfigs) {
+      final maxPlayers = config['maxPlayers'] as int;
+      final minimumRequired = (maxPlayers * MINIMUM_PLAYER_PERCENTAGE).ceil();
+      
+      final pool = Pool(
+        id: '',
+        gameId: gameId,
+        gameTitle: gameTitle,
+        sport: sport,
+        type: PoolType.regional,
+        status: PoolStatus.open,
+        name: '${config['name']} Pool - $gameTitle',
+        buyIn: config['buyIn'] as int,
+        minPlayers: minimumRequired,  // Use 75% rule
+        maxPlayers: maxPlayers,
+        currentPlayers: 0,
+        playerIds: [],
+        startTime: gameStartTime,
+        closeTime: gameStartTime.subtract(const Duration(minutes: 30)),
+        prizePool: 0,
+        prizeStructure: {},
+        region: config['region'] as String,
+        createdAt: DateTime.now(),
+        metadata: {
+          'autoGenerated': true,
+          'region': config['region'],
+          'regionalLevel': config['level'].toString().split('.').last,
+          'minimumRequired': minimumRequired,
+        },
+      );
+
+      await _firestore.collection('pools').add(pool.toFirestore());
+    }
+
+    print('Generated ${poolConfigs.length} Regional pools for game $gameId in ${regionInfo.city}, ${regionInfo.state}');
+  }
+
+  // Monitor pool fill rates and generate additional pools if needed
+  Future<void> monitorAndGeneratePoolsByDemand(String gameId) async {
+    try {
+      final poolsQuery = await _firestore
+          .collection('pools')
+          .where('gameId', isEqualTo: gameId)
+          .where('status', isEqualTo: 'open')
+          .where('type', isEqualTo: 'quick')
+          .get();
+
+      for (final poolDoc in poolsQuery.docs) {
+        final pool = Pool.fromFirestore(poolDoc);
+        
+        // If a pool is more than 80% full, create another similar pool
+        if (pool.fillPercentage > 80) {
+          final newPool = pool.copyWith(
+            id: '',
+            currentPlayers: 0,
+            playerIds: [],
+            prizePool: 0,
+            createdAt: DateTime.now(),
+          );
+
+          await _firestore.collection('pools').add(newPool.toFirestore());
+          print('Generated additional pool due to high demand for ${pool.name}');
+        }
+      }
+    } catch (e) {
+      print('Error monitoring pool demand: $e');
     }
   }
 

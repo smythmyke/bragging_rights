@@ -10,8 +10,11 @@ import '../../services/espn_direct_service.dart';
 import '../../services/pool_data_service.dart';
 import '../../services/wager_service.dart';
 import '../../services/purchase_service.dart';
+import '../../services/card_service.dart';
 import '../../models/game_model.dart';
+import '../../data/card_definitions.dart';
 import '../premium/edge_screen.dart';
+import '../cards/card_inventory_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -33,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final PoolDataService _poolService = PoolDataService();
   final WagerService _wagerService = WagerService();
   final PurchaseService _purchaseService = PurchaseService();
+  final CardService _cardService = CardService();
   
   // Track games with bets
   List<String> _gamesWithBets = [];
@@ -534,32 +538,34 @@ class _HomeScreenState extends State<HomeScreen> {
         centerTitle: false,
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
-          // Refresh button for Games tab
-          if (_selectedIndex == 0)
-            IconButton(
-              icon: _isLoadingGames 
-                  ? SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Theme.of(context).colorScheme.onPrimary,
-                        ),
-                      ),
-                    )
-                  : Icon(PhosphorIconsRegular.arrowsClockwise),
-              onPressed: _isLoadingGames ? null : () async {
-                await _loadGamesData();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Games refreshed!'),
-                    duration: Duration(seconds: 2),
+          // Power Cards Indicators
+          StreamBuilder<UserCardInventory>(
+            stream: _cardService.getUserCardInventory(),
+            builder: (context, snapshot) {
+              final inventory = snapshot.data ?? UserCardInventory.empty();
+              
+              return Row(
+                children: [
+                  // Offensive Cards
+                  _buildCardIndicator(
+                    icon: '🎯',
+                    count: inventory.offensiveCount,
+                    type: CardType.offensive,
+                    context: context,
                   ),
-                );
-              },
-              tooltip: 'Refresh games',
-            ),
+                  const SizedBox(width: 4),
+                  // Defensive Cards
+                  _buildCardIndicator(
+                    icon: '🛡️',
+                    count: inventory.defensiveCount,
+                    type: CardType.defensive,
+                    context: context,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              );
+            },
+          ),
           // BR Balance Display
           InkWell(
             onTap: () {
@@ -1678,58 +1684,62 @@ class _HomeScreenState extends State<HomeScreen> {
             // Quick Bet Section
             _buildSectionHeader('⚡ Quick Bet', 'Place a bet in seconds'),
             const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                    Theme.of(context).colorScheme.secondary.withOpacity(0.2),
+            Card(
+              margin: EdgeInsets.zero,
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(
+                      PhosphorIconsRegular.lightning,
+                      size: 48,
+                      color: Colors.orange,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Quick Play',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Join a random pool for any live game',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        // TODO: Implement quick play
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                      ),
+                      child: const Text(
+                        'Quick Play - 25 BR',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
                   ],
                 ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                ),
-              ),
-              child: Column(
-                children: [
-                  const Icon(
-                    PhosphorIconsRegular.lightning,
-                    size: 48,
-                    color: Colors.orange,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Quick Play',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Join a random pool for any live game',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      // TODO: Implement quick play
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                    ),
-                    child: const Text(
-                      'Quick Play - 25 BR',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
               ),
             ),
             
@@ -2720,13 +2730,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   const Divider(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildWalletStat('Won', '+5,420 BR', Colors.green),
-                      _buildWalletStat('Lost', '-2,130 BR', Colors.red),
-                      _buildWalletStat('Pending', '350 BR', Colors.orange),
-                    ],
+                  StreamBuilder<Map<String, int>>(
+                    stream: _walletService.getWalletStatsStream(),
+                    builder: (context, snapshot) {
+                      final stats = snapshot.data ?? {'won': 0, 'lost': 0, 'pending': 0};
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildWalletStat('Won', '+${stats['won']} BR', Colors.green),
+                          _buildWalletStat('Lost', '-${stats['lost']} BR', Colors.red),
+                          _buildWalletStat('Pending', '${stats['pending']} BR', Colors.orange),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
@@ -3051,6 +3067,54 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemBuilder: (context, index) {
                   return _buildGameCard(games[index], showDate: true);
                 },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardIndicator({
+    required String icon,
+    required int count,
+    required CardType type,
+    required BuildContext context,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        // Navigate to card inventory page
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CardInventoryScreen(cardType: type),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              icon,
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              count.toString(),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],

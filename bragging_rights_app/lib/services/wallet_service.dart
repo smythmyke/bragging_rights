@@ -400,6 +400,39 @@ class WalletService {
       netProfit: earned - wagered - 500, // Subtract initial bonus
     );
   }
+
+  // Get wallet statistics stream (won, lost, pending)
+  Stream<Map<String, int>> getWalletStatsStream() {
+    if (_userId == null) return Stream.value({'won': 0, 'lost': 0, 'pending': 0});
+
+    return _firestore
+        .collection('transactions')
+        .where('userId', isEqualTo: _userId)
+        .where('timestamp', isGreaterThan: DateTime.now().subtract(const Duration(days: 30)))
+        .snapshots()
+        .map((snapshot) {
+      int won = 0;
+      int lost = 0;
+      int pending = 0;
+
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final amount = (data['amount'] ?? 0) as int;
+        final type = data['type'] as String?;
+        final status = data['status'] as String?;
+
+        if (status == 'pending') {
+          pending += amount.abs();
+        } else if (type == 'winnings' || (type == 'pool_prize' && amount > 0)) {
+          won += amount;
+        } else if (type == 'wager' || type == 'pool_entry' || amount < 0) {
+          lost += amount.abs();
+        }
+      }
+
+      return {'won': won, 'lost': lost, 'pending': pending};
+    });
+  }
 }
 
 // Transaction model
