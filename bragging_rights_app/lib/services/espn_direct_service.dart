@@ -64,6 +64,11 @@ class ESPNDirectService {
         final events = data['events'] ?? [];
         print('Found ${events.length} $sport events');
         
+        // Log if no events found for combat sports
+        if (events.isEmpty && (sport == 'UFC' || sport == 'BELLATOR' || sport == 'PFL' || sport == 'BOXING')) {
+          print('No $sport events scheduled in the next 60 days');
+        }
+        
         final games = <GameModel>[];
         for (final event in events) {
           try {
@@ -77,8 +82,9 @@ class ESPNDirectService {
         print('Returning ${games.length} $sport games');
         return games;
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('Error fetching $sport games: $e');
+      print('Stack trace: $stackTrace');
     }
     
     return [];

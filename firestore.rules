@@ -94,6 +94,18 @@ service cloud.firestore {
         // Only server can update stats (automated by Cloud Functions)
         allow update, delete: if false;
       }
+      
+      // CARDS SUBCOLLECTION
+      match /cards/{cardId} {
+        // Users can read their own cards
+        allow read: if isOwner(userId);
+        
+        // Users can create/update their own cards
+        allow create, update: if isOwner(userId);
+        
+        // Only server/admin can delete cards
+        allow delete: if isAdmin();
+      }
     }
     
     // ========================================
