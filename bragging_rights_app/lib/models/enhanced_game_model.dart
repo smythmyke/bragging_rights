@@ -178,18 +178,21 @@ class EnhancedGameModel {
   /// Get formatted score based on sport
   String get formattedScore {
     if (homeScore != null && awayScore != null) {
+      final home = homeScore!;
+      final away = awayScore!;
+      
       // Tennis uses sets (e.g., "2-1")
       if (sport.toLowerCase() == 'tennis') {
-        return '${awayScore.toInt()}-${homeScore.toInt()}';
+        return '${away.toInt()}-${home.toInt()}';
       }
       // Boxing/MMA might use decimal scores for judges
       if (sport.toLowerCase() == 'boxing' || sport.toLowerCase() == 'mma') {
-        if (homeScore != homeScore!.toInt() || awayScore != awayScore!.toInt()) {
-          return '${awayScore.toStringAsFixed(1)}-${homeScore.toStringAsFixed(1)}';
+        if (home != home.toInt() || away != away.toInt()) {
+          return '${away.toStringAsFixed(1)}-${home.toStringAsFixed(1)}';
         }
       }
       // Regular sports
-      return '${awayScore.toInt()} - ${homeScore.toInt()}';
+      return '${away.toInt()} - ${home.toInt()}';
     }
     return '--';
   }
