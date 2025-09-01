@@ -42,6 +42,11 @@ class FreeOddsService {
         return await _getTennisOdds(homeTeam, awayTeam);
       case 'soccer':
         return await _getSoccerOdds(homeTeam, awayTeam);
+      case 'mma':
+      case 'ufc':
+        return await _getMmaOdds(homeTeam, awayTeam, sport);
+      case 'boxing':
+        return await _getBoxingOdds(homeTeam, awayTeam);
       default:
         return await _getGenericEspnOdds(sport, homeTeam, awayTeam);
     }
@@ -147,6 +152,84 @@ class FreeOddsService {
       return null;
     } catch (e) {
       debugPrint('Error getting Tennis odds: $e');
+      return null;
+    }
+  }
+  
+  /// Get MMA/UFC odds from ESPN
+  Future<Map<String, dynamic>?> _getMmaOdds(String fighter1, String fighter2, String promotion) async {
+    try {
+      // Determine the promotion endpoint
+      final promotionPath = promotion.toLowerCase() == 'bellator' ? 'bellator' :
+                           promotion.toLowerCase() == 'pfl' ? 'pfl' :
+                           promotion.toLowerCase() == 'one' ? 'one' :
+                           'ufc'; // Default to UFC
+      
+      final response = await http.get(
+        Uri.parse('https://site.api.espn.com/apis/site/v2/sports/mma/$promotionPath/scoreboard'),
+      );
+      
+      if (response.statusCode != 200) return null;
+      
+      final data = json.decode(response.body);
+      final events = data['events'] ?? [];
+      
+      // Find matching fight
+      for (final event in events) {
+        final competition = event['competitions']?[0];
+        if (competition == null) continue;
+        
+        final competitors = competition['competitors'] ?? [];
+        if (competitors.length < 2) continue;
+        
+        final f1 = competitors[0]['athlete']?['displayName'] ?? '';
+        final f2 = competitors[1]['athlete']?['displayName'] ?? '';
+        
+        if (_teamsMatch(f1, fighter1) && _teamsMatch(f2, fighter2) ||
+            _teamsMatch(f1, fighter2) && _teamsMatch(f2, fighter1)) {
+          return _extractOddsFromEspnEvent(event);
+        }
+      }
+      
+      return null;
+    } catch (e) {
+      debugPrint('Error getting MMA odds: $e');
+      return null;
+    }
+  }
+  
+  /// Get Boxing odds from ESPN
+  Future<Map<String, dynamic>?> _getBoxingOdds(String fighter1, String fighter2) async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://site.api.espn.com/apis/site/v2/sports/boxing/boxing/scoreboard'),
+      );
+      
+      if (response.statusCode != 200) return null;
+      
+      final data = json.decode(response.body);
+      final events = data['events'] ?? [];
+      
+      // Find matching fight
+      for (final event in events) {
+        final competition = event['competitions']?[0];
+        if (competition == null) continue;
+        
+        final competitors = competition['competitors'] ?? [];
+        if (competitors.length < 2) continue;
+        
+        final f1 = competitors[0]['athlete']?['displayName'] ?? '';
+        final f2 = competitors[1]['athlete']?['displayName'] ?? '';
+        
+        if (_teamsMatch(f1, fighter1) && _teamsMatch(f2, fighter2) ||
+            _teamsMatch(f1, fighter2) && _teamsMatch(f2, fighter1)) {
+          return _extractOddsFromEspnEvent(event);
+        }
+      }
+      
+      return null;
+    } catch (e) {
+      debugPrint('Error getting Boxing odds: $e');
       return null;
     }
   }
