@@ -7,6 +7,7 @@ import 'sports/espn_nfl_service.dart';
 import 'sports/espn_mlb_service.dart';
 import 'sports/espn_mma_service.dart';
 import 'sports/espn_boxing_service.dart';
+import 'sports/espn_tennis_service.dart';
 import 'news/news_api_service.dart';
 import 'social/reddit_service.dart';
 import 'event_matcher.dart';
@@ -25,6 +26,7 @@ class EdgeIntelligenceService {
   final EspnMlbService _espnMlbService = EspnMlbService();
   final EspnMmaService _espnMmaService = EspnMmaService();
   final EspnBoxingService _espnBoxingService = EspnBoxingService();
+  final EspnTennisService _espnTennisService = EspnTennisService();
   final NewsApiService _newsService = NewsApiService();
   final RedditService _redditService = RedditService();
 
@@ -85,6 +87,9 @@ class EdgeIntelligenceService {
         break;
       case 'boxing':
         await _gatherBoxingIntelligence(intelligence, eventId);
+        break;
+      case 'tennis':
+        await _gatherTennisIntelligence(intelligence, eventId);
         break;
       default:
         debugPrint('⚠️ Sport $sport not yet supported');
@@ -1705,6 +1710,118 @@ class EdgeIntelligenceService {
     }
     
     return predictions;
+  }
+
+  /// Gather tennis-specific intelligence
+  Future<void> _gatherTennisIntelligence(
+    EdgeIntelligence intelligence,
+    String eventId,
+  ) async {
+    debugPrint('🎾 Gathering tennis intelligence for ${intelligence.homeTeam} vs ${intelligence.awayTeam}');
+    
+    try {
+      // Get tennis match data from ESPN
+      final tennisData = await _espnTennisService.getMatchIntelligence(
+        matchId: eventId,
+        player1Name: intelligence.homeTeam,
+        player2Name: intelligence.awayTeam,
+      );
+      
+      if (tennisData.isNotEmpty) {
+        // Add tennis insights
+        final insights = tennisData['insights'] ?? [];
+        for (final insight in insights) {
+          intelligence.addInsight(
+            category: insight['type'] ?? 'tennis',
+            insight: insight['text'] ?? '',
+            impact: insight['impact'] ?? 'medium',
+          );
+        }
+        
+        // Add ranking data
+        if (tennisData['data']?['rankings'] != null) {
+          intelligence.addDataPoint(
+            source: 'ESPN Tennis',
+            type: 'rankings',
+            data: tennisData['data']['rankings'],
+            confidence: 0.90,
+          );
+        }
+        
+        // Add match details (tournament, surface)
+        if (tennisData['data']?['matchDetails'] != null) {
+          final details = tennisData['data']['matchDetails'];
+          intelligence.addDataPoint(
+            source: 'ESPN Tennis',
+            type: 'match_context',
+            data: details,
+            confidence: 0.95,
+          );
+        }
+      }
+      
+      // Get tennis news
+      final newsQuery = '${intelligence.homeTeam} ${intelligence.awayTeam} tennis ATP WTA';
+      final newsData = await _newsService.getTeamNews(query: newsQuery);
+      
+      if (newsData != null && newsData.articles.isNotEmpty) {
+        intelligence.addDataPoint(
+          source: 'News',
+          type: 'media_coverage',
+          data: {
+            'articleCount': newsData.articles.length,
+            'headlines': newsData.articles.take(3).map((a) => a.title).toList(),
+          },
+          confidence: 0.70,
+        );
+        
+        // Add news sentiment
+        if (newsData.articles.isNotEmpty) {
+          intelligence.addInsight(
+            category: 'media',
+            insight: '${newsData.articles.length} recent articles about this match',
+            impact: 'low',
+          );
+        }
+      }
+      
+      // Get Reddit sentiment for tennis
+      final redditData = await _redditService.getTennisDiscussion(
+        player1: intelligence.homeTeam,
+        player2: intelligence.awayTeam,
+      );
+      
+      if (redditData != null) {
+        intelligence.addDataPoint(
+          source: 'Reddit r/tennis',
+          type: 'social_sentiment',
+          data: redditData,
+          confidence: 0.60,
+        );
+        
+        // Add community prediction if available
+        if (redditData['communityPrediction'] != null) {
+          intelligence.addInsight(
+            category: 'social',
+            insight: 'Reddit favors: ${redditData['communityPrediction']}',
+            impact: 'low',
+          );
+        }
+      }
+      
+      // Store all tennis data
+      intelligence.data['tennis'] = tennisData;
+      
+      debugPrint('✅ Tennis intelligence gathered: ${intelligence.insights.length} insights');
+      
+    } catch (e) {
+      debugPrint('❌ Error gathering tennis intelligence: $e');
+      intelligence.addInsight(
+        category: 'error',
+        insight: 'Limited tennis data available',
+        impact: 'low',
+      );
+    }
   }
 
   /// Gather universal intelligence (weather, news, social)

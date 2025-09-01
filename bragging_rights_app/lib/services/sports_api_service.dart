@@ -143,7 +143,7 @@ class SportsApiService {
       }
       
       // Fallback: Call individual functions
-      final sports = ['NFL', 'NBA', 'NHL', 'MLB'];
+      final sports = ['NFL', 'NBA', 'NHL', 'MLB', 'Tennis'];
       for (final sport in sports) {
         try {
           print('Fetching $sport games...');
@@ -178,7 +178,7 @@ class SportsApiService {
 
   // Get all games for multiple sports
   Future<Map<String, List<Game>>> getAllSportsGames() async {
-    final sports = ['NFL', 'NBA', 'MLB', 'NHL', 'MMA', 'BOXING'];
+    final sports = ['NFL', 'NBA', 'MLB', 'NHL', 'MMA', 'BOXING', 'TENNIS'];
     final gamesMap = <String, List<Game>>{};
     
     for (final sport in sports) {

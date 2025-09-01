@@ -24,6 +24,7 @@ class RedditService {
     'onefc': 'ONEHQ',
     'pfl': 'PFLmma',
     'bkfc': 'bareknuckleboxing',
+    'tennis': 'tennis',
   };
 
   // Team-specific subreddits
@@ -465,6 +466,90 @@ class RedditService {
                       title.contains(_getTeamAbbreviation(away).toLowerCase()));
     
     return isThread || hasTeams;
+  }
+
+  /// Get tennis match discussion from Reddit
+  Future<Map<String, dynamic>?> getTennisDiscussion({
+    required String player1,
+    required String player2,
+  }) async {
+    try {
+      // Search r/tennis for discussion about this match
+      final searchQuery = Uri.encodeComponent('$player1 $player2');
+      final url = '$_baseUrl/r/tennis/search.json?q=$searchQuery&sort=relevance&t=week&limit=10';
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'User-Agent': 'BraggingRights:Edge:v1.0'},
+      );
+      
+      if (response.statusCode != 200) {
+        debugPrint('Failed to fetch tennis discussion: ${response.statusCode}');
+        return null;
+      }
+      
+      final data = json.decode(response.body);
+      final posts = data['data']['children'] as List;
+      
+      if (posts.isEmpty) {
+        return {
+          'discussionFound': false,
+          'sentiment': 'neutral',
+        };
+      }
+      
+      // Analyze posts for sentiment
+      final sentiment = _analyzeSentiment(posts);
+      
+      // Find most relevant discussion
+      Map<String, dynamic>? mainDiscussion;
+      for (final post in posts) {
+        final postData = post['data'];
+        final title = postData['title'].toString().toLowerCase();
+        if (title.contains(player1.toLowerCase()) && 
+            title.contains(player2.toLowerCase())) {
+          mainDiscussion = {
+            'title': postData['title'],
+            'url': 'https://reddit.com${postData['permalink']}',
+            'score': postData['score'],
+            'comments': postData['num_comments'],
+          };
+          break;
+        }
+      }
+      
+      // Determine community prediction
+      String? communityPrediction;
+      int player1Mentions = 0;
+      int player2Mentions = 0;
+      
+      for (final post in posts) {
+        final text = post['data']['title'].toString() + 
+                    (post['data']['selftext'] ?? '').toString();
+        if (text.toLowerCase().contains(player1.toLowerCase())) player1Mentions++;
+        if (text.toLowerCase().contains(player2.toLowerCase())) player2Mentions++;
+      }
+      
+      if (player1Mentions > player2Mentions * 1.3) {
+        communityPrediction = player1;
+      } else if (player2Mentions > player1Mentions * 1.3) {
+        communityPrediction = player2;
+      }
+      
+      return {
+        'discussionFound': true,
+        'sentiment': sentiment,
+        'mainDiscussion': mainDiscussion,
+        'communityPrediction': communityPrediction,
+        'player1Mentions': player1Mentions,
+        'player2Mentions': player2Mentions,
+        'totalPosts': posts.length,
+      };
+      
+    } catch (e) {
+      debugPrint('Error fetching tennis discussion: $e');
+      return null;
+    }
   }
 
   /// Analyze a game thread for insights
