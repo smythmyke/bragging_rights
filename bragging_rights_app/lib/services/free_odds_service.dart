@@ -55,13 +55,14 @@ class FreeOddsService {
   /// Get NBA odds from ESPN
   Future<Map<String, dynamic>?> _getNbaOdds(String home, String away) async {
     try {
-      final scoreboard = await _nbaService.getScoreboard();
+      final scoreboard = await _nbaService.getTodaysGames();
       if (scoreboard == null) return null;
       
       // Find matching game
-      for (final game in scoreboard.games) {
-        if (_teamsMatch(game.homeTeam, home) && _teamsMatch(game.awayTeam, away)) {
-          return _extractOddsFromGame(game.toMap());
+      for (final event in scoreboard.events) {
+        final game = _extractGameFromEvent(event);
+        if (_teamsMatch(game['homeTeam'], home) && _teamsMatch(game['awayTeam'], away)) {
+          return _extractOddsFromGame(game);
         }
       }
       
@@ -79,7 +80,8 @@ class FreeOddsService {
       if (games == null) return null;
       
       // Find matching game
-      for (final game in games) {
+      for (final event in games.events) {
+        final game = _extractGameFromEvent(event);
         if (_teamsMatch(game['homeTeam'], home) && _teamsMatch(game['awayTeam'], away)) {
           return _extractOddsFromGame(game);
         }
@@ -95,11 +97,12 @@ class FreeOddsService {
   /// Get NHL odds from ESPN
   Future<Map<String, dynamic>?> _getNhlOdds(String home, String away) async {
     try {
-      final scoreboard = await _nhlService.getScoreboard();
+      final scoreboard = await _nhlService.getTodaysGames();
       if (scoreboard == null) return null;
       
       // Find matching game
-      for (final game in scoreboard['games'] ?? []) {
+      for (final event in scoreboard.events) {
+        final game = _extractGameFromEvent(event);
         if (_teamsMatch(game['homeTeam'], home) && _teamsMatch(game['awayTeam'], away)) {
           return _extractOddsFromGame(game);
         }
@@ -115,11 +118,12 @@ class FreeOddsService {
   /// Get MLB odds from ESPN
   Future<Map<String, dynamic>?> _getMlbOdds(String home, String away) async {
     try {
-      final scoreboard = await _mlbService.getScoreboard();
+      final scoreboard = await _mlbService.getTodaysGames();
       if (scoreboard == null) return null;
       
       // Find matching game
-      for (final game in scoreboard['games'] ?? []) {
+      for (final event in scoreboard.events) {
+        final game = _extractGameFromEvent(event);
         if (_teamsMatch(game['homeTeam'], home) && _teamsMatch(game['awayTeam'], away)) {
           return _extractOddsFromGame(game);
         }
@@ -132,13 +136,39 @@ class FreeOddsService {
     }
   }
   
-  /// Get Tennis odds from ESPN
+  /// Get Tennis odds from ESPN tournaments
   Future<Map<String, dynamic>?> _getTennisOdds(String player1, String player2) async {
     try {
+      // First try to get tournament data (extended coverage)
+      final tournaments = await _tennisService.getUpcomingTournaments(daysAhead: 30);
+      
+      // Search through all tournament matches
+      for (final tournament in tournaments) {
+        for (final match in tournament.matches) {
+          if ((_teamsMatch(match.player1Name, player1) && _teamsMatch(match.player2Name, player2)) ||
+              (_teamsMatch(match.player1Name, player2) && _teamsMatch(match.player2Name, player1))) {
+            // Return tournament-aware odds with metadata
+            return {
+              'homeTeam': match.player1Name,
+              'awayTeam': match.player2Name,
+              'moneylineHome': _calculateTennisOdds(match.player1Seed, match.player2Seed, true),
+              'moneylineAway': _calculateTennisOdds(match.player2Seed, match.player1Seed, false),
+              'tournament': tournament.tournamentName,
+              'tournamentType': tournament.tournamentType,
+              'surface': tournament.surface,
+              'round': match.round,
+              'court': match.court,
+              'eventName': '${tournament.tournamentName} - ${match.round}',
+            };
+          }
+        }
+      }
+      
+      // Fallback to today's matches if no tournament match found
       final scoreboard = await _tennisService.getScoreboard();
       if (scoreboard == null) return null;
       
-      // Find matching match
+      // Find matching match in today's scoreboard
       for (final match in scoreboard.matches) {
         final p1 = match.player1['name'] ?? '';
         final p2 = match.player2['name'] ?? '';
@@ -154,6 +184,33 @@ class FreeOddsService {
       debugPrint('Error getting Tennis odds: $e');
       return null;
     }
+  }
+  
+  /// Calculate tennis odds based on seeding
+  double _calculateTennisOdds(int? playerSeed, int? opponentSeed, bool isPlayer1) {
+    // If both unseeded, return even odds
+    if (playerSeed == null && opponentSeed == null) {
+      return -110;
+    }
+    
+    // Seeded vs unseeded
+    if (playerSeed != null && opponentSeed == null) {
+      return playerSeed <= 8 ? -250 : -150; // Favorite
+    }
+    if (playerSeed == null && opponentSeed != null) {
+      return opponentSeed <= 8 ? 200 : 130; // Underdog
+    }
+    
+    // Both seeded - calculate based on seed difference
+    final seedDiff = opponentSeed! - playerSeed!;
+    
+    if (seedDiff > 10) return -300; // Heavy favorite
+    if (seedDiff > 5) return -200;  // Solid favorite
+    if (seedDiff > 0) return -150;  // Slight favorite
+    if (seedDiff == 0) return -110; // Even
+    if (seedDiff > -5) return 130;  // Slight underdog
+    if (seedDiff > -10) return 180; // Solid underdog
+    return 250; // Heavy underdog
   }
   
   /// Get MMA/UFC odds from ESPN
@@ -418,6 +475,27 @@ class FreeOddsService {
   }
   
   /// Check if team names match (fuzzy matching)
+  /// Extract game data from ESPN event structure
+  Map<String, dynamic> _extractGameFromEvent(Map<String, dynamic> event) {
+    final competition = event['competitions']?[0];
+    if (competition == null) return {};
+    
+    final competitors = competition['competitors'] ?? [];
+    if (competitors.length < 2) return {};
+    
+    return {
+      'id': event['id'],
+      'name': event['name'],
+      'homeTeam': competitors[0]['team']?['displayName'] ?? '',
+      'awayTeam': competitors[1]['team']?['displayName'] ?? '',
+      'homeScore': competitors[0]['score'],
+      'awayScore': competitors[1]['score'],
+      'status': competition['status']?['type']?['description'],
+      'odds': competition['odds'],
+      'competitions': event['competitions'],
+    };
+  }
+  
   bool _teamsMatch(String? team1, String? team2) {
     if (team1 == null || team2 == null) return false;
     
