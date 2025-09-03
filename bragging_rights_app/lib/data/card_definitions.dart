@@ -20,6 +20,7 @@ class PowerCard {
   final String effect;
   final String howToUse;
   final CardRarity rarity;
+  final String? imagePath;
   int quantity;
 
   PowerCard({
@@ -31,6 +32,7 @@ class PowerCard {
     required this.effect,
     required this.howToUse,
     required this.rarity,
+    this.imagePath,
     this.quantity = 0,
   });
 
@@ -44,6 +46,7 @@ class PowerCard {
       effect: effect,
       howToUse: howToUse,
       rarity: rarity,
+      imagePath: imagePath,
       quantity: quantity ?? this.quantity,
     );
   }
@@ -61,6 +64,7 @@ class CardDefinitions {
       effect: 'Double your winnings if your pick wins',
       howToUse: 'Tap card during live game before halftime. Risk doubles but so does reward.',
       rarity: CardRarity.common,
+      imagePath: 'assets/images/cards/double_down.png',
     ),
     'mulligan': PowerCard(
       id: 'mulligan',
@@ -71,6 +75,7 @@ class CardDefinitions {
       effect: 'Change your pick once after making it',
       howToUse: 'Use in pool details screen before the game locks. One-time use per pool.',
       rarity: CardRarity.common,
+      imagePath: 'assets/images/cards/mulligan.png',
     ),
     'crystal_ball': PowerCard(
       id: 'crystal_ball',
@@ -81,6 +86,7 @@ class CardDefinitions {
       effect: 'See what percentage of players picked each team',
       howToUse: 'Activate before submitting your pick to see crowd sentiment.',
       rarity: CardRarity.uncommon,
+      imagePath: 'assets/images/cards/crystal_ball.png',
     ),
     'copycat': PowerCard(
       id: 'copycat',
@@ -91,6 +97,7 @@ class CardDefinitions {
       effect: 'Copy the pick of the current pool leader',
       howToUse: 'Automatically matches your pick to the top-ranked player in the pool.',
       rarity: CardRarity.uncommon,
+      imagePath: 'assets/images/cards/copycat.png',
     ),
     'hot_hand': PowerCard(
       id: 'hot_hand',
@@ -101,6 +108,7 @@ class CardDefinitions {
       effect: '1.5x multiplier when on a 3+ game win streak',
       howToUse: 'Auto-activates when you have won 3 or more pools in a row.',
       rarity: CardRarity.rare,
+      imagePath: 'assets/images/cards/hot_hand.png',
     ),
     'all_in': PowerCard(
       id: 'all_in',
@@ -111,6 +119,7 @@ class CardDefinitions {
       effect: 'Triple winnings but lose double if wrong',
       howToUse: 'High risk, high reward. Activate when extremely confident.',
       rarity: CardRarity.legendary,
+      imagePath: 'assets/images/cards/all_in.png',
     ),
 
     // Defensive Cards
@@ -123,6 +132,7 @@ class CardDefinitions {
       effect: 'Get 50% refund if you lose',
       howToUse: 'Activate before the 4th quarter starts to protect half your buy-in.',
       rarity: CardRarity.common,
+      imagePath: 'assets/images/cards/insurance.png',
     ),
     'shield': PowerCard(
       id: 'shield',
@@ -133,6 +143,7 @@ class CardDefinitions {
       effect: 'Block one offensive card used against you',
       howToUse: 'Auto-activates when an opponent uses a sabotage or steal card on you.',
       rarity: CardRarity.uncommon,
+      imagePath: 'assets/images/cards/shield.png',
     ),
     'time_freeze': PowerCard(
       id: 'time_freeze',
@@ -143,6 +154,7 @@ class CardDefinitions {
       effect: 'Extend pick deadline by 15 minutes',
       howToUse: 'Use when you need more time to research before the pool locks.',
       rarity: CardRarity.uncommon,
+      imagePath: 'assets/images/cards/time_freeze.png',
     ),
     'split_bet': PowerCard(
       id: 'split_bet',
@@ -153,6 +165,7 @@ class CardDefinitions {
       effect: 'Bet on both teams for guaranteed small win',
       howToUse: 'Reduces risk by splitting your bet. Win less but never lose completely.',
       rarity: CardRarity.common,
+      imagePath: 'assets/images/cards/split_bet.png',
     ),
     'second_chance': PowerCard(
       id: 'second_chance',
@@ -163,6 +176,7 @@ class CardDefinitions {
       effect: 'Re-enter the same pool once after elimination',
       howToUse: 'Only for elimination pools. Get back in after your first loss.',
       rarity: CardRarity.rare,
+      imagePath: 'assets/images/cards/second_chance.png',
     ),
     'hedge': PowerCard(
       id: 'hedge',
@@ -173,6 +187,7 @@ class CardDefinitions {
       effect: 'Lock in current winnings at reduced rate',
       howToUse: 'Cash out early for 60-80% of potential winnings based on game state.',
       rarity: CardRarity.uncommon,
+      imagePath: 'assets/images/cards/hedge.png',
     ),
 
     // Special Cards (Count as either offensive or defensive)
@@ -185,6 +200,7 @@ class CardDefinitions {
       effect: 'Acts as any common card of your choice',
       howToUse: 'Transform into any common offensive or defensive card when used.',
       rarity: CardRarity.rare,
+      imagePath: 'assets/images/cards/wildcard.png',
     ),
     'lucky_charm': PowerCard(
       id: 'lucky_charm',
@@ -195,6 +211,7 @@ class CardDefinitions {
       effect: '+15% win probability boost',
       howToUse: 'Mysterious boost to your chances. The algorithm favors you slightly.',
       rarity: CardRarity.legendary,
+      imagePath: 'assets/images/cards/lucky_charm.png',
     ),
   };
 

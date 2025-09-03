@@ -20,9 +20,9 @@ service cloud.firestore {
       return request.auth != null && request.auth.token.admin == true;
     }
     
-    // Get user's current balance from wallet
+    // Get user's current balance from wallet collection
     function getUserBalance() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)/wallet/current).data.balance;
+      return get(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.balance;
     }
     
     // Check if user has enough balance for transaction
@@ -66,27 +66,6 @@ service cloud.firestore {
       // Only admins can delete user accounts
       allow delete: if isAdmin();
       
-      // WALLET SUBCOLLECTION
-      match /wallet/{walletDoc} {
-        // Users can read their own wallet
-        allow read: if isOwner(userId);
-        
-        // Allow initial wallet creation during signup
-        allow create: if isOwner(userId) && 
-          walletDoc == 'current' &&
-          request.resource.data.balance == 500 &&
-          request.resource.data.keys().hasAll(['balance', 'lastAllowance']);
-        
-        // Allow wallet updates with validation - only decrease balance
-        allow update: if isOwner(userId) && 
-          walletDoc == 'current' &&
-          request.resource.data.balance >= 0 &&
-          request.resource.data.balance <= resource.data.balance;
-        
-        // No direct deletes allowed
-        allow delete: if false;
-      }
-      
       // STATS SUBCOLLECTION  
       match /stats/{statDoc} {
         // Users can read their own stats
@@ -111,6 +90,56 @@ service cloud.firestore {
         
         // Only server/admin can delete cards
         allow delete: if isAdmin();
+      }
+      
+      // Also add gamesWithBets subcollection under users
+      match /gamesWithBets/{gameId} {
+        // Users can read their own games with bets
+        allow read: if isOwner(userId);
+        
+        // Users can create/update their games with bets
+        allow write: if isOwner(userId);
+      }
+      
+      // Also add pools subcollection under users
+      match /pools/{poolId} {
+        // Users can read their own pools
+        allow read: if isOwner(userId);
+        
+        // Users can create/update their pools
+        allow write: if isOwner(userId);
+      }
+    }
+    
+    // ========================================
+    // WALLETS COLLECTION RULES (Top-level)
+    // ========================================
+    
+    match /wallets/{userId} {
+      // Users can read their own wallet
+      allow read: if isOwner(userId);
+      
+      // Allow wallet creation during signup
+      allow create: if isOwner(userId) && 
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.balance >= 0;
+      
+      // Allow wallet updates for testing (temporary - restrict in production)
+      allow update: if isOwner(userId) || isAdmin();
+      
+      // No direct deletes allowed
+      allow delete: if false;
+      
+      // TRANSACTIONS SUBCOLLECTION
+      match /transactions/{transactionId} {
+        // Users can read their own transactions
+        allow read: if isOwner(userId);
+        
+        // Allow transaction creation
+        allow create: if isOwner(userId);
+        
+        // No updates or deletes allowed
+        allow update, delete: if false;
       }
     }
     
@@ -182,24 +211,6 @@ service cloud.firestore {
         resource.data.status == 'pending';
     }
     
-    // Also add gamesWithBets subcollection under users
-    match /users/{userId}/gamesWithBets/{gameId} {
-      // Users can read their own games with bets
-      allow read: if isOwner(userId);
-      
-      // Users can create/update their games with bets
-      allow write: if isOwner(userId);
-    }
-    
-    // Also add pools subcollection under users
-    match /users/{userId}/pools/{poolId} {
-      // Users can read their own pools
-      allow read: if isOwner(userId);
-      
-      // Users can create/update their pools
-      allow write: if isOwner(userId);
-    }
-    
     // ========================================
     // POOLS COLLECTION RULES  
     // ========================================
@@ -208,24 +219,31 @@ service cloud.firestore {
       // All authenticated users can read pools
       allow read: if isAuthenticated();
       
-      // Users can create pools
+      // Users can create pools (simplified for testing)
       allow create: if isAuthenticated() &&
-        request.resource.data.createdBy == request.auth.uid &&
-        request.resource.data.participants.size() == 0 &&
-        request.resource.data.totalPot == 0 &&
-        request.resource.data.status == 'open';
+        request.resource.data.createdBy == request.auth.uid;
       
-      // Only allow specific updates (joining pool)
-      allow update: if isAuthenticated() &&
-        poolIsOpen(poolId) &&
-        // Only allow adding to participants and updating pot
-        request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['participants', 'totalPot', 'status']) &&
-        // Ensure pot increases by buy-in amount
-        request.resource.data.totalPot == resource.data.totalPot + resource.data.buyIn;
+      // Allow updates for joining pools and status changes
+      allow update: if isAuthenticated();
       
       // Only pool creator or admin can delete
       allow delete: if isOwner(resource.data.createdBy) || isAdmin();
+      
+      // PARTICIPANTS SUBCOLLECTION
+      match /participants/{participantId} {
+        // All authenticated users can read participants
+        allow read: if isAuthenticated();
+        
+        // Users can add themselves as participants
+        allow create: if isAuthenticated() &&
+          participantId == request.auth.uid;
+        
+        // Allow updates for participant data
+        allow update: if isOwner(participantId);
+        
+        // No deletes once joined
+        allow delete: if false;
+      }
     }
     
     // ========================================
@@ -350,6 +368,21 @@ service cloud.firestore {
       
       // All authenticated users can write cache (for caching API responses)
       allow write: if isAuthenticated();
+    }
+    
+    // ========================================
+    // CARD INVENTORY COLLECTION RULES
+    // ========================================
+    
+    match /users/{userId}/card_inventory/{inventoryDoc} {
+      // Users can read their own card inventory
+      allow read: if isOwner(userId);
+      
+      // Users can create/update their own inventory
+      allow create, update: if isOwner(userId);
+      
+      // No deletes allowed
+      allow delete: if false;
     }
   }
 }

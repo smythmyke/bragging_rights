@@ -16,9 +16,15 @@ import '../../services/card_service.dart';
 import '../../models/game_model.dart';
 import '../../models/pool_model.dart';
 import '../../data/card_definitions.dart';
+import '../../widgets/power_card_widget.dart';
+import '../../widgets/intel_card_widget.dart';
+import '../card_detail_screen.dart';
+import '../../models/intel_product.dart';
+import '../../utils/dev_tools.dart';
 import '../premium/edge_screen.dart';
 import '../cards/card_inventory_screen.dart';
 import '../games/all_games_screen.dart';
+import '../../services/sound_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -41,6 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final WagerService _wagerService = WagerService();
   final PurchaseService _purchaseService = PurchaseService();
   final CardService _cardService = CardService();
+  final SoundService _soundService = SoundService();
   
   // Track games with bets
   List<String> _gamesWithBets = [];
@@ -74,6 +81,11 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadGamesData();
     _loadPoolsData();
     _initializePurchaseService();
+    _initializeSoundService();
+  }
+  
+  Future<void> _initializeSoundService() async {
+    await _soundService.initialize();
   }
   
   Future<void> _initializePurchaseService() async {
@@ -533,10 +545,17 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Align(
           alignment: Alignment.centerLeft,
-          child: Image.asset(
-            'assets/images/bragging_rights_logo.png',
-            height: 100,  // Further increased for better visibility
-            fit: BoxFit.contain,
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedIndex = 0; // Navigate to Games tab
+              });
+            },
+            child: Image.asset(
+              'assets/images/bragging_rights_logo.png',
+              height: 100,  // Further increased for better visibility
+              fit: BoxFit.contain,
+            ),
           ),
         ),
         centerTitle: false,
@@ -2431,7 +2450,42 @@ class _HomeScreenState extends State<HomeScreen> {
                   final card = offensiveCards[index];
                   final owned = (inventory.cardQuantities[card.id] ?? 0) > 0;
                   final quantity = inventory.cardQuantities[card.id] ?? 0;
-                  return _buildPowerCardItem(card, owned, quantity);
+                  return StreamBuilder<int>(
+                    stream: _walletService.getBalanceStream(),
+                    builder: (context, balanceSnapshot) {
+                      final balance = balanceSnapshot.data ?? 0;
+                      final price = _getCardPrice(card.rarity);
+                      final canAfford = balance >= price;
+                      
+                      return PowerCardWidget(
+                        card: card.copyWith(quantity: quantity),
+                        isOwned: owned,
+                        canAfford: canAfford,
+                        price: price,
+                        showPrice: true,
+                        onTap: () async {
+                          // Play selection sound
+                          await _soundService.playCardSelect(card.id);
+                          
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CardDetailScreen(
+                                card: card,
+                                isOwned: owned,
+                                quantity: quantity,
+                              ),
+                            ),
+                          );
+                          
+                          // Refresh if card was purchased
+                          if (result == true) {
+                            setState(() {});
+                          }
+                        },
+                      );
+                    },
+                  );
                 },
               );
             },
@@ -2462,7 +2516,42 @@ class _HomeScreenState extends State<HomeScreen> {
                   final card = defensiveCards[index];
                   final owned = (inventory.cardQuantities[card.id] ?? 0) > 0;
                   final quantity = inventory.cardQuantities[card.id] ?? 0;
-                  return _buildPowerCardItem(card, owned, quantity);
+                  return StreamBuilder<int>(
+                    stream: _walletService.getBalanceStream(),
+                    builder: (context, balanceSnapshot) {
+                      final balance = balanceSnapshot.data ?? 0;
+                      final price = _getCardPrice(card.rarity);
+                      final canAfford = balance >= price;
+                      
+                      return PowerCardWidget(
+                        card: card.copyWith(quantity: quantity),
+                        isOwned: owned,
+                        canAfford: canAfford,
+                        price: price,
+                        showPrice: true,
+                        onTap: () async {
+                          // Play selection sound
+                          await _soundService.playCardSelect(card.id);
+                          
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CardDetailScreen(
+                                card: card,
+                                isOwned: owned,
+                                quantity: quantity,
+                              ),
+                            ),
+                          );
+                          
+                          // Refresh if card was purchased
+                          if (result == true) {
+                            setState(() {});
+                          }
+                        },
+                      );
+                    },
+                  );
                 },
               );
             },
@@ -2493,7 +2582,42 @@ class _HomeScreenState extends State<HomeScreen> {
                   final card = specialCards[index];
                   final owned = (inventory.cardQuantities[card.id] ?? 0) > 0;
                   final quantity = inventory.cardQuantities[card.id] ?? 0;
-                  return _buildPowerCardItem(card, owned, quantity);
+                  return StreamBuilder<int>(
+                    stream: _walletService.getBalanceStream(),
+                    builder: (context, balanceSnapshot) {
+                      final balance = balanceSnapshot.data ?? 0;
+                      final price = _getCardPrice(card.rarity);
+                      final canAfford = balance >= price;
+                      
+                      return PowerCardWidget(
+                        card: card.copyWith(quantity: quantity),
+                        isOwned: owned,
+                        canAfford: canAfford,
+                        price: price,
+                        showPrice: true,
+                        onTap: () async {
+                          // Play selection sound
+                          await _soundService.playCardSelect(card.id);
+                          
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CardDetailScreen(
+                                card: card,
+                                isOwned: owned,
+                                quantity: quantity,
+                              ),
+                            ),
+                          );
+                          
+                          // Refresh if card was purchased
+                          if (result == true) {
+                            setState(() {});
+                          }
+                        },
+                      );
+                    },
+                  );
                 },
               );
             },
@@ -2504,43 +2628,41 @@ class _HomeScreenState extends State<HomeScreen> {
           // Intel Section
           _buildSectionHeader('🔮 Edge Intel', 'Premium game insights'),
           const SizedBox(height: 12),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.5,
-            children: [
-              _buildIntelProduct(
-                'Live Game Intel',
-                '⚡',
-                'Real-time insights',
-                250,
-                Colors.red,
-              ),
-              _buildIntelProduct(
-                'Pre-Game Analysis',
-                '📊',
-                'Statistical breakdown',
-                150,
-                Colors.blue,
-              ),
-              _buildIntelProduct(
-                'Expert Picks',
-                '🎯',
-                'Pro predictions',
-                300,
-                Colors.purple,
-              ),
-              _buildIntelProduct(
-                'Injury Reports',
-                '🏥',
-                'Latest updates',
-                100,
-                Colors.orange,
-              ),
-            ],
+          StreamBuilder<int>(
+            stream: _walletService.getBalanceStream(),
+            builder: (context, snapshot) {
+              final balance = snapshot.data ?? 0;
+              
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 1.5,
+                ),
+                itemCount: IntelProducts.all.length,
+                itemBuilder: (context, index) {
+                  final intel = IntelProducts.all[index];
+                  final canAfford = balance >= intel.price;
+                  
+                  return IntelCardWidget(
+                    intel: intel,
+                    canAfford: canAfford,
+                    onTap: () {
+                      // TODO: Navigate to Intel detail screen or purchase
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('${intel.name} - Coming Soon!'),
+                          backgroundColor: Colors.blue,
+                        ),
+                      );
+                    },
+                  );
+                },
+              );
+            },
           ),
         ],
       ),
@@ -2988,6 +3110,59 @@ class _HomeScreenState extends State<HomeScreen> {
                 Colors.purple,
                 () {
                   // TODO: Share invite
+                },
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // DEV TOOLS SECTION (REMOVE IN PRODUCTION)
+          _buildSectionHeader('🔧 Dev Tools', 'Testing utilities'),
+          const SizedBox(height: 12),
+          Column(
+            children: [
+              _buildMenuTile(
+                'Set Balance to 99,999 BR',
+                PhosphorIconsRegular.coins,
+                Colors.orange,
+                () async {
+                  await DevTools.setTestBalance(amount: 99999);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Balance set to 99,999 BR!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                  setState(() {}); // Refresh UI
+                },
+              ),
+              _buildMenuTile(
+                'Add Test Cards',
+                PhosphorIconsRegular.cards,
+                Colors.purple,
+                () async {
+                  await DevTools.initializeTestData();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Test cards added!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                },
+              ),
+              _buildMenuTile(
+                'Create Firestore Index',
+                PhosphorIconsRegular.database,
+                Colors.blue,
+                () {
+                  // Open the index creation URL
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Copy this URL: ${DevTools.getIndexCreationUrl().substring(0, 50)}...'),
+                      duration: const Duration(seconds: 10),
+                    ),
+                  );
                 },
               ),
             ],
@@ -3539,6 +3714,20 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ],
     );
+  }
+  
+  // Helper method to get card price based on rarity
+  int _getCardPrice(CardRarity rarity) {
+    switch (rarity) {
+      case CardRarity.common:
+        return 100;
+      case CardRarity.uncommon:
+        return 250;
+      case CardRarity.rare:
+        return 500;
+      case CardRarity.legendary:
+        return 1000;
+    }
   }
   
   Widget _buildPowerCardItem(PowerCard card, bool owned, int quantity) {

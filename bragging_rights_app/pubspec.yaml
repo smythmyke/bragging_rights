@@ -53,6 +53,7 @@ dependencies:
   video_player: ^2.9.5
   http: ^1.5.0
   path_provider: ^2.1.5
+  audioplayers: ^6.1.0  # For card sound effects
 
 dev_dependencies:
   flutter_test:
@@ -80,7 +81,9 @@ flutter:
   assets:
     - assets/animations/
     - assets/images/
+    - assets/images/cards/
     - assets/team_logos/placeholders/
+    - assets/sounds/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
