@@ -1,6 +1,7 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/game_model.dart';
+import 'ufc_event_service.dart';
 
 class ESPNDirectService {
   static const String baseUrl = 'https://site.api.espn.com/apis/site/v2/sports';
@@ -38,6 +39,16 @@ class ESPNDirectService {
   // Fetch games for a specific sport
   Future<List<GameModel>> fetchSportGames(String sport) async {
     try {
+      // Use specialized UFC service for UFC events
+      // Note: We still check for 'UFC' sport since that's what comes from sportEndpoints
+      if (sport == 'UFC') {
+        final ufcService = UfcEventService();
+        final ufcEvents = await ufcService.fetchUpcomingUfcEvents(days: 60);
+        final gameModels = ufcService.convertToGameModels(ufcEvents);
+        print('Fetched ${gameModels.length} UFC events with proper names');
+        return gameModels;
+      }
+      
       final endpoint = sportEndpoints[sport];
       if (endpoint == null) {
         print('No endpoint for sport: $sport');
@@ -46,7 +57,7 @@ class ESPNDirectService {
       
       // For MMA/UFC and Boxing, fetch a wider date range since events are less frequent
       String url;
-      if (sport == 'UFC' || sport == 'BELLATOR' || sport == 'PFL' || sport == 'BOXING') {
+      if (sport == 'BELLATOR' || sport == 'PFL' || sport == 'BOXING') {
         final now = DateTime.now();
         final endDate = now.add(Duration(days: 60)); // Look 60 days ahead for combat sports to catch all events
         final startStr = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
@@ -144,6 +155,41 @@ class ESPNDirectService {
     
     // Handle individual sports differently
     if (_isIndividualSport(sport)) {
+      // For UFC/MMA, preserve the full event name
+      final fullEventName = event['name'] ?? '';
+      String? ufcEventName;
+      
+      // Extract UFC event name (e.g., "UFC 310", "UFC Fight Night")
+      if (sport == 'UFC' || sport == 'BELLATOR' || sport == 'PFL') {
+        // Check if event has season/week info which often contains the event name
+        final season = event['season']?['name'] ?? '';
+        final week = competition['notes']?[0]?['text'] ?? '';
+        
+        // Try to extract event name from various sources
+        if (fullEventName.contains('UFC')) {
+          // Extract UFC event number or type from the full name
+          final ufcMatch = RegExp(r'UFC\s+(\d+|Fight Night|on ESPN|on ABC)').firstMatch(fullEventName);
+          if (ufcMatch != null) {
+            ufcEventName = ufcMatch.group(0);
+          }
+        } else if (sport == 'BELLATOR' && fullEventName.contains('Bellator')) {
+          final bellatorMatch = RegExp(r'Bellator\s+\d+').firstMatch(fullEventName);
+          if (bellatorMatch != null) {
+            ufcEventName = bellatorMatch.group(0);
+          }
+        } else if (sport == 'PFL' && fullEventName.contains('PFL')) {
+          final pflMatch = RegExp(r'PFL\s+\d+').firstMatch(fullEventName);
+          if (pflMatch != null) {
+            ufcEventName = pflMatch.group(0);
+          }
+        }
+        
+        // If we couldn't extract event name, use the sport as prefix
+        if (ufcEventName == null) {
+          ufcEventName = sport;
+        }
+      }
+      
       // For individual sports, competitors are athletes not teams
       // They use "order" field (1 or 2) instead of homeAway
       for (final competitor in competitors) {
@@ -178,14 +224,19 @@ class ESPNDirectService {
         }
       } else if (competitors.isEmpty) {
         // Check event name for fighter/athlete names
-        final eventName = event['name'] ?? '';
-        if (eventName.contains(' vs ') || eventName.contains(' vs. ')) {
-          final parts = eventName.split(RegExp(r' vs\.? '));
+        if (fullEventName.contains(' vs ') || fullEventName.contains(' vs. ')) {
+          final parts = fullEventName.split(RegExp(r' vs\.? '));
           if (parts.length >= 2) {
             awayTeam = parts[0].trim();
             homeTeam = parts[1].trim();
           }
         }
+      }
+      
+      // For UFC/MMA events, prepend the event name to the display
+      if (ufcEventName != null && awayTeam != 'TBD' && homeTeam != 'TBD') {
+        // Store event name in awayTeam field as "UFC 310: Fighter1"
+        awayTeam = '$ufcEventName: $awayTeam';
       }
     } else {
       // Team sports

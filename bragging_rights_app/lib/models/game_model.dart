@@ -60,7 +60,7 @@ class GameModel {
   }
 
   // Check if this is an individual sport
-  bool get isIndividualSport => ['MMA', 'BOXING', 'TENNIS', 'GOLF'].contains(sport.toUpperCase());
+  bool get isIndividualSport => ['MMA', 'UFC', 'BELLATOR', 'PFL', 'BOXING', 'TENNIS', 'GOLF'].contains(sport.toUpperCase());
   
   String get gameTitle => isIndividualSport ? '$awayTeam vs $homeTeam' : '$awayTeam @ $homeTeam';
   String get shortTitle => isIndividualSport 

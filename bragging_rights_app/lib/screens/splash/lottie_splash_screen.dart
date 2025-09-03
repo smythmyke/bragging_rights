@@ -112,7 +112,7 @@ class _LottieSplashScreenState extends State<LottieSplashScreen>
             // App Logo
             Image.asset(
               'assets/images/bragging_rights_logo.png',
-              height: 200,
+              height: 220,  // Increased by 10% from 200
               fit: BoxFit.contain,
             ),
             const SizedBox(height: 10),

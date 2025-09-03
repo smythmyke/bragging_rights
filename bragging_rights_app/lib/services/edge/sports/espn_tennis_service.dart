@@ -98,7 +98,7 @@ class EspnTennisService {
       final isMasters = tournamentType == TennisTournamentTypes.masters1000;
       
       // Parse matches
-      final matches = <LegacyTennisMatch>[];
+      final matches = <TennisMatch>[];
       for (final event in events) {
         final match = _parseMatch(event, tour);
         if (match != null) {
@@ -651,8 +651,8 @@ class TennisScoreboard {
   }
 }
 
-/// Tennis match model
-class TennisMatch {
+/// Legacy Tennis match model (for backward compatibility)
+class LegacyTennisMatch {
   final String id;
   final String name;
   final String? tournament;

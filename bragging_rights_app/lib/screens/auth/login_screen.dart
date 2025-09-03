@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:math' as math;
 import '../../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -9,7 +10,8 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen>
+    with TickerProviderStateMixin {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -18,9 +20,65 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLogin = true;
   bool _obscurePassword = true;
   bool _isLoading = false;
+  
+  late AnimationController _spinController;
+  late AnimationController _sparkleController;
+  late Animation<double> _spinAnimation;
+  late Animation<double> _sparkleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Initialize spin animation
+    _spinController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    
+    _spinAnimation = Tween<double>(
+      begin: 0,
+      end: 2 * 3.14159, // Full rotation
+    ).animate(CurvedAnimation(
+      parent: _spinController,
+      curve: Curves.easeInOutCubic,
+    ));
+    
+    // Initialize sparkle animation
+    _sparkleController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+    
+    _sparkleAnimation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(
+      parent: _sparkleController,
+      curve: Curves.easeInOut,
+    ));
+    
+    // Start the timer for spinning every 10 seconds
+    Future.delayed(const Duration(seconds: 10), _startSpinAnimation);
+  }
+  
+  void _startSpinAnimation() {
+    if (mounted) {
+      _spinController.forward(from: 0).then((_) {
+        _sparkleController.forward(from: 0).then((_) {
+          if (mounted) {
+            // Schedule next spin
+            Future.delayed(const Duration(seconds: 10), _startSpinAnimation);
+          }
+        });
+      });
+    }
+  }
 
   @override
   void dispose() {
+    _spinController.dispose();
+    _sparkleController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -173,19 +231,52 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo
-                  Icon(
-                    Icons.emoji_events,
-                    size: 80,
-                    color: Theme.of(context).colorScheme.onPrimary,
+                  // Animated Trophy with Sparkles
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Sparkle effects
+                      AnimatedBuilder(
+                        animation: _sparkleAnimation,
+                        builder: (context, child) {
+                          return CustomPaint(
+                            size: const Size(120, 120),  // Reduced sparkle size
+                            painter: SparklePainter(
+                              progress: _sparkleAnimation.value,
+                              color: Colors.amber,
+                            ),
+                          );
+                        },
+                      ),
+                      // Spinning trophy
+                      AnimatedBuilder(
+                        animation: _spinAnimation,
+                        builder: (context, child) {
+                          return Transform.rotate(
+                            angle: _spinAnimation.value,
+                            child: Icon(
+                              Icons.emoji_events,
+                              size: 80,  // Reduced trophy size
+                              color: Colors.amber,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.amber.withOpacity(0.5),
+                                  blurRadius: 20,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
+                  // No space between trophy and logo
                   Image.asset(
                     'assets/images/bragging_rights_logo.png',
-                    height: 240,
+                    height: 280,  // Reduced slightly to fit better
                     fit: BoxFit.contain,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),  // Minimal space
                   Text(
                     _isLogin ? 'Welcome Back!' : 'Join the Competition!',
                     style: TextStyle(
@@ -193,7 +284,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.9),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),  // Reduced from 32
                   
                   // Auth Form
                   Card(
@@ -406,5 +497,71 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
+  }
+}
+
+// Custom painter for sparkle effects
+class SparklePainter extends CustomPainter {
+  final double progress;
+  final Color color;
+
+  SparklePainter({
+    required this.progress,
+    required this.color,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (progress == 0) return;
+
+    final paint = Paint()
+      ..color = color.withOpacity(1.0 - progress)
+      ..style = PaintingStyle.fill;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final random = math.Random(42); // Fixed seed for consistent sparkles
+
+    // Draw sparkles
+    for (int i = 0; i < 12; i++) {
+      final angle = (i * 30) * math.pi / 180;
+      final distance = 40 + (progress * 40);
+      
+      final x = center.dx + math.cos(angle) * distance;
+      final y = center.dy + math.sin(angle) * distance;
+      
+      final sparkleSize = (1.0 - progress) * 4;
+      
+      // Draw star-shaped sparkle
+      final path = Path();
+      for (int j = 0; j < 4; j++) {
+        final sparkleAngle = (j * 90) * math.pi / 180;
+        final innerRadius = sparkleSize * 0.3;
+        final outerRadius = sparkleSize;
+        
+        if (j == 0) {
+          path.moveTo(
+            x + math.cos(sparkleAngle) * outerRadius,
+            y + math.sin(sparkleAngle) * outerRadius,
+          );
+        }
+        
+        path.lineTo(
+          x + math.cos(sparkleAngle + math.pi / 4) * innerRadius,
+          y + math.sin(sparkleAngle + math.pi / 4) * innerRadius,
+        );
+        path.lineTo(
+          x + math.cos(sparkleAngle + math.pi / 2) * outerRadius,
+          y + math.sin(sparkleAngle + math.pi / 2) * outerRadius,
+        );
+      }
+      path.close();
+      
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(SparklePainter oldDelegate) {
+    return oldDelegate.progress != progress;
   }
 }

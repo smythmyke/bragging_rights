@@ -66,11 +66,11 @@ class _CardInventoryScreenState extends State<CardInventoryScreen> {
   IconData _getTypeIcon(CardType type) {
     switch (type) {
       case CardType.offensive:
-        return PhosphorIconsRegular.target;
+        return PhosphorIconsDuotone.lightning;  // Lightning with dual-tone effect for offense
       case CardType.defensive:
-        return PhosphorIconsRegular.shield;
+        return PhosphorIconsDuotone.castleTurret;  // Castle with dual-tone effect for defense
       case CardType.special:
-        return PhosphorIconsRegular.star;
+        return PhosphorIconsDuotone.sparkle;  // Sparkle with dual-tone effect for special
     }
   }
 

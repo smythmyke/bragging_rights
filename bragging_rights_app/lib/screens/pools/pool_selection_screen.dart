@@ -177,8 +177,19 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Check back soon!',
+                        'Check back soon or create your own!',
                         style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: () => _createPoolForGame(PoolType.quick),
+                        icon: const Icon(Icons.add_circle_outline),
+                        label: const Text('Create Pool'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
                       ),
                     ],
                   ),
@@ -739,6 +750,63 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Invalid pool code'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _createPoolForGame(PoolType type) async {
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      // Create a new pool with default settings (10 players max)
+      final poolId = await _poolService.createPool(
+        gameId: gameId ?? '',
+        gameTitle: widget.gameTitle,
+        sport: widget.sport,
+        type: type,
+        name: '${widget.gameTitle} - ${type.toString().split('.').last.toUpperCase()}',
+        buyIn: 25, // Default buy-in
+        maxPlayers: 10, // Default 10 players as requested
+        minPlayers: 2, // Minimum to start
+      );
+
+      // Close loading dialog
+      Navigator.pop(context);
+
+      if (poolId != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Pool created successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Refresh the pools list
+        setState(() {});
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to create pool. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      // Close loading dialog
+      Navigator.pop(context);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error creating pool: $e'),
           backgroundColor: Colors.red,
         ),
       );

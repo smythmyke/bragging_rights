@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../data/card_definitions.dart';
+import 'wallet_service.dart';
 
 class UserCardInventory {
   final int offensiveCount;
@@ -220,6 +221,56 @@ class CardService {
     }
   }
 
+  // Purchase a card with BR coins
+  Future<bool> purchaseCard(String cardId, int price) async {
+    print('Starting purchase for card: $cardId, price: $price');
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) {
+      print('Purchase failed: No user logged in');
+      return false;
+    }
+    
+    try {
+      // Import wallet service
+      final walletService = WalletService();
+      
+      // Check if user has enough balance
+      print('Checking wallet balance for user: $userId');
+      final balance = await walletService.getBalance(userId);
+      print('Current balance: $balance, required: $price');
+      
+      if (balance < price) {
+        print('Purchase failed: Insufficient balance');
+        return false;
+      }
+      
+      // Deduct from wallet
+      print('Deducting $price from wallet...');
+      final success = await walletService.deductFromWallet(
+        userId,
+        price,
+        'Purchased power card: $cardId',
+        metadata: {'cardId': cardId},
+      );
+      
+      if (!success) {
+        print('Purchase failed: Could not deduct from wallet');
+        return false;
+      }
+      
+      // Add card to user inventory
+      print('Adding card to inventory...');
+      await addCardsToUser(cardId, 1);
+      
+      print('Purchase successful!');
+      return true;
+    } catch (e) {
+      print('Error purchasing card: $e');
+      print('Stack trace: ${StackTrace.current}');
+      rethrow; // Rethrow to see the error in UI
+    }
+  }
+  
   // Give starter cards to new users
   Future<void> giveStarterCards(String userId) async {
     // Give new users some starter cards

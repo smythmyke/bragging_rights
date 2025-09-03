@@ -328,7 +328,7 @@ class FightPick {
       points = (points * multiplier).round();
       
       // Underdog bonus (if odds indicate underdog)
-      if (_isUnderdog(winnerId, fight)) {
+      if (winnerId != null && _isUnderdog(winnerId!, fight)) {
         points = (points * scoring.underdogMultiplier).round();
       }
     }

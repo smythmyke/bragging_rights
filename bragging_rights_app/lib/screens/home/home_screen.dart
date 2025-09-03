@@ -3,18 +3,22 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
+import 'dart:math' as math;
 import '../../services/bet_service.dart';
 import '../../services/wallet_service.dart';
 import '../../services/sports_api_service.dart';
 import '../../services/espn_direct_service.dart';
 import '../../services/pool_data_service.dart';
+import '../../services/pool_service.dart';
 import '../../services/wager_service.dart';
 import '../../services/purchase_service.dart';
 import '../../services/card_service.dart';
 import '../../models/game_model.dart';
+import '../../models/pool_model.dart';
 import '../../data/card_definitions.dart';
 import '../premium/edge_screen.dart';
 import '../cards/card_inventory_screen.dart';
+import '../games/all_games_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -531,7 +535,7 @@ class _HomeScreenState extends State<HomeScreen> {
           alignment: Alignment.centerLeft,
           child: Image.asset(
             'assets/images/bragging_rights_logo.png',
-            height: 75,
+            height: 100,  // Further increased for better visibility
             fit: BoxFit.contain,
           ),
         ),
@@ -547,16 +551,16 @@ class _HomeScreenState extends State<HomeScreen> {
               return Row(
                 children: [
                   // Offensive Cards
-                  _buildCardIndicator(
-                    icon: '🎯',
+                  _buildCardIndicatorWithIcon(
+                    icon: PhosphorIconsDuotone.lightning,
                     count: inventory.offensiveCount,
                     type: CardType.offensive,
                     context: context,
                   ),
                   const SizedBox(width: 4),
                   // Defensive Cards
-                  _buildCardIndicator(
-                    icon: '🛡️',
+                  _buildCardIndicatorWithIcon(
+                    icon: PhosphorIconsDuotone.castleTurret,
                     count: inventory.defensiveCount,
                     type: CardType.defensive,
                     context: context,
@@ -693,7 +697,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   
                   // Live Now Section
                   if (_liveGames.isNotEmpty) ...[
-                    _buildSectionHeader('🔴 Live Now', '${_liveGames.length} game${_liveGames.length != 1 ? 's' : ''} in progress'),
+                    _buildSectionHeader(
+                      '🔴 Live Now', 
+                      '${_liveGames.length} game${_liveGames.length != 1 ? 's' : ''} in progress',
+                      buttonText: 'View Now',
+                      onViewAll: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AllGamesScreen(
+                              title: 'Live Games',
+                              category: 'live',
+                              initialGames: _liveGames,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                     const SizedBox(height: 12),
                     SizedBox(
                       height: 160,
@@ -713,6 +733,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildSectionHeader(
                       '📅 Today',
                       '${_todayGames.length} game${_todayGames.length != 1 ? 's' : ''} starting today',
+                      onViewAll: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AllGamesScreen(
+                              title: "Today's Games",
+                              category: 'today',
+                              initialGames: _todayGames,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 12),
                     _buildGamesListBySport(_todayGames, showCountdown: true),
@@ -765,13 +797,34 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildSectionHeader(
                       '🌅 Tomorrow',
                       _formatDate(DateTime.now().add(const Duration(days: 1))),
+                      onViewAll: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AllGamesScreen(
+                              title: "Tomorrow's Games",
+                              category: 'tomorrow',
+                              initialGames: _tomorrowGames,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 12),
                     ..._tomorrowGames.take(5).map((game) => _buildGameCard(game, showDate: false)),
                     if (_tomorrowGames.length > 5)
                       TextButton(
                         onPressed: () {
-                          // TODO: Show all tomorrow's games
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AllGamesScreen(
+                                title: "Tomorrow's Games",
+                                category: 'tomorrow',
+                                initialGames: _tomorrowGames,
+                              ),
+                            ),
+                          );
                         },
                         child: Text('View all ${_tomorrowGames.length} games →'),
                       ),
@@ -783,13 +836,34 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildSectionHeader(
                       '📆 This Week',
                       '${_thisWeekGames.length} games',
+                      onViewAll: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AllGamesScreen(
+                              title: 'This Week',
+                              category: 'thisweek',
+                              initialGames: _thisWeekGames,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 12),
                     ..._thisWeekGames.take(5).map((game) => _buildGameCard(game, showDate: true)),
                     if (_thisWeekGames.length > 5)
                       TextButton(
                         onPressed: () {
-                          // TODO: Show all this week's games
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AllGamesScreen(
+                                title: 'This Week',
+                                category: 'thisweek',
+                                initialGames: _thisWeekGames,
+                              ),
+                            ),
+                          );
                         },
                         child: Text('View all ${_thisWeekGames.length} games →'),
                       ),
@@ -801,16 +875,33 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildSectionHeader(
                       '📅 Next Week',
                       '${_nextWeekGames.length} games scheduled',
+                      onViewAll: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AllGamesScreen(
+                              title: 'Next Week',
+                              category: 'nextweek',
+                              initialGames: _nextWeekGames,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 12),
                     ..._nextWeekGames.take(3).map((game) => _buildGameCard(game, showDate: true)),
                     if (_nextWeekGames.length > 3)
                       TextButton(
                         onPressed: () {
-                          _showAllGames(
+                          Navigator.push(
                             context,
-                            _nextWeekGames,
-                            'Next Week\'s Games',
+                            MaterialPageRoute(
+                              builder: (context) => AllGamesScreen(
+                                title: 'Next Week',
+                                category: 'nextweek',
+                                initialGames: _nextWeekGames,
+                              ),
+                            ),
                           );
                         },
                         child: Text('View all ${_nextWeekGames.length} games →'),
@@ -933,7 +1024,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title, String subtitle) {
+  Widget _buildSectionHeader(String title, String subtitle, {VoidCallback? onViewAll, String buttonText = 'View All'}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -956,12 +1047,11 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        TextButton(
-          onPressed: () {
-            // TODO: View all
-          },
-          child: const Text('View All'),
-        ),
+        if (onViewAll != null)
+          TextButton(
+            onPressed: onViewAll,
+            child: Text(buttonText),
+          ),
       ],
     );
   }
@@ -1684,23 +1774,14 @@ class _HomeScreenState extends State<HomeScreen> {
             // Quick Bet Section
             _buildSectionHeader('⚡ Quick Bet', 'Place a bet in seconds'),
             const SizedBox(height: 12),
-            Card(
-              margin: EdgeInsets.zero,
-              elevation: 2,
-              shape: RoundedRectangleBorder(
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: Colors.grey[900],
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[800]!),
               ),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                      Theme.of(context).colorScheme.secondary.withOpacity(0.1),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
+              child: Center(
                 child: Column(
                   children: [
                     const Icon(
@@ -1723,11 +1804,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: Colors.grey[600],
                         fontSize: 14,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
-                      onPressed: () {
-                        // TODO: Implement quick play
+                      onPressed: () async {
+                        print('Quick Play button pressed');
+                        await _handleQuickPlay();
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange,
@@ -2221,15 +2304,15 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Premium Banner
+          // Shop Header
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 colors: [
-                  Colors.amber,
-                  Colors.orange,
+                  Theme.of(context).colorScheme.primary,
+                  Theme.of(context).colorScheme.secondary,
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -2237,7 +2320,7 @@ class _HomeScreenState extends State<HomeScreen> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.orange.withOpacity(0.3),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 6),
                 ),
@@ -2246,13 +2329,13 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               children: [
                 const Icon(
-                  PhosphorIconsRegular.lightning,
+                  PhosphorIconsRegular.storefront,
                   size: 48,
                   color: Colors.white,
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'Edge Intelligence',
+                  'Power Card Shop',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -2261,7 +2344,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Premium insights to give you the winning edge',
+                  'Unlock strategic advantages with power cards',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -2269,19 +2352,35 @@ class _HomeScreenState extends State<HomeScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    // TODO: Navigate to premium subscription
+                StreamBuilder<UserCardInventory>(
+                  stream: _cardService.getUserCardInventory(),
+                  builder: (context, snapshot) {
+                    final inventory = snapshot.data ?? UserCardInventory.empty();
+                    final totalOwned = inventory.offensiveCount + 
+                                      inventory.defensiveCount + 
+                                      inventory.specialCount;
+                    final totalCards = CardDefinitions.allCards.length;
+                    
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '$totalOwned / $totalCards Cards Owned',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.orange,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                  ),
-                  child: const Text(
-                    'Unlock All Cards',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
                 ),
               ],
             ),
@@ -2289,92 +2388,158 @@ class _HomeScreenState extends State<HomeScreen> {
           
           const SizedBox(height: 24),
           
-          // Available Edge Cards Section
-          _buildSectionHeader('🎯 Today\'s Edge Cards', 'Tap to reveal insights'),
-          const SizedBox(height: 12),
-          
-          // Live Games Edge Cards
-          if (_liveGames.isNotEmpty) ...[
-            const Text(
-              'Live Games',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.red,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ..._liveGames.take(3).map((game) => _buildEdgeCard(
-              game.gameTitle,
-              game.sport,
-              'LIVE',
-              Colors.red,
-              true,
-            )),
-            const SizedBox(height: 16),
-          ],
-          
-          // Upcoming Games Edge Cards
-          const Text(
-            'Upcoming Games',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.blue,
-            ),
-          ),
-          const SizedBox(height: 8),
-          // Combine all upcoming games for Edge display
-          ...[..._todayGames, ..._tomorrowGames, ..._thisWeekGames].take(5).map((game) => _buildEdgeCard(
-            game.gameTitle,
-            game.sport,
-            'Available',
-            Colors.blue,
-            false,
-          )),
-          
-          const SizedBox(height: 24),
-          
-          // Edge Stats Section
-          _buildSectionHeader('📊 Your Edge Stats', 'Track your premium insights'),
-          const SizedBox(height: 12),
+          // Legend
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.grey[900],
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.grey[800]!),
             ),
-            child: Column(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildStatRow('Cards Viewed', '47', Icons.visibility, Colors.blue),
-                const Divider(),
-                _buildStatRow('Win Rate with Edge', '73%', Icons.trending_up, Colors.green),
-                const Divider(),
-                _buildStatRow('BR Earned with Edge', '+2,450', PhosphorIconsRegular.coins, Colors.amber),
-                const Divider(),
-                _buildStatRow('Cards Available Today', '12', PhosphorIconsRegular.lightning, Colors.orange),
+                _buildLegendItem(Colors.green, 'Owned'),
+                _buildLegendItem(Colors.orange, 'Available'),
+                _buildLegendItem(Colors.grey, 'Locked'),
               ],
             ),
           ),
           
           const SizedBox(height: 24),
           
-          // Sports Coverage Section
-          _buildSectionHeader('🏆 Sports Coverage', 'Premium insights for all sports'),
+          // Offensive Cards Section
+          _buildSectionHeader('⚔️ Offensive Cards', 'Double down on your strategy'),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
+          StreamBuilder<UserCardInventory>(
+            stream: _cardService.getUserCardInventory(),
+            builder: (context, snapshot) {
+              final inventory = snapshot.data ?? UserCardInventory.empty();
+              final offensiveCards = CardDefinitions.getOffensiveCards();
+              
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.75,
+                ),
+                itemCount: offensiveCards.length,
+                itemBuilder: (context, index) {
+                  final card = offensiveCards[index];
+                  final owned = (inventory.cardQuantities[card.id] ?? 0) > 0;
+                  final quantity = inventory.cardQuantities[card.id] ?? 0;
+                  return _buildPowerCardItem(card, owned, quantity);
+                },
+              );
+            },
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Defensive Cards Section
+          _buildSectionHeader('🛡️ Defensive Cards', 'Protect your position'),
+          const SizedBox(height: 12),
+          StreamBuilder<UserCardInventory>(
+            stream: _cardService.getUserCardInventory(),
+            builder: (context, snapshot) {
+              final inventory = snapshot.data ?? UserCardInventory.empty();
+              final defensiveCards = CardDefinitions.getDefensiveCards();
+              
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.75,
+                ),
+                itemCount: defensiveCards.length,
+                itemBuilder: (context, index) {
+                  final card = defensiveCards[index];
+                  final owned = (inventory.cardQuantities[card.id] ?? 0) > 0;
+                  final quantity = inventory.cardQuantities[card.id] ?? 0;
+                  return _buildPowerCardItem(card, owned, quantity);
+                },
+              );
+            },
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Special Cards Section
+          _buildSectionHeader('👑 Special Cards', 'Game-changing abilities'),
+          const SizedBox(height: 12),
+          StreamBuilder<UserCardInventory>(
+            stream: _cardService.getUserCardInventory(),
+            builder: (context, snapshot) {
+              final inventory = snapshot.data ?? UserCardInventory.empty();
+              final specialCards = CardDefinitions.getSpecialCards();
+              
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.75,
+                ),
+                itemCount: specialCards.length,
+                itemBuilder: (context, index) {
+                  final card = specialCards[index];
+                  final owned = (inventory.cardQuantities[card.id] ?? 0) > 0;
+                  final quantity = inventory.cardQuantities[card.id] ?? 0;
+                  return _buildPowerCardItem(card, owned, quantity);
+                },
+              );
+            },
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Intel Section
+          _buildSectionHeader('🔮 Edge Intel', 'Premium game insights'),
+          const SizedBox(height: 12),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.5,
             children: [
-              _buildSportCoverageChip('NFL', true),
-              _buildSportCoverageChip('NBA', true),
-              _buildSportCoverageChip('NHL', true),
-              _buildSportCoverageChip('MLB', true),
-              _buildSportCoverageChip('MMA/Boxing', true),
-              _buildSportCoverageChip('Soccer', false),
-              _buildSportCoverageChip('Tennis', false),
-              _buildSportCoverageChip('Golf', false),
+              _buildIntelProduct(
+                'Live Game Intel',
+                '⚡',
+                'Real-time insights',
+                250,
+                Colors.red,
+              ),
+              _buildIntelProduct(
+                'Pre-Game Analysis',
+                '📊',
+                'Statistical breakdown',
+                150,
+                Colors.blue,
+              ),
+              _buildIntelProduct(
+                'Expert Picks',
+                '🎯',
+                'Pro predictions',
+                300,
+                Colors.purple,
+              ),
+              _buildIntelProduct(
+                'Injury Reports',
+                '🏥',
+                'Latest updates',
+                100,
+                Colors.orange,
+              ),
             ],
           ),
         ],
@@ -3119,6 +3284,744 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+  
+  Widget _buildCardIndicatorWithIcon({
+    required IconData icon,
+    required int count,
+    required CardType type,
+    required BuildContext context,
+  }) {
+    Color iconColor;
+    switch (type) {
+      case CardType.offensive:
+        iconColor = Colors.orange;
+        break;
+      case CardType.defensive:
+        iconColor = Colors.blue;
+        break;
+      case CardType.special:
+        iconColor = Colors.purple;
+        break;
+    }
+    
+    return GestureDetector(
+      onTap: () {
+        // Navigate to card inventory page
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CardInventoryScreen(cardType: type),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: iconColor,
+            ),
+            if (count > 0) ...[
+              const SizedBox(width: 4),
+              Text(
+                '$count',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Future<void> _handleQuickPlay() async {
+    print('=== Starting Quick Play Process ===');
+    
+    try {
+      // Check if user is logged in
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        print('Quick Play failed: No user logged in');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please log in to use Quick Play'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      print('User logged in: ${user.uid}');
+      
+      // Check user balance
+      print('Checking user balance...');
+      final balance = await _walletService.getBalance(user.uid);
+      print('Current balance: $balance BR');
+      
+      if (balance < 25) {
+        print('Quick Play failed: Insufficient balance (need 25 BR, have $balance BR)');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Insufficient BR. You need 25 BR (current: $balance BR)'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      
+      // Check for live games
+      print('Checking for live games...');
+      if (_liveGames.isEmpty) {
+        print('Quick Play failed: No live games available');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No live games available for Quick Play'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+      print('Found ${_liveGames.length} live games');
+      
+      // Select a random live game
+      final random = math.Random();
+      final selectedGame = _liveGames[random.nextInt(_liveGames.length)];
+      print('Selected game: ${selectedGame.gameTitle} (${selectedGame.id})');
+      
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+      
+      try {
+        // Try to find or create a quick play pool
+        print('Looking for available quick play pools for game ${selectedGame.id}...');
+        
+        // First, try to find an existing open pool
+        final poolsSnapshot = await FirebaseFirestore.instance
+            .collection('pools')
+            .where('gameId', isEqualTo: selectedGame.id)
+            .where('type', isEqualTo: 'quick')
+            .where('buyIn', isEqualTo: 25)
+            .where('status', isEqualTo: 'open')
+            .where('currentPlayers', isLessThan: 10)
+            .limit(1)
+            .get();
+        
+        print('Found ${poolsSnapshot.docs.length} existing pools');
+        
+        String poolId;
+        bool success = false;
+        final poolService = PoolService();
+        
+        if (poolsSnapshot.docs.isNotEmpty) {
+          // Join existing pool
+          poolId = poolsSnapshot.docs.first.id;
+          print('Joining existing pool: $poolId');
+          success = await poolService.joinPool(poolId, 25);
+        } else {
+          // Create new pool using PoolService
+          print('No existing pools found, creating new pool...');
+          
+          // Create the pool using the service
+          final createdPoolId = await poolService.createPool(
+            gameId: selectedGame.id ?? '',
+            gameTitle: selectedGame.gameTitle,
+            sport: selectedGame.sport,
+            type: PoolType.quick,
+            name: 'Quick Play - ${selectedGame.gameTitle}',
+            buyIn: 25,
+            maxPlayers: 10,
+            minPlayers: 2,
+          );
+          
+          if (createdPoolId == null) {
+            throw Exception('Failed to create Quick Play pool');
+          }
+          
+          poolId = createdPoolId;
+          print('Created new pool: $poolId');
+          
+          // Pool creation already handles joining and wallet deduction
+          success = true;
+        }
+        
+        // Dismiss loading dialog
+        if (mounted) Navigator.pop(context);
+        
+        if (success) {
+          print('Successfully joined pool!');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Joined Quick Play pool for ${selectedGame.gameTitle}!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          
+          // Navigate to the pool or bet placement screen
+          // Navigator.pushNamed(context, '/pool-details', arguments: {'poolId': poolId});
+        } else {
+          print('Failed to join pool');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to join pool. Please try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (poolError) {
+        print('Error during pool operations: $poolError');
+        print('Stack trace: ${StackTrace.current}');
+        // Dismiss loading dialog
+        if (mounted) Navigator.pop(context);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${poolError.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('Unexpected error in Quick Play: $e');
+      print('Stack trace: ${StackTrace.current}');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('An error occurred. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+    
+    print('=== Quick Play Process Complete ===');
+  }
+  
+  Widget _buildLegendItem(Color color, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(6),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey[400],
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildPowerCardItem(PowerCard card, bool owned, int quantity) {
+    // Get card prices based on rarity
+    int getCardPrice(CardRarity rarity) {
+      switch (rarity) {
+        case CardRarity.common:
+          return 100;
+        case CardRarity.uncommon:
+          return 250;
+        case CardRarity.rare:
+          return 500;
+        case CardRarity.legendary:
+          return 1000;
+      }
+    }
+    
+    final price = getCardPrice(card.rarity);
+    
+    // Get rarity color
+    Color getRarityColor(CardRarity rarity) {
+      switch (rarity) {
+        case CardRarity.common:
+          return Colors.grey;
+        case CardRarity.uncommon:
+          return Colors.green;
+        case CardRarity.rare:
+          return Colors.blue;
+        case CardRarity.legendary:
+          return Colors.orange;
+      }
+    }
+    
+    // Get card type color
+    Color getTypeColor(CardType type) {
+      switch (type) {
+        case CardType.offensive:
+          return Colors.red.shade400;
+        case CardType.defensive:
+          return Colors.blue.shade400;
+        case CardType.special:
+          return Colors.purple.shade400;
+      }
+    }
+    
+    return StreamBuilder<int>(
+      stream: _walletService.getBalanceStream(),
+      builder: (context, balanceSnapshot) {
+        final balance = balanceSnapshot.data ?? 0;
+        final canAfford = balance >= price;
+        
+        return GestureDetector(
+          onTap: () {
+            if (!owned && canAfford) {
+              _showPurchaseDialog(card, price);
+            } else if (owned) {
+              _showCardDetailsDialog(card, quantity);
+            }
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: owned 
+                ? Colors.grey[850]
+                : (canAfford ? Colors.grey[850] : Colors.grey[900]),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: owned 
+                  ? Colors.amber  // Gold border for owned cards
+                  : (canAfford ? Colors.grey[700]! : Colors.grey[800]!),
+                width: owned ? 2.5 : 1,
+              ),
+              boxShadow: owned ? [
+                BoxShadow(
+                  color: Colors.amber.withOpacity(0.3),
+                  blurRadius: 8,
+                  spreadRadius: 1,
+                ),
+              ] : null,
+            ),
+            child: Stack(
+              children: [
+                // Rarity indicator
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: getRarityColor(card.rarity),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
+                    ),
+                  ),
+                ),
+                
+                // Quantity badge (if owned more than 1)
+                if (quantity > 1)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        'x$quantity',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                
+                // Card content
+                Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 8),
+                      Text(
+                        card.icon,
+                        style: TextStyle(
+                          fontSize: 32,
+                          color: owned ? Colors.white : (canAfford ? Colors.white70 : Colors.grey[600]),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        card.name,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: owned ? Colors.white : (canAfford ? Colors.white70 : Colors.grey[600]),
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const Spacer(),
+                      if (!owned) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: canAfford 
+                              ? Colors.green.withOpacity(0.3)
+                              : Colors.grey.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                PhosphorIconsRegular.coins,
+                                size: 12,
+                                color: canAfford ? Colors.greenAccent : Colors.grey[500],
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                '$price',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: canAfford ? Colors.greenAccent : Colors.grey[500],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'OWNED',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.amber,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                
+                // Disabled overlay for unaffordable cards
+                if (!owned && !canAfford)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.lock_outline,
+                          color: Colors.grey,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+  
+  Widget _buildIntelProduct(String title, String icon, String description, int price, Color color) {
+    return StreamBuilder<int>(
+      stream: _walletService.getBalanceStream(),
+      builder: (context, snapshot) {
+        final balance = snapshot.data ?? 0;
+        final canAfford = balance >= price;
+        
+        return GestureDetector(
+          onTap: canAfford ? () {
+            // TODO: Purchase intel
+          } : null,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: canAfford ? Colors.grey[900] : Colors.grey[900]!.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: canAfford ? color.withOpacity(0.5) : Colors.grey[850]!,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  icon,
+                  style: TextStyle(
+                    fontSize: 28,
+                    color: canAfford ? null : Colors.grey[700],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: canAfford ? null : Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: canAfford ? Colors.grey[600] : Colors.grey[700],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: canAfford 
+                      ? color.withOpacity(0.2)
+                      : Colors.grey.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        PhosphorIconsRegular.coins,
+                        size: 12,
+                        color: canAfford ? color : Colors.grey[600],
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        '$price',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: canAfford ? color : Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+  
+  void _showPurchaseDialog(PowerCard card, int price) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Purchase ${card.name}?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              card.effect,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(card.howToUse),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Icon(PhosphorIconsRegular.coins, color: Colors.amber, size: 20),
+                const SizedBox(width: 4),
+                Text(
+                  '$price BR',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              // Close the purchase dialog first
+              Navigator.pop(context);
+              
+              // Save the context before async operations
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              final navigator = Navigator.of(context, rootNavigator: true);
+              
+              try {
+                // Show loading indicator
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (BuildContext dialogContext) => WillPopScope(
+                    onWillPop: () async => false,
+                    child: const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                );
+                
+                // Attempt purchase
+                final success = await _cardService.purchaseCard(card.id, price);
+                
+                // Always dismiss loading dialog
+                try {
+                  navigator.pop();
+                } catch (_) {
+                  // Dialog might already be dismissed
+                }
+                
+                // Show result using saved messenger
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      success 
+                        ? 'Purchased ${card.name} for $price BR!' 
+                        : 'Purchase failed. Check your balance.',
+                    ),
+                    backgroundColor: success ? Colors.green : Colors.red,
+                  ),
+                );
+                
+                // Force rebuild to update UI
+                if (success && mounted) {
+                  setState(() {});
+                }
+              } catch (e) {
+                // Make sure to dismiss loading dialog on error
+                try {
+                  navigator.pop();
+                } catch (_) {
+                  // Dialog might already be dismissed
+                }
+                
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Purchase failed. Please try again.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                print('Purchase error: $e');
+              }
+            },
+            child: const Text('Purchase'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  void _showCardDetailsDialog(PowerCard card, int quantity) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Text(card.icon),
+            const SizedBox(width: 8),
+            Expanded(child: Text(card.name)),
+            if (quantity > 1)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'x$quantity',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Effect',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              card.effect,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'When to Use',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(card.whenToUse),
+            const SizedBox(height: 12),
+            Text(
+              'How to Use',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(card.howToUse),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }

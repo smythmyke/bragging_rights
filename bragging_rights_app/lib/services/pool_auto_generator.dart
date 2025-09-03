@@ -315,16 +315,16 @@ class PoolAutoGenerator {
   /// Check and generate pools for upcoming events
   Future<void> checkAndGenerateUpcomingPools() async {
     try {
-      // Get events in next 7 days without pools
+      // Get events in next 3 weeks without pools
       final now = DateTime.now();
-      final weekFromNow = now.add(const Duration(days: 7));
+      final threeWeeksFromNow = now.add(const Duration(days: 21));
       
       // Check UFC/MMA events
       final mmaEvents = await _firestore
           .collection('events')
           .where('sport', isEqualTo: 'MMA')
           .where('gameTime', isGreaterThan: Timestamp.fromDate(now))
-          .where('gameTime', isLessThan: Timestamp.fromDate(weekFromNow))
+          .where('gameTime', isLessThan: Timestamp.fromDate(threeWeeksFromNow))
           .get();
       
       for (final doc in mmaEvents.docs) {
@@ -336,8 +336,8 @@ class PoolAutoGenerator {
       final games = await _firestore
           .collection('games')
           .where('gameTime', isGreaterThan: Timestamp.fromDate(now))
-          .where('gameTime', isLessThan: Timestamp.fromDate(weekFromNow))
-          .limit(50)
+          .where('gameTime', isLessThan: Timestamp.fromDate(threeWeeksFromNow))
+          .limit(100)  // Increased limit for 3 weeks of games
           .get();
       
       for (final doc in games.docs) {
