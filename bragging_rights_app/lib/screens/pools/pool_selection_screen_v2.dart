@@ -46,7 +46,7 @@ class _PoolSelectionScreenV2State extends State<PoolSelectionScreenV2> with Sing
     _tabController = TabController(length: 4, vsync: this);
     _loadUserBalance();
     // Mock pools removed - using real data from Firestore
-    _startCountdownTimer();
+    _startCountdownTimer(); // Currently disabled to prevent flickering
     _loadBetStorage();
   }
 
@@ -176,11 +176,14 @@ class _PoolSelectionScreenV2State extends State<PoolSelectionScreenV2> with Sing
   }
 
   void _startCountdownTimer() {
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        // Update countdowns for all pools
-      });
-    });
+    // Commenting out the timer to prevent flickering
+    // This timer was causing unnecessary rebuilds every second
+    // If countdown functionality is needed, implement it with proper state management
+    // _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    //   setState(() {
+    //     // Update countdowns for all pools
+    //   });
+    // });
   }
   
   Future<void> _loadBetStorage() async {
@@ -206,7 +209,7 @@ class _PoolSelectionScreenV2State extends State<PoolSelectionScreenV2> with Sing
   @override
   void dispose() {
     _tabController.dispose();
-    _countdownTimer?.cancel();
+    // _countdownTimer?.cancel(); // Commented out since timer is disabled
     super.dispose();
   }
 
