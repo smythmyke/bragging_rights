@@ -30,11 +30,14 @@ class _PoolSelectionScreenV2State extends State<PoolSelectionScreenV2> with Sing
   Map<String, int> _poolBetCounts = {}; // Track bet counts per pool
   
   int _userBalance = 0;
+  final Set<String> _userPoolIds = {}; // Track pools user has joined
+  bool _isLoadingBalance = true;
   Timer? _countdownTimer;
   final Map<String, Duration> _poolCountdowns = {};
   
   // Real data only - no mock data
   bool _useMockData = false;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   List<Pool> _mockQuickPools = [];
   List<Pool> _mockRegionalPools = [];
   List<Pool> _mockPrivatePools = [];
@@ -53,10 +56,36 @@ class _PoolSelectionScreenV2State extends State<PoolSelectionScreenV2> with Sing
   void _loadUserBalance() async {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId != null) {
-      final balance = await _walletService.getBalance(userId);
-      setState(() {
-        _userBalance = balance;
-      });
+      try {
+        // Use getCurrentBalance instead of getBalance
+        final balance = await _walletService.getCurrentBalance();
+        
+        // Also load user's pools
+        final userPools = await _firestore
+            .collection('user_pools')
+            .where('userId', isEqualTo: userId)
+            .where('gameId', isEqualTo: widget.gameId)
+            .get();
+        
+        final poolIds = userPools.docs.map((doc) => 
+            doc.data()['poolId'] as String).toSet();
+        
+        if (mounted) {
+          setState(() {
+            _userBalance = balance;
+            _userPoolIds.clear();
+            _userPoolIds.addAll(poolIds);
+            _isLoadingBalance = false;
+          });
+        }
+      } catch (e) {
+        print('Error loading balance: $e');
+        if (mounted) {
+          setState(() {
+            _isLoadingBalance = false;
+          });
+        }
+      }
     }
   }
 
@@ -376,6 +405,7 @@ class _PoolSelectionScreenV2State extends State<PoolSelectionScreenV2> with Sing
     final spotsRemaining = pool.maxPlayers - pool.currentPlayers;
     final hasBets = _poolBetCounts[pool.id] != null && _poolBetCounts[pool.id]! > 0;
     final betCount = _poolBetCounts[pool.id] ?? 0;
+    final isUserInPool = _userPoolIds.contains(pool.id);
     
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -480,19 +510,27 @@ class _PoolSelectionScreenV2State extends State<PoolSelectionScreenV2> with Sing
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton(
-                  onPressed: canAfford && !pool.isFull 
-                      ? () => _joinPool(pool) 
-                      : null,
+                  onPressed: isUserInPool 
+                      ? () => _continueInPool(pool)
+                      : canAfford && !pool.isFull 
+                          ? () => _joinPool(pool) 
+                          : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: canAfford ? color : Colors.grey,
+                    backgroundColor: isUserInPool 
+                        ? Colors.green 
+                        : canAfford 
+                            ? color 
+                            : Colors.grey,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   ),
                   child: Text(
-                    pool.isFull 
-                        ? 'Full' 
-                        : canAfford 
-                            ? 'Join' 
-                            : 'Need BR',
+                    isUserInPool 
+                        ? 'Continue'
+                        : pool.isFull 
+                            ? 'Full' 
+                            : canAfford 
+                                ? 'Join' 
+                                : 'Need BR',
                     style: const TextStyle(color: Colors.white, fontSize: 12),
                   ),
                 ),
@@ -561,7 +599,7 @@ class _PoolSelectionScreenV2State extends State<PoolSelectionScreenV2> with Sing
         
         final pools = snapshot.data ?? [];
         if (pools.isEmpty) {
-          return _buildEmptyState('No regional pools available');
+          return _buildEmptyStateWithCreate('No regional pools available', PoolType.regional);
         }
         
         // Group pools by regional level
@@ -724,7 +762,7 @@ class _PoolSelectionScreenV2State extends State<PoolSelectionScreenV2> with Sing
         
         final pools = snapshot.data ?? [];
         if (pools.isEmpty) {
-          return _buildEmptyState('No tournaments available');
+          return _buildEmptyStateWithCreate('No tournaments available', PoolType.tournament);
         }
         
         return ListView(
@@ -781,8 +819,73 @@ class _PoolSelectionScreenV2State extends State<PoolSelectionScreenV2> with Sing
       ),
     );
   }
+  
+  Widget _buildEmptyStateWithCreate(String message, PoolType type) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            type == PoolType.regional ? Icons.map : Icons.emoji_events,
+            size: 64, 
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () => _createAutoPool(type),
+            icon: const Icon(Icons.add),
+            label: Text('Create ${type == PoolType.regional ? 'Regional' : 'Tournament'} Pool'),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Future<void> _createAutoPool(PoolType type) async {
+    // Auto-create pool based on type
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Creating ${type.toString().split('.').last} pool...'),
+        backgroundColor: Colors.blue,
+      ),
+    );
+    
+    // TODO: Implement auto pool creation
+    // This would call a service to create a new pool with default settings
+  }
+
+  void _continueInPool(Pool pool) {
+    // Navigate directly to bet selection for existing pool members
+    Navigator.pushNamed(
+      context,
+      '/bet-selection',
+      arguments: {
+        'gameId': widget.gameId,
+        'gameTitle': widget.gameTitle,
+        'sport': widget.sport,
+        'poolName': pool.name,
+        'poolId': pool.id,
+      },
+    );
+  }
 
   void _joinPool(Pool pool) {
+    // Check if already in pool
+    if (_userPoolIds.contains(pool.id)) {
+      _continueInPool(pool);
+      return;
+    }
+    
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -806,7 +909,7 @@ class _PoolSelectionScreenV2State extends State<PoolSelectionScreenV2> with Sing
             ),
             const SizedBox(height: 4),
             Text(
-              'Your balance after: ${_userBalance - pool.buyIn} BR',
+              'Your new balance: ${_userBalance} BR → ${_userBalance - pool.buyIn} BR',
               style: const TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 8),
