@@ -8,7 +8,7 @@ enum GameStatus {
   roundBreak,
   setBreak,
   suspended,
-  final,
+  completed,
   cancelled,
 }
 

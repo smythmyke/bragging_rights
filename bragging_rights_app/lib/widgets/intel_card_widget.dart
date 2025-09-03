@@ -95,9 +95,10 @@ class _IntelCardWidgetState extends State<IntelCardWidget>
                             ),
                           ),
                           child: Center(
-                            child: Text(
+                            child: Icon(
                               widget.intel.icon,
-                              style: const TextStyle(fontSize: 40),
+                              size: 40,
+                              color: Colors.white,
                             ),
                           ),
                         );

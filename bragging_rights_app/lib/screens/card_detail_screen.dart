@@ -150,7 +150,7 @@ class _CardDetailScreenState extends State<CardDetailScreen>
           Navigator.pop(context, true); // Return true to indicate purchase
         } else {
           // Play insufficient funds sound if balance issue
-          final balance = await _walletService.getBalance();
+          final balance = await _walletService.getCurrentBalance();
           if (balance < price) {
             await _soundService.playInsufficientFunds();
           }

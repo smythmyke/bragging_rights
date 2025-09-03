@@ -52,6 +52,57 @@ class WalletService {
     return (doc.data()?['balance'] ?? 0) as int;
   }
 
+  // Update balance (add or subtract)
+  Future<bool> updateBalance(int amount) async {
+    if (_userId == null) throw Exception('User not logged in');
+    
+    try {
+      return await _firestore.runTransaction((transaction) async {
+        final walletRef = _firestore
+            .collection('users')
+            .doc(_userId)
+            .collection('wallet')
+            .doc('current');
+
+        final walletDoc = await transaction.get(walletRef);
+        if (!walletDoc.exists) {
+          throw Exception('Wallet not found');
+        }
+
+        final currentBalance = (walletDoc.data()?['balance'] ?? 0) as int;
+        final newBalance = currentBalance + amount;
+
+        if (newBalance < 0) {
+          throw InsufficientFundsException(
+            'Insufficient BR. Current balance: $currentBalance, Trying to deduct: ${-amount}',
+          );
+        }
+
+        transaction.update(walletRef, {
+          'balance': newBalance,
+          'lastTransaction': FieldValue.serverTimestamp(),
+        });
+
+        // Create transaction record
+        final transactionRef = _firestore.collection('transactions').doc();
+        transaction.set(transactionRef, {
+          'userId': _userId,
+          'type': amount > 0 ? 'credit' : 'debit',
+          'amount': amount,
+          'balanceBefore': currentBalance,
+          'balanceAfter': newBalance,
+          'timestamp': FieldValue.serverTimestamp(),
+          'status': 'completed',
+        });
+
+        return true;
+      });
+    } catch (e) {
+      print('Balance update failed: $e');
+      rethrow;
+    }
+  }
+
   // Place a wager (deduct BR)
   Future<bool> placeWager({
     required int amount,

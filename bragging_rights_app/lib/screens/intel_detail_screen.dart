@@ -67,14 +67,14 @@ class _IntelDetailScreenState extends State<IntelDetailScreen>
     });
 
     try {
-      final balance = await _walletService.getBalance();
+      final balance = await _walletService.getCurrentBalance();
       if (balance < widget.intel.price) {
         await _soundService.playInsufficientFunds();
         throw Exception('Insufficient funds');
       }
 
       // Deduct balance
-      await _walletService.deductBalance(widget.intel.price);
+      await _walletService.updateBalance(-widget.intel.price);
       
       // Play purchase sound
       await _soundService.playCardPurchase('intel_${widget.intel.id}');

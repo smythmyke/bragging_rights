@@ -868,10 +868,10 @@ class _StrategyRoomScreenState extends State<StrategyRoomScreen> {
       await _soundService.playStrategyLocked();
       
       // Calculate total cost
-      final totalCost = widget.pool.entryFee + widget.intelCost + _totalPowerCardCost;
+      final totalCost = 25 + widget.intelCost + _totalPowerCardCost; // Default entry fee of 25
       
       // Check balance
-      final balance = await _walletService.getBalance();
+      final balance = await _walletService.getCurrentBalance();
       if (balance < totalCost) {
         await _soundService.playInsufficientFunds();
         throw Exception('Insufficient funds. Need $totalCost BR but have $balance BR');
@@ -903,7 +903,7 @@ class _StrategyRoomScreenState extends State<StrategyRoomScreen> {
           } : null,
         },
         'costs': {
-          'entry': widget.pool.entryFee,
+          'entry': 25, // Default entry fee
           'intel': widget.intelCost,
           'powerCards': _totalPowerCardCost,
           'total': totalCost,
@@ -921,7 +921,7 @@ class _StrategyRoomScreenState extends State<StrategyRoomScreen> {
           .set(strategy);
       
       // Deduct costs from wallet
-      await _walletService.deductBalance(totalCost);
+      await _walletService.updateBalance(-totalCost);
       
       // Navigate back with success
       Navigator.pop(context, {
