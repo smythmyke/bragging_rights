@@ -109,6 +109,27 @@ service cloud.firestore {
         // Users can create/update their pools
         allow write: if isOwner(userId);
       }
+      
+      // WALLET SUBCOLLECTION under users
+      match /wallet/{walletDoc} {
+        // Users can read their own wallet
+        allow read: if isOwner(userId);
+        
+        // Users can create and update their own wallet
+        allow create, update: if isOwner(userId);
+        
+        // No deletes allowed
+        allow delete: if false;
+      }
+      
+      // STRATEGIES SUBCOLLECTION for pools
+      match /strategies/{strategyId} {
+        // Users can read their own strategies
+        allow read: if isOwner(userId);
+        
+        // Users can create/update their own strategies
+        allow write: if isOwner(userId);
+      }
     }
     
     // ========================================
@@ -242,6 +263,34 @@ service cloud.firestore {
         allow update: if isOwner(participantId);
         
         // No deletes once joined
+        allow delete: if false;
+      }
+      
+      // STRATEGIES SUBCOLLECTION
+      match /strategies/{strategyId} {
+        // All authenticated users can read strategies after pool locks
+        allow read: if isAuthenticated();
+        
+        // Users can create their own strategy
+        allow create: if isAuthenticated() &&
+          strategyId == request.auth.uid;
+        
+        // Users can update their own strategy before pool locks
+        allow update: if isOwner(strategyId);
+        
+        // No deletes allowed
+        allow delete: if false;
+      }
+      
+      // INTEL USAGE SUBCOLLECTION
+      match /intel_usage/{userId} {
+        // Users can read their own intel usage
+        allow read: if isOwner(userId);
+        
+        // Users can create/update their own intel usage
+        allow create, update: if isOwner(userId);
+        
+        // No deletes allowed
         allow delete: if false;
       }
     }
