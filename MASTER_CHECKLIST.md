@@ -175,12 +175,20 @@ None currently active
 
 ---
 
-## 🐛 KNOWN ISSUES
+## 🐛 KNOWN ISSUES (CRITICAL - Sept 3)
 
-1. **Google Sign-In disabled** - Needs configuration update
-2. **No automated testing** - Need test pipeline
-3. **No offline support** - Need caching implementation
-4. **Windows symlink requirement** - Need Developer Mode for plugins
+### 🔴 BLOCKING ISSUES (Must fix immediately):
+1. **Pool Creation Not Working** - Cannot create new pools ❌
+2. **Current Events Not Displaying** - No games showing up ❌
+3. **Flickering Still Present** - Despite timer fix, UI still flickering ❌
+4. **Purchases Need Verification** - Card/Intel purchases may not work ❌
+5. **Tennis API Incomplete** - 70% complete, needs review ⚠️
+
+### 🟡 EXISTING ISSUES:
+6. **Google Sign-In disabled** - Needs configuration update
+7. **No automated testing** - Need test pipeline
+8. **No offline support** - Need caching implementation
+9. **Windows symlink requirement** - Need Developer Mode for plugins
 
 ---
 
