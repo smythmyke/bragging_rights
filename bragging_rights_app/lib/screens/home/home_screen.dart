@@ -25,6 +25,7 @@ import '../premium/edge_screen.dart';
 import '../cards/card_inventory_screen.dart';
 import '../games/all_games_screen.dart';
 import '../../services/sound_service.dart';
+import '../intel_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -2650,12 +2651,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   return IntelCardWidget(
                     intel: intel,
                     canAfford: canAfford,
-                    onTap: () {
-                      // TODO: Navigate to Intel detail screen or purchase
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('${intel.name} - Coming Soon!'),
-                          backgroundColor: Colors.blue,
+                    onTap: () async {
+                      // Play selection sound
+                      await _soundService.playCardSelect('intel_${intel.id}');
+                      
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => IntelDetailScreen(
+                            intel: intel,
+                          ),
                         ),
                       );
                     },

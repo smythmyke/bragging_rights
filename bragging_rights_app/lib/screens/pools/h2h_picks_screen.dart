@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../models/head_to_head_model.dart';
 import '../../models/fight_card_model.dart';
+import '../../models/pool_model.dart';
 import '../../services/head_to_head_service.dart';
 import '../../widgets/custom_app_bar.dart';
 import 'fight_pick_detail_screen.dart';
+import 'strategy_room_screen.dart';
 
 /// Screen for making picks in a head-to-head challenge
 class H2HPicksScreen extends StatefulWidget {
@@ -505,6 +507,55 @@ class _H2HPicksScreenState extends State<H2HPicksScreen> {
       for (final pick in _userPicks.values) {
         fightPicks[pick.fightId] = pick;
       }
+      
+      // Navigate to Strategy Room (optional)
+      final strategyResult = await showDialog<Map<String, dynamic>?>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Power Up Your Picks?'),
+          content: const Text(
+            'Add power cards to boost your strategy and gain an edge over your opponent!',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, null),
+              child: const Text('Skip'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                final result = await Navigator.push<Map<String, dynamic>>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => StrategyRoomScreen(
+                      poolId: widget.challenge.id,
+                      pool: Pool(
+                        id: widget.challenge.id,
+                        name: 'H2H Challenge',
+                        gameId: widget.fightCard.id,
+                        entryFee: 0, // H2H has no entry fee
+                        maxPlayers: 2,
+                        currentPlayers: 2,
+                        prizeStructure: {},
+                        status: PoolStatus.active,
+                        createdAt: DateTime.now(),
+                        gameTime: widget.fightCard.date,
+                        sport: 'MMA',
+                        gameTitle: widget.fightCard.name,
+                      ),
+                      picks: fightPicks,
+                      consumedIntel: [],
+                      intelCost: 0,
+                    ),
+                  ),
+                );
+                return result;
+              },
+              child: const Text('Add Power Cards'),
+            ),
+          ],
+        ),
+      );
       
       final h2hPicks = H2HPicks(
         challengeId: widget.challenge.id,

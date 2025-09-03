@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/pool_model.dart';
 import '../../data/card_definitions.dart';
 import '../../models/intel_product.dart';
@@ -865,18 +867,74 @@ class _StrategyRoomScreenState extends State<StrategyRoomScreen> {
       // Play strategy locked sound
       await _soundService.playStrategyLocked();
       
-      // TODO: Submit to Firebase
-      // This will be implemented with the pool service
+      // Calculate total cost
+      final totalCost = widget.pool.entryFee + widget.intelCost + _totalPowerCardCost;
       
-      // For now, just navigate back
+      // Check balance
+      final balance = await _walletService.getBalance();
+      if (balance < totalCost) {
+        await _soundService.playInsufficientFunds();
+        throw Exception('Insufficient funds. Need $totalCost BR but have $balance BR');
+      }
+      
+      // Submit strategy to pool service
+      final strategy = {
+        'poolId': widget.poolId,
+        'userId': FirebaseAuth.instance.currentUser!.uid,
+        'picks': widget.picks,
+        'strategy': {
+          'preCard': _preGameCard != null ? {
+            'id': _preGameCard!.id,
+            'cost': _getCardPrice(_preGameCard!.rarity),
+          } : null,
+          'midCard': _midGameCard != null ? {
+            'id': _midGameCard!.id,
+            'cost': _getCardPrice(_midGameCard!.rarity),
+            'trigger': {
+              'type': _midGameTrigger?.type.toString().split('.').last,
+              'value': _midGameTrigger?.value,
+              'comparison': _midGameTrigger?.comparison,
+            }
+          } : null,
+          'postCard': _postGameCard != null ? {
+            'id': _postGameCard!.id,
+            'cost': _getCardPrice(_postGameCard!.rarity),
+            'condition': _postGameCondition.toString().split('.').last,
+          } : null,
+        },
+        'costs': {
+          'entry': widget.pool.entryFee,
+          'intel': widget.intelCost,
+          'powerCards': _totalPowerCardCost,
+          'total': totalCost,
+        },
+        'submittedAt': FieldValue.serverTimestamp(),
+        'locked': true,
+      };
+      
+      // Submit to Firebase
+      await FirebaseFirestore.instance
+          .collection('pools')
+          .doc(widget.poolId)
+          .collection('strategies')
+          .doc(FirebaseAuth.instance.currentUser!.uid)
+          .set(strategy);
+      
+      // Deduct costs from wallet
+      await _walletService.deductBalance(totalCost);
+      
+      // Navigate back with success
       Navigator.pop(context, {
-        'preCard': _preGameCard,
-        'midCard': _midGameCard,
-        'midTrigger': _midGameTrigger,
-        'postCard': _postGameCard,
-        'postCondition': _postGameCondition,
-        'totalCost': _totalPowerCardCost,
+        'success': true,
+        'strategy': strategy,
       });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Strategy locked in successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
