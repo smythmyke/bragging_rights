@@ -2,7 +2,6 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/game_model.dart';
-import 'ufc_event_service.dart';
 import 'game_odds_enrichment_service.dart';
 import 'game_cache_service.dart';
 
@@ -147,22 +146,6 @@ class ESPNDirectService {
   // Fetch games for a specific sport
   Future<List<GameModel>> fetchSportGames(String sport) async {
     try {
-      // Use specialized UFC service for UFC events
-      // Note: We still check for 'UFC' sport since that's what comes from sportEndpoints
-      if (sport == 'UFC') {
-        final ufcService = UfcEventService();
-        final ufcEvents = await ufcService.fetchUpcomingUfcEvents(days: 60);
-        final gameModels = ufcService.convertToGameModels(ufcEvents);
-        print('Fetched ${gameModels.length} UFC events with proper names');
-        
-        // Save UFC games to Firestore
-        if (gameModels.isNotEmpty) {
-          await _saveGamesToFirestore(gameModels);
-        }
-        
-        return gameModels;
-      }
-      
       final endpoint = sportEndpoints[sport];
       if (endpoint == null) {
         print('No endpoint for sport: $sport');
@@ -257,11 +240,129 @@ class ESPNDirectService {
   
   // Check if this is an individual sport (MMA, Boxing, Tennis, Golf)
   bool _isIndividualSport(String sport) {
-    return ['UFC', 'BELLATOR', 'PFL', 'MMA', 'BOXING', 'TENNIS', 'GOLF'].contains(sport.toUpperCase());
+    return ['UFC', 'BELLATOR', 'PFL', 'BOXING', 'TENNIS', 'GOLF'].contains(sport.toUpperCase());
   }
 
   // Parse ESPN event to GameModel
   GameModel _parseESPNEvent(Map<String, dynamic> event, String sport) {
+    // For UFC/combat sports, parse all fights on the card
+    if (sport == 'UFC' || sport == 'BELLATOR' || sport == 'PFL' || sport == 'BOXING') {
+      final fullEventName = event['name'] ?? '';
+      print('🥊 Processing combat sport ($sport) event: $fullEventName');
+      final competitions = event['competitions'] ?? [];
+      
+      // Parse ALL competitions into fight objects
+      List<Map<String, dynamic>> fights = [];
+      final totalFights = competitions.length;
+      
+      for (int i = 0; i < competitions.length; i++) {
+        final comp = competitions[i];
+        final competitors = comp['competitors'] ?? [];
+        
+        if (competitors.length >= 2) {
+          final fighter1 = competitors[0]['athlete'] ?? {};
+          final fighter2 = competitors[1]['athlete'] ?? {};
+          
+          // Determine fight position based on index (last = main event)
+          final reversedIndex = totalFights - i - 1;
+          String cardPosition;
+          int rounds;
+          
+          if (reversedIndex == 0) {
+            cardPosition = 'Main Event';
+            rounds = 5;
+          } else if (reversedIndex == 1) {
+            cardPosition = 'Co-Main Event';
+            rounds = 3;
+          } else if (reversedIndex < 5) {
+            cardPosition = 'Main Card';
+            rounds = 3;
+          } else {
+            cardPosition = 'Preliminaries';
+            rounds = 3;
+          }
+          
+          fights.add({
+            'id': comp['id']?.toString() ?? 'fight_$i',
+            'fighter1Id': fighter1['id']?.toString() ?? '',
+            'fighter2Id': fighter2['id']?.toString() ?? '',
+            'fighter1Name': fighter1['displayName'] ?? 'TBD',
+            'fighter2Name': fighter2['displayName'] ?? 'TBD',
+            'fighter1Record': fighter1['record'] ?? '',
+            'fighter2Record': fighter2['record'] ?? '',
+            'weightClass': comp['notes']?[0]?['text'] ?? 'Catchweight',
+            'rounds': rounds,
+            'cardPosition': cardPosition,
+            'fightOrder': reversedIndex + 1,
+          });
+        }
+      }
+      
+      // Extract main event fighters for display
+      String? mainEventFighters;
+      if (fights.isNotEmpty) {
+        final mainFight = fights.last;
+        mainEventFighters = "${mainFight['fighter1Name']} vs ${mainFight['fighter2Name']}";
+      }
+      
+      // Get the LAST competition for scoring (main event)
+      final mainCompetition = competitions.isNotEmpty ? competitions.last : {};
+      final mainCompetitors = mainCompetition['competitors'] ?? [];
+      
+      // Get scores if fight is complete
+      int? homeScore;
+      int? awayScore;
+      if (mainCompetitors.length >= 2) {
+        homeScore = mainCompetitors[0]['score'] != null ? 
+                   int.tryParse(mainCompetitors[0]['score'].toString()) : null;
+        awayScore = mainCompetitors[1]['score'] != null ?
+                   int.tryParse(mainCompetitors[1]['score'].toString()) : null;
+      }
+      
+      // Get venue
+      String? venue;
+      if (competitions.isNotEmpty) {
+        venue = competitions[0]['venue']?['fullName'];
+      }
+      
+      // Get status
+      final statusData = event['status'] ?? {};
+      final statusType = statusData['type'] ?? {};
+      String status = 'scheduled';
+      if (statusType['name'] == 'STATUS_IN_PROGRESS') {
+        status = 'live';
+      } else if (statusType['name'] == 'STATUS_FINAL') {
+        status = 'final';
+      }
+      
+      // Get date/time
+      final dateStr = event['date'] ?? '';
+      DateTime gameTime;
+      try {
+        gameTime = DateTime.parse(dateStr);
+      } catch (e) {
+        gameTime = DateTime.now();
+      }
+      
+      return GameModel(
+        id: event['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        sport: sport,
+        homeTeam: '',  // Empty for combat sports
+        awayTeam: fullEventName,  // Full event name with main event fighters
+        gameTime: gameTime,
+        status: status,
+        homeScore: homeScore,
+        awayScore: awayScore,
+        venue: venue,
+        league: sport,
+        fights: fights,
+        isCombatSport: true,
+        totalFights: fights.length,
+        mainEventFighters: mainEventFighters,
+      );
+    }
+    
+    // Original logic for non-combat sports
     final competition = event['competitions']?[0] ?? {};
     final competitors = competition['competitors'] ?? [];
     
@@ -275,59 +376,8 @@ class ESPNDirectService {
     
     // Handle individual sports differently
     if (_isIndividualSport(sport)) {
-      // For combat sports, preserve the full event name
+      // For non-combat individual sports (tennis, golf)
       final fullEventName = event['name'] ?? '';
-      String? ufcEventName;
-      
-      // Extract event name for combat sports
-      if (sport == 'UFC' || sport == 'BELLATOR' || sport == 'PFL' || sport == 'BOXING') {
-        // Check if event has season/week info which often contains the event name
-        final season = event['season']?['name'] ?? '';
-        final week = competition['notes']?[0]?['text'] ?? '';
-        
-        // Try to extract event name from various sources
-        if (fullEventName.contains('UFC')) {
-          // Extract UFC event number or type from the full name
-          final ufcMatch = RegExp(r'UFC\s+(\d+|Fight Night|on ESPN|on ABC)').firstMatch(fullEventName);
-          if (ufcMatch != null) {
-            ufcEventName = ufcMatch.group(0);
-          }
-        } else if (sport == 'BELLATOR' && fullEventName.contains('Bellator')) {
-          final bellatorMatch = RegExp(r'Bellator\s+\d+').firstMatch(fullEventName);
-          if (bellatorMatch != null) {
-            ufcEventName = bellatorMatch.group(0);
-          }
-        } else if (sport == 'PFL' && fullEventName.contains('PFL')) {
-          final pflMatch = RegExp(r'PFL\s+\d+').firstMatch(fullEventName);
-          if (pflMatch != null) {
-            ufcEventName = pflMatch.group(0);
-          }
-        } else if (sport == 'BOXING') {
-          // For boxing, try to extract promotion/network name
-          if (fullEventName.contains('PBC')) {
-            ufcEventName = 'PBC Boxing';
-          } else if (fullEventName.contains('Top Rank')) {
-            ufcEventName = 'Top Rank Boxing';
-          } else if (fullEventName.contains('DAZN')) {
-            ufcEventName = 'DAZN Boxing';
-          } else if (fullEventName.contains('Showtime')) {
-            ufcEventName = 'Showtime Boxing';
-          } else {
-            // For generic boxing events, use the full event name if it has a colon
-            if (fullEventName.contains(':')) {
-              final colonIndex = fullEventName.indexOf(':');
-              ufcEventName = fullEventName.substring(0, colonIndex).trim();
-            } else {
-              ufcEventName = 'Boxing';
-            }
-          }
-        }
-        
-        // If we couldn't extract event name, use the sport as prefix
-        if (ufcEventName == null) {
-          ufcEventName = sport;
-        }
-      }
       
       // For individual sports, competitors are athletes not teams
       // They use "order" field (1 or 2) instead of homeAway
@@ -383,28 +433,11 @@ class ESPNDirectService {
         homeTeam = 'TBD';
       }
       
-      // If only one competitor or no competitors yet (TBD matchups)
-      if (competitors.length == 1) {
-        if (homeTeam == 'TBD') {
-          homeTeam = 'TBD';
-        } else if (awayTeam == 'TBD') {
-          awayTeam = 'TBD';
-        }
-      } else if (competitors.isEmpty) {
-        // Check event name for fighter/athlete names
-        if (fullEventName.contains(' vs ') || fullEventName.contains(' vs. ')) {
-          final parts = fullEventName.split(RegExp(r' vs\.? '));
-          if (parts.length >= 2) {
-            awayTeam = parts[0].trim();
-            homeTeam = parts[1].trim();
-          }
-        }
-      }
-      
-      // For combat sports events, format as "Event Name: Fighter1 vs Fighter2"
-      if (ufcEventName != null && awayTeam != 'TBD' && homeTeam != 'TBD') {
-        // For combat sports, create the full event title
-        awayTeam = '$ufcEventName: $awayTeam vs $homeTeam';
+      // For combat sports, use the full event name from ESPN directly
+      // ESPN already provides perfectly formatted names like "UFC Fight Night: Imavov vs. Borralho"
+      // Note: This shouldn't be reached since we return early for combat sports above
+      if (sport == 'UFC' || sport == 'BELLATOR' || sport == 'PFL' || sport == 'BOXING') {
+        awayTeam = fullEventName;
         homeTeam = '';  // Clear homeTeam for combat sports display
       }
     } else {

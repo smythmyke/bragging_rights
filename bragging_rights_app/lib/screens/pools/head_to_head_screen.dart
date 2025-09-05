@@ -4,7 +4,7 @@ import '../../models/head_to_head_model.dart';
 import '../../models/fight_card_model.dart';
 import '../../services/head_to_head_service.dart';
 import '../../services/fight_card_service.dart';
-import '../../widgets/custom_app_bar.dart';
+// Removed custom app bar import - using standard AppBar
 import 'h2h_picks_screen.dart';
 
 /// Screen for creating and joining head-to-head challenges
@@ -51,9 +51,15 @@ class _HeadToHeadScreenState extends State<HeadToHeadScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: CustomAppBar(
-        title: 'Head-to-Head',
-        subtitle: widget.event.eventName,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Head-to-Head', style: TextStyle(fontSize: 18)),
+            Text(widget.event.eventName, style: TextStyle(fontSize: 14, color: Colors.grey)),
+          ],
+        ),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.blue,
@@ -245,7 +251,7 @@ class _HeadToHeadScreenState extends State<HeadToHeadScreen>
               style: TextStyle(color: Colors.white),
             ),
             subtitle: Text(
-              'Pick all ${widget.event.fights.length} fights',
+              'Pick all ${widget.event.typedFights.length} fights',
               style: TextStyle(color: Colors.grey[500], fontSize: 12),
             ),
             value: _isFullCard,
@@ -304,7 +310,7 @@ class _HeadToHeadScreenState extends State<HeadToHeadScreen>
                 label: const Text('Main Event Only'),
                 onPressed: () {
                   setState(() {
-                    _selectedFightIds = widget.event.fights
+                    _selectedFightIds = widget.event.typedFights
                         .where((f) => f.isMainEvent)
                         .map((f) => f.id)
                         .toList();
@@ -325,9 +331,9 @@ class _HeadToHeadScreenState extends State<HeadToHeadScreen>
       height: 200,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: widget.event.fights.length,
+        itemCount: widget.event.typedFights.length,
         itemBuilder: (context, index) {
-          final fight = widget.event.fights[index];
+          final fight = widget.event.typedFights[index];
           final isSelected = _selectedFightIds.contains(fight.id);
           
           return CheckboxListTile(
@@ -415,7 +421,7 @@ class _HeadToHeadScreenState extends State<HeadToHeadScreen>
   
   Widget _buildCreateButton() {
     final fightsToPickCount = _isFullCard
-        ? widget.event.fights.length
+        ? widget.event.typedFights.length
         : _selectedFightIds.length;
     
     final canCreate = fightsToPickCount > 0;
@@ -479,7 +485,7 @@ class _HeadToHeadScreenState extends State<HeadToHeadScreen>
   
   Widget _buildChallengeCard(HeadToHeadChallenge challenge) {
     final fightsCount = challenge.isFullCard
-        ? widget.event.fights.length
+        ? widget.event.typedFights.length
         : (challenge.requiredFightIds?.length ?? 0);
     
     return Card(

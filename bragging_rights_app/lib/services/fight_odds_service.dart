@@ -20,16 +20,15 @@ class FightOddsService {
     
     try {
       // Get MMA odds from The Odds API
-      final response = await _oddsApi.getSportsOdds(
+      final response = await _oddsApi.getSportOdds(
         sport: 'mma_mixed_martial_arts',
-        markets: 'h2h',  // Head to head (moneyline)
       );
       
-      if (response != null && response['data'] != null) {
-        final events = response['data'] as List;
+      if (response != null && response.isNotEmpty) {
+        final events = response;
         
         // Match fights with odds data
-        for (final fight in event.fights) {
+        for (final fight in event.typedFights) {
           final oddsData = _findMatchingOdds(fight, events);
           
           if (oddsData != null) {
@@ -45,7 +44,7 @@ class FightOddsService {
       debugPrint('Error fetching fight odds: $e');
       
       // Fallback to cached or estimated odds
-      for (final fight in event.fights) {
+      for (final fight in event.typedFights) {
         odds[fight.id] = _getCachedOrEstimatedOdds(fight);
       }
     }
@@ -215,7 +214,7 @@ class FightOddsService {
     } else {
       // Favorite - round to nearest 10
       final rounded = (odds.abs() / 10).round() * 10;
-      return -rounded;
+      return -rounded.toDouble();
     }
   }
   
@@ -230,9 +229,8 @@ class FightOddsService {
         final odds = <String, FightOdds>{};
         
         // Fetch latest odds
-        final response = await _oddsApi.getSportsOdds(
+        final response = await _oddsApi.getSportOdds(
           sport: 'mma_mixed_martial_arts',
-          markets: 'h2h',
         );
         
         if (response != null) {

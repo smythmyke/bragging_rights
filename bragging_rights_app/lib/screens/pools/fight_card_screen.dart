@@ -5,7 +5,7 @@ import '../../models/pool_model.dart';
 import '../../models/fight_card_scoring.dart';
 import '../../services/fight_card_service.dart';
 import '../../services/fight_odds_service.dart';
-import '../../widgets/custom_app_bar.dart';
+// Removed custom app bar import - using standard AppBar
 import 'fight_pick_detail_screen.dart';
 
 /// Screen showing all fights in a card for picking
@@ -76,7 +76,7 @@ class _FightCardScreenState extends State<FightCardScreen> {
     final allowSkipPrelims = poolMetadata['allowSkipPrelims'] ?? true;
     
     if (requireFullCard) {
-      _requiredFights = widget.event.fights;
+      _requiredFights = widget.event.typedFights;
     } else if (allowSkipPrelims) {
       // Only main card required
       _requiredFights = widget.event.mainCard;
@@ -93,9 +93,18 @@ class _FightCardScreenState extends State<FightCardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: CustomAppBar(
-        title: widget.event.eventName,
-        subtitle: widget.pool.name,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(widget.event.eventName),
+            Text(
+              widget.pool.name,
+              style: const TextStyle(fontSize: 12, color: Colors.white70),
+            ),
+          ],
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -181,7 +190,7 @@ class _FightCardScreenState extends State<FightCardScreen> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
-          _buildCategoryChip('All', widget.event.fights.length, true),
+          _buildCategoryChip('All', widget.event.typedFights.length, true),
           _buildCategoryChip('Main Card', widget.event.mainCard.length, false),
           if (widget.event.prelims.isNotEmpty)
             _buildCategoryChip('Prelims', widget.event.prelims.length, false),
@@ -221,9 +230,9 @@ class _FightCardScreenState extends State<FightCardScreen> {
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
-      itemCount: widget.event.fights.length,
+      itemCount: widget.event.typedFights.length,
       itemBuilder: (context, index) {
-        final fight = widget.event.fights[index];
+        final fight = widget.event.typedFights[index];
         return _buildFightCard(fight);
       },
     );

@@ -17,6 +17,10 @@ class GameModel {
   final String? league;
   final String? homeTeamLogo;
   final String? awayTeamLogo;
+  final List<Map<String, dynamic>>? fights; // For combat sports
+  final bool isCombatSport;
+  final int? totalFights;
+  final String? mainEventFighters;
 
   GameModel({
     required this.id,
@@ -35,6 +39,10 @@ class GameModel {
     this.league,
     this.homeTeamLogo,
     this.awayTeamLogo,
+    this.fights,
+    this.isCombatSport = false,
+    this.totalFights,
+    this.mainEventFighters,
   });
 
   factory GameModel.fromFirestore(DocumentSnapshot doc) {
@@ -56,11 +64,15 @@ class GameModel {
       league: data['league'],
       homeTeamLogo: data['homeTeamLogo'],
       awayTeamLogo: data['awayTeamLogo'],
+      fights: data['fights'] != null ? List<Map<String, dynamic>>.from(data['fights']) : null,
+      isCombatSport: data['isCombatSport'] ?? false,
+      totalFights: data['totalFights'],
+      mainEventFighters: data['mainEventFighters'],
     );
   }
 
   // Check if this is an individual sport
-  bool get isIndividualSport => ['MMA', 'UFC', 'BELLATOR', 'PFL', 'BOXING', 'TENNIS', 'GOLF'].contains(sport.toUpperCase());
+  bool get isIndividualSport => isCombatSport || ['UFC', 'BELLATOR', 'PFL', 'BOXING', 'TENNIS', 'GOLF'].contains(sport.toUpperCase());
   
   String get gameTitle => isIndividualSport ? '$awayTeam vs $homeTeam' : '$awayTeam @ $homeTeam';
   String get shortTitle => isIndividualSport 
@@ -97,6 +109,10 @@ class GameModel {
       'homeTeamLogo': homeTeamLogo,
       'awayTeamLogo': awayTeamLogo,
       'espnId': id,
+      'fights': fights,
+      'isCombatSport': isCombatSport,
+      'totalFights': totalFights,
+      'mainEventFighters': mainEventFighters,
     };
   }
   
@@ -119,6 +135,10 @@ class GameModel {
       'awayTeamLogo': awayTeamLogo,
       'lastUpdated': FieldValue.serverTimestamp(),
       'espnId': id,
+      'fights': fights,
+      'isCombatSport': isCombatSport,
+      'totalFights': totalFights,
+      'mainEventFighters': mainEventFighters,
     };
   }
   
@@ -152,6 +172,10 @@ class GameModel {
       league: map['league'],
       homeTeamLogo: map['homeTeamLogo'],
       awayTeamLogo: map['awayTeamLogo'],
+      fights: map['fights'] != null ? List<Map<String, dynamic>>.from(map['fights']) : null,
+      isCombatSport: map['isCombatSport'] ?? false,
+      totalFights: map['totalFights'],
+      mainEventFighters: map['mainEventFighters'],
     );
   }
   

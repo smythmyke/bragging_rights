@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/pool_model.dart';
 import '../../services/pool_service.dart';
 import '../../services/wallet_service.dart';
 import '../../services/bet_storage_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class PoolSelectionScreenV2 extends StatefulWidget {
   final String gameId;

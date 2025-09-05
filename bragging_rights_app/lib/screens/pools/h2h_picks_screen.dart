@@ -3,7 +3,7 @@ import '../../models/head_to_head_model.dart';
 import '../../models/fight_card_model.dart';
 import '../../models/pool_model.dart';
 import '../../services/head_to_head_service.dart';
-import '../../widgets/custom_app_bar.dart';
+// Removed custom app bar import - using standard AppBar
 import 'fight_pick_detail_screen.dart';
 import 'strategy_room_screen.dart';
 
@@ -38,9 +38,9 @@ class _H2HPicksScreenState extends State<H2HPicksScreen> {
   
   void _determineRequiredFights() {
     if (widget.challenge.isFullCard) {
-      _requiredFights = widget.event.fights;
+      _requiredFights = widget.event.typedFights;
     } else if (widget.challenge.requiredFightIds != null) {
-      _requiredFights = widget.event.fights
+      _requiredFights = widget.event.typedFights
           .where((f) => widget.challenge.requiredFightIds!.contains(f.id))
           .toList();
     }
@@ -55,9 +55,15 @@ class _H2HPicksScreenState extends State<H2HPicksScreen> {
     
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: CustomAppBar(
-        title: 'Head-to-Head Picks',
-        subtitle: widget.event.eventName,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Head-to-Head Picks', style: TextStyle(fontSize: 18)),
+            Text(widget.event.eventName, style: TextStyle(fontSize: 14, color: Colors.grey)),
+          ],
+        ),
       ),
       body: Column(
         children: [
@@ -533,7 +539,7 @@ class _H2HPicksScreenState extends State<H2HPicksScreen> {
                         id: widget.challenge.id,
                         name: 'H2H Challenge',
                         gameId: widget.event.id,
-                        gameTitle: widget.event.name,
+                        gameTitle: widget.event.eventName,
                         sport: 'MMA',
                         type: PoolType.tournament,
                         status: PoolStatus.inProgress,
@@ -542,8 +548,8 @@ class _H2HPicksScreenState extends State<H2HPicksScreen> {
                         maxPlayers: 2,
                         currentPlayers: 2,
                         playerIds: [widget.challenge.challengerId, widget.challenge.opponentId ?? ''],
-                        startTime: widget.event.date,
-                        closeTime: widget.event.date,
+                        startTime: widget.event.gameTime,
+                        closeTime: widget.event.gameTime,
                         prizePool: 0,
                         prizeStructure: {},
                         createdAt: DateTime.now(),

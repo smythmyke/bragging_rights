@@ -10,12 +10,15 @@ import 'screens/home/home_screen.dart' as home;
 import 'screens/pools/pool_selection_screen.dart';
 import 'screens/game/game_detail_screen.dart';
 import 'screens/betting/bet_selection_screen.dart';
+import 'screens/betting/fight_card_grid_screen.dart';
 import 'screens/premium/edge_screen_v2.dart';
 import 'screens/splash/lottie_splash_screen.dart';
 import 'screens/bets/active_bets_screen.dart';
 import 'screens/pools/my_pools_screen.dart';
 import 'screens/transactions/transaction_history_screen.dart';
 import 'screens/wagers/active_wagers_screen.dart';
+import 'models/fight_card_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -68,31 +71,32 @@ class BraggingRightsApp extends StatelessWidget {
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/pool-selection') {
-          final args = settings.arguments as Map<String, String>;
+          final args = settings.arguments as Map<String, dynamic>;
           return MaterialPageRoute(
             builder: (context) => PoolSelectionScreen(
-              gameTitle: args['gameTitle'] ?? 'Game',
-              sport: args['sport'] ?? 'Sport',
+              gameTitle: args['gameTitle']?.toString() ?? 'Game',
+              sport: args['sport']?.toString() ?? 'Sport',
+              gameId: args['gameId']?.toString(),
             ),
           );
         } else if (settings.name == '/bet-selection') {
-          final args = settings.arguments as Map<String, String>;
+          final args = settings.arguments as Map<String, dynamic>;
           return MaterialPageRoute(
             builder: (context) => BetSelectionScreen(
-              gameTitle: args['gameTitle'] ?? 'Game',
-              sport: args['sport'] ?? 'Sport',
-              poolName: args['poolName'] ?? 'Pool',
-              poolId: args['poolId'],
-              gameId: args['gameId'],
+              gameTitle: args['gameTitle']?.toString() ?? 'Game',
+              sport: args['sport']?.toString() ?? 'Sport',
+              poolName: args['poolName']?.toString() ?? 'Pool',
+              poolId: args['poolId']?.toString(),
+              gameId: args['gameId']?.toString(),
             ),
           );
         } else if (settings.name == '/edge') {
-          final args = settings.arguments as Map<String, String>;
+          final args = settings.arguments as Map<String, dynamic>;
           return MaterialPageRoute(
             builder: (context) => EdgeScreenV2(
-              gameTitle: args['gameTitle'] ?? 'Game',
-              gameId: args['gameId'] ?? '',
-              sport: args['sport'] ?? 'nba',
+              gameTitle: args['gameTitle']?.toString() ?? 'Game',
+              gameId: args['gameId']?.toString() ?? '',
+              sport: args['sport']?.toString() ?? 'nba',
             ),
           );
         } else if (settings.name == '/active-bets') {
@@ -111,10 +115,115 @@ class BraggingRightsApp extends StatelessWidget {
           return MaterialPageRoute(
             builder: (context) => const ActiveWagersScreen(),
           );
+        } else if (settings.name == '/fight-card-grid') {
+          final args = settings.arguments as Map<String, dynamic>;
+          // For combat sports, we need to fetch the full fight card event
+          // This is a temporary solution - ideally the event should be passed from previous screen
+          return MaterialPageRoute(
+            builder: (context) => FutureBuilder<FightCardEventModel?>(
+              future: _loadFightCardEvent(args['gameId']?.toString() ?? ''),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Scaffold(
+                    backgroundColor: Colors.black,
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                
+                if (snapshot.data == null) {
+                  // Fallback - create a basic event from the args
+                  final event = FightCardEventModel(
+                    id: args['gameId']?.toString() ?? '',
+                    gameTime: DateTime.now(),
+                    status: 'scheduled',
+                    eventName: args['gameTitle']?.toString() ?? 'UFC Event',
+                    promotion: 'UFC',
+                    totalFights: 0,
+                    mainEventTitle: args['gameTitle']?.toString() ?? '',
+                    fights: [],
+                  );
+                  
+                  return FightCardGridScreen(
+                    event: event,
+                    poolId: args['poolId']?.toString() ?? '',
+                    poolName: args['poolName']?.toString() ?? 'Pool',
+                  );
+                }
+                
+                return FightCardGridScreen(
+                  event: snapshot.data!,
+                  poolId: args['poolId']?.toString() ?? '',
+                  poolName: args['poolName']?.toString() ?? 'Pool',
+                );
+              },
+            ),
+          );
         }
         return null;
       },
     );
+  }
+  
+  // Helper function to load fight card event from Firestore
+  static Future<FightCardEventModel?> _loadFightCardEvent(String eventId) async {
+    try {
+      // Fetch game data from Firestore which should have full fight card
+      final gameDoc = await FirebaseFirestore.instance
+          .collection('games')
+          .doc(eventId)
+          .get();
+      
+      if (!gameDoc.exists) {
+        print('Game not found in Firestore: $eventId');
+        return null;
+      }
+      
+      final data = gameDoc.data()!;
+      final fights = data['fights'] as List<dynamic>? ?? [];
+      
+      // Convert fight data to Fight objects
+      final fightObjects = fights.map((fightData) {
+        final fight = fightData as Map<String, dynamic>;
+        return Fight(
+          id: fight['id'] ?? '',
+          eventId: eventId,
+          fighter1Id: fight['fighter1Id'] ?? '',
+          fighter2Id: fight['fighter2Id'] ?? '',
+          fighter1Name: fight['fighter1Name'] ?? 'TBD',
+          fighter2Name: fight['fighter2Name'] ?? 'TBD',
+          fighter1Record: fight['fighter1Record'] ?? '',
+          fighter2Record: fight['fighter2Record'] ?? '',
+          fighter1Country: '',  // Not available in ESPN data
+          fighter2Country: '',  // Not available in ESPN data
+          weightClass: fight['weightClass'] ?? 'Catchweight',
+          rounds: fight['rounds'] ?? 3,
+          cardPosition: fight['cardPosition']?.toString().toLowerCase() ?? 'main',
+          fightOrder: fight['fightOrder'] ?? 1,
+        );
+      }).toList();
+      
+      // Get main event title from last fight
+      String mainEventTitle = 'TBD vs TBD';
+      if (fightObjects.isNotEmpty) {
+        final mainFight = fightObjects.last;
+        mainEventTitle = '${mainFight.fighter1Name} vs ${mainFight.fighter2Name}';
+      }
+      
+      return FightCardEventModel(
+        id: eventId,
+        gameTime: (data['gameTime'] as Timestamp).toDate(),
+        status: data['status'] ?? 'scheduled',
+        eventName: data['awayTeam'] ?? 'Event',  // Event name is stored in awayTeam
+        promotion: data['league'] ?? 'UFC',
+        totalFights: fightObjects.length,
+        mainEventTitle: mainEventTitle,
+        fights: fightObjects,
+        venue: data['venue'],
+      );
+    } catch (e) {
+      print('Error loading fight card from Firestore: $e');
+      return null;
+    }
   }
 }
 

@@ -5,11 +5,13 @@ import 'game_model.dart';
 class FightCardEventModel extends GameModel {
   final String eventName;        // "UFC 310", "Bellator 300"
   final String promotion;        // UFC, Bellator, PFL, ONE
-  final int totalFights;
   final String mainEventTitle;   // "Jones vs Miocic"
-  final List<Fight> fights;
   final String? eventPoster;
   final String? location;
+  
+  // Typed fights list
+  List<Fight> get typedFights => _typedFights;
+  final List<Fight> _typedFights;
   
   FightCardEventModel({
     required String id,
@@ -17,40 +19,44 @@ class FightCardEventModel extends GameModel {
     required String status,
     required this.eventName,
     required this.promotion,
-    required this.totalFights,
+    required int totalFights,
     required this.mainEventTitle,
-    required this.fights,
+    required List<Fight> fights,
     this.eventPoster,
     this.location,
     String? venue,
     String? broadcast,
-  }) : super(
+  }) : _typedFights = fights,
+        super(
     id: id,
-    sport: 'MMA',
-    homeTeam: mainEventTitle.split(' vs ')[1] ?? 'Fighter 2',  // For compatibility
+    sport: 'UFC',
+    homeTeam: mainEventTitle.split(' vs ').length > 1 ? mainEventTitle.split(' vs ')[1] : 'Fighter 2',  // For compatibility
     awayTeam: mainEventTitle.split(' vs ')[0] ?? 'Fighter 1',   // For compatibility
     gameTime: gameTime,
     status: status,
     venue: venue,
     broadcast: broadcast,
     league: promotion,
+    totalFights: totalFights,
+    isCombatSport: true,
+    fights: fights.map((f) => f.toMap()).toList(),  // Convert to Map for parent class
   );
   
   @override
   String get gameTitle => '$eventName: $mainEventTitle';
   
   // Categorized access
-  List<Fight> get mainCard => fights.where((f) => f.cardPosition == 'main').toList();
-  List<Fight> get prelims => fights.where((f) => f.cardPosition == 'prelim').toList();
-  List<Fight> get earlyPrelims => fights.where((f) => f.cardPosition == 'early').toList();
+  List<Fight> get mainCard => _typedFights.where((f) => f.cardPosition == 'main').toList();
+  List<Fight> get prelims => _typedFights.where((f) => f.cardPosition == 'prelim').toList();
+  List<Fight> get earlyPrelims => _typedFights.where((f) => f.cardPosition == 'early').toList();
   
   // Get specific fight
-  Fight? get mainEvent => fights.firstWhere(
+  Fight? get mainEvent => _typedFights.firstWhere(
     (f) => f.fightOrder == 1,
-    orElse: () => fights.first,
+    orElse: () => _typedFights.first,
   );
   
-  Fight? get coMainEvent => fights.where((f) => f.fightOrder == 2).firstOrNull;
+  Fight? get coMainEvent => _typedFights.where((f) => f.fightOrder == 2).firstOrNull;
   
   factory FightCardEventModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -83,7 +89,7 @@ class FightCardEventModel extends GameModel {
       'promotion': promotion,
       'totalFights': totalFights,
       'mainEventTitle': mainEventTitle,
-      'fights': fights.map((f) => f.toMap()).toList(),
+      'fights': _typedFights.map((f) => f.toMap()).toList(),
       'eventPoster': eventPoster,
       'location': location,
       'venue': venue,

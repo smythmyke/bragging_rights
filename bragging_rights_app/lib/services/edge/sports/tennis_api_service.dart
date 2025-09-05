@@ -385,7 +385,7 @@ class TennisApiService {
         'status': 'scheduled',
         'odds': {
           'player1': -140,
-          'player2': +120,
+          'player2': 120,
         },
       },
       {
@@ -410,7 +410,7 @@ class TennisApiService {
         'status': 'scheduled',
         'odds': {
           'player1': -180,
-          'player2': +150,
+          'player2': 150,
         },
       },
     ];

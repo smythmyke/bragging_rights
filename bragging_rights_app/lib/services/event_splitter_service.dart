@@ -25,7 +25,7 @@ abstract class Competition {
 enum CompetitionStatus {
   scheduled,
   live,
-  final,
+  completed,
   cancelled,
 }
 

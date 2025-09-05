@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/fight_card_model.dart';
 import '../../models/fight_card_scoring.dart';
-import '../../widgets/custom_app_bar.dart';
+// Removed custom app bar import - using standard AppBar
 
 /// Detailed screen for picking a fight winner and method
 class FightPickDetailScreen extends StatefulWidget {
@@ -59,9 +59,18 @@ class _FightPickDetailScreenState extends State<FightPickDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: CustomAppBar(
-        title: _getFightTitle(),
-        subtitle: widget.event.eventName,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(_getFightTitle()),
+            Text(
+              widget.event.eventName,
+              style: const TextStyle(fontSize: 12, color: Colors.white70),
+            ),
+          ],
+        ),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -112,10 +121,10 @@ class _FightPickDetailScreenState extends State<FightPickDetailScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          if (widget.fight.title != null)
-            Text(
-              widget.fight.title!,
-              style: const TextStyle(
+          if (widget.fight.isTitle)
+            const Text(
+              'TITLE FIGHT',
+              style: TextStyle(
                 color: Colors.amber,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,

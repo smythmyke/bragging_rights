@@ -118,7 +118,7 @@ class FightCardService {
       // Validate picks meet requirements
       final validationResult = rules.validatePicks(
         picks: picks,
-        fights: event.fights,
+        fights: event.typedFights,
         submissionTime: DateTime.now(),
         eventTime: event.gameTime,
       );
@@ -193,7 +193,7 @@ class FightCardService {
       final event = FightCardEventModel.fromFirestore(eventDoc);
       
       // Find and update the fight
-      final updatedFights = event.fights.map((fight) {
+      final updatedFights = event.typedFights.map((fight) {
         if (fight.id == fightId) {
           return fight.copyWith(
             winnerId: winnerId,
@@ -298,7 +298,7 @@ class FightCardService {
         // Calculate score
         final score = FightCardScoring.calculateUserScore(
           picks: picks,
-          results: event.fights,
+          results: event.typedFights,
           odds: odds,
         );
         
@@ -307,9 +307,9 @@ class FightCardService {
         int underdogWins = 0;
         
         for (final pick in picks) {
-          final fight = event.fights.firstWhere(
+          final fight = event.typedFights.firstWhere(
             (f) => f.id == pick.fightId,
-            orElse: () => event.fights.first,
+            orElse: () => event.typedFights.first,
           );
           
           if (pick.winnerId == fight.winnerId) {

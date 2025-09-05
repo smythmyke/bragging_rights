@@ -525,7 +525,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return Colors.cyan;
       case 'MLB':
         return Colors.red;
-      case 'MMA':
+      case 'UFC':
         return Colors.purple;
       default:
         return Colors.grey;
@@ -1713,7 +1713,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return Icons.sports_baseball;
       case 'NHL':
         return Icons.sports_hockey;
-      case 'MMA':
+      case 'UFC':
       case 'BOXING':
         return Icons.sports_mma;
       case 'SOCCER':
@@ -2069,7 +2069,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildSportChip('NBA', Icons.sports_basketball, Colors.orange),
                 _buildSportChip('NHL', Icons.sports_hockey, Colors.blue),
                 _buildSportChip('MLB', Icons.sports_baseball, Colors.red),
-                _buildSportChip('MMA', Icons.sports_mma, Colors.purple),
+                _buildSportChip('UFC', Icons.sports_mma, Colors.purple),
                 _buildSportChip('Soccer', Icons.sports_soccer, Colors.green),
               ],
             ),

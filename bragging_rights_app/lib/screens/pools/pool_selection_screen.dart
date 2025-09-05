@@ -782,18 +782,41 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
         print('[POOL JOIN] User has already submitted picks, navigating to active bets');
         Navigator.pushNamed(context, '/active-bets');
       } else {
-        print('[POOL JOIN] User has not submitted picks, navigating to bet selection');
-        Navigator.pushNamed(
-          context,
-          '/bet-selection',
-          arguments: {
-            'gameId': gameId,  // Pass the real game ID!
-            'gameTitle': widget.gameTitle,
-            'sport': widget.sport,
-            'poolName': poolName,
-            'poolId': poolId,
-          },
-        );
+        print('[POOL JOIN] User has not submitted picks, checking sport type...');
+        
+        // Check if this is a combat sport
+        final isCombatSport = widget.sport == 'UFC' || 
+                             widget.sport == 'BOXING' ||
+                             widget.sport == 'BELLATOR' ||
+                             widget.sport == 'PFL';
+        
+        if (isCombatSport) {
+          print('[POOL JOIN] Combat sport detected, navigating to fight card grid');
+          Navigator.pushNamed(
+            context,
+            '/fight-card-grid',
+            arguments: {
+              'gameId': gameId,  // Pass the real game ID!
+              'gameTitle': widget.gameTitle,
+              'sport': widget.sport,
+              'poolName': poolName,
+              'poolId': poolId,
+            },
+          );
+        } else {
+          print('[POOL JOIN] Team sport detected, navigating to standard bet selection');
+          Navigator.pushNamed(
+            context,
+            '/bet-selection',
+            arguments: {
+              'gameId': gameId,  // Pass the real game ID!
+              'gameTitle': widget.gameTitle,
+              'sport': widget.sport,
+              'poolName': poolName,
+              'poolId': poolId,
+            },
+          );
+        }
       }
       return; // Exit early since user is already in pool
     }
@@ -869,18 +892,39 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                           // Update balance after successful join
                           _loadBalance();
                           
-                          // Navigate to bet selection
-                          Navigator.pushNamed(
-                            context,
-                            '/bet-selection',
-                            arguments: {
-                              'gameId': gameId,  // Pass the real game ID!
-                              'gameTitle': widget.gameTitle,
-                              'sport': widget.sport,
-                              'poolName': poolName,
-                              'poolId': poolId,
-                            },
-                          );
+                          // Check if this is a combat sport
+                          final isCombatSport = widget.sport == 'UFC' || 
+                                               widget.sport == 'BOXING' ||
+                                               widget.sport == 'BELLATOR' ||
+                                               widget.sport == 'PFL';
+                          
+                          if (isCombatSport) {
+                            // Navigate to fight card grid for combat sports
+                            Navigator.pushNamed(
+                              context,
+                              '/fight-card-grid',
+                              arguments: {
+                                'gameId': gameId,  // Pass the real game ID!
+                                'gameTitle': widget.gameTitle,
+                                'sport': widget.sport,
+                                'poolName': poolName,
+                                'poolId': poolId,
+                              },
+                            );
+                          } else {
+                            // Navigate to standard bet selection for team sports
+                            Navigator.pushNamed(
+                              context,
+                              '/bet-selection',
+                              arguments: {
+                                'gameId': gameId,  // Pass the real game ID!
+                                'gameTitle': widget.gameTitle,
+                                'sport': widget.sport,
+                                'poolName': poolName,
+                                'poolId': poolId,
+                              },
+                            );
+                          }
                         } else {
                           final errorCode = result['code'] ?? 'UNKNOWN_ERROR';
                           final errorMessage = result['message'] ?? 'Failed to join pool';
