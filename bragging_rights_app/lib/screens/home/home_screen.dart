@@ -37,6 +37,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   Timer? _countdownTimer;
+  Timer? _backgroundRefreshTimer;
   final Map<String, Duration> _countdowns = {};
   
   // Services
@@ -65,6 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // Track expanded sports
   Set<String> _expandedSports = {};
   List<String> _userSports = []; // User's selected sports
+  List<GameModel> _allGames = []; // All games cache
   
   // Pool data
   List<Map<String, dynamic>> _userPools = [];
@@ -77,6 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _initializeCountdowns();
     _startCountdownTimer();
+    _startBackgroundRefresh();
     _loadGamesWithBets();
     _loadUserSportsPreferences();
     _loadGamesData();
@@ -96,6 +99,16 @@ class _HomeScreenState extends State<HomeScreen> {
         // Trigger rebuild to show products
       });
     }
+  }
+  
+  void _startBackgroundRefresh() {
+    // Refresh games data every 2 minutes
+    _backgroundRefreshTimer = Timer.periodic(const Duration(minutes: 2), (timer) {
+      if (mounted) {
+        print('⏰ Background refresh triggered');
+        _loadGamesData(forceRefresh: false); // This will use cache if valid
+      }
+    });
   }
   
   void _loadGamesWithBets() {
@@ -163,70 +176,99 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
   
-  Future<void> _loadGamesData() async {
-    setState(() {
-      _isLoadingGames = true;
-    });
+  Future<void> _loadGamesData({bool forceRefresh = false}) async {
+    // Don't show loading indicator if we're just refreshing in background
+    if (forceRefresh || _allGames.isEmpty) {
+      setState(() {
+        _isLoadingGames = true;
+      });
+    }
     
     try {
-      // Fetch directly from ESPN API for real-time data
-      print('Fetching live sports data from ESPN...');
+      // Fetch games with caching support - this will return cached data instantly if available
+      print('📱 Loading games data...');
       
-      // Load all games from ESPN
-      final allGames = await _espnService.fetchAllGames();
-      print('Fetched ${allGames.length} total games from ESPN');
+      // This now returns cached games immediately if available
+      final allGames = await _espnService.fetchAllGames(forceRefresh: forceRefresh);
       
-      // Separate live games
-      final liveGames = allGames.where((game) => game.status == 'live').toList();
-      
-      // Get all games (including scheduled)
-      final now = DateTime.now();
-      final allUpcomingGames = allGames
-          .where((game) => game.gameTime.isAfter(now) || game.status == 'live')
-          .toList();
-      
-      // Sort all games by time
-      allUpcomingGames.sort((a, b) => a.gameTime.compareTo(b.gameTime));
-      
-      // Categorize games by time period
-      final todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
-      final tomorrowStart = todayEnd.add(const Duration(seconds: 1));
-      final tomorrowEnd = tomorrowStart.add(const Duration(hours: 23, minutes: 59, seconds: 59));
-      final thisWeekEnd = now.add(Duration(days: 7 - now.weekday));
-      final nextWeekStart = thisWeekEnd.add(const Duration(days: 1));
-      final nextWeekEnd = nextWeekStart.add(const Duration(days: 7));
-      
-      final todayGames = <GameModel>[];
-      final tomorrowGames = <GameModel>[];
-      final thisWeekGames = <GameModel>[];
-      final nextWeekGames = <GameModel>[];
-      GameModel? nextGame;
-      
-      for (final game in allUpcomingGames) {
-        if (game.gameTime.isBefore(todayEnd)) {
-          todayGames.add(game);
-        } else if (game.gameTime.isBefore(tomorrowEnd)) {
-          tomorrowGames.add(game);
-        } else if (game.gameTime.isBefore(thisWeekEnd)) {
-          thisWeekGames.add(game);
-        } else if (game.gameTime.isBefore(nextWeekEnd)) {
-          nextWeekGames.add(game);
-        }
+      if (allGames.isNotEmpty) {
+        // Update UI immediately with whatever games we have (cached or fresh)
+        _updateGameLists(allGames);
         
-        // Track the very next game
-        if (nextGame == null && game.gameTime.isAfter(now)) {
-          nextGame = game;
+        // Hide loading indicator as soon as we have some data to show
+        if (mounted) {
+          setState(() {
+            _isLoadingGames = false;
+          });
         }
       }
       
+      print('✅ Games loaded: ${allGames.length} total');
+      
+    } catch (e) {
+      print('Error loading games: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingGames = false;
+        });
+      }
+    }
+  }
+  
+  void _updateGameLists(List<GameModel> allGames) {
+    // Separate live games
+    final liveGames = allGames.where((game) => game.status == 'live').toList();
+    
+    // Get all games (including scheduled)
+    final now = DateTime.now();
+    final allUpcomingGames = allGames
+        .where((game) => game.gameTime.isAfter(now) || game.status == 'live')
+        .toList();
+    
+    // Sort all games by time
+    allUpcomingGames.sort((a, b) => a.gameTime.compareTo(b.gameTime));
+    
+    // Categorize games by time period
+    final todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    final tomorrowStart = todayEnd.add(const Duration(seconds: 1));
+    final tomorrowEnd = tomorrowStart.add(const Duration(hours: 23, minutes: 59, seconds: 59));
+    final thisWeekEnd = now.add(Duration(days: 7 - now.weekday));
+    final nextWeekStart = thisWeekEnd.add(const Duration(days: 1));
+    final nextWeekEnd = nextWeekStart.add(const Duration(days: 7));
+    
+    final todayGames = <GameModel>[];
+    final tomorrowGames = <GameModel>[];
+    final thisWeekGames = <GameModel>[];
+    final nextWeekGames = <GameModel>[];
+    GameModel? nextGame;
+    
+    for (final game in allUpcomingGames) {
+      if (game.gameTime.isBefore(todayEnd)) {
+        todayGames.add(game);
+      } else if (game.gameTime.isBefore(tomorrowEnd)) {
+        tomorrowGames.add(game);
+      } else if (game.gameTime.isBefore(thisWeekEnd)) {
+        thisWeekGames.add(game);
+      } else if (game.gameTime.isBefore(nextWeekEnd)) {
+        nextWeekGames.add(game);
+      }
+      
+      // Track the very next game
+      if (nextGame == null && game.gameTime.isAfter(now)) {
+        nextGame = game;
+      }
+    }
+    
+    // Update UI with new game lists
+    if (mounted) {
       setState(() {
+        _allGames = allGames;
         _liveGames = liveGames;
         _todayGames = todayGames;
         _tomorrowGames = tomorrowGames;
         _thisWeekGames = thisWeekGames;
         _nextWeekGames = nextWeekGames;
         _nextGame = nextGame;
-        _isLoadingGames = false;
         
         print('Live games: ${liveGames.length}');
         print('Today\'s games: ${todayGames.length}');
@@ -236,11 +278,6 @@ class _HomeScreenState extends State<HomeScreen> {
         for (final game in todayGames) {
           _countdowns[game.id] = game.timeUntilGame;
         }
-      });
-    } catch (e) {
-      print('Error loading games: $e');
-      setState(() {
-        _isLoadingGames = false;
       });
     }
   }
@@ -260,6 +297,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    _backgroundRefreshTimer?.cancel();
     super.dispose();
   }
 
@@ -685,7 +723,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildGamesTab() {
     return RefreshIndicator(
       onRefresh: () async {
-        await _loadGamesData();
+        await _loadGamesData(forceRefresh: true);
       },
       child: _isLoadingGames
           ? Center(

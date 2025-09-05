@@ -78,6 +78,83 @@ class GameModel {
     return teamName.substring(0, 3).toUpperCase();
   }
   
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'sport': sport,
+      'homeTeam': homeTeam,
+      'awayTeam': awayTeam,
+      'gameTime': gameTime.millisecondsSinceEpoch, // Store as milliseconds for caching
+      'status': status,
+      'homeScore': homeScore,
+      'awayScore': awayScore,
+      'period': period,
+      'timeRemaining': timeRemaining,
+      'odds': odds,
+      'venue': venue,
+      'broadcast': broadcast,
+      'league': league,
+      'homeTeamLogo': homeTeamLogo,
+      'awayTeamLogo': awayTeamLogo,
+      'espnId': id,
+    };
+  }
+  
+  Map<String, dynamic> toFirestore() {
+    return {
+      'sport': sport,
+      'homeTeam': homeTeam,
+      'awayTeam': awayTeam,
+      'gameTime': Timestamp.fromDate(gameTime),
+      'status': status,
+      'homeScore': homeScore,
+      'awayScore': awayScore,
+      'period': period,
+      'timeRemaining': timeRemaining,
+      'odds': odds,
+      'venue': venue,
+      'broadcast': broadcast,
+      'league': league,
+      'homeTeamLogo': homeTeamLogo,
+      'awayTeamLogo': awayTeamLogo,
+      'lastUpdated': FieldValue.serverTimestamp(),
+      'espnId': id,
+    };
+  }
+  
+  factory GameModel.fromMap(Map<String, dynamic> map) {
+    // Handle gameTime which could be Timestamp or milliseconds
+    DateTime gameTime;
+    if (map['gameTime'] is Timestamp) {
+      gameTime = (map['gameTime'] as Timestamp).toDate();
+    } else if (map['gameTime'] is int) {
+      gameTime = DateTime.fromMillisecondsSinceEpoch(map['gameTime']);
+    } else if (map['gameTime'] is String) {
+      gameTime = DateTime.parse(map['gameTime']);
+    } else {
+      gameTime = DateTime.now(); // Fallback
+    }
+    
+    return GameModel(
+      id: map['id'] ?? map['espnId'] ?? '',
+      sport: map['sport'] ?? '',
+      homeTeam: map['homeTeam'] ?? '',
+      awayTeam: map['awayTeam'] ?? '',
+      gameTime: gameTime,
+      status: map['status'] ?? 'scheduled',
+      homeScore: map['homeScore'],
+      awayScore: map['awayScore'],
+      period: map['period'],
+      timeRemaining: map['timeRemaining'],
+      odds: map['odds'],
+      venue: map['venue'],
+      broadcast: map['broadcast'],
+      league: map['league'],
+      homeTeamLogo: map['homeTeamLogo'],
+      awayTeamLogo: map['awayTeamLogo'],
+    );
+  }
+  
   String _getNameAbbr(String name) {
     // For individual sports, use last name if available
     if (name.contains(' ')) {

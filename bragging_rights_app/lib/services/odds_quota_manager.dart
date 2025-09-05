@@ -150,6 +150,11 @@ class OddsQuotaManager {
     await _saveQuotaData();
   }
   
+  /// Get remaining quota
+  int getRemainingQuota() {
+    return MONTHLY_LIMIT - _totalUsed;
+  }
+  
   /// Get usage statistics
   Map<String, dynamic> getUsageStats() {
     final stats = <String, dynamic>{

@@ -82,6 +82,14 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   @override
   void initState() {
     super.initState();
+    print('=== BET SELECTION SCREEN INIT ===');
+    print('Game Title: ${widget.gameTitle}');
+    print('Sport: ${widget.sport}');
+    print('Pool Name: ${widget.poolName}');
+    print('Pool ID: ${widget.poolId}');
+    print('Game ID: ${widget.gameId}');
+    print('================================');
+    
     _betTypeController = _getSportSpecificTabController();
     _initializeTabPicks();
     _betTypeController.addListener(_onTabChanged);
@@ -170,19 +178,36 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   }
   
   TabController _getSportSpecificTabController() {
-    switch (widget.sport.toUpperCase()) {
-      case 'NBA':
-      case 'NFL':
-      case 'NHL':
-        return TabController(length: 5, vsync: this); // Main, Spread, Totals, Props, Live
-      case 'MMA':
-      case 'BOXING':
-        return TabController(length: 4, vsync: this); // Main, Method, Rounds, Live
-      case 'TENNIS':
-        return TabController(length: 4, vsync: this); // Match, Sets, Games, Live
-      default:
-        return TabController(length: 3, vsync: this); // Main, Props, Live
+    // Clean up the sport string and check for keywords
+    final sportUpper = widget.sport.toUpperCase().trim();
+    
+    print('Getting tab controller for sport: "$sportUpper"');
+    
+    // Check for NBA, NFL, NHL, MLB
+    if (sportUpper.contains('NBA') || sportUpper.contains('BASKETBALL') ||
+        sportUpper.contains('NFL') || sportUpper.contains('FOOTBALL') ||
+        sportUpper.contains('NHL') || sportUpper.contains('HOCKEY') ||
+        sportUpper.contains('MLB') || sportUpper.contains('BASEBALL')) {
+      print('Creating 5-tab controller for team sports');
+      return TabController(length: 5, vsync: this); // Winner, Spread, Totals, Props, Live
     }
+    
+    // Check for MMA/Boxing
+    if (sportUpper.contains('MMA') || sportUpper.contains('UFC') || 
+        sportUpper.contains('BOXING') || sportUpper.contains('FIGHT')) {
+      print('Creating 4-tab controller for combat sports');
+      return TabController(length: 4, vsync: this); // Main, Method, Rounds, Live
+    }
+    
+    // Check for Tennis
+    if (sportUpper.contains('TENNIS')) {
+      print('Creating 4-tab controller for tennis');
+      return TabController(length: 4, vsync: this); // Match, Sets, Games, Live
+    }
+    
+    // Default fallback
+    print('Creating default 3-tab controller');
+    return TabController(length: 3, vsync: this); // Main, Props, Live
   }
   
   void _startCountdownTimer() {
@@ -370,68 +395,81 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   }
   
   Widget _buildBetTypeTabs() {
-    switch (widget.sport.toUpperCase()) {
-      case 'NBA':
-      case 'NFL':
-      case 'NHL':
-        return TabBar(
-          controller: _betTypeController,
-          isScrollable: true,
-          tabs: const [
-            Tab(text: 'Winner'),
-            Tab(text: 'Spread'),
-            Tab(text: 'Totals'),
-            Tab(text: 'Props'),
-            Tab(text: 'Live'),
-          ],
-        );
-      case 'MMA':
-      case 'BOXING':
-        return TabBar(
-          controller: _betTypeController,
-          tabs: const [
-            Tab(text: 'Winner'),
-            Tab(text: 'Method'),
-            Tab(text: 'Rounds'),
-            Tab(text: 'Live'),
-          ],
-        );
-      default:
-        return TabBar(
-          controller: _betTypeController,
-          tabs: const [
-            Tab(text: 'Main'),
-            Tab(text: 'Props'),
-            Tab(text: 'Live'),
-          ],
-        );
+    final sportUpper = widget.sport.toUpperCase().trim();
+    
+    if (sportUpper.contains('NBA') || sportUpper.contains('BASKETBALL') ||
+        sportUpper.contains('NFL') || sportUpper.contains('FOOTBALL') ||
+        sportUpper.contains('NHL') || sportUpper.contains('HOCKEY') ||
+        sportUpper.contains('MLB') || sportUpper.contains('BASEBALL')) {
+      return TabBar(
+        controller: _betTypeController,
+        isScrollable: true,
+        tabs: const [
+          Tab(text: 'Winner'),
+          Tab(text: 'Spread'),
+          Tab(text: 'Totals'),
+          Tab(text: 'Props'),
+          Tab(text: 'Live'),
+        ],
+      );
     }
+    
+    if (sportUpper.contains('MMA') || sportUpper.contains('UFC') || 
+        sportUpper.contains('BOXING') || sportUpper.contains('FIGHT')) {
+      return TabBar(
+        controller: _betTypeController,
+        tabs: const [
+          Tab(text: 'Winner'),
+          Tab(text: 'Method'),
+          Tab(text: 'Rounds'),
+          Tab(text: 'Live'),
+        ],
+      );
+    }
+    
+    // Default
+    return TabBar(
+      controller: _betTypeController,
+      tabs: const [
+        Tab(text: 'Main'),
+        Tab(text: 'Props'),
+        Tab(text: 'Live'),
+      ],
+    );
   }
   
   List<Widget> _buildSportSpecificTabs() {
-    switch (widget.sport.toUpperCase()) {
-      case 'NBA':
-        return [
-          _buildMoneylineTab(),
-          _buildSpreadTab(),
-          _buildTotalsTab(),
-          _buildNBAPropsTab(),
-          _buildLiveBettingTab(),
-        ];
-      case 'MMA':
-        return [
-          _buildMoneylineTab(),
-          _buildMethodOfVictoryTab(),
-          _buildRoundBettingTab(),
-          _buildLiveBettingTab(),
-        ];
-      default:
-        return [
-          _buildMoneylineTab(),
-          _buildGenericPropsTab(),
-          _buildLiveBettingTab(),
-        ];
+    final sportUpper = widget.sport.toUpperCase().trim();
+    
+    if (sportUpper.contains('NBA') || sportUpper.contains('BASKETBALL') ||
+        sportUpper.contains('NFL') || sportUpper.contains('FOOTBALL') ||
+        sportUpper.contains('NHL') || sportUpper.contains('HOCKEY') ||
+        sportUpper.contains('MLB') || sportUpper.contains('BASEBALL')) {
+      return [
+        _buildMoneylineTab(),
+        _buildSpreadTab(),
+        _buildTotalsTab(),
+        _buildNBAPropsTab(),
+        _buildLiveBettingTab(),
+      ];
     }
+    
+    if (sportUpper.contains('MMA') || sportUpper.contains('UFC') || 
+        sportUpper.contains('BOXING') || sportUpper.contains('FIGHT')) {
+      return [
+        _buildMoneylineTab(),
+        _buildMethodOfVictoryTab(),
+        _buildRoundBettingTab(),
+        _buildLiveBettingTab(),
+      ];
+    }
+    
+    // Default
+    return [
+      _buildMoneylineTab(),
+      _buildGenericPropsTab(),
+      _buildLiveBettingTab(),
+    ];
   }
   
   Widget _buildTeamSelection() {

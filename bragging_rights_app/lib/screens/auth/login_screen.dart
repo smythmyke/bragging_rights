@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math' as math;
+import 'package:lottie/lottie.dart';
 import '../../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -21,64 +22,97 @@ class _LoginScreenState extends State<LoginScreen>
   bool _obscurePassword = true;
   bool _isLoading = false;
   
-  late AnimationController _spinController;
-  late AnimationController _sparkleController;
-  late Animation<double> _spinAnimation;
-  late Animation<double> _sparkleAnimation;
+  late AnimationController _lottieController;
+  int _animationIndex = 0;
+  final List<String> _animations = [
+    'assets/animations/trophy_animation.json',
+    'assets/animations/medal_animation.json',
+    'assets/animations/championship_animation.json',
+    'assets/animations/podium_animation.json',
+    'assets/animations/fireworks_animation.json',
+  ];
+  
+  // Logo animation controllers
+  late AnimationController _logoAnimationController;
+  late Animation<Offset> _braggingAnimation;
+  late Animation<Offset> _rightsAnimation;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
     
-    // Initialize spin animation
-    _spinController = AnimationController(
+    // Initialize Lottie animation controller
+    _lottieController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    );
+    
+    // Initialize logo animation controller
+    _logoAnimationController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
     
-    _spinAnimation = Tween<double>(
-      begin: 0,
-      end: 2 * 3.14159, // Full rotation
+    // Set up animations for "Bragging" sliding from left
+    _braggingAnimation = Tween<Offset>(
+      begin: const Offset(-2.0, 0.0),
+      end: Offset.zero,
     ).animate(CurvedAnimation(
-      parent: _spinController,
-      curve: Curves.easeInOutCubic,
+      parent: _logoAnimationController,
+      curve: const Interval(0.0, 0.6, curve: Curves.easeOutCubic),
     ));
     
-    // Initialize sparkle animation
-    _sparkleController = AnimationController(
-      duration: const Duration(milliseconds: 2000),
-      vsync: this,
-    );
-    
-    _sparkleAnimation = Tween<double>(
-      begin: 0,
-      end: 1,
+    // Set up animations for "Rights" sliding from right
+    _rightsAnimation = Tween<Offset>(
+      begin: const Offset(2.0, 0.0),
+      end: Offset.zero,
     ).animate(CurvedAnimation(
-      parent: _sparkleController,
-      curve: Curves.easeInOut,
+      parent: _logoAnimationController,
+      curve: const Interval(0.3, 0.9, curve: Curves.easeOutCubic),
     ));
     
-    // Start the timer for spinning every 10 seconds
-    Future.delayed(const Duration(seconds: 10), _startSpinAnimation);
+    // Fade in animation for both
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _logoAnimationController,
+      curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
+    ));
+    
+    // Start the animations
+    _playNextAnimation();
+    _logoAnimationController.forward();
   }
   
-  void _startSpinAnimation() {
+  void _playNextAnimation() async {
+    if (!mounted) return;
+    
+    // Reset the controller
+    _lottieController.reset();
+    
+    // Play the animation
+    await _lottieController.forward();
+    
     if (mounted) {
-      _spinController.forward(from: 0).then((_) {
-        _sparkleController.forward(from: 0).then((_) {
-          if (mounted) {
-            // Schedule next spin
-            Future.delayed(const Duration(seconds: 10), _startSpinAnimation);
-          }
-        });
+      // Move to next animation
+      setState(() {
+        _animationIndex = (_animationIndex + 1) % _animations.length;
       });
+      
+      // Wait a moment before playing the next one
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Play next animation
+      _playNextAnimation();
     }
   }
 
   @override
   void dispose() {
-    _spinController.dispose();
-    _sparkleController.dispose();
+    _lottieController.dispose();
+    _logoAnimationController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -231,52 +265,28 @@ class _LoginScreenState extends State<LoginScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Animated Trophy with Sparkles
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Sparkle effects
-                      AnimatedBuilder(
-                        animation: _sparkleAnimation,
-                        builder: (context, child) {
-                          return CustomPaint(
-                            size: const Size(120, 120),  // Reduced sparkle size
-                            painter: SparklePainter(
-                              progress: _sparkleAnimation.value,
-                              color: Colors.amber,
-                            ),
-                          );
-                        },
-                      ),
-                      // Spinning trophy
-                      AnimatedBuilder(
-                        animation: _spinAnimation,
-                        builder: (context, child) {
-                          return Transform.rotate(
-                            angle: _spinAnimation.value,
-                            child: Icon(
-                              Icons.emoji_events,
-                              size: 80,  // Reduced trophy size
-                              color: Colors.amber,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.amber.withOpacity(0.5),
-                                  blurRadius: 20,
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                  // Animated Logo with high school lettering font
+                  _buildAnimatedLogo(),
+                  // Animation closer to logo with minimal spacing
+                  const SizedBox(height: 8),  // Very small gap between logo and animation
+                  // Lottie Animation (same as splash screen)
+                  SizedBox(
+                    height: 100,  // Fixed height for animation
+                    width: 100,
+                    child: Lottie.asset(
+                      _animations[_animationIndex],
+                      controller: _lottieController,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stack) {
+                        // Fallback to trophy icon if animation fails
+                        return Icon(
+                          Icons.emoji_events,
+                          size: 80,
+                          color: Colors.amber,
+                        );
+                      },
+                    ),
                   ),
-                  // No space between trophy and logo
-                  Image.asset(
-                    'assets/images/bragging_rights_logo.png',
-                    height: 280,  // Reduced slightly to fit better
-                    fit: BoxFit.contain,
-                  ),
-                  const SizedBox(height: 4),  // Minimal space
                   Text(
                     _isLogin ? 'Welcome Back!' : 'Join the Competition!',
                     style: TextStyle(
@@ -284,7 +294,7 @@ class _LoginScreenState extends State<LoginScreen>
                       color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.9),
                     ),
                   ),
-                  const SizedBox(height: 16),  // Reduced from 32
+                  const SizedBox(height: 12),  // Further reduced spacing
                   
                   // Auth Form
                   Card(
@@ -494,6 +504,104 @@ class _LoginScreenState extends State<LoginScreen>
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildAnimatedLogo() {
+    return ClipRect(
+      child: SizedBox(
+        height: 120,
+        width: double.infinity,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // "BRAGGING" text sliding from left - positioned on top
+            Positioned(
+              top: 15,
+              child: SlideTransition(
+                position: _braggingAnimation,
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Text(
+                    'BRAGGING',
+                    style: TextStyle(
+                      // Varsity/Athletic font style
+                      fontFamily: 'Arial Black',
+                      fontSize: 48,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.amber[400],
+                      letterSpacing: 4,
+                      height: 1,
+                      shadows: [
+                        // Outer black shadow for depth
+                        Shadow(
+                          blurRadius: 0,
+                          color: Colors.black,
+                          offset: const Offset(4.0, 4.0),
+                        ),
+                        // Inner glow
+                        Shadow(
+                          blurRadius: 12.0,
+                          color: Colors.amber.withOpacity(0.5),
+                          offset: const Offset(0, 0),
+                        ),
+                        // Extra depth
+                        Shadow(
+                          blurRadius: 3.0,
+                          color: Colors.orange[900]!,
+                          offset: const Offset(2.0, 2.0),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // "RIGHTS" text sliding from right - positioned below
+            Positioned(
+              bottom: 15,
+              child: SlideTransition(
+                position: _rightsAnimation,
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Text(
+                    'RIGHTS',
+                    style: TextStyle(
+                      // Varsity/Athletic font style
+                      fontFamily: 'Arial Black', 
+                      fontSize: 48,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: 4,
+                      height: 1,
+                      shadows: [
+                        // Outer black shadow for depth
+                        Shadow(
+                          blurRadius: 0,
+                          color: Colors.black,
+                          offset: const Offset(4.0, 4.0),
+                        ),
+                        // Inner glow
+                        Shadow(
+                          blurRadius: 12.0,
+                          color: Colors.blue.withOpacity(0.5),
+                          offset: const Offset(0, 0),
+                        ),
+                        // Extra depth
+                        Shadow(
+                          blurRadius: 3.0,
+                          color: Colors.blue[900]!,
+                          offset: const Offset(2.0, 2.0),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

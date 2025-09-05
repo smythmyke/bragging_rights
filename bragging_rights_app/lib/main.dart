@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'services/notification_service.dart';
 import 'services/pool_management_service.dart';
+import 'services/game_cache_service.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/onboarding/sports_selection_screen.dart';
 import 'screens/home/home_screen.dart' as home;
@@ -23,6 +24,9 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // Initialize game cache service
+  await GameCacheService().initialize();
   
   // Initialize notification service
   await NotificationService().initialize();

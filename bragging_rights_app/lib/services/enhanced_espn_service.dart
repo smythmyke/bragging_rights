@@ -380,7 +380,7 @@ class EnhancedESPNService {
       case 'STATUS_POSTPONED':
         return GameStatus.suspended;
       case 'STATUS_FINAL':
-        return GameStatus.final;
+        return GameStatus.completed;
       case 'STATUS_CANCELED':
       case 'STATUS_FORFEIT':
         return GameStatus.cancelled;
@@ -518,7 +518,7 @@ class EnhancedESPNService {
     if (newStatus == GameStatus.roundBreak) {
       print('Game $gameId: Round break - 60 second card window open');
     }
-    if (newStatus == GameStatus.final) {
+    if (newStatus == GameStatus.completed) {
       print('Game $gameId: Game final - settling pools');
     }
     if (newStatus == GameStatus.suspended) {

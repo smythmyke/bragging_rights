@@ -292,7 +292,7 @@ class PoolAutoGenerator {
   PoolTier _getTierFromBuyIn(int buyIn) {
     if (buyIn <= 10) return PoolTier.beginner;
     if (buyIn <= 25) return PoolTier.standard;
-    if (buyIn <= 50) return PoolTier.pro;
+    if (buyIn <= 50) return PoolTier.high;
     return PoolTier.vip;
   }
   

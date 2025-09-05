@@ -82,44 +82,46 @@ class PoolService {
     });
   }
 
-  // Join a pool
-  Future<bool> joinPool(String poolId, int buyIn) async {
+  // Join a pool - returns result with success and message
+  Future<Map<String, dynamic>> joinPoolWithResult(String poolId, int buyIn) async {
     final userId = _auth.currentUser?.uid;
-    if (userId == null) return false;
+    if (userId == null) {
+      return {'success': false, 'message': 'User not logged in', 'code': 'NOT_LOGGED_IN'};
+    }
 
     try {
       // Start a transaction
-      return await _firestore.runTransaction((transaction) async {
+      final success = await _firestore.runTransaction((transaction) async {
         // Get the pool document
         final poolDoc = await transaction.get(
           _firestore.collection('pools').doc(poolId),
         );
 
         if (!poolDoc.exists) {
-          throw Exception('Pool not found');
+          throw Exception('POOL_NOT_FOUND');
         }
 
         final pool = Pool.fromFirestore(poolDoc);
 
-        // Check if pool is full
-        if (pool.isFull) {
-          throw Exception('Pool is full');
-        }
-
         // Check if user is already in pool
         if (pool.playerIds.contains(userId)) {
-          throw Exception('Already in this pool');
+          throw Exception('ALREADY_IN_POOL');
+        }
+
+        // Check if pool is full
+        if (pool.isFull) {
+          throw Exception('POOL_FULL');
         }
 
         // Check if pool is still open
         if (pool.status != PoolStatus.open) {
-          throw Exception('Pool is closed');
+          throw Exception('POOL_CLOSED');
         }
 
         // Check user's balance
         final balance = await _walletService.getBalance(userId);
         if (balance < buyIn) {
-          throw Exception('Insufficient BR balance');
+          throw Exception('INSUFFICIENT_BALANCE');
         }
 
         // Deduct buy-in from wallet
@@ -135,7 +137,7 @@ class PoolService {
         );
 
         if (!walletSuccess) {
-          throw Exception('Failed to process payment');
+          throw Exception('PAYMENT_FAILED');
         }
 
         // Update pool with new player
@@ -161,10 +163,41 @@ class PoolService {
 
         return true;
       });
+      
+      return {'success': true, 'message': 'Successfully joined pool', 'code': 'SUCCESS'};
     } catch (e) {
       print('Error joining pool: $e');
-      return false;
+      String message = 'Failed to join pool';
+      String code = 'UNKNOWN_ERROR';
+      
+      if (e.toString().contains('ALREADY_IN_POOL')) {
+        message = 'You are already in this pool';
+        code = 'ALREADY_IN_POOL';
+      } else if (e.toString().contains('POOL_FULL')) {
+        message = 'This pool is already full';
+        code = 'POOL_FULL';
+      } else if (e.toString().contains('POOL_CLOSED')) {
+        message = 'This pool has already started';
+        code = 'POOL_CLOSED';
+      } else if (e.toString().contains('INSUFFICIENT_BALANCE')) {
+        message = 'Insufficient BR balance';
+        code = 'INSUFFICIENT_BALANCE';
+      } else if (e.toString().contains('PAYMENT_FAILED')) {
+        message = 'Payment processing failed';
+        code = 'PAYMENT_FAILED';
+      } else if (e.toString().contains('POOL_NOT_FOUND')) {
+        message = 'Pool not found';
+        code = 'POOL_NOT_FOUND';
+      }
+      
+      return {'success': false, 'message': message, 'code': code};
     }
+  }
+  
+  // Original joinPool method for backward compatibility
+  Future<bool> joinPool(String poolId, int buyIn) async {
+    final result = await joinPoolWithResult(poolId, buyIn);
+    return result['success'] as bool;
   }
 
   // Leave a pool (before it starts)
@@ -458,6 +491,45 @@ class PoolService {
     }
   }
 
+  // Check if user is already in a specific pool
+  Future<bool> isUserInPool(String poolId) async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) return false;
+
+    try {
+      final doc = await _firestore
+          .collection('user_pools')
+          .doc('${userId}_$poolId')
+          .get();
+      return doc.exists;
+    } catch (e) {
+      print('Error checking if user in pool: $e');
+      return false;
+    }
+  }
+
+  // Check if user has submitted picks for a pool
+  Future<bool> hasUserSubmittedPicks(String poolId) async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) return false;
+
+    try {
+      // Check if user has any bets for this pool
+      final betsQuery = await _firestore
+          .collection('bets')
+          .where('userId', isEqualTo: userId)
+          .where('poolId', isEqualTo: poolId)
+          .where('status', isEqualTo: 'locked')
+          .limit(1)
+          .get();
+      
+      return betsQuery.docs.isNotEmpty;
+    } catch (e) {
+      print('Error checking user picks: $e');
+      return false;
+    }
+  }
+
   // Get user's active pools
   Stream<List<Pool>> getUserPools() {
     final userId = _auth.currentUser?.uid;
@@ -660,6 +732,19 @@ class PoolService {
   Future<void> _cancelPool(String poolId, Pool pool) async {
     try {
       await _firestore.runTransaction((transaction) async {
+        // FIRST: Do all reads
+        final Map<String, DocumentSnapshot> userEntries = {};
+        for (final playerId in pool.playerIds) {
+          // Get the user's pool entry to know how much to refund
+          final entryDoc = await transaction.get(
+            _firestore.collection('user_pools').doc('${playerId}_$poolId'),
+          );
+          if (entryDoc.exists) {
+            userEntries[playerId] = entryDoc;
+          }
+        }
+
+        // SECOND: Do all writes
         // Update pool status to cancelled
         transaction.update(_firestore.collection('pools').doc(poolId), {
           'status': 'cancelled',
@@ -667,34 +752,31 @@ class PoolService {
           'cancellationReason': 'Minimum players not met',
         });
 
-        // Refund all players
-        for (final playerId in pool.playerIds) {
-          // Get the user's pool entry to know how much to refund
-          final entryDoc = await transaction.get(
-            _firestore.collection('user_pools').doc('${playerId}_$poolId'),
-          );
-
-          if (entryDoc.exists) {
-            final buyIn = entryDoc.data()?['buyIn'] ?? pool.buyIn;
-
-            // Refund the buy-in
-            await _walletService.addToWallet(
-              playerId,
-              buyIn,
-              'Pool cancelled refund: ${pool.name}',
-              metadata: {
-                'poolId': poolId,
-                'poolName': pool.name,
-                'reason': 'Minimum players not met',
-              },
-            );
-
-            // Delete the user pool entry
-            transaction.delete(entryDoc.reference);
-          }
+        // Delete all user pool entries
+        for (final entry in userEntries.values) {
+          transaction.delete(entry.reference);
         }
 
-        print('Pool $poolId cancelled and ${pool.playerIds.length} players refunded');
+        // Process refunds outside the transaction
+        // (Wallet operations should not be in Firestore transactions)
+        for (final playerId in userEntries.keys) {
+          final entryData = userEntries[playerId]!.data() as Map<String, dynamic>;
+          final buyIn = entryData['buyIn'] ?? pool.buyIn;
+
+          // Refund the buy-in (this will be done after transaction completes)
+          _walletService.addToWallet(
+            playerId,
+            buyIn,
+            'Pool cancelled refund: ${pool.name}',
+            metadata: {
+              'poolId': poolId,
+              'poolName': pool.name,
+              'reason': 'Minimum players not met',
+            },
+          );
+        }
+
+        print('Pool $poolId cancelled and ${userEntries.length} players refunded');
       });
     } catch (e) {
       print('Error cancelling pool: $e');

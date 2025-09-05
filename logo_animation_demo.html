@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bragging Rights Logo Animation Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial Black', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .demo-container {
+            width: 90%;
+            max-width: 800px;
+            margin: 20px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        h2 {
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .logo-container {
+            height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s;
+            margin: 10px;
+        }
+        
+        button:hover {
+            transform: scale(1.05);
+        }
+        
+        .controls {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        /* Option 1: Text-based Animation */
+        .text-logo {
+            font-size: 60px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            display: flex;
+            gap: 15px;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        .text-bragging {
+            color: #FFD700;
+            opacity: 0;
+            transform: translateX(-200px);
+        }
+        
+        .text-rights {
+            color: #FFFFFF;
+            opacity: 0;
+            transform: translateX(200px);
+        }
+        
+        .text-bragging.animate {
+            animation: slideFromLeft 1s ease-out forwards;
+        }
+        
+        .text-rights.animate {
+            animation: slideFromRight 1s ease-out 0.3s forwards;
+        }
+        
+        @keyframes slideFromLeft {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes slideFromRight {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        /* Option 2: Split Image Animation */
+        .split-logo {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .split-bragging, .split-rights {
+            height: 80px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0;
+        }
+        
+        .split-bragging {
+            width: 200px;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80"><text x="0" y="60" font-family="Arial Black" font-size="40" font-weight="900" fill="%23FFD700">BRAGGING</text></svg>');
+            transform: translateX(-200px) rotate(-10deg);
+        }
+        
+        .split-rights {
+            width: 150px;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 80"><text x="0" y="60" font-family="Arial Black" font-size="40" font-weight="900" fill="white">RIGHTS</text></svg>');
+            transform: translateX(200px) rotate(10deg);
+        }
+        
+        .split-bragging.animate {
+            animation: splitSlideLeft 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+        }
+        
+        .split-rights.animate {
+            animation: splitSlideRight 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.4s forwards;
+        }
+        
+        @keyframes splitSlideLeft {
+            to {
+                opacity: 1;
+                transform: translateX(0) rotate(0deg);
+            }
+        }
+        
+        @keyframes splitSlideRight {
+            to {
+                opacity: 1;
+                transform: translateX(0) rotate(0deg);
+            }
+        }
+        
+        /* Option 3: Masked/Clipped Animation */
+        .masked-logo {
+            width: 400px;
+            height: 100px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .masked-full-logo {
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100"><text x="50%" y="60" text-anchor="middle" font-family="Arial Black" font-size="42" font-weight="900"><tspan fill="%23FFD700">BRAGGING</tspan> <tspan fill="white">RIGHTS</tspan></text></svg>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            position: relative;
+        }
+        
+        .mask-left, .mask-right {
+            position: absolute;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .mask-left {
+            left: 0;
+            transform: translateX(0);
+        }
+        
+        .mask-right {
+            right: 0;
+            transform: translateX(0);
+        }
+        
+        .masked-logo.animate .mask-left {
+            transform: translateX(-100%);
+        }
+        
+        .masked-logo.animate .mask-right {
+            transform: translateX(100%);
+        }
+        
+        /* Bonus: Flutter-style staggered animation */
+        .flutter-style {
+            font-size: 50px;
+            font-weight: 900;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .flutter-letter {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(30px) scale(0.7);
+        }
+        
+        .flutter-letter.animate {
+            animation: letterPop 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+        }
+        
+        @keyframes letterPop {
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .divider {
+            height: 2px;
+            background: rgba(255, 255, 255, 0.3);
+            margin: 40px 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Option 1: Text-based Animation -->
+    <div class="demo-container">
+        <h2>Option 1: Text-Based Animation</h2>
+        <div class="logo-container">
+            <div class="text-logo">
+                <span class="text-bragging" id="text-bragging">Bragging</span>
+                <span class="text-rights" id="text-rights">Rights</span>
+            </div>
+        </div>
+        <div class="controls">
+            <button onclick="animateText()">Animate Text Logo</button>
+            <button onclick="resetText()">Reset</button>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Option 2: Split Image Animation -->
+    <div class="demo-container">
+        <h2>Option 2: Split Image Animation</h2>
+        <div class="logo-container">
+            <div class="split-logo">
+                <div class="split-bragging" id="split-bragging"></div>
+                <div class="split-rights" id="split-rights"></div>
+            </div>
+        </div>
+        <div class="controls">
+            <button onclick="animateSplit()">Animate Split Logo</button>
+            <button onclick="resetSplit()">Reset</button>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Option 3: Masked Animation -->
+    <div class="demo-container">
+        <h2>Option 3: Masked/Reveal Animation</h2>
+        <div class="logo-container">
+            <div class="masked-logo" id="masked-logo">
+                <div class="masked-full-logo"></div>
+                <div class="mask-left"></div>
+                <div class="mask-right"></div>
+            </div>
+        </div>
+        <div class="controls">
+            <button onclick="animateMasked()">Animate Masked Logo</button>
+            <button onclick="resetMasked()">Reset</button>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Bonus: Flutter-style staggered animation -->
+    <div class="demo-container">
+        <h2>Bonus: Flutter-Style Staggered Animation</h2>
+        <div class="logo-container">
+            <div class="flutter-style" id="flutter-logo">
+                <span class="flutter-letter" style="color: #FFD700;">B</span>
+                <span class="flutter-letter" style="color: #FFD700;">R</span>
+                <span class="flutter-letter" style="color: #FFD700;">A</span>
+                <span class="flutter-letter" style="color: #FFD700;">G</span>
+                <span class="flutter-letter" style="color: #FFD700;">G</span>
+                <span class="flutter-letter" style="color: #FFD700;">I</span>
+                <span class="flutter-letter" style="color: #FFD700;">N</span>
+                <span class="flutter-letter" style="color: #FFD700;">G</span>
+                <span class="flutter-letter" style="color: white; margin-left: 10px;">R</span>
+                <span class="flutter-letter" style="color: white;">I</span>
+                <span class="flutter-letter" style="color: white;">G</span>
+                <span class="flutter-letter" style="color: white;">H</span>
+                <span class="flutter-letter" style="color: white;">T</span>
+                <span class="flutter-letter" style="color: white;">S</span>
+            </div>
+        </div>
+        <div class="controls">
+            <button onclick="animateFlutter()">Animate Flutter Style</button>
+            <button onclick="resetFlutter()">Reset</button>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Master Controls -->
+    <div class="demo-container" style="background: rgba(0, 0, 0, 0.3);">
+        <h2>Master Controls</h2>
+        <div class="controls">
+            <button onclick="animateAll()" style="background: linear-gradient(45deg, #00dbde 0%, #fc00ff 100%);">
+                Animate All
+            </button>
+            <button onclick="resetAll()" style="background: linear-gradient(45deg, #fc4a1a 0%, #f7b733 100%);">
+                Reset All
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Option 1: Text Animation
+        function animateText() {
+            document.getElementById('text-bragging').classList.add('animate');
+            document.getElementById('text-rights').classList.add('animate');
+        }
+        
+        function resetText() {
+            document.getElementById('text-bragging').classList.remove('animate');
+            document.getElementById('text-rights').classList.remove('animate');
+        }
+        
+        // Option 2: Split Animation
+        function animateSplit() {
+            document.getElementById('split-bragging').classList.add('animate');
+            document.getElementById('split-rights').classList.add('animate');
+        }
+        
+        function resetSplit() {
+            document.getElementById('split-bragging').classList.remove('animate');
+            document.getElementById('split-rights').classList.remove('animate');
+        }
+        
+        // Option 3: Masked Animation
+        function animateMasked() {
+            document.getElementById('masked-logo').classList.add('animate');
+        }
+        
+        function resetMasked() {
+            document.getElementById('masked-logo').classList.remove('animate');
+        }
+        
+        // Bonus: Flutter Animation
+        function animateFlutter() {
+            const letters = document.querySelectorAll('.flutter-letter');
+            letters.forEach((letter, index) => {
+                setTimeout(() => {
+                    letter.classList.add('animate');
+                    letter.style.animationDelay = `${index * 0.05}s`;
+                }, index * 50);
+            });
+        }
+        
+        function resetFlutter() {
+            const letters = document.querySelectorAll('.flutter-letter');
+            letters.forEach(letter => {
+                letter.classList.remove('animate');
+                letter.style.animationDelay = '';
+            });
+        }
+        
+        // Master Controls
+        function animateAll() {
+            setTimeout(() => animateText(), 0);
+            setTimeout(() => animateSplit(), 500);
+            setTimeout(() => animateMasked(), 1000);
+            setTimeout(() => animateFlutter(), 1500);
+        }
+        
+        function resetAll() {
+            resetText();
+            resetSplit();
+            resetMasked();
+            resetFlutter();
+        }
+        
+        // Auto-animate on load
+        window.addEventListener('load', () => {
+            setTimeout(() => animateAll(), 500);
+        });
+    </script>
+</body>
+</html>

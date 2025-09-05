@@ -355,7 +355,7 @@ class _EdgeCardCollectionState extends State<EdgeCardCollection> {
             crossAxisCount: crossAxisCount,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
-            childAspectRatio: 1.4,
+            childAspectRatio: 0.85, // Changed from 1.4 to make cards taller to prevent overflow
           ),
           itemCount: _filteredCards.length,
           itemBuilder: (context, index) {

@@ -1,10 +1,16 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/game_model.dart';
 import 'ufc_event_service.dart';
+import 'game_odds_enrichment_service.dart';
+import 'game_cache_service.dart';
 
 class ESPNDirectService {
   static const String baseUrl = 'https://site.api.espn.com/apis/site/v2/sports';
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final GameOddsEnrichmentService _oddsEnrichmentService = GameOddsEnrichmentService();
+  final GameCacheService _cacheService = GameCacheService();
   
   static const Map<String, String> sportEndpoints = {
     'MLB': 'baseball/mlb',
@@ -17,23 +23,125 @@ class ESPNDirectService {
     'BOXING': 'boxing',
   };
   
-  // Fetch games for all sports
-  Future<List<GameModel>> fetchAllGames() async {
-    final allGames = <GameModel>[];
+  // Save game to Firestore (only updates if data has changed)
+  Future<void> _saveGameToFirestore(GameModel game) async {
+    try {
+      final docRef = _firestore.collection('games').doc(game.id);
+      final doc = await docRef.get();
+      
+      // Only update if game doesn't exist or if it's been more than 5 minutes since last update
+      if (!doc.exists || 
+          (doc.data()?['lastUpdated'] != null && 
+           DateTime.now().difference((doc.data()!['lastUpdated'] as Timestamp).toDate()).inMinutes > 5)) {
+        
+        await docRef.set(game.toMap(), SetOptions(merge: true));
+        print('Saved/Updated game ${game.id} to Firestore: ${game.gameTitle}');
+      }
+    } catch (e) {
+      print('Error saving game to Firestore: $e');
+      // Don't throw - we still want to return the game even if save fails
+    }
+  }
+  
+  // Save multiple games efficiently
+  Future<void> _saveGamesToFirestore(List<GameModel> games) async {
+    if (games.isEmpty) return;
+    
+    try {
+      // Use batch write for better performance
+      final batch = _firestore.batch();
+      final now = DateTime.now();
+      
+      for (final game in games) {
+        final docRef = _firestore.collection('games').doc(game.id);
+        batch.set(docRef, game.toFirestore(), SetOptions(merge: true));
+      }
+      
+      await batch.commit();
+      print('Saved ${games.length} games to Firestore');
+      
+      // Enrich games with odds and auto-create pools
+      print('🎲 Enriching games with odds and creating pools...');
+      await _oddsEnrichmentService.enrichGamesWithOdds(games);
+      
+    } catch (e) {
+      print('Error batch saving games to Firestore: $e');
+      // Fall back to individual saves
+      for (final game in games) {
+        await _saveGameToFirestore(game);
+      }
+    }
+  }
+  
+  // Fetch games for all sports with caching and parallel fetching
+  Future<List<GameModel>> fetchAllGames({bool forceRefresh = false}) async {
+    // Step 1: Return cached games immediately if available and not forcing refresh
+    if (!forceRefresh) {
+      final cachedGames = await _cacheService.getCachedGames();
+      if (cachedGames != null && cachedGames.isNotEmpty) {
+        print('⚡ Returning ${cachedGames.length} cached games immediately');
+        // Still fetch fresh data in background
+        _fetchAndUpdateGamesInBackground();
+        return cachedGames;
+      }
+    }
+    
+    print('🔄 Fetching fresh games from ESPN API...');
+    
+    // Step 2: Fetch all sports in parallel for speed
+    final futures = <Future<List<GameModel>>>[];
     
     for (final entry in sportEndpoints.entries) {
-      try {
-        final games = await fetchSportGames(entry.key);
-        allGames.addAll(games);
-      } catch (e) {
-        print('Error fetching ${entry.key}: $e');
-      }
+      futures.add(
+        fetchSportGames(entry.key).catchError((e) {
+          print('Error fetching ${entry.key}: $e');
+          return <GameModel>[];
+        })
+      );
+    }
+    
+    // Wait for all parallel fetches to complete
+    final results = await Future.wait(futures);
+    
+    // Combine all games
+    final allGames = <GameModel>[];
+    for (final games in results) {
+      allGames.addAll(games);
     }
     
     // Sort by game time
     allGames.sort((a, b) => a.gameTime.compareTo(b.gameTime));
     
+    // Cache the games for instant loading next time
+    await _cacheService.cacheGames(allGames);
+    
+    // Save to Firestore in background (don't wait)
+    _saveGamesToFirestoreInBackground(allGames);
+    
+    print('✅ Fetched ${allGames.length} games total');
     return allGames;
+  }
+  
+  // Background fetch and update
+  Future<void> _fetchAndUpdateGamesInBackground() async {
+    try {
+      print('🔄 Background refresh starting...');
+      final freshGames = await fetchAllGames(forceRefresh: true);
+      print('✅ Background refresh complete: ${freshGames.length} games');
+    } catch (e) {
+      print('Error in background refresh: $e');
+    }
+  }
+  
+  // Save to Firestore without blocking UI
+  Future<void> _saveGamesToFirestoreInBackground(List<GameModel> games) async {
+    try {
+      await _saveGamesToFirestore(games);
+      // Also enrich with odds in background
+      _oddsEnrichmentService.enrichGamesWithOdds(games);
+    } catch (e) {
+      print('Error saving to Firestore in background: $e');
+    }
   }
   
   // Fetch games for a specific sport
@@ -46,6 +154,12 @@ class ESPNDirectService {
         final ufcEvents = await ufcService.fetchUpcomingUfcEvents(days: 60);
         final gameModels = ufcService.convertToGameModels(ufcEvents);
         print('Fetched ${gameModels.length} UFC events with proper names');
+        
+        // Save UFC games to Firestore
+        if (gameModels.isNotEmpty) {
+          await _saveGamesToFirestore(gameModels);
+        }
+        
         return gameModels;
       }
       
@@ -90,6 +204,12 @@ class ESPNDirectService {
             print('Error parsing $sport event: $e');
           }
         }
+        
+        // Save games to Firestore
+        if (games.isNotEmpty) {
+          await _saveGamesToFirestore(games);
+        }
+        
         print('Returning ${games.length} $sport games');
         return games;
       }

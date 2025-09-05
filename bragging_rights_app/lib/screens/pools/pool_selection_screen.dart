@@ -5,11 +5,13 @@ import '../../services/wallet_service.dart';
 import '../../models/pool_model.dart';
 
 class PoolSelectionScreen extends StatefulWidget {
+  final String? gameId;  // Real game ID from ESPN/Firestore
   final String gameTitle;
   final String sport;
   
   const PoolSelectionScreen({
     super.key,
+    this.gameId,
     required this.gameTitle,
     required this.sport,
   });
@@ -26,14 +28,51 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
   Timer? _countdownTimer;
   Duration _poolCloseCountdown = const Duration(minutes: 15, seconds: 30);
   String? gameId;
+  
+  // Cache wallet balance to prevent flickering
+  int? _cachedBalance;
+  StreamSubscription? _balanceSubscription;
+  
+  // Cache streams to prevent recreation
+  Stream<List<Pool>>? _quickPlayStream;
+  Stream<List<Pool>>? _tournamentStream;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
     _startCountdownTimer();
-    // Generate game ID from title and sport
-    gameId = '${widget.gameTitle}_${widget.sport}'.replaceAll(' ', '_').toLowerCase();
+    // Use the real game ID passed from navigation, or generate one as fallback
+    gameId = widget.gameId ?? '${widget.gameTitle}_${widget.sport}'.replaceAll(' ', '_').toLowerCase();
+    
+    // Initialize streams once to prevent recreation
+    _quickPlayStream = _poolService.getPoolsByType(gameId!, PoolType.quick).distinct();
+    _tournamentStream = _poolService.getTournamentPools(gameId!).distinct();
+    
+    // Load initial balance and listen for changes
+    _loadBalance();
+    _listenToBalanceChanges();
+  }
+  
+  void _loadBalance() async {
+    final balance = await _walletService.getCurrentBalance();
+    if (mounted) {
+      setState(() {
+        _cachedBalance = balance;
+      });
+    }
+  }
+  
+  void _listenToBalanceChanges() {
+    // Listen to wallet balance changes from a stream if available
+    // For now, we'll just update periodically less frequently
+    Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      _loadBalance();
+    });
   }
 
   void _startCountdownTimer() {
@@ -50,6 +89,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
   void dispose() {
     _tabController.dispose();
     _countdownTimer?.cancel();
+    _balanceSubscription?.cancel();
     super.dispose();
   }
 
@@ -156,7 +196,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
         ),
         Expanded(
           child: StreamBuilder<List<Pool>>(
-            stream: _poolService.getPoolsByType(gameId ?? '', PoolType.quick),
+            stream: _quickPlayStream,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -201,22 +241,17 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                 itemCount: pools.length,
                 itemBuilder: (context, index) {
                   final pool = pools[index];
-                  return FutureBuilder<int>(
-                    future: _walletService.getCurrentBalance(),
-                    builder: (context, walletSnapshot) {
-                      final balance = walletSnapshot.data ?? 0;
-                      final canAfford = balance >= pool.buyIn;
-                      
-                      return _buildQuickPlayOption(
-                        pool.name,
-                        '${pool.buyIn} BR',
-                        '${pool.currentPlayers}/${pool.maxPlayers} players',
-                        _getPoolColor(pool.tier ?? PoolTier.standard),
-                        pool.buyIn,
-                        canAfford,
-                        poolId: pool.id,
-                      );
-                    },
+                  final balance = _cachedBalance ?? 0;
+                  final canAfford = balance >= pool.buyIn;
+                  
+                  return _buildQuickPlayOption(
+                    pool.name,
+                    '${pool.buyIn} BR',
+                    '${pool.currentPlayers}/${pool.maxPlayers} players',
+                    _getPoolColor(pool.tier ?? PoolTier.standard),
+                    pool.buyIn,
+                    canAfford,
+                    poolId: pool.id,
                   );
                 },
               );
@@ -249,6 +284,23 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
     bool canAfford, {
     String? poolId,
   }) {
+    // Parse current and max players from the string
+    final playerParts = players.split('/');
+    int currentPlayers = 0;
+    int maxPlayers = 10;
+    
+    if (playerParts.length == 2) {
+      try {
+        currentPlayers = int.parse(playerParts[0].trim());
+        maxPlayers = int.parse(playerParts[1].replaceAll(RegExp(r'[^0-9]'), ''));
+      } catch (e) {
+        // Default values if parsing fails
+      }
+    }
+    
+    final progress = maxPlayers > 0 ? currentPlayers / maxPlayers : 0.0;
+    final percentage = (progress * 100).round();
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
@@ -270,13 +322,13 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
             Text('Buy-in: $buyIn • $players'),
             const SizedBox(height: 4),
             LinearProgressIndicator(
-              value: 0.7,
+              value: progress.clamp(0.0, 1.0),
               backgroundColor: Colors.grey[300],
               valueColor: AlwaysStoppedAnimation(color),
             ),
             const SizedBox(height: 2),
             Text(
-              'Pool 70% full',
+              'Pool $percentage% full',
               style: TextStyle(fontSize: 10, color: Colors.grey[600]),
             ),
           ],
@@ -314,7 +366,47 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
         final pools = snapshot.data ?? [];
         
         if (pools.isEmpty) {
-          return const SizedBox.shrink();
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.group,
+                      size: 64,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No $title pools available',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: () => _createRegionalPool(level),
+                      icon: const Icon(Icons.add_circle),
+                      label: Text('Create $title Pool'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _getRegionalColor(level),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
         }
         
         return Column(
@@ -486,7 +578,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
 
   Widget _buildTournamentTab() {
     return StreamBuilder<List<Pool>>(
-      stream: _poolService.getTournamentPools(gameId ?? ''),
+      stream: _tournamentStream,
       builder: (context, snapshot) {
         final pools = snapshot.data ?? [];
         
@@ -617,6 +709,23 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
     String? poolId,
     int? buyInAmount,
   }) {
+    // Parse current and max players from the string
+    final playerParts = players.split('/');
+    int currentPlayers = 0;
+    int maxPlayers = 10;
+    
+    if (playerParts.length == 2) {
+      try {
+        currentPlayers = int.parse(playerParts[0].trim());
+        maxPlayers = int.parse(playerParts[1].replaceAll(RegExp(r'[^0-9]'), ''));
+      } catch (e) {
+        // Default values if parsing fails
+      }
+    }
+    
+    final progress = maxPlayers > 0 ? currentPlayers / maxPlayers : 0.0;
+    final percentage = (progress * 100).round();
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
@@ -625,7 +734,23 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
           child: Icon(Icons.pool, color: color),
         ),
         title: Text(name),
-        subtitle: Text('Buy-in: $buyIn • $players'),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Buy-in: $buyIn • $players'),
+            const SizedBox(height: 4),
+            LinearProgressIndicator(
+              value: progress,
+              backgroundColor: Colors.grey[300],
+              valueColor: AlwaysStoppedAnimation(color),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Pool $percentage% full',
+              style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+            ),
+          ],
+        ),
         trailing: IconButton(
           icon: const Icon(Icons.arrow_forward),
           onPressed: poolId != null && buyInAmount != null
@@ -637,6 +762,42 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
   }
 
   void _joinPool(String poolName, int buyIn, String poolId) async {
+    print('=============== QUICK PLAY POOL JOIN ATTEMPT ===============');
+    print('Pool Name: $poolName');
+    print('Pool ID: $poolId');
+    print('Buy-in Amount: $buyIn BR');
+    print('Game Title: ${widget.gameTitle}');
+    print('Sport: ${widget.sport}');
+    print('Current Balance: $_cachedBalance BR');
+    print('Timestamp: ${DateTime.now().toIso8601String()}');
+    print('===========================================================');
+    
+    // First check if user is already in pool
+    final isInPool = await _poolService.isUserInPool(poolId);
+    if (isInPool) {
+      print('[POOL JOIN] User already in pool, checking if picks submitted...');
+      final hasSubmittedPicks = await _poolService.hasUserSubmittedPicks(poolId);
+      
+      if (hasSubmittedPicks) {
+        print('[POOL JOIN] User has already submitted picks, navigating to active bets');
+        Navigator.pushNamed(context, '/active-bets');
+      } else {
+        print('[POOL JOIN] User has not submitted picks, navigating to bet selection');
+        Navigator.pushNamed(
+          context,
+          '/bet-selection',
+          arguments: {
+            'gameId': gameId,  // Pass the real game ID!
+            'gameTitle': widget.gameTitle,
+            'sport': widget.sport,
+            'poolName': poolName,
+            'poolId': poolId,
+          },
+        );
+      }
+      return; // Exit early since user is already in pool
+    }
+    
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -660,7 +821,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
             ),
             const SizedBox(height: 4),
             Text(
-              'Your balance after: ${500 - buyIn} BR',
+              'Your balance after: ${(_cachedBalance ?? 500) - buyIn} BR',
               style: const TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 24),
@@ -668,7 +829,10 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      print('[POOL JOIN] User cancelled join dialog');
+                      Navigator.pop(context);
+                    },
                     child: const Text('Cancel'),
                   ),
                 ),
@@ -676,27 +840,126 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () async {
+                      print('[POOL JOIN] User confirmed - attempting to join pool...');
                       Navigator.pop(context);
                       
-                      // Actually join the pool
-                      final success = await _poolService.joinPool(poolId, buyIn);
+                      // Show loading indicator - Use root navigator
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (BuildContext dialogContext) => const Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
                       
-                      if (success) {
-                        // Navigate to bet selection
-                        Navigator.pushNamed(
-                          context,
-                          '/bet-selection',
-                          arguments: {
-                            'gameTitle': widget.gameTitle,
-                            'sport': widget.sport,
-                            'poolName': poolName,
-                            'poolId': poolId,
-                          },
-                        );
-                      } else {
+                      try {
+                        // Actually join the pool
+                        print('[POOL JOIN] Calling pool service to join pool ID: $poolId');
+                        final result = await _poolService.joinPoolWithResult(poolId, buyIn);
+                        
+                        // Hide loading - Use root navigator to ensure we pop the dialog
+                        if (mounted) {
+                          Navigator.of(context, rootNavigator: true).pop();
+                        }
+                        
+                        if (result['success'] == true) {
+                          print('[POOL JOIN] ✅ Successfully joined pool!');
+                          print('[POOL JOIN] Navigating to bet selection screen...');
+                          
+                          // Update balance after successful join
+                          _loadBalance();
+                          
+                          // Navigate to bet selection
+                          Navigator.pushNamed(
+                            context,
+                            '/bet-selection',
+                            arguments: {
+                              'gameId': gameId,  // Pass the real game ID!
+                              'gameTitle': widget.gameTitle,
+                              'sport': widget.sport,
+                              'poolName': poolName,
+                              'poolId': poolId,
+                            },
+                          );
+                        } else {
+                          final errorCode = result['code'] ?? 'UNKNOWN_ERROR';
+                          final errorMessage = result['message'] ?? 'Failed to join pool';
+                          
+                          print('[POOL JOIN] ❌ Failed to join pool - Code: $errorCode, Message: $errorMessage');
+                          
+                          // Show specific message for different error types
+                          if (errorCode == 'ALREADY_IN_POOL') {
+                            // This shouldn't happen anymore due to pre-check, but keep as fallback
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.info_outline, color: Colors.white),
+                                    const SizedBox(width: 8),
+                                    Expanded(child: Text(errorMessage)),
+                                  ],
+                                ),
+                                backgroundColor: Colors.orange,
+                                action: SnackBarAction(
+                                  label: 'Go to My Bets',
+                                  textColor: Colors.white,
+                                  onPressed: () {
+                                    if (mounted) {
+                                      Navigator.pushNamed(context, '/active-bets');
+                                    }
+                                  },
+                                ),
+                              ),
+                            );
+                          } else if (errorCode == 'POOL_FULL') {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.block, color: Colors.white),
+                                    const SizedBox(width: 8),
+                                    Expanded(child: Text('This pool is full. Try another one!')),
+                                  ],
+                                ),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                          } else if (errorCode == 'INSUFFICIENT_BALANCE') {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.account_balance_wallet, color: Colors.white),
+                                    const SizedBox(width: 8),
+                                    Expanded(child: Text('Not enough BR balance')),
+                                  ],
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(errorMessage),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        print('[POOL JOIN] ❌ Exception occurred while joining pool: $e');
+                        // Hide loading if still showing - Use root navigator to avoid context issues
+                        if (mounted) {
+                          try {
+                            Navigator.of(context, rootNavigator: true).pop();
+                          } catch (_) {
+                            // Dialog may already be closed
+                          }
+                        }
+                        
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Failed to join pool. Please try again.'),
+                          SnackBar(
+                            content: Text('Error joining pool: ${e.toString()}'),
                             backgroundColor: Colors.red,
                           ),
                         );
@@ -756,12 +1019,71 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
     }
   }
 
+  void _createRegionalPool(RegionalLevel level) async {
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      final regionName = level.toString().split('.').last;
+      // Create a new regional pool
+      final poolId = await _poolService.createPool(
+        gameId: gameId ?? '',
+        gameTitle: widget.gameTitle,
+        sport: widget.sport,
+        type: PoolType.regional,
+        name: '${widget.gameTitle} - $regionName REGIONAL',
+        buyIn: 50, // Higher buy-in for regional
+        maxPlayers: 20, // More players for regional
+        minPlayers: 4,
+      );
+
+      // Close loading dialog
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+
+      if (poolId != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Regional pool created successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Refresh the pools list
+        setState(() {});
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to create regional pool. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error creating regional pool: $e');
+      // Close loading dialog
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   void _createPoolForGame(PoolType type) async {
     // Show loading indicator
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(
+      builder: (BuildContext dialogContext) => const Center(
         child: CircularProgressIndicator(),
       ),
     );
@@ -780,7 +1102,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
       );
 
       // Close loading dialog
-      Navigator.pop(context);
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
 
       if (poolId != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -802,7 +1124,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
       }
     } catch (e) {
       // Close loading dialog
-      Navigator.pop(context);
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
