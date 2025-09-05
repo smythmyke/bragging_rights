@@ -20,24 +20,37 @@ class GameOddsEnrichmentService {
       // Fetch odds from SportsGameOdds API
       final odds = await _fetchOddsForGame(game);
       
-      if (odds != null) {
-        // Save odds to game document
+      if (odds != null && odds.isNotEmpty) {
+        // Determine what odds are available
+        final hasMoneyline = odds.containsKey('moneyline');
+        final hasSpread = odds.containsKey('spread');
+        final hasTotal = odds.containsKey('total');
+        
+        // Save whatever odds we have
         await _firestore.collection('games').doc(game.id).update({
           'odds': odds,
+          'oddsAvailable': {
+            'moneyline': hasMoneyline,
+            'spread': hasSpread,
+            'total': hasTotal,
+          },
           'oddsLastUpdated': FieldValue.serverTimestamp(),
         });
         
         debugPrint('✅ Added odds to game ${game.id}: ${game.awayTeam} @ ${game.homeTeam}');
+        debugPrint('   Available: ML=$hasMoneyline, Spread=$hasSpread, Total=$hasTotal');
       } else {
-        // Create mock odds for testing
-        final mockOdds = _generateMockOdds(game);
+        // No odds at all - still save the game but mark odds as unavailable
         await _firestore.collection('games').doc(game.id).update({
-          'odds': mockOdds,
+          'oddsAvailable': {
+            'moneyline': false,
+            'spread': false,
+            'total': false,
+          },
           'oddsLastUpdated': FieldValue.serverTimestamp(),
-          'oddsMocked': true, // Flag for mock data
         });
         
-        debugPrint('📊 Added mock odds to game ${game.id}');
+        debugPrint('⚠️ No odds available for game ${game.id}: ${game.awayTeam} @ ${game.homeTeam}');
       }
       
       // Auto-create pools for this game
@@ -65,29 +78,6 @@ class GameOddsEnrichmentService {
       debugPrint('Error fetching odds: $e');
       return null;
     }
-  }
-  
-  
-  /// Generate mock odds for testing
-  Map<String, dynamic> _generateMockOdds(GameModel game) {
-    // Generate somewhat realistic mock odds
-    final random = DateTime.now().millisecondsSinceEpoch % 100;
-    final favorite = random < 50;
-    
-    return {
-      'homeMoneyline': favorite ? -150 + random : 130 + random,
-      'awayMoneyline': favorite ? 130 + random : -150 + random,
-      'homeSpread': favorite ? -3.5 : 3.5,
-      'awaySpread': favorite ? 3.5 : -3.5,
-      'homeSpreadOdds': -110,
-      'awaySpreadOdds': -110,
-      'totalPoints': 215.5 + (random / 10),
-      'overOdds': -110,
-      'underOdds': -110,
-      'bookmaker': 'Mock Odds',
-      'lastUpdate': DateTime.now().toIso8601String(),
-      'oddsMocked': true,
-    };
   }
   
   /// Batch enrich multiple games

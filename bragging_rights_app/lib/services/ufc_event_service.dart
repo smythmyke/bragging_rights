@@ -64,13 +64,25 @@ class UfcEventService {
       final competitions = event['competitions'] ?? [];
       
       // Extract event name and details
-      String eventName = event['name'] ?? 'UFC Event';
+      String fullEventName = event['name'] ?? 'UFC Event';
       String eventId = event['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
       
-      // Try to extract UFC event number or type
-      final eventMatch = RegExp(r'UFC\s+(\d+|Fight Night|on ESPN|on ABC)').firstMatch(eventName);
-      if (eventMatch != null) {
-        eventName = eventMatch.group(0) ?? 'UFC Event';
+      // Extract proper UFC event name
+      String eventName = 'UFC Event';
+      
+      // Check if it's a full event name like "UFC Fight Night: Imavov vs. Borralho"
+      if (fullEventName.contains('UFC Fight Night:') || fullEventName.contains('UFC ') && fullEventName.contains(':')) {
+        // Use the full event name up to the colon
+        final colonIndex = fullEventName.indexOf(':');
+        if (colonIndex > 0) {
+          eventName = fullEventName.substring(0, colonIndex).trim();
+        }
+      } else {
+        // Fallback to regex for other formats
+        final eventMatch = RegExp(r'UFC\s+(\d+|Fight Night|on ESPN|on ABC)').firstMatch(fullEventName);
+        if (eventMatch != null) {
+          eventName = eventMatch.group(0) ?? 'UFC Event';
+        }
       }
       
       // Parse all fights on the card
@@ -82,6 +94,54 @@ class UfcEventService {
         if (fight != null) {
           fights.add(fight);
           fightOrder++;
+        }
+      }
+      
+      // Update fight positions based on total count (last fight is main event)
+      if (fights.isNotEmpty) {
+        final totalFights = fights.length;
+        for (int i = 0; i < fights.length; i++) {
+          final reversedIndex = totalFights - i - 1; // Reverse the order
+          final fight = fights[i];
+          
+          String position;
+          int rounds = 3;
+          
+          if (reversedIndex == 0) {
+            position = 'Main Event';
+            rounds = 5;
+          } else if (reversedIndex == 1) {
+            position = 'Co-Main Event';
+            rounds = 3;
+          } else if (reversedIndex < 5) {
+            position = 'Main Card';
+            rounds = 3;
+          } else if (reversedIndex < 9) {
+            position = 'Preliminary Card';
+            rounds = 3;
+          } else {
+            position = 'Early Prelims';
+            rounds = 3;
+          }
+          
+          // Update the fight with correct position and rounds
+          fights[i] = Fight(
+            id: fight.id,
+            eventId: fight.eventId,
+            fighter1Id: fight.fighter1Id,
+            fighter2Id: fight.fighter2Id,
+            fighter1Name: fight.fighter1Name,
+            fighter2Name: fight.fighter2Name,
+            fighter1Record: fight.fighter1Record,
+            fighter2Record: fight.fighter2Record,
+            fighter1Country: fight.fighter1Country,
+            fighter2Country: fight.fighter2Country,
+            weightClass: fight.weightClass,
+            rounds: rounds,
+            cardPosition: position.toLowerCase().contains('main') ? 'main' : 
+                         position.toLowerCase().contains('prelim') ? 'prelim' : 'early',
+            fightOrder: reversedIndex + 1,
+          );
         }
       }
       
@@ -107,9 +167,9 @@ class UfcEventService {
         location = comp['venue']?['address']?['city'];
       }
       
-      // Get main event title
+      // Get main event title (main event is the LAST fight on the card)
       final mainEventTitle = fights.isNotEmpty 
-        ? '${fights.first.fighter1Name} vs ${fights.first.fighter2Name}'
+        ? '${fights.last.fighter1Name} vs ${fights.last.fighter2Name}'
         : 'TBD vs TBD';
       
       return FightCardEventModel(
@@ -138,9 +198,20 @@ class UfcEventService {
       
       // Extract UFC event name (e.g., "UFC 310", "UFC Fight Night")
       String ufcEventName = 'UFC Event';
-      final eventMatch = RegExp(r'UFC\s+(\d+|Fight Night|on ESPN|on ABC)').firstMatch(eventName);
-      if (eventMatch != null) {
-        ufcEventName = eventMatch.group(0) ?? 'UFC Event';
+      
+      // Check if it's a full event name like "UFC Fight Night: Imavov vs. Borralho"
+      if (eventName.contains('UFC Fight Night:') || eventName.contains('UFC ') && eventName.contains(':')) {
+        // Use the full event name up to the colon
+        final colonIndex = eventName.indexOf(':');
+        if (colonIndex > 0) {
+          ufcEventName = eventName.substring(0, colonIndex).trim();
+        }
+      } else {
+        // Fallback to regex for other formats
+        final eventMatch = RegExp(r'UFC\s+(\d+|Fight Night|on ESPN|on ABC)').firstMatch(eventName);
+        if (eventMatch != null) {
+          ufcEventName = eventMatch.group(0) ?? 'UFC Event';
+        }
       }
       
       // Parse main event fight from name
@@ -258,25 +329,10 @@ class UfcEventService {
       final fighter1 = fighter1Data['athlete'] ?? {};
       final fighter2 = fighter2Data['athlete'] ?? {};
       
-      // Determine card position based on order
-      String cardPosition;
-      int rounds;
-      if (fightOrder == 0) {
-        cardPosition = 'Main Event';
-        rounds = 5;
-      } else if (fightOrder == 1) {
-        cardPosition = 'Co-Main Event';
-        rounds = 3;
-      } else if (fightOrder < 5) {
-        cardPosition = 'Main Card';
-        rounds = 3;
-      } else if (fightOrder < 9) {
-        cardPosition = 'Preliminary Card';
-        rounds = 3;
-      } else {
-        cardPosition = 'Early Prelims';
-        rounds = 3;
-      }
+      // Note: Card position will be determined later when we know total fight count
+      // For now, just set defaults - these will be updated after all fights are parsed
+      String cardPosition = 'TBD';
+      int rounds = 3;
       
       // Get weight class
       final weightClass = competition['notes']?[0]?['text'] ?? 
@@ -309,18 +365,20 @@ class UfcEventService {
   /// Convert UFC events to GameModel format for compatibility
   List<GameModel> convertToGameModels(List<FightCardEventModel> ufcEvents) {
     return ufcEvents.map((event) {
-      // Extract the main event fighters from the event
-      final mainFight = event.fights.isNotEmpty ? event.fights.first : null;
+      // Extract the main event fighters (last fight on the card)
+      final mainFight = event.fights.isNotEmpty ? event.fights.last : null;
       String fighter1 = mainFight?.fighter1Name ?? 'TBD';
       String fighter2 = mainFight?.fighter2Name ?? 'TBD';
       
-      // Format for proper display: "UFC 310: Fighter1" and "Fighter2"
-      // GameModel will display as "UFC 310: Fighter1 vs Fighter2" for MMA sports
+      // Format for proper display: "UFC Fight Night: Fighter1 vs Fighter2"
+      // Store the full title in awayTeam and empty/vs in homeTeam
+      String displayTitle = '${event.eventName}: $fighter1 vs $fighter2';
+      
       return GameModel(
         id: event.id,
         sport: 'MMA',  // Use MMA as the sport category
-        homeTeam: fighter2,  // Just the fighter name
-        awayTeam: '${event.eventName}: $fighter1',  // Event name + Fighter 1
+        homeTeam: fighter2,  // Second fighter
+        awayTeam: displayTitle,  // Full event title with fighters
         gameTime: event.gameTime,
         status: event.status,
         venue: event.venue,

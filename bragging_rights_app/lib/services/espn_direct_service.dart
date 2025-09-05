@@ -275,12 +275,12 @@ class ESPNDirectService {
     
     // Handle individual sports differently
     if (_isIndividualSport(sport)) {
-      // For UFC/MMA, preserve the full event name
+      // For combat sports, preserve the full event name
       final fullEventName = event['name'] ?? '';
       String? ufcEventName;
       
-      // Extract UFC event name (e.g., "UFC 310", "UFC Fight Night")
-      if (sport == 'UFC' || sport == 'BELLATOR' || sport == 'PFL') {
+      // Extract event name for combat sports
+      if (sport == 'UFC' || sport == 'BELLATOR' || sport == 'PFL' || sport == 'BOXING') {
         // Check if event has season/week info which often contains the event name
         final season = event['season']?['name'] ?? '';
         final week = competition['notes']?[0]?['text'] ?? '';
@@ -302,6 +302,25 @@ class ESPNDirectService {
           if (pflMatch != null) {
             ufcEventName = pflMatch.group(0);
           }
+        } else if (sport == 'BOXING') {
+          // For boxing, try to extract promotion/network name
+          if (fullEventName.contains('PBC')) {
+            ufcEventName = 'PBC Boxing';
+          } else if (fullEventName.contains('Top Rank')) {
+            ufcEventName = 'Top Rank Boxing';
+          } else if (fullEventName.contains('DAZN')) {
+            ufcEventName = 'DAZN Boxing';
+          } else if (fullEventName.contains('Showtime')) {
+            ufcEventName = 'Showtime Boxing';
+          } else {
+            // For generic boxing events, use the full event name if it has a colon
+            if (fullEventName.contains(':')) {
+              final colonIndex = fullEventName.indexOf(':');
+              ufcEventName = fullEventName.substring(0, colonIndex).trim();
+            } else {
+              ufcEventName = 'Boxing';
+            }
+          }
         }
         
         // If we couldn't extract event name, use the sport as prefix
@@ -312,6 +331,7 @@ class ESPNDirectService {
       
       // For individual sports, competitors are athletes not teams
       // They use "order" field (1 or 2) instead of homeAway
+      final athleteList = [];
       for (final competitor in competitors) {
         final order = competitor['order'] ?? 0;
         final athlete = competitor['athlete'] ?? {};
@@ -322,17 +342,45 @@ class ESPNDirectService {
         final flag = athlete['flag']?['href'] ?? '';
         final record = competitor['records']?[0]?['summary'] ?? '';
         
-        // In individual sports, order 1 is typically the first fighter/athlete listed
-        // We'll treat order 1 as "away" and order 2 as "home" for consistency
-        if (order == 1) {
-          awayTeam = name;  // First fighter/athlete
-          awayScore = score;
-          awayTeamLogo = flag;
-        } else if (order == 2) {
-          homeTeam = name;  // Second fighter/athlete (vs.)
-          homeScore = score;
-          homeTeamLogo = flag;
-        }
+        athleteList.add({
+          'order': order,
+          'name': name,
+          'score': score,
+          'flag': flag,
+          'record': record,
+        });
+      }
+      
+      // Sort by order to ensure consistent ordering
+      athleteList.sort((a, b) => (a['order'] as int).compareTo(b['order'] as int));
+      
+      // For MMA/Boxing, the LAST fight is the main event
+      // ESPN typically lists fights in reverse order (main event first)
+      // So we need to check if this is the main competition
+      bool isMainEvent = false;
+      final competitions = event['competitions'] ?? [];
+      if (competitions.isNotEmpty) {
+        // Check if this is the first competition (usually main event for combat sports)
+        isMainEvent = competition == competitions[0];
+      }
+      
+      // Assign fighters based on order
+      if (athleteList.length >= 2) {
+        final fighter1 = athleteList[0];
+        final fighter2 = athleteList[1];
+        
+        awayTeam = fighter1['name'];
+        awayScore = fighter1['score'];
+        awayTeamLogo = fighter1['flag'];
+        
+        homeTeam = fighter2['name'];
+        homeScore = fighter2['score'];
+        homeTeamLogo = fighter2['flag'];
+      } else if (athleteList.length == 1) {
+        awayTeam = athleteList[0]['name'];
+        awayScore = athleteList[0]['score'];
+        awayTeamLogo = athleteList[0]['flag'];
+        homeTeam = 'TBD';
       }
       
       // If only one competitor or no competitors yet (TBD matchups)
@@ -353,10 +401,11 @@ class ESPNDirectService {
         }
       }
       
-      // For UFC/MMA events, prepend the event name to the display
+      // For combat sports events, format as "Event Name: Fighter1 vs Fighter2"
       if (ufcEventName != null && awayTeam != 'TBD' && homeTeam != 'TBD') {
-        // Store event name in awayTeam field as "UFC 310: Fighter1"
-        awayTeam = '$ufcEventName: $awayTeam';
+        // For combat sports, create the full event title
+        awayTeam = '$ufcEventName: $awayTeam vs $homeTeam';
+        homeTeam = '';  // Clear homeTeam for combat sports display
       }
     } else {
       // Team sports

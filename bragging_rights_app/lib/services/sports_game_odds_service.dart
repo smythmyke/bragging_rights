@@ -6,28 +6,67 @@ import 'dart:convert';
 /// Provides betting odds for all supported sports
 /// API Key: 40b75921e9a3d1cd6957325bf0731811
 class SportsGameOddsService {
-  static const String _baseUrl = 'https://api.sportsgameodds.com/v1';
+  static const String _baseUrl = 'https://api.sportsgameodds.com/v2';
   static const String _apiKey = '40b75921e9a3d1cd6957325bf0731811';
+  
+  // API Usage tracking
+  int _apiCallsThisMinute = 0;
+  int _apiCallsThisHour = 0;
+  DateTime _lastMinuteReset = DateTime.now();
+  DateTime _lastHourReset = DateTime.now();
   
   // Singleton instance
   static final SportsGameOddsService _instance = SportsGameOddsService._internal();
   factory SportsGameOddsService() => _instance;
   SportsGameOddsService._internal();
   
-  // Sport ID mapping for SportsGameOdds API
-  static const Map<String, String> _sportIds = {
-    'nba': 'basketball_nba',
-    'nfl': 'football_nfl',
-    'nhl': 'hockey_nhl',
-    'mlb': 'baseball_mlb',
-    'mma': 'mma_ufc',
-    'boxing': 'boxing',
-    'tennis': 'tennis',
-    'soccer': 'soccer',
-    'golf': 'golf',
-    'ncaab': 'basketball_ncaab',
-    'ncaaf': 'football_ncaaf',
+  // League ID mapping for SportsGameOdds API v2
+  static const Map<String, String> _leagueIds = {
+    'nba': 'NBA',
+    'nfl': 'NFL', 
+    'nhl': 'NHL',
+    'mlb': 'MLB',
+    'mls': 'MLS',
+    'ncaab': 'NCAAB',
+    'ncaaf': 'NCAAF',
+    'ucl': 'UEFA_CHAMPIONS_LEAGUE',
   };
+  
+  /// Track API usage before making calls
+  bool _checkAndUpdateRateLimits() {
+    final now = DateTime.now();
+    
+    // Reset minute counter if needed
+    if (now.difference(_lastMinuteReset).inMinutes >= 1) {
+      _apiCallsThisMinute = 0;
+      _lastMinuteReset = now;
+    }
+    
+    // Reset hour counter if needed  
+    if (now.difference(_lastHourReset).inHours >= 1) {
+      _apiCallsThisHour = 0;
+      _lastHourReset = now;
+    }
+    
+    // Check limits (10/min, 50k/hour for amateur tier)
+    if (_apiCallsThisMinute >= 10) {
+      debugPrint('! Rate limit exceeded for SportsGameOdds API (minute limit)');
+      return false;
+    }
+    
+    if (_apiCallsThisHour >= 50000) {
+      debugPrint('! Rate limit exceeded for SportsGameOdds API (hour limit)');
+      return false;
+    }
+    
+    // Update counters
+    _apiCallsThisMinute++;
+    _apiCallsThisHour++;
+    
+    debugPrint('📊 API Usage: $_apiCallsThisMinute/10 per min, $_apiCallsThisHour/50k per hour');
+    
+    return true;
+  }
   
   /// Get events and odds for a specific sport
   Future<List<Map<String, dynamic>>?> getSportEvents({
@@ -35,12 +74,22 @@ class SportsGameOddsService {
     bool liveOnly = false,
   }) async {
     try {
-      final sportId = _sportIds[sport.toLowerCase()] ?? sport.toLowerCase();
+      // Check rate limits first
+      if (!_checkAndUpdateRateLimits()) {
+        return null;
+      }
       
-      // Build URL with query parameters
+      final leagueId = _leagueIds[sport.toLowerCase()];
+      
+      if (leagueId == null) {
+        debugPrint('⚠️ Unsupported league: $sport');
+        return null;
+      }
+      
+      // Build URL with query parameters (v2 requires leagueID)
       final uri = Uri.parse('$_baseUrl/events').replace(
         queryParameters: {
-          'sport': sportId,
+          'leagueID': leagueId,
           if (liveOnly) 'live': 'true',
         },
       );
@@ -78,6 +127,11 @@ class SportsGameOddsService {
     String markets = 'h2h,spreads,totals',
   }) async {
     try {
+      // Check rate limits first
+      if (!_checkAndUpdateRateLimits()) {
+        return null;
+      }
+      
       final uri = Uri.parse('$_baseUrl/events/$gameId/odds').replace(
         queryParameters: {
           'markets': markets,

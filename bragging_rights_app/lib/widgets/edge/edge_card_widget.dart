@@ -409,16 +409,20 @@ class _EdgeCardWidgetState extends State<EdgeCardWidget>
           size: 24,
         ),
         const SizedBox(width: 8),
-        Text(
-          config.title.toUpperCase(),
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
+        Expanded(
+          child: Text(
+            config.title.toUpperCase(),
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.8),
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
-        const Spacer(),
+        const SizedBox(width: 8),
         // Badges
         ...widget.cardData.badges.take(2).map((badge) => Padding(
           padding: const EdgeInsets.only(left: 4),
@@ -430,7 +434,8 @@ class _EdgeCardWidgetState extends State<EdgeCardWidget>
 
   Widget _buildBadge(EdgeCardBadge badge) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      constraints: const BoxConstraints(maxWidth: 60),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       decoration: BoxDecoration(
         color: EdgeCardConfigs.getBadgeColor(badge).withOpacity(0.3),
         borderRadius: BorderRadius.circular(12),
@@ -445,16 +450,20 @@ class _EdgeCardWidgetState extends State<EdgeCardWidget>
           Icon(
             EdgeCardConfigs.getBadgeIcon(badge),
             color: Colors.white,
-            size: 12,
+            size: 10,
           ),
           if (badge == EdgeCardBadge.views && widget.cardData.viewCount != null) ...[
             const SizedBox(width: 2),
-            Text(
-              '${widget.cardData.viewCount}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
+            Flexible(
+              child: Text(
+                '${widget.cardData.viewCount}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -469,7 +478,7 @@ class _EdgeCardWidgetState extends State<EdgeCardWidget>
     );
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -480,15 +489,19 @@ class _EdgeCardWidgetState extends State<EdgeCardWidget>
           const Icon(
             Icons.lock_open,
             color: Colors.black87,
-            size: 16,
+            size: 14,
           ),
-          const SizedBox(width: 6),
-          Text(
-            'Unlock for $cost BR',
-            style: const TextStyle(
-              color: Colors.black87,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              'Unlock $cost BR',
+              style: const TextStyle(
+                color: Colors.black87,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
