@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/pool_service.dart';
 import '../../services/wallet_service.dart';
 import '../../services/game_odds_enrichment_service.dart';
@@ -41,6 +42,10 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
   // Cache streams to prevent recreation
   Stream<List<Pool>>? _quickPlayStream;
   Stream<List<Pool>>? _tournamentStream;
+  
+  // Track user's joined pools and submission status
+  Set<String> _userJoinedPools = {};
+  Map<String, bool> _userPoolSubmissions = {};
 
   @override
   void initState() {
@@ -57,6 +62,9 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
     // Load initial balance and listen for changes
     _loadBalance();
     _listenToBalanceChanges();
+    
+    // Load user's pool status
+    _loadUserPoolStatus();
     
     // Load odds on-demand when user enters pool selection
     if (widget.gameId != null) {
@@ -151,6 +159,44 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
     } catch (e) {
       debugPrint('Error reconstructing game model: $e');
       return null;
+    }
+  }
+  
+  Future<void> _loadUserPoolStatus() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    
+    try {
+      // Get user's joined pools
+      final userPoolsSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('pools')
+          .where('gameId', isEqualTo: gameId)
+          .get();
+      
+      final joinedPools = <String>{};
+      final submissions = <String, bool>{};
+      
+      for (final doc in userPoolsSnapshot.docs) {
+        final poolId = doc.data()['poolId'] as String?;
+        if (poolId != null) {
+          joinedPools.add(poolId);
+          
+          // Check if user has submitted selections
+          final hasSubmitted = doc.data()['hasSubmittedSelections'] ?? false;
+          submissions[poolId] = hasSubmitted;
+        }
+      }
+      
+      if (mounted) {
+        setState(() {
+          _userJoinedPools = joinedPools;
+          _userPoolSubmissions = submissions;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user pool status: $e');
     }
   }
   
@@ -348,6 +394,9 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                   final pool = pools[index];
                   final balance = _cachedBalance ?? 0;
                   final canAfford = balance >= pool.buyIn;
+                  final isJoined = _userJoinedPools.contains(pool.id);
+                  final hasSubmitted = _userPoolSubmissions[pool.id] ?? false;
+                  final isFull = pool.currentPlayers >= pool.maxPlayers;
                   
                   return _buildQuickPlayOption(
                     pool.name,
@@ -357,6 +406,9 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                     pool.buyIn,
                     canAfford,
                     poolId: pool.id,
+                    isJoined: isJoined,
+                    hasSubmitted: hasSubmitted,
+                    isFull: isFull,
                   );
                 },
               );
@@ -388,6 +440,9 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
     int brRequired,
     bool canAfford, {
     String? poolId,
+    bool isJoined = false,
+    bool hasSubmitted = false,
+    bool isFull = false,
   }) {
     // Parse current and max players from the string
     final playerParts = players.split('/');
@@ -406,45 +461,115 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
     final progress = maxPlayers > 0 ? currentPlayers / maxPlayers : 0.0;
     final percentage = (progress * 100).round();
     
+    // Determine button state and text
+    String buttonText = 'Join';
+    bool isEnabled = canAfford && poolId != null && !isFull;
+    Color buttonColor = color;
+    VoidCallback? onPressed;
+    
+    if (isFull && !isJoined) {
+      buttonText = 'Full';
+      isEnabled = false;
+      buttonColor = Colors.grey;
+    } else if (isJoined && !hasSubmitted) {
+      buttonText = 'Complete';
+      isEnabled = true;
+      buttonColor = Colors.orange;
+      onPressed = () => _completeSelections(poolId!);
+    } else if (isJoined && hasSubmitted) {
+      buttonText = 'Joined';
+      isEnabled = false;
+      buttonColor = Colors.green;
+    } else if (!canAfford) {
+      buttonText = 'Need BR';
+      isEnabled = false;
+      buttonColor = Colors.grey;
+    } else {
+      onPressed = () => _joinPool(title, brRequired, poolId!);
+    }
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      color: isFull && !isJoined ? Colors.grey[100] : null,
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.2),
+          backgroundColor: (isFull && !isJoined ? Colors.grey : color).withOpacity(0.2),
           child: Text(
             '${brRequired}',
             style: TextStyle(
-              color: color,
+              color: isFull && !isJoined ? Colors.grey : color,
               fontWeight: FontWeight.bold,
               fontSize: 12,
             ),
           ),
         ),
-        title: Text(title),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: isFull && !isJoined ? Colors.grey[600] : null,
+          ),
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Buy-in: $buyIn • $players'),
+            Row(
+              children: [
+                Text(
+                  'Buy-in: $buyIn • $players',
+                  style: TextStyle(
+                    color: isFull && !isJoined ? Colors.grey[500] : null,
+                  ),
+                ),
+                if (isFull && !isJoined) ...[  
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'FULL',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+                if (isJoined && hasSubmitted) ...[  
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.check_circle,
+                    size: 16,
+                    color: Colors.green,
+                  ),
+                ],
+              ],
+            ),
             const SizedBox(height: 4),
             LinearProgressIndicator(
               value: progress.clamp(0.0, 1.0),
               backgroundColor: Colors.grey[300],
-              valueColor: AlwaysStoppedAnimation(color),
+              valueColor: AlwaysStoppedAnimation(
+                isFull ? (isJoined ? Colors.green : Colors.red) : color
+              ),
             ),
             const SizedBox(height: 2),
             Text(
-              'Pool $percentage% full',
+              isFull ? 'Pool 100% full' : 'Pool $percentage% full',
               style: TextStyle(fontSize: 10, color: Colors.grey[600]),
             ),
           ],
         ),
         trailing: ElevatedButton(
-          onPressed: canAfford && poolId != null ? () => _joinPool(title, brRequired, poolId) : null,
+          onPressed: isEnabled ? onPressed : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: canAfford ? color : Colors.grey,
+            backgroundColor: isEnabled ? buttonColor : Colors.grey[400],
           ),
           child: Text(
-            canAfford ? 'Join' : 'Need BR',
+            buttonText,
             style: const TextStyle(color: Colors.white),
           ),
         ),
@@ -866,6 +991,38 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
     );
   }
 
+  void _completeSelections(String poolId) async {
+    // Navigate to bet selection screen for this pool
+    final isCombatSport = widget.sport == 'UFC' || 
+                         widget.sport == 'BOXING' ||
+                         widget.sport == 'BELLATOR' ||
+                         widget.sport == 'PFL';
+    
+    if (isCombatSport) {
+      Navigator.pushNamed(
+        context,
+        '/fight-card-grid',
+        arguments: {
+          'gameId': widget.gameId,
+          'gameTitle': widget.gameTitle,
+          'sport': widget.sport,
+          'poolId': poolId,
+        },
+      );
+    } else {
+      Navigator.pushNamed(
+        context,
+        '/bet-selection',
+        arguments: {
+          'gameId': widget.gameId,
+          'gameTitle': widget.gameTitle,
+          'sport': widget.sport,
+          'poolId': poolId,
+        },
+      );
+    }
+  }
+  
   void _joinPool(String poolName, int buyIn, String poolId) async {
     print('=============== QUICK PLAY POOL JOIN ATTEMPT ===============');
     print('Pool Name: $poolName');
@@ -994,8 +1151,9 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                           print('[POOL JOIN] ✅ Successfully joined pool!');
                           print('[POOL JOIN] Navigating to bet selection screen...');
                           
-                          // Update balance after successful join
+                          // Update balance and pool status after successful join
                           _loadBalance();
+                          await _loadUserPoolStatus();
                           
                           // Check if this is a combat sport
                           final isCombatSport = widget.sport == 'UFC' || 

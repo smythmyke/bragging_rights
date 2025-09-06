@@ -219,20 +219,6 @@ class _AnimatedBraggingRightsLogoState extends State<AnimatedBraggingRightsLogo>
                 height: widget.height,
                 fit: BoxFit.contain,
               ),
-              
-              // Animated decorative underlines
-              Positioned(
-                bottom: widget.height * 0.15,
-                right: _slideAnimation.value,
-                left: widget.height * 0.4,
-                child: Opacity(
-                  opacity: _fadeAnimation.value,
-                  child: CustomPaint(
-                    size: Size(widget.height * 0.6, widget.height * 0.15),
-                    painter: UnderlinePainter(animate: true),
-                  ),
-                ),
-              ),
             ],
           ),
         );

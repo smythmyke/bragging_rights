@@ -261,26 +261,105 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     _betStorage = await BetStorageService.create();
     
     if (widget.poolId != null && widget.gameId != null) {
-      _existingBets = await _betStorage.getGameBets(widget.poolId!, widget.gameId!);
+      final allBets = await _betStorage.getGameBets(widget.poolId!, widget.gameId!);
       
-      // Load existing selections back into _selectedBets
-      for (final bet in _existingBets) {
-        final existingSelection = SelectedBet(
-          id: bet.selection, // Use selection as ID for matching
-          title: bet.selection,
-          odds: bet.odds,
-          type: _getBetTypeFromString(bet.betType),
-        );
-        _selectedBets.add(existingSelection);
-        
-        // Mark the tab as picked based on bet type
-        final tabKey = _getTabKeyFromBetType(bet.betType);
-        if (tabKey != null) {
-          _tabPicks[tabKey] = true;
+      // Separate temporary and confirmed bets
+      final tempBets = allBets.where((b) => b.metadata?['isTemporary'] == true).toList();
+      final confirmedBets = allBets.where((b) => b.metadata?['isTemporary'] != true).toList();
+      
+      // Store confirmed bets
+      _existingBets = confirmedBets;
+      
+      // Load temporary selections back into _selectedBets if no confirmed bets exist
+      if (confirmedBets.isEmpty) {
+        for (final bet in tempBets) {
+          final existingSelection = SelectedBet(
+            id: bet.selection,
+            title: bet.description ?? bet.selection,
+            odds: bet.odds,
+            type: _getBetTypeFromString(bet.betType),
+          );
+          
+          // Check if not already in _selectedBets
+          if (!_selectedBets.any((s) => s.id == existingSelection.id)) {
+            _selectedBets.add(existingSelection);
+          }
+          
+          // Mark the tab as picked based on bet type
+          final tabKey = _getTabKeyFromBetType(bet.betType);
+          if (tabKey != null) {
+            _tabPicks[tabKey] = true;
+          }
+        }
+      } else {
+        // Load confirmed bets into selections for display
+        for (final bet in confirmedBets) {
+          final existingSelection = SelectedBet(
+            id: bet.selection,
+            title: bet.description ?? bet.selection,
+            odds: bet.odds,
+            type: _getBetTypeFromString(bet.betType),
+          );
+          _selectedBets.add(existingSelection);
+          
+          // Mark the tab as picked based on bet type
+          final tabKey = _getTabKeyFromBetType(bet.betType);
+          if (tabKey != null) {
+            _tabPicks[tabKey] = true;
+          }
         }
       }
       
       setState(() {});
+    }
+  }
+  
+  Future<void> _saveSelectionsToStorage() async {
+    if (widget.poolId == null || widget.gameId == null) return;
+    
+    try {
+      // Save current selections as temporary bets
+      final tempBets = <UserBet>[];
+      
+      for (final selection in _selectedBets) {
+        final bet = UserBet(
+          id: 'temp_${selection.id}_${DateTime.now().millisecondsSinceEpoch}',
+          poolId: widget.poolId!,
+          poolName: widget.poolName,
+          gameId: widget.gameId!,
+          gameTitle: widget.gameTitle,
+          sport: widget.sport,
+          betType: selection.type.toString().split('.').last,
+          selection: selection.id,
+          odds: selection.odds,
+          amount: _wagerAmount.toDouble(),
+          placedAt: DateTime.now(),
+          description: selection.title,
+          metadata: {
+            'isTemporary': true,
+            'savedAt': DateTime.now().toIso8601String(),
+          },
+        );
+        tempBets.add(bet);
+      }
+      
+      // Clear old temporary selections for this game
+      final allBets = await _betStorage.getActiveBets();
+      final nonTempBets = allBets.where((b) => 
+        !(b.poolId == widget.poolId && 
+          b.gameId == widget.gameId && 
+          b.metadata?['isTemporary'] == true)
+      ).toList();
+      
+      // Add new temporary selections
+      nonTempBets.addAll(tempBets);
+      
+      // Save to storage
+      await _betStorage.saveBets(nonTempBets);
+      
+      print('Saved ${tempBets.length} temporary selections');
+    } catch (e) {
+      print('Error saving selections: $e');
     }
   }
   
@@ -1209,18 +1288,37 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     final isSelected = _selectedBets.any((bet) => bet.id == betId);
     final wasAlreadyPlaced = _existingBets.any((bet) => bet.selection == betId);
     
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: wasAlreadyPlaced 
-          ? Border.all(color: Colors.green, width: 2)
-          : null,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: wasAlreadyPlaced 
+            ? Colors.green 
+            : isSelected 
+              ? color.withOpacity(0.8)
+              : Colors.grey.withOpacity(0.2),
+          width: wasAlreadyPlaced || isSelected ? 2.5 : 1,
+        ),
+        boxShadow: isSelected || wasAlreadyPlaced ? [
+          BoxShadow(
+            color: (wasAlreadyPlaced ? Colors.green : color).withOpacity(0.2),
+            blurRadius: 8,
+            spreadRadius: 1,
+          ),
+        ] : [],
       ),
       child: Card(
         margin: EdgeInsets.zero,
+        elevation: isSelected || wasAlreadyPlaced ? 3 : 1,
+        color: isSelected 
+          ? color.withOpacity(0.05)
+          : wasAlreadyPlaced 
+            ? Colors.green.withOpacity(0.05)
+            : null,
         child: ListTile(
-        onTap: wasAlreadyPlaced ? null : () {
+        onTap: wasAlreadyPlaced ? null : () async {
           setState(() {
             if (isSelected) {
               _selectedBets.removeWhere((bet) => bet.id == betId);
@@ -1233,51 +1331,96 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
               ));
             }
           });
+          // Save selection immediately to persist
+          await _saveSelectionsToStorage();
         },
         leading: Stack(
           children: [
-            CircleAvatar(
-              backgroundColor: isSelected || wasAlreadyPlaced ? color : color.withOpacity(0.2),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected || wasAlreadyPlaced 
+                  ? (wasAlreadyPlaced ? Colors.green : color)
+                  : color.withOpacity(0.15),
+                border: Border.all(
+                  color: isSelected || wasAlreadyPlaced 
+                    ? (wasAlreadyPlaced ? Colors.green : color)
+                    : color.withOpacity(0.3),
+                  width: 2,
+                ),
+              ),
               child: Icon(
                 _getBetTypeIcon(type),
-                color: isSelected || wasAlreadyPlaced ? Colors.white : color,
-                size: 20,
+                color: isSelected || wasAlreadyPlaced 
+                  ? Colors.white 
+                  : color,
+                size: 22,
               ),
             ),
-            if (wasAlreadyPlaced)
+            if (wasAlreadyPlaced || isSelected)
               Positioned(
                 right: 0,
                 bottom: 0,
                 child: Container(
-                  width: 16,
-                  height: 16,
+                  width: 18,
+                  height: 18,
                   decoration: BoxDecoration(
-                    color: Colors.green,
+                    color: wasAlreadyPlaced ? Colors.green : color,
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 2),
                   ),
-                  child: const Icon(
-                    Icons.check,
-                    size: 10,
+                  child: Icon(
+                    wasAlreadyPlaced ? Icons.lock : Icons.check,
+                    size: 12,
                     color: Colors.white,
                   ),
                 ),
               ),
           ],
         ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(description, style: const TextStyle(fontSize: 12)),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        title: Text(
+          title, 
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: wasAlreadyPlaced ? Colors.green : null,
+          ),
+        ),
+        subtitle: Text(
+          description, 
+          style: TextStyle(
+            fontSize: 12,
+            color: wasAlreadyPlaced 
+              ? Colors.green.withOpacity(0.7)
+              : null,
+          ),
+        ),
+        trailing: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected ? color : Colors.grey[200],
+            color: wasAlreadyPlaced 
+              ? Colors.green 
+              : isSelected 
+                ? color 
+                : Colors.grey[200],
             borderRadius: BorderRadius.circular(20),
+            boxShadow: isSelected || wasAlreadyPlaced ? [
+              BoxShadow(
+                color: (wasAlreadyPlaced ? Colors.green : color).withOpacity(0.3),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ] : [],
           ),
           child: Text(
             odds,
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: isSelected ? Colors.white : Colors.black,
+              fontSize: 14,
+              color: isSelected || wasAlreadyPlaced ? Colors.white : Colors.black87,
             ),
           ),
         ),
