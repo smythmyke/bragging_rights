@@ -292,7 +292,10 @@ class ApiGateway {
     final params = queryParams?.entries
         .map((e) => '${e.key}=${e.value}')
         .join('&') ?? '';
-    return '$apiName:$endpoint:$params';
+    // Create a safe key that will work with Firestore document paths
+    final cleanEndpoint = endpoint.replaceAll('/', '_').replaceAll(':', '_');
+    final cleanParams = params.replaceAll('=', '_').replaceAll('&', '_');
+    return '${apiName}_${cleanEndpoint}${cleanParams.isNotEmpty ? '_$cleanParams' : ''}';
   }
 
   /// Get from memory cache
@@ -315,7 +318,7 @@ class ApiGateway {
     try {
       final doc = await _firestore
           .collection('edge_cache')
-          .doc(key.replaceAll(':', '_'))
+          .doc(key)  // Key is already safe for Firestore
           .get();
       
       if (doc.exists) {
@@ -352,7 +355,7 @@ class ApiGateway {
     try {
       await _firestore
           .collection('edge_cache')
-          .doc(key.replaceAll(':', '_'))
+          .doc(key)  // Key is already safe for Firestore
           .set({
         'data': data,
         'timestamp': timestamp.millisecondsSinceEpoch,
@@ -377,7 +380,7 @@ class ApiGateway {
     try {
       final doc = await _firestore
           .collection('edge_cache')
-          .doc(key.replaceAll(':', '_'))
+          .doc(key)  // Key is already safe for Firestore
           .get();
       
       if (doc.exists) {

@@ -150,7 +150,11 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
         sport: data['sport'] ?? widget.sport,
         homeTeam: data['homeTeam'] ?? '',
         awayTeam: data['awayTeam'] ?? '',
-        gameTime: (data['gameTime'] as Timestamp).toDate(),
+        gameTime: data['gameTime'] is Timestamp 
+          ? (data['gameTime'] as Timestamp).toDate()
+          : data['gameTime'] is int
+            ? DateTime.fromMillisecondsSinceEpoch(data['gameTime'])
+            : DateTime.now(),
         status: data['status'] ?? 'scheduled',
         homeScore: data['homeScore'],
         awayScore: data['awayScore'],
@@ -488,16 +492,45 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
       onPressed = () => _joinPool(title, brRequired, poolId!);
     }
     
+    // Determine card appearance based on state
+    Color? cardColor;
+    Color? borderColor;
+    double borderWidth = 1.0;
+    
+    if (isJoined && hasSubmitted) {
+      // Completed state - grayed out
+      cardColor = Colors.grey[100];
+    } else if (isJoined && !hasSubmitted) {
+      // Joined but not completed - highlighted
+      cardColor = Colors.orange.withOpacity(0.05);
+      borderColor = Colors.orange;
+      borderWidth = 2.0;
+    } else if (isFull && !isJoined) {
+      // Full pool - grayed out
+      cardColor = Colors.grey[100];
+    }
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      color: isFull && !isJoined ? Colors.grey[100] : null,
+      color: cardColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: borderColor != null 
+          ? BorderSide(color: borderColor, width: borderWidth)
+          : BorderSide.none,
+      ),
       child: ListTile(
+        enabled: !(isJoined && hasSubmitted), // Disable if completed
         leading: CircleAvatar(
-          backgroundColor: (isFull && !isJoined ? Colors.grey : color).withOpacity(0.2),
+          backgroundColor: isJoined && !hasSubmitted 
+            ? Colors.orange.withOpacity(0.2)
+            : (isFull && !isJoined ? Colors.grey : color).withOpacity(0.2),
           child: Text(
             '${brRequired}',
             style: TextStyle(
-              color: isFull && !isJoined ? Colors.grey : color,
+              color: isJoined && !hasSubmitted 
+                ? Colors.orange
+                : (isFull && !isJoined || (isJoined && hasSubmitted) ? Colors.grey : color),
               fontWeight: FontWeight.bold,
               fontSize: 12,
             ),
@@ -506,24 +539,35 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
         title: Text(
           title,
           style: TextStyle(
-            color: isFull && !isJoined ? Colors.grey[600] : null,
+            color: (isFull && !isJoined) || (isJoined && hasSubmitted) 
+              ? Colors.grey[600] 
+              : null,
+            fontWeight: isJoined && !hasSubmitted ? FontWeight.bold : null,
           ),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'Buy-in: $buyIn • $players',
-                  style: TextStyle(
-                    color: isFull && !isJoined ? Colors.grey[500] : null,
+                Expanded(
+                  child: Text(
+                    'Buy-in: $buyIn • $players',
+                    style: TextStyle(
+                      color: (isFull && !isJoined) || (isJoined && hasSubmitted) 
+                        ? Colors.grey[500] 
+                        : null,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ),
                 if (isFull && !isJoined) ...[  
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                     decoration: BoxDecoration(
                       color: Colors.red.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
@@ -531,18 +575,36 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                     child: const Text(
                       'FULL',
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 9,
                         color: Colors.red,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                 ],
+                if (isJoined && !hasSubmitted) ...[
+                  const SizedBox(width: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'INCOMPLETE',
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: Colors.orange,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
                 if (isJoined && hasSubmitted) ...[  
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 4),
                   Icon(
                     Icons.check_circle,
-                    size: 16,
+                    size: 14,
                     color: Colors.green,
                   ),
                 ],
@@ -553,7 +615,9 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
               value: progress.clamp(0.0, 1.0),
               backgroundColor: Colors.grey[300],
               valueColor: AlwaysStoppedAnimation(
-                isFull ? (isJoined ? Colors.green : Colors.red) : color
+                isJoined && hasSubmitted ? Colors.grey :
+                isJoined && !hasSubmitted ? Colors.orange :
+                isFull ? Colors.red : color
               ),
             ),
             const SizedBox(height: 2),
@@ -779,11 +843,18 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
           backgroundColor: Colors.blue,
           child: Icon(Icons.people, color: Colors.white),
         ),
-        title: Text(name),
+        title: Text(
+          name,
+          overflow: TextOverflow.ellipsis,
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Buy-in: $buyIn • $friends'),
+            Text(
+              'Buy-in: $buyIn • $friends',
+              overflow: TextOverflow.ellipsis,
+            ),
             const SizedBox(height: 2),
             if (code.isNotEmpty)
               Text(
@@ -793,6 +864,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                   color: Colors.grey[600],
                   fontWeight: FontWeight.bold,
                 ),
+                overflow: TextOverflow.ellipsis,
               ),
           ],
         ),
@@ -963,11 +1035,18 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
           backgroundColor: color.withOpacity(0.2),
           child: Icon(Icons.pool, color: color),
         ),
-        title: Text(name),
+        title: Text(
+          name,
+          overflow: TextOverflow.ellipsis,
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Buy-in: $buyIn • $players'),
+            Text(
+              'Buy-in: $buyIn • $players',
+              overflow: TextOverflow.ellipsis,
+            ),
             const SizedBox(height: 4),
             LinearProgressIndicator(
               value: progress,
@@ -978,6 +1057,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
             Text(
               'Pool $percentage% full',
               style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
