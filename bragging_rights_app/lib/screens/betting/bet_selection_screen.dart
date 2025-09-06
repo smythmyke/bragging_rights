@@ -110,28 +110,39 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   }
   
   Future<void> _loadGameAndOddsData() async {
-    if (widget.gameId == null) {
-      setState(() {
-        _isLoadingData = false;
-      });
-      return;
-    }
-    
     try {
-      // Load game data
-      final game = await _sportsApiService.getGameDetails(widget.gameId!);
-      if (game != null) {
-        // Load odds data
-        final odds = await _sportsApiService.getGameOdds(widget.gameId!);
-        
-        setState(() {
-          _gameData = game.toGameModel();
-          _oddsData = odds?.toOddsModel();
-          _homeTeam = game.homeTeam;
-          _awayTeam = game.awayTeam;
-          _gameStartCountdown = game.timeUntilGame;
-          _isLoadingData = false;
-        });
+      // Try to extract team names from game title first
+      if (widget.gameTitle.contains(' @ ') || widget.gameTitle.contains(' vs ')) {
+        final separator = widget.gameTitle.contains(' @ ') ? ' @ ' : ' vs ';
+        final teams = widget.gameTitle.split(separator);
+        if (teams.length == 2) {
+          _awayTeam = teams[0].trim();
+          _homeTeam = teams[1].trim();
+        }
+      }
+      
+      if (widget.gameId != null) {
+        // Try to load real game data
+        final game = await _sportsApiService.getGameDetails(widget.gameId!);
+        if (game != null) {
+          // Load odds data
+          final odds = await _sportsApiService.getGameOdds(widget.gameId!);
+          
+          setState(() {
+            _gameData = game.toGameModel();
+            _oddsData = odds?.toOddsModel();
+            _homeTeam = game.homeTeam;
+            _awayTeam = game.awayTeam;
+            _gameStartCountdown = game.timeUntilGame;
+            _isLoadingData = false;
+          });
+          return;
+        }
+      }
+      
+      // If no real data available, use mock data for football
+      if (widget.sport.toUpperCase().contains('NFL') || widget.sport.toUpperCase().contains('FOOTBALL')) {
+        _loadMockFootballData();
       } else {
         setState(() {
           _isLoadingData = false;
@@ -139,10 +150,32 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       }
     } catch (e) {
       print('Error loading game/odds data: $e');
-      setState(() {
-        _isLoadingData = false;
-      });
+      // Fall back to mock data for football
+      if (widget.sport.toUpperCase().contains('NFL') || widget.sport.toUpperCase().contains('FOOTBALL')) {
+        _loadMockFootballData();
+      } else {
+        setState(() {
+          _isLoadingData = false;
+        });
+      }
     }
+  }
+  
+  void _loadMockFootballData() {
+    // Create mock odds data for demonstration
+    setState(() {
+      _oddsData = OddsModel(
+        homeMoneyline: -150,  // Home team favored
+        awayMoneyline: 130,   // Away team underdog
+        spread: -3.5,         // Home team favored by 3.5
+        spreadHomeOdds: -110,
+        spreadAwayOdds: -110,
+        totalPoints: 45.5,    // Over/Under 45.5 points
+        overOdds: -110,
+        underOdds: -110,
+      );
+      _isLoadingData = false;
+    });
   }
   
   void _initializeTabPicks() {
@@ -564,6 +597,88 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   }
   
   String _getTeamAbbr(String teamName) {
+    // NFL team abbreviations
+    final Map<String, String> nflAbbreviations = {
+      'Arizona Cardinals': 'ARI',
+      'Atlanta Falcons': 'ATL',
+      'Baltimore Ravens': 'BAL',
+      'Buffalo Bills': 'BUF',
+      'Carolina Panthers': 'CAR',
+      'Chicago Bears': 'CHI',
+      'Cincinnati Bengals': 'CIN',
+      'Cleveland Browns': 'CLE',
+      'Dallas Cowboys': 'DAL',
+      'Denver Broncos': 'DEN',
+      'Detroit Lions': 'DET',
+      'Green Bay Packers': 'GB',
+      'Houston Texans': 'HOU',
+      'Indianapolis Colts': 'IND',
+      'Jacksonville Jaguars': 'JAX',
+      'Kansas City Chiefs': 'KC',
+      'Las Vegas Raiders': 'LV',
+      'Los Angeles Chargers': 'LAC',
+      'Los Angeles Rams': 'LAR',
+      'Miami Dolphins': 'MIA',
+      'Minnesota Vikings': 'MIN',
+      'New England Patriots': 'NE',
+      'New Orleans Saints': 'NO',
+      'New York Giants': 'NYG',
+      'New York Jets': 'NYJ',
+      'Philadelphia Eagles': 'PHI',
+      'Pittsburgh Steelers': 'PIT',
+      'San Francisco 49ers': 'SF',
+      'Seattle Seahawks': 'SEA',
+      'Tampa Bay Buccaneers': 'TB',
+      'Tennessee Titans': 'TEN',
+      'Washington Commanders': 'WAS',
+      // Also check for partial matches
+      'Cardinals': 'ARI',
+      'Falcons': 'ATL',
+      'Ravens': 'BAL',
+      'Bills': 'BUF',
+      'Panthers': 'CAR',
+      'Bears': 'CHI',
+      'Bengals': 'CIN',
+      'Browns': 'CLE',
+      'Cowboys': 'DAL',
+      'Broncos': 'DEN',
+      'Lions': 'DET',
+      'Packers': 'GB',
+      'Texans': 'HOU',
+      'Colts': 'IND',
+      'Jaguars': 'JAX',
+      'Chiefs': 'KC',
+      'Raiders': 'LV',
+      'Chargers': 'LAC',
+      'Rams': 'LAR',
+      'Dolphins': 'MIA',
+      'Vikings': 'MIN',
+      'Patriots': 'NE',
+      'Saints': 'NO',
+      'Giants': 'NYG',
+      'Jets': 'NYJ',
+      'Eagles': 'PHI',
+      'Steelers': 'PIT',
+      '49ers': 'SF',
+      'Seahawks': 'SEA',
+      'Buccaneers': 'TB',
+      'Titans': 'TEN',
+      'Commanders': 'WAS',
+    };
+    
+    // Check for exact match
+    if (nflAbbreviations.containsKey(teamName)) {
+      return nflAbbreviations[teamName]!;
+    }
+    
+    // Check for partial match
+    for (final entry in nflAbbreviations.entries) {
+      if (teamName.contains(entry.key) || entry.key.contains(teamName)) {
+        return entry.value;
+      }
+    }
+    
+    // Default abbreviation
     if (teamName.length <= 3) return teamName.toUpperCase();
     return teamName.substring(0, 3).toUpperCase();
   }

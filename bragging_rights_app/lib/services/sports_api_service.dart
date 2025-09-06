@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import '../models/game_model.dart';
 import '../models/odds_model.dart';
+import 'free_odds_service.dart';
 
 class SportsApiService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -85,12 +86,61 @@ class SportsApiService {
   // Get odds for a specific game
   Future<OddsData?> getGameOdds(String gameId) async {
     try {
+      // First try Firestore
       final doc = await _firestore.collection('games').doc(gameId).get();
       
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
         if (data['odds'] != null) {
           return OddsData.fromMap(data['odds']);
+        }
+        
+        // If no odds in Firestore, try FreeOddsService
+        if (data['homeTeam'] != null && data['awayTeam'] != null && data['sport'] != null) {
+          print('No odds in Firestore for $gameId, trying FreeOddsService...');
+          final freeOddsService = FreeOddsService();
+          final freeOdds = await freeOddsService.getFreeOdds(
+            sport: data['sport'] ?? 'nfl',
+            homeTeam: data['homeTeam'],
+            awayTeam: data['awayTeam'],
+            eventId: gameId,
+          );
+          
+          if (freeOdds != null) {
+            print('Got odds from FreeOddsService for $gameId');
+            // Convert free odds to OddsData format
+            final oddsData = OddsData(
+              homeMoneyline: freeOdds['moneylineHome']?.toDouble(),
+              awayMoneyline: freeOdds['moneylineAway']?.toDouble(),
+              spread: freeOdds['spread']?.toDouble(),
+              spreadHomeOdds: freeOdds['spreadHomeOdds']?.toDouble() ?? -110,
+              spreadAwayOdds: freeOdds['spreadAwayOdds']?.toDouble() ?? -110,
+              totalPoints: freeOdds['total']?.toDouble(),
+              overOdds: freeOdds['overOdds']?.toDouble() ?? -110,
+              underOdds: freeOdds['underOdds']?.toDouble() ?? -110,
+            );
+            
+            // Cache in Firestore for next time
+            await doc.reference.update({
+              'odds': {
+                'homeMoneyline': oddsData.homeMoneyline,
+                'awayMoneyline': oddsData.awayMoneyline,
+                'spread': oddsData.spread,
+                'spreadHomeOdds': oddsData.spreadHomeOdds,
+                'spreadAwayOdds': oddsData.spreadAwayOdds,
+                'totalPoints': oddsData.totalPoints,
+                'overOdds': oddsData.overOdds,
+                'underOdds': oddsData.underOdds,
+                'lastUpdated': FieldValue.serverTimestamp(),
+              },
+              'oddsSource': 'espn',
+              'oddsLastUpdated': FieldValue.serverTimestamp(),
+            }).catchError((e) {
+              print('Failed to cache odds: $e');
+            });
+            
+            return oddsData;
+          }
         }
       }
       return null;

@@ -26,6 +26,7 @@ import '../cards/card_inventory_screen.dart';
 import '../games/all_games_screen.dart';
 import '../../services/sound_service.dart';
 import '../intel_detail_screen.dart';
+import '../../widgets/bragging_rights_logo.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -590,10 +591,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 _selectedIndex = 0; // Navigate to Games tab
               });
             },
-            child: Image.asset(
-              'assets/images/bragging_rights_logo.png',
-              height: 100,  // Further increased for better visibility
-              fit: BoxFit.contain,
+            child: const BraggingRightsLogo(
+              height: 100,
+              showUnderline: true,
             ),
           ),
         ),

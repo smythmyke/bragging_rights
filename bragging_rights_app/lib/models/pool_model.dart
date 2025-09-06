@@ -156,8 +156,12 @@ class Pool {
       maxPlayers: data['maxPlayers'] ?? 100,
       currentPlayers: data['currentPlayers'] ?? 0,
       playerIds: List<String>.from(data['playerIds'] ?? []),
-      startTime: (data['startTime'] as Timestamp).toDate(),
-      closeTime: (data['closeTime'] as Timestamp).toDate(),
+      startTime: data['startTime'] != null 
+          ? (data['startTime'] as Timestamp).toDate()
+          : DateTime.now().add(const Duration(hours: 1)),
+      closeTime: data['closeTime'] != null
+          ? (data['closeTime'] as Timestamp).toDate()
+          : DateTime.now().add(const Duration(hours: 2)),
       prizePool: data['prizePool'] ?? 0,
       prizeStructure: data['prizeStructure'] ?? {},
       code: data['code'],
@@ -174,7 +178,9 @@ class Pool {
               orElse: () => PoolTier.standard,
             )
           : null,
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      createdAt: data['createdAt'] != null
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
       createdBy: data['createdBy'],
       metadata: data['metadata'],
     );

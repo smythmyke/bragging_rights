@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'dart:math';
+import '../../widgets/bragging_rights_logo.dart';
 
 class LottieSplashScreen extends StatefulWidget {
   const LottieSplashScreen({super.key});
@@ -109,11 +110,9 @@ class _LottieSplashScreenState extends State<LottieSplashScreen>
               ),
             ),
             const SizedBox(height: 40),
-            // App Logo
-            Image.asset(
-              'assets/images/bragging_rights_logo.png',
-              height: 220,  // Increased by 10% from 200
-              fit: BoxFit.contain,
+            // App Logo with animated underlines
+            const AnimatedBraggingRightsLogo(
+              height: 220,
             ),
             const SizedBox(height: 10),
             // Tagline

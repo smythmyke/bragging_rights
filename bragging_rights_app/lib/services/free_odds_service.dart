@@ -58,8 +58,16 @@ class FreeOddsService {
       final scoreboard = await _nbaService.getTodaysGames();
       if (scoreboard == null) return null;
       
+      // Get events from scoreboard
+      final events = scoreboard.events;
+      
       // Find matching game
-      for (final event in scoreboard.events) {
+      for (final event in events) {
+        // Ensure event is a Map before processing
+        if (event is! Map<String, dynamic>) {
+          debugPrint('Skipping non-map event: ${event.runtimeType}');
+          continue;
+        }
         final game = _extractGameFromEvent(event);
         if (_teamsMatch(game['homeTeam'], home) && _teamsMatch(game['awayTeam'], away)) {
           return _extractOddsFromGame(game);
@@ -79,8 +87,16 @@ class FreeOddsService {
       final games = await _nflService.getTodaysGames();
       if (games == null) return null;
       
+      // Get events from games
+      final events = games.events;
+      
       // Find matching game
-      for (final event in games.events) {
+      for (final event in events) {
+        // Ensure event is a Map before processing
+        if (event is! Map<String, dynamic>) {
+          debugPrint('Skipping non-map event: ${event.runtimeType}');
+          continue;
+        }
         final game = _extractGameFromEvent(event);
         if (_teamsMatch(game['homeTeam'], home) && _teamsMatch(game['awayTeam'], away)) {
           return _extractOddsFromGame(game);
@@ -100,8 +116,16 @@ class FreeOddsService {
       final scoreboard = await _nhlService.getTodaysGames();
       if (scoreboard == null) return null;
       
+      // Get events from scoreboard
+      final events = scoreboard.events;
+      
       // Find matching game
-      for (final event in scoreboard.events) {
+      for (final event in events) {
+        // Ensure event is a Map before processing
+        if (event is! Map<String, dynamic>) {
+          debugPrint('Skipping non-map event: ${event.runtimeType}');
+          continue;
+        }
         final game = _extractGameFromEvent(event);
         if (_teamsMatch(game['homeTeam'], home) && _teamsMatch(game['awayTeam'], away)) {
           return _extractOddsFromGame(game);
@@ -121,8 +145,16 @@ class FreeOddsService {
       final scoreboard = await _mlbService.getTodaysGames();
       if (scoreboard == null) return null;
       
+      // Get events from scoreboard
+      final events = scoreboard.events;
+      
       // Find matching game
-      for (final event in scoreboard.events) {
+      for (final event in events) {
+        // Ensure event is a Map before processing
+        if (event is! Map<String, dynamic>) {
+          debugPrint('Skipping non-map event: ${event.runtimeType}');
+          continue;
+        }
         final game = _extractGameFromEvent(event);
         if (_teamsMatch(game['homeTeam'], home) && _teamsMatch(game['awayTeam'], away)) {
           return _extractOddsFromGame(game);

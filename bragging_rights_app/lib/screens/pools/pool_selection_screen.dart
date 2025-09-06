@@ -796,7 +796,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
             context,
             '/fight-card-grid',
             arguments: {
-              'gameId': gameId,  // Pass the real game ID!
+              'gameId': this.gameId ?? widget.gameId ?? '${widget.gameTitle}_${widget.sport}'.replaceAll(' ', '_').toLowerCase(),  // Pass the real game ID!
               'gameTitle': widget.gameTitle,
               'sport': widget.sport,
               'poolName': poolName,
@@ -809,7 +809,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
             context,
             '/bet-selection',
             arguments: {
-              'gameId': gameId,  // Pass the real game ID!
+              'gameId': this.gameId ?? widget.gameId ?? '${widget.gameTitle}_${widget.sport}'.replaceAll(' ', '_').toLowerCase(),  // Pass the real game ID!
               'gameTitle': widget.gameTitle,
               'sport': widget.sport,
               'poolName': poolName,
@@ -904,7 +904,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                               context,
                               '/fight-card-grid',
                               arguments: {
-                                'gameId': gameId,  // Pass the real game ID!
+                                'gameId': this.gameId ?? widget.gameId ?? '${widget.gameTitle}_${widget.sport}'.replaceAll(' ', '_').toLowerCase(),  // Pass the real game ID!
                                 'gameTitle': widget.gameTitle,
                                 'sport': widget.sport,
                                 'poolName': poolName,
@@ -917,7 +917,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                               context,
                               '/bet-selection',
                               arguments: {
-                                'gameId': gameId,  // Pass the real game ID!
+                                'gameId': this.gameId ?? widget.gameId ?? '${widget.gameTitle}_${widget.sport}'.replaceAll(' ', '_').toLowerCase(),  // Pass the real game ID!
                                 'gameTitle': widget.gameTitle,
                                 'sport': widget.sport,
                                 'poolName': poolName,
@@ -932,62 +932,64 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                           print('[POOL JOIN] ❌ Failed to join pool - Code: $errorCode, Message: $errorMessage');
                           
                           // Show specific message for different error types
-                          if (errorCode == 'ALREADY_IN_POOL') {
-                            // This shouldn't happen anymore due to pre-check, but keep as fallback
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Row(
-                                  children: [
-                                    const Icon(Icons.info_outline, color: Colors.white),
-                                    const SizedBox(width: 8),
-                                    Expanded(child: Text(errorMessage)),
-                                  ],
+                          if (mounted) {
+                            if (errorCode == 'ALREADY_IN_POOL') {
+                              // This shouldn't happen anymore due to pre-check, but keep as fallback
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      const Icon(Icons.info_outline, color: Colors.white),
+                                      const SizedBox(width: 8),
+                                      Expanded(child: Text(errorMessage)),
+                                    ],
+                                  ),
+                                  backgroundColor: Colors.orange,
+                                  action: SnackBarAction(
+                                    label: 'Go to My Bets',
+                                    textColor: Colors.white,
+                                    onPressed: () {
+                                      if (mounted) {
+                                        Navigator.pushNamed(context, '/active-bets');
+                                      }
+                                    },
+                                  ),
                                 ),
-                                backgroundColor: Colors.orange,
-                                action: SnackBarAction(
-                                  label: 'Go to My Bets',
-                                  textColor: Colors.white,
-                                  onPressed: () {
-                                    if (mounted) {
-                                      Navigator.pushNamed(context, '/active-bets');
-                                    }
-                                  },
+                              );
+                            } else if (errorCode == 'POOL_FULL') {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      const Icon(Icons.block, color: Colors.white),
+                                      const SizedBox(width: 8),
+                                      Expanded(child: Text('This pool is full. Try another one!')),
+                                    ],
+                                  ),
+                                  backgroundColor: Colors.orange,
                                 ),
-                              ),
-                            );
-                          } else if (errorCode == 'POOL_FULL') {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Row(
-                                  children: [
-                                    const Icon(Icons.block, color: Colors.white),
-                                    const SizedBox(width: 8),
-                                    Expanded(child: Text('This pool is full. Try another one!')),
-                                  ],
+                              );
+                            } else if (errorCode == 'INSUFFICIENT_BALANCE') {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      const Icon(Icons.account_balance_wallet, color: Colors.white),
+                                      const SizedBox(width: 8),
+                                      Expanded(child: Text('Not enough BR balance')),
+                                    ],
+                                  ),
+                                  backgroundColor: Colors.red,
                                 ),
-                                backgroundColor: Colors.orange,
-                              ),
-                            );
-                          } else if (errorCode == 'INSUFFICIENT_BALANCE') {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Row(
-                                  children: [
-                                    const Icon(Icons.account_balance_wallet, color: Colors.white),
-                                    const SizedBox(width: 8),
-                                    Expanded(child: Text('Not enough BR balance')),
-                                  ],
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(errorMessage),
+                                  backgroundColor: Colors.red,
                                 ),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(errorMessage),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
+                              );
+                            }
                           }
                         }
                       } catch (e) {
@@ -999,14 +1001,17 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                           } catch (_) {
                             // Dialog may already be closed
                           }
+                          
+                          // Only show snackbar if widget is still mounted
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error joining pool: ${e.toString()}'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         }
-                        
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error joining pool: ${e.toString()}'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
                       }
                     },
                     style: ElevatedButton.styleFrom(
