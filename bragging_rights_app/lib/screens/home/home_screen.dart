@@ -24,6 +24,7 @@ import '../../utils/dev_tools.dart';
 import '../premium/edge_screen.dart';
 import '../cards/card_inventory_screen.dart';
 import '../games/all_games_screen.dart';
+import '../games/optimized_games_screen.dart';
 import '../../services/sound_service.dart';
 import '../intel_detail_screen.dart';
 import '../../widgets/bragging_rights_logo.dart';
@@ -51,6 +52,9 @@ class _HomeScreenState extends State<HomeScreen> {
   final PurchaseService _purchaseService = PurchaseService();
   final CardService _cardService = CardService();
   final SoundService _soundService = SoundService();
+  
+  // Feature flag for optimized loading
+  static const bool USE_OPTIMIZED_GAMES = true;
   
   // Track games with bets
   List<String> _gamesWithBets = [];
@@ -168,8 +172,10 @@ class _HomeScreenState extends State<HomeScreen> {
             _userSports = List<String>.from(userDoc.data()!['selectedSports']);
           });
           print('User sports preferences loaded: $_userSports');
-          // Reload games to apply sorting
-          _loadGamesData();
+          // Don't reload games - just update the sorting of existing games
+          if (_allGames.isNotEmpty && mounted) {
+            _updateGameLists(_allGames);
+          }
         }
       }
     } catch (e) {
@@ -749,6 +755,61 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Optimized Version Banner
+                  if (USE_OPTIMIZED_GAMES) 
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.blue.shade600, Colors.blue.shade800],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.speed, color: Colors.white),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '⚡ Try Optimized Games',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  '90% faster loading, personalized for you',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: Colors.blue.shade700,
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const OptimizedGamesScreen(),
+                                ),
+                              );
+                            },
+                            child: const Text('Open'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  
                   // Next Game Alert (when no games today)
                   if (_liveGames.isEmpty && _todayGames.isEmpty && _nextGame != null)
                     _buildNextGameAlert(_nextGame!),

@@ -1,640 +1,979 @@
 
-I/flutter (28894): Saved 15 games to Firestore
-I/flutter (28894): 🎲 Enriching games with odds and creating pools...
-I/flutter (28894): 🎲 Enriching 15 games with odds...
-I/flutter (28894): Saved 15 games to Firestore
-I/flutter (28894): 🎲 Enriching games with odds and creating pools...
-I/flutter (28894): 🎲 Enriching 15 games with odds...
-I/flutter (28894): ❌ No odds available from any source for UFC Fight Night: Imavov vs. Borralho @
-I/flutter (28894): Saved 16 games to Firestore
-I/flutter (28894): 🎲 Enriching games with odds and creating pools...
-I/flutter (28894): 🎲 Enriching 16 games with odds...
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Tampa Bay Buccaneers @ Atlanta Falcons
-I/flutter (28894): 📊 API Usage: 3/10 per min, 3/50k per hour
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Cincinnati Bengals @ Cleveland Browns
-I/flutter (28894): 📊 API Usage: 4/10 per min, 4/50k per hour
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Miami Dolphins @ Indianapolis Colts
-I/flutter (28894): 📊 API Usage: 5/10 per min, 5/50k per hour
-I/flutter (28894): Saved 16 games to Firestore
-I/flutter (28894): 🎲 Enriching games with odds and creating pools...
-I/flutter (28894): 🎲 Enriching 16 games with odds...
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Tampa Bay Buccaneers @ Atlanta Falcons
-I/flutter (28894): 📊 API Usage: 6/10 per min, 6/50k per hour
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Cincinnati Bengals @ Cleveland Browns
-I/flutter (28894): 📊 API Usage: 7/10 per min, 7/50k per hour
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Miami Dolphins @ Indianapolis Colts
-I/flutter (28894): 📊 API Usage: 8/10 per min, 8/50k per hour
-I/flutter (28894): ! No odds available for game 600054419: UFC Fight Night: Imavov vs. Borralho @
-I/flutter (28894): ✅ Finished enriching games with odds
-I/flutter (28894): Returning 1 UFC games
-I/flutter (28894): ! No odds available for game 600054419: UFC Fight Night: Imavov vs. Borralho @
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Finished enriching games with odds
-I/flutter (28894): Returning 1 UFC games
-I/flutter (28894): ❌ Cache miss: games/nfl_espn_2025-09-06/scores - Fetching fresh data...
-I/flutter (28894): 🏈 Fetching NFL games from ESPN...
-I/flutter (28894): ❌ Cache miss: games/nfl_espn_2025-09-06/scores - Fetching fresh data...
-I/flutter (28894): 🏈 Fetching NFL games from ESPN...
-I/flutter (28894): ❌ Cache miss: games/nfl_espn_2025-09-06/scores - Fetching fresh data...
-I/flutter (28894): 🏈 Fetching NFL games from ESPN...
-I/flutter (28894): ❌ Cache miss: games/nfl_espn_2025-09-06/scores - Fetching fresh data...
-I/flutter (28894): 🏈 Fetching NFL games from ESPN...
-I/flutter (28894): ❌ Cache miss: games/nfl_espn_2025-09-06/scores - Fetching fresh data...
-I/flutter (28894): 🏈 Fetching NFL games from ESPN...
-I/flutter (28894): ❌ Cache miss: games/nfl_espn_2025-09-06/scores - Fetching fresh data...
-I/flutter (28894): 🏈 Fetching NFL games from ESPN...
-I/flutter (28894): ✅ ESPN NFL data received: 16 games
-I/flutter (28894): Error saving to Firestore cache: Invalid argument: Instance of 'EspnNflScoreboard'
-I/flutter (28894): 💾 Cached new data: games/nfl_espn_2025-09-06/scores (TTL: 120s)
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Miami Dolphins @ Indianapolis Colts
-I/flutter (28894): ✅ ESPN NFL data received: 16 games
-I/flutter (28894): Error saving to Firestore cache: Invalid argument: Instance of 'EspnNflScoreboard'
-I/flutter (28894): 💾 Cached new data: games/nfl_espn_2025-09-06/scores (TTL: 120s)
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Tampa Bay Buccaneers @ Atlanta Falcons
-I/flutter (28894): ✅ ESPN NFL data received: 16 games
-I/flutter (28894): Error saving to Firestore cache: Invalid argument: Instance of 'EspnNflScoreboard'
-I/flutter (28894): 💾 Cached new data: games/nfl_espn_2025-09-06/scores (TTL: 120s)
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Miami Dolphins @ Indianapolis Colts
-I/flutter (28894): ✅ ESPN NFL data received: 16 games
-I/flutter (28894): Error saving to Firestore cache: Invalid argument: Instance of 'EspnNflScoreboard'
-I/flutter (28894): 💾 Cached new data: games/nfl_espn_2025-09-06/scores (TTL: 120s)
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Cincinnati Bengals @ Cleveland Browns
-I/flutter (28894): ✅ ESPN NFL data received: 16 games
-I/flutter (28894): Error saving to Firestore cache: Invalid argument: Instance of 'EspnNflScoreboard'
-I/flutter (28894): 💾 Cached new data: games/nfl_espn_2025-09-06/scores (TTL: 120s)
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Cincinnati Bengals @ Cleveland Browns
-I/flutter (28894): ✅ ESPN NFL data received: 16 games
-I/flutter (28894): Error saving to Firestore cache: Invalid argument: Instance of 'EspnNflScoreboard'
-I/flutter (28894): 💾 Cached new data: games/nfl_espn_2025-09-06/scores (TTL: 120s)
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Tampa Bay Buccaneers @ Atlanta Falcons
-I/flutter (28894): ! No odds available for game 401772719: Miami Dolphins @ Indianapolis Colts
-I/flutter (28894): ! No odds available for game 401772830: Tampa Bay Buccaneers @ Atlanta Falcons
-I/flutter (28894): ! No odds available for game 401772719: Miami Dolphins @ Indianapolis Colts
-I/flutter (28894): ! No odds available for game 401772829: Cincinnati Bengals @ Cleveland Browns
-I/flutter (28894): ! No odds available for game 401772829: Cincinnati Bengals @ Cleveland Browns
-I/flutter (28894): ! No odds available for game 401772830: Tampa Bay Buccaneers @ Atlanta Falcons
-I/flutter (28894): ✅ Finished enriching games with odds
-I/flutter (28894): Returning 15 MLB games
-I/flutter (28894): ✅ Finished enriching games with odds
-I/flutter (28894): Returning 15 MLB games
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Las Vegas Raiders @ New England Patriots
-I/flutter (28894): 📊 API Usage: 9/10 per min, 9/50k per hour
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Arizona Cardinals @ New Orleans Saints
-I/flutter (28894): 📊 API Usage: 10/10 per min, 10/50k per hour
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Pittsburgh Steelers @ New York Jets
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for New York Giants @ Washington Commanders
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Carolina Panthers @ Jacksonville Jaguars
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Pittsburgh Steelers @ New York Jets
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for New York Giants @ Washington Commanders
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Carolina Panthers @ Jacksonville Jaguars
-W/WindowOnBackDispatcher(28894): OnBackInvokedCallback is not enabled for the application.
-W/WindowOnBackDispatcher(28894): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
-I/flutter (28894): ! No odds available for game 401772828: Carolina Panthers @ Jacksonville Jaguars
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Las Vegas Raiders @ New England Patriots
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Arizona Cardinals @ New Orleans Saints
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Pittsburgh Steelers @ New York Jets
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for New York Giants @ Washington Commanders
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Carolina Panthers @ Jacksonville Jaguars
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Las Vegas Raiders @ New England Patriots
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Arizona Cardinals @ New Orleans Saints
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Pittsburgh Steelers @ New York Jets
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for New York Giants @ Washington Commanders
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Carolina Panthers @ Jacksonville Jaguars
-I/flutter (28894): ! No odds available for game 401772721: Pittsburgh Steelers @ New York Jets
-I/flutter (28894): ! No odds available for game 401772827: New York Giants @ Washington Commanders
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Arizona Cardinals @ New Orleans Saints
-I/flutter (28894): ! No odds available for game 401772720: Las Vegas Raiders @ New England Patriots
-I/flutter (28894): ! No odds available for game 401772718: Arizona Cardinals @ New Orleans Saints
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Las Vegas Raiders @ New England Patriots
-I/flutter (28894): ! No odds available for game 401772721: Pittsburgh Steelers @ New York Jets
-I/flutter (28894): ! No odds available for game 401772828: Carolina Panthers @ Jacksonville Jaguars
-I/flutter (28894): ! No odds available for game 401772827: New York Giants @ Washington Commanders
-I/flutter (28894): ! No odds available for game 401772718: Arizona Cardinals @ New Orleans Saints
-I/flutter (28894): ! No odds available for game 401772720: Las Vegas Raiders @ New England Patriots
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Tennessee Titans @ Denver Broncos
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for San Francisco 49ers @ Seattle Seahawks
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Detroit Lions @ Green Bay Packers
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Houston Texans @ Los Angeles Rams
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Baltimore Ravens @ Buffalo Bills
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Tennessee Titans @ Denver Broncos
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for San Francisco 49ers @ Seattle Seahawks
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Detroit Lions @ Green Bay Packers
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Houston Texans @ Los Angeles Rams
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Baltimore Ravens @ Buffalo Bills
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Tennessee Titans @ Denver Broncos
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for San Francisco 49ers @ Seattle Seahawks
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Detroit Lions @ Green Bay Packers
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Houston Texans @ Los Angeles Rams
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Baltimore Ravens @ Buffalo Bills
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Tennessee Titans @ Denver Broncos
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for San Francisco 49ers @ Seattle Seahawks
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Detroit Lions @ Green Bay Packers
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Houston Texans @ Los Angeles Rams
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Baltimore Ravens @ Buffalo Bills
-I/flutter (28894): ! No odds available for game 401772723: Houston Texans @ Los Angeles Rams
-I/flutter (28894): ! No odds available for game 401772831: San Francisco 49ers @ Seattle Seahawks
-I/flutter (28894): ! No odds available for game 401772832: Tennessee Titans @ Denver Broncos
-I/flutter (28894): ! No odds available for game 401772918: Baltimore Ravens @ Buffalo Bills
-I/flutter (28894): ! No odds available for game 401772723: Houston Texans @ Los Angeles Rams
-I/flutter (28894): ! No odds available for game 401772918: Baltimore Ravens @ Buffalo Bills
-I/flutter (28894): ! No odds available for game 401772722: Detroit Lions @ Green Bay Packers
-I/flutter (28894): ! No odds available for game 401772832: Tennessee Titans @ Denver Broncos
-I/flutter (28894): ! No odds available for game 401772722: Detroit Lions @ Green Bay Packers
-I/flutter (28894): ! No odds available for game 401772831: San Francisco 49ers @ Seattle Seahawks
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Minnesota Vikings @ Chicago Bears
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Minnesota Vikings @ Chicago Bears
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Minnesota Vikings @ Chicago Bears
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Minnesota Vikings @ Chicago Bears
-I/flutter (28894): ! No odds available for game 401772810: Minnesota Vikings @ Chicago Bears
-I/flutter (28894): ! No odds available for game 401772810: Minnesota Vikings @ Chicago Bears
-I/flutter (28894): ✅ Finished enriching games with odds
-I/flutter (28894): Returning 16 NFL games
-I/flutter (28894): ✅ Finished enriching games with odds
-I/flutter (28894): Returning 16 NFL games
-I/flutter (28894): 📦 Cached 36 games to local storage
-I/flutter (28894): ✅ Fetched 36 games total
-I/flutter (28894): ✅ Background refresh complete: 36 games
-I/flutter (28894): 📦 Cached 36 games to local storage
-I/flutter (28894): ✅ Fetched 36 games total
-I/flutter (28894): ✅ Background refresh complete: 36 games
-I/flutter (28894): Saved 36 games to Firestore
-I/flutter (28894): 🎲 Enriching games with odds and creating pools...
-I/flutter (28894): 🎲 Enriching 36 games with odds...
-I/flutter (28894): Saved 36 games to Firestore
-I/flutter (28894): 🎲 Enriching games with odds and creating pools...
-I/flutter (28894): 🎲 Enriching 36 games with odds...
-I/flutter (28894): =============== QUICK PLAY POOL JOIN ATTEMPT ===============
-I/flutter (28894): Pool Name: Quick Play - 100 BR
-I/flutter (28894): Pool ID: EmdxeV6LeNbCqodHjjAI
-I/flutter (28894): Buy-in Amount: 100 BR
-I/flutter (28894): Game Title: Tampa Bay Buccaneers @ Atlanta Falcons
-I/flutter (28894): Sport: NFL
-I/flutter (28894): Current Balance: 95599 BR
-I/flutter (28894): Timestamp: 2025-09-06T00:18:37.477147
-I/flutter (28894): ===========================================================
-I/flutter (28894): [POOL JOIN] User already in pool, checking if picks submitted...
-I/flutter (28894): [POOL JOIN] User has not submitted picks, checking sport type...
-I/flutter (28894): [POOL JOIN] Team sport detected, navigating to standard bet selection
-I/flutter (28894): === BET SELECTION SCREEN INIT ===
-I/flutter (28894): Game Title: Tampa Bay Buccaneers @ Atlanta Falcons
-I/flutter (28894): Sport: NFL
-I/flutter (28894): Pool Name: Quick Play - 100 BR
-I/flutter (28894): Pool ID: EmdxeV6LeNbCqodHjjAI
-I/flutter (28894): Game ID: 401772830
-I/flutter (28894): ================================
-I/flutter (28894): Getting tab controller for sport: "NFL"
-I/flutter (28894): Creating 5-tab controller for team sports
-I/flutter (28894): [InfoEdgeCarousel] initState called for Winner (Moneyline)
-I/flutter (28894): [InfoEdgeCarousel] Starting auto-scroll timer for Winner (Moneyline)
-I/flutter (28894): [InfoEdgeCarousel] User has interacted: false, Has auto-scrolled: false
-I/flutter (28894): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 0
-I/flutter (28894): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 0
-I/flutter (28894): Error fetching game odds: NoSuchMethodError: Class 'String' has no instance method 'toDouble'.
-I/flutter (28894): Receiver: "TB -1.5"
-I/flutter (28894): Tried calling: toDouble()
-I/flutter (28894): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 0
-I/flutter (28894): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 0
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for UFC Fight Night: Imavov vs. Borralho @
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Tampa Bay Buccaneers @ Atlanta Falcons
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Cincinnati Bengals @ Cleveland Browns
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): No events found for ufc
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Tampa Bay Buccaneers @ Atlanta Falcons
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Cincinnati Bengals @ Cleveland Browns
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for UFC Fight Night: Imavov vs. Borralho @
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Tampa Bay Buccaneers @ Atlanta Falcons
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Cincinnati Bengals @ Cleveland Browns
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): No events found for ufc
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Tampa Bay Buccaneers @ Atlanta Falcons
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Cincinnati Bengals @ Cleveland Browns
-I/flutter (28894): ! No odds available for game 401772830: Tampa Bay Buccaneers @ Atlanta Falcons
-I/flutter (28894): ! No odds available for game 401772829: Cincinnati Bengals @ Cleveland Browns
-I/flutter (28894): ! No odds available for game 401772830: Tampa Bay Buccaneers @ Atlanta Falcons
-I/flutter (28894): ! No odds available for game 401772829: Cincinnati Bengals @ Cleveland Browns
-I/flutter (28894): ❌ No odds available from any source for UFC Fight Night: Imavov vs. Borralho @
-I/flutter (28894): ❌ No odds available from any source for UFC Fight Night: Imavov vs. Borralho @
-I/flutter (28894): ! No odds available for game 600054419: UFC Fight Night: Imavov vs. Borralho @
-I/flutter (28894): ! No odds available for game 600054419: UFC Fight Night: Imavov vs. Borralho @
-I/flutter (28894): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 0
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Miami Dolphins @ Indianapolis Colts
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Las Vegas Raiders @ New England Patriots
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Arizona Cardinals @ New Orleans Saints
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Pittsburgh Steelers @ New York Jets
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Carolina Panthers @ Jacksonville Jaguars
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Miami Dolphins @ Indianapolis Colts
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Las Vegas Raiders @ New England Patriots
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Arizona Cardinals @ New Orleans Saints
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Pittsburgh Steelers @ New York Jets
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Carolina Panthers @ Jacksonville Jaguars
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Miami Dolphins @ Indianapolis Colts
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Las Vegas Raiders @ New England Patriots
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Arizona Cardinals @ New Orleans Saints
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Pittsburgh Steelers @ New York Jets
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Carolina Panthers @ Jacksonville Jaguars
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Miami Dolphins @ Indianapolis Colts
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Las Vegas Raiders @ New England Patriots
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Arizona Cardinals @ New Orleans Saints
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Pittsburgh Steelers @ New York Jets
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Carolina Panthers @ Jacksonville Jaguars
-I/flutter (28894): ! No odds available for game 401772719: Miami Dolphins @ Indianapolis Colts
-I/flutter (28894): ! No odds available for game 401772718: Arizona Cardinals @ New Orleans Saints
-I/flutter (28894): ! No odds available for game 401772720: Las Vegas Raiders @ New England Patriots
-I/flutter (28894): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 0
-I/flutter (28894): [InfoEdgeCarousel] Timer fired for Winner (Moneyline)
-I/flutter (28894): [InfoEdgeCarousel] Mounted: true, Current page: 0, User interacted: false
-I/flutter (28894): [InfoEdgeCarousel] Executing auto-scroll to page 1
-I/flutter (28894): ! No odds available for game 401772721: Pittsburgh Steelers @ New York Jets
-I/flutter (28894): ! No odds available for game 401772828: Carolina Panthers @ Jacksonville Jaguars
-I/flutter (28894): ! No odds available for game 401772719: Miami Dolphins @ Indianapolis Colts
-I/flutter (28894): ! No odds available for game 401772720: Las Vegas Raiders @ New England Patriots
-I/flutter (28894): ! No odds available for game 401772721: Pittsburgh Steelers @ New York Jets
-I/flutter (28894): ! No odds available for game 401772718: Arizona Cardinals @ New Orleans Saints
-I/flutter (28894): ! No odds available for game 401772828: Carolina Panthers @ Jacksonville Jaguars
-I/flutter (28894): [InfoEdgeCarousel] Page changed to: 1
-I/flutter (28894): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
-I/flutter (28894): [InfoEdgeCarousel] Auto-scroll animation completed
-I/flutter (28894): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
-I/flutter (28894): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for New York Giants @ Washington Commanders
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for San Francisco 49ers @ Seattle Seahawks
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Tennessee Titans @ Denver Broncos
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Detroit Lions @ Green Bay Packers
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Houston Texans @ Los Angeles Rams
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for New York Giants @ Washington Commanders
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for San Francisco 49ers @ Seattle Seahawks
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Tennessee Titans @ Denver Broncos
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Detroit Lions @ Green Bay Packers
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Houston Texans @ Los Angeles Rams
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for New York Giants @ Washington Commanders
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for San Francisco 49ers @ Seattle Seahawks
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Tennessee Titans @ Denver Broncos
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Detroit Lions @ Green Bay Packers
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Houston Texans @ Los Angeles Rams
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for New York Giants @ Washington Commanders
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for San Francisco 49ers @ Seattle Seahawks
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Tennessee Titans @ Denver Broncos
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Detroit Lions @ Green Bay Packers
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Houston Texans @ Los Angeles Rams
-I/flutter (28894): ! No odds available for game 401772827: New York Giants @ Washington Commanders
-I/flutter (28894): ! No odds available for game 401772831: San Francisco 49ers @ Seattle Seahawks
-I/flutter (28894): ! No odds available for game 401772832: Tennessee Titans @ Denver Broncos
-I/flutter (28894): ! No odds available for game 401772722: Detroit Lions @ Green Bay Packers
-I/flutter (28894): ! No odds available for game 401772723: Houston Texans @ Los Angeles Rams
-I/flutter (28894): ! No odds available for game 401772827: New York Giants @ Washington Commanders
-I/flutter (28894): ! No odds available for game 401772722: Detroit Lions @ Green Bay Packers
-I/flutter (28894): ! No odds available for game 401772831: San Francisco 49ers @ Seattle Seahawks
-I/flutter (28894): ! No odds available for game 401772723: Houston Texans @ Los Angeles Rams
-I/flutter (28894): ! No odds available for game 401772832: Tennessee Titans @ Denver Broncos
-I/flutter (28894): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Baltimore Ravens @ Buffalo Bills
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Minnesota Vikings @ Chicago Bears
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Baltimore Ravens @ Buffalo Bills
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Minnesota Vikings @ Chicago Bears
-I/flutter (28894): ! No odds available for game 401772918: Baltimore Ravens @ Buffalo Bills
-I/flutter (28894): ! No odds available for game 401772810: Minnesota Vikings @ Chicago Bears
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Baltimore Ravens @ Buffalo Bills
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): 📊 Attempting to fetch odds from The Odds API for Minnesota Vikings @ Chicago Bears
-I/flutter (28894): ! Rate limit exceeded for SportsGameOdds API (minute limit)
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): No events found for nfl
-I/flutter (28894): ! The Odds API returned no data, trying FreeOddsService (ESPN)...
-I/flutter (28894): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Baltimore Ravens @ Buffalo Bills
-I/flutter (28894): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
-I/flutter (28894): ❌ No odds available from any source for Minnesota Vikings @ Chicago Bears
-I/flutter (28894): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
-I/flutter (28894): ! No odds available for game 401772918: Baltimore Ravens @ Buffalo Bills
-I/flutter (28894): ! No odds available for game 401772810: Minnesota Vikings @ Chicago Bears
-I/flutter (28894): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
-I/flutter (28894): ✅ Finished enriching games with odds
-I/flutter (28894): 🎲 Enriching 36 games with odds...
-I/flutter (28894): ✅ Finished enriching games with odds
-I/flutter (28894): 🎲 Enriching 36 games with odds...
-I/flutter (28894): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
-I/flutter (28894): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
+Running Gradle task 'assembleDebug'...                             10.0s
+√ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...          15.6s
+D/FirebaseAuth( 6469): Notifying id token listeners about user ( JLl6AoOXHHUhIIW4t7xWDyqWsPm2 ).
+I/ging_rights_app( 6469): Compiler allocated 5111KB to compile void android.view.ViewRootImpl.performTraversals()
+I/flutter ( 6469): Notification permission status: AuthorizationStatus.authorized
+I/flutter ( 6469): FCM Token: cPFGd8JaTgi6Bb9hXiCzuY:APA91bHF0lLommwztl7dw1VY2Q_Uvy7JcW2rxTEc-Xf6PwKmWE0fW7jxZtGJXJW4XCN_ScWC82nR9jfROA4xE9vzeQhmiCUKEAt2a3zrZlYByfdAtNnBm14
+I/ging_rights_app( 6469): hiddenapi: Accessing hidden method Ldalvik/system/CloseGuard;->get()Ldalvik/system/CloseGuard; (runtime_flags=CorePlatformApi, domain=core-platform, api=unsupported,core-platform-api) from Lokhttp3/internal/platform/AndroidPlatform$CloseGuard; (domain=app) using reflection: allowed
+I/ging_rights_app( 6469): hiddenapi: Accessing hidden method Ldalvik/system/CloseGuard;->open(Ljava/lang/String;)V (runtime_flags=CorePlatformApi, domain=core-platform, api=unsupported,core-platform-api) from Lokhttp3/internal/platform/AndroidPlatform$CloseGuard; (domain=app) using reflection: allowed
+I/ging_rights_app( 6469): hiddenapi: Accessing hidden method Ldalvik/system/CloseGuard;->warnIfOpen()V (runtime_flags=CorePlatformApi, domain=core-platform, api=unsupported,core-platform-api) from Lokhttp3/internal/platform/AndroidPlatform$CloseGuard; (domain=app) using reflection: allowed
+Syncing files to device Pixel 8a...                                 67ms
+
+Flutter run key commands.
+r Hot reload.
+R Hot restart.
+h List all available interactive commands.
+d Detach (terminate "flutter run" but leave application running).
+c Clear the screen
+q Quit (terminate the application on the device).
+
+A Dart VM Service on Pixel 8a is available at: http://127.0.0.1:50232/ePiTAjFBQrM=/
+W/DynamiteModule( 6469): Local module descriptor class for com.google.android.gms.providerinstaller.dynamite not found.
+I/DynamiteModule( 6469): Considering local module com.google.android.gms.providerinstaller.dynamite:0 and remote module com.google.android.gms.providerinstaller.dynamite:0
+W/ProviderInstaller( 6469): Failed to load providerinstaller module: No acceptable module com.google.android.gms.providerinstaller.dynamite found. Local version is 0 and remote version is 0.
+D/ApplicationLoaders( 6469): Returning zygote-cached class loader: /system/framework/org.apache.http.legacy.jar
+D/ApplicationLoaders( 6469): Returning zygote-cached class loader: /system/framework/com.android.media.remotedisplay.jar
+D/ApplicationLoaders( 6469): Returning zygote-cached class loader: /system/framework/com.android.location.provider.jar
+D/ApplicationLoaders( 6469): Returning zygote-cached class loader: /system_ext/framework/androidx.window.extensions.jar
+D/ApplicationLoaders( 6469): Returning zygote-cached class loader: /system_ext/framework/androidx.window.sidecar.jar
+The Flutter DevTools debugger and profiler on Pixel 8a is available at:
+http://127.0.0.1:9102?uri=http://127.0.0.1:50232/ePiTAjFBQrM=/
+W/ging_rights_app( 6469): Loading /data/app/~~B2nHxzZ4xpAZFzxe4XC-5g==/com.google.android.gms-dfEZtPmclydCeTRyci7xTw==/oat/arm64/base.odex non-executable as it requires an image which we failed to load
+D/nativeloader( 6469): Configuring clns-11 for other apk /data/app/~~B2nHxzZ4xpAZFzxe4XC-5g==/com.google.android.gms-dfEZtPmclydCeTRyci7xTw==/base.apk. target_sdk_version=36, uses_libraries=, library_path=/data/app/~~B2nHxzZ4xpAZFzxe4XC-5g==/com.google.android.gms-dfEZtPmclydCeTRyci7xTw==/lib/arm64:/data/app/~~B2nHxzZ4xpAZFzxe4XC-5g==/com.google.android.gms-dfEZtPmclydCeTRyci7xTw==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.gms
+E/GoogleApiManager( 6469): Failed to get service from broker.
+E/GoogleApiManager( 6469): java.lang.SecurityException: Unknown calling package name 'com.google.android.gms'.
+E/GoogleApiManager( 6469):      at android.os.Parcel.createExceptionOrNull(Parcel.java:3340)
+E/GoogleApiManager( 6469):      at android.os.Parcel.createException(Parcel.java:3324)
+E/GoogleApiManager( 6469):      at android.os.Parcel.readException(Parcel.java:3307)
+E/GoogleApiManager( 6469):      at android.os.Parcel.readException(Parcel.java:3249)
+E/GoogleApiManager( 6469):      at bapg.a(:com.google.android.gms@253434035@25.34.34 (260400-800653487):36)
+E/GoogleApiManager( 6469):      at bann.z(:com.google.android.gms@253434035@25.34.34 (260400-800653487):143)
+E/GoogleApiManager( 6469):      at azuk.run(:com.google.android.gms@253434035@25.34.34 (260400-800653487):42)
+E/GoogleApiManager( 6469):      at android.os.Handler.handleCallback(Handler.java:995)
+E/GoogleApiManager( 6469):      at android.os.Handler.dispatchMessage(Handler.java:103)
+E/GoogleApiManager( 6469):      at cldl.mC(:com.google.android.gms@253434035@25.34.34 (260400-800653487):1)
+E/GoogleApiManager( 6469):      at cldl.dispatchMessage(:com.google.android.gms@253434035@25.34.34 (260400-800653487):5)
+E/GoogleApiManager( 6469):      at android.os.Looper.loopOnce(Looper.java:248)
+E/GoogleApiManager( 6469):      at android.os.Looper.loop(Looper.java:338)
+E/GoogleApiManager( 6469):      at android.os.HandlerThread.run(HandlerThread.java:85)
+W/FlagRegistrar( 6469): Failed to register com.google.android.gms.providerinstaller#com.braggingrights.bragging_rights_app
+W/FlagRegistrar( 6469): fpdw: 17: 17: API: Phenotype.API is not available on this device. Connection failed with: ConnectionResult{statusCode=DEVELOPER_ERROR, resolution=null, message=null}
+W/FlagRegistrar( 6469):         at fpdy.a(:com.google.android.gms@253434035@25.34.34 (260400-800653487):13)
+W/FlagRegistrar( 6469):         at glsj.d(:com.google.android.gms@253434035@25.34.34 (260400-800653487):3)
+W/FlagRegistrar( 6469):         at glsl.run(:com.google.android.gms@253434035@25.34.34 (260400-800653487):130)
+W/FlagRegistrar( 6469):         at glus.execute(:com.google.android.gms@253434035@25.34.34 (260400-800653487):1)
+W/FlagRegistrar( 6469):         at glst.f(:com.google.android.gms@253434035@25.34.34 (260400-800653487):1)
+W/FlagRegistrar( 6469):         at glst.m(:com.google.android.gms@253434035@25.34.34 (260400-800653487):99)
+W/FlagRegistrar( 6469):         at glst.r(:com.google.android.gms@253434035@25.34.34 (260400-800653487):17)
+W/FlagRegistrar( 6469):         at fhlf.hF(:com.google.android.gms@253434035@25.34.34 (260400-800653487):35)
+W/FlagRegistrar( 6469):         at evli.run(:com.google.android.gms@253434035@25.34.34 (260400-800653487):12)
+W/FlagRegistrar( 6469):         at glus.execute(:com.google.android.gms@253434035@25.34.34 (260400-800653487):1)
+W/FlagRegistrar( 6469):         at evlj.b(:com.google.android.gms@253434035@25.34.34 (260400-800653487):18)
+W/FlagRegistrar( 6469):         at evly.b(:com.google.android.gms@253434035@25.34.34 (260400-800653487):36)
+W/FlagRegistrar( 6469):         at evma.d(:com.google.android.gms@253434035@25.34.34 (260400-800653487):25)
+W/FlagRegistrar( 6469):         at azrt.c(:com.google.android.gms@253434035@25.34.34 (260400-800653487):9)
+W/FlagRegistrar( 6469):         at azui.q(:com.google.android.gms@253434035@25.34.34 (260400-800653487):48)
+W/FlagRegistrar( 6469):         at azui.d(:com.google.android.gms@253434035@25.34.34 (260400-800653487):10)
+W/FlagRegistrar( 6469):         at azui.g(:com.google.android.gms@253434035@25.34.34 (260400-800653487):185)
+W/FlagRegistrar( 6469):         at azui.onConnectionFailed(:com.google.android.gms@253434035@25.34.34 (260400-800653487):2)
+W/FlagRegistrar( 6469):         at azuk.run(:com.google.android.gms@253434035@25.34.34 (260400-800653487):70)
+W/FlagRegistrar( 6469):         at android.os.Handler.handleCallback(Handler.java:995)
+W/FlagRegistrar( 6469):         at android.os.Handler.dispatchMessage(Handler.java:103)
+W/FlagRegistrar( 6469):         at cldl.mC(:com.google.android.gms@253434035@25.34.34 (260400-800653487):1)
+W/FlagRegistrar( 6469):         at cldl.dispatchMessage(:com.google.android.gms@253434035@25.34.34 (260400-800653487):5)
+W/FlagRegistrar( 6469):         at android.os.Looper.loopOnce(Looper.java:248)
+W/FlagRegistrar( 6469):         at android.os.Looper.loop(Looper.java:338)
+W/FlagRegistrar( 6469):         at android.os.HandlerThread.run(HandlerThread.java:85)
+W/FlagRegistrar( 6469): Caused by: azqb: 17: API: Phenotype.API is not available on this device. Connection failed with: ConnectionResult{statusCode=DEVELOPER_ERROR, resolution=null, message=null}
+W/FlagRegistrar( 6469):         at bamz.a(:com.google.android.gms@253434035@25.34.34 (260400-800653487):15)
+W/FlagRegistrar( 6469):         at azrw.a(:com.google.android.gms@253434035@25.34.34 (260400-800653487):1)
+W/FlagRegistrar( 6469):         at azrt.c(:com.google.android.gms@253434035@25.34.34 (260400-800653487):5)
+W/FlagRegistrar( 6469):         ... 12 more
+D/nativeloader( 6469): Load /data/app/~~B2nHxzZ4xpAZFzxe4XC-5g==/com.google.android.gms-dfEZtPmclydCeTRyci7xTw==/base.apk!/lib/arm64-v8a/libconscrypt_gmscore_jni.so using class loader ns clns-11 (caller=/data/app/~~B2nHxzZ4xpAZFzxe4XC-5g==/com.google.android.gms-dfEZtPmclydCeTRyci7xTw==/base.apk): ok
+V/NativeCrypto( 6469): Registering com/google/android/gms/org/conscrypt/NativeCrypto's 319 native methods...
+I/ging_rights_app( 6469): hiddenapi: Accessing hidden method Ljava/security/spec/ECParameterSpec;->getCurveName()Ljava/lang/String; (runtime_flags=0, domain=core-platform, api=unsupported) from Lcom/google/android/gms/org/conscrypt/Platform; (domain=app) using reflection: allowed
+I/ProviderInstaller( 6469): Installed default security provider GmsCore_OpenSSL
+W/FirebaseContextProvider( 6469): Error getting App Check token. Error: com.google.firebase.FirebaseException: No AppCheckProvider installed.
+I/ging_rights_app( 6469): hiddenapi: Accessing hidden method Ljava/security/spec/ECParameterSpec;->setCurveName(Ljava/lang/String;)V (runtime_flags=0, domain=core-platform, api=unsupported) from Lcom/google/android/gms/org/conscrypt/Platform; (domain=app) using reflection: allowed
+I/flutter ( 6469): FCM token registered successfully
+I/flutter ( 6469): Notification service initialized successfully
+I/FLTFireBGExecutor( 6469): Creating background FlutterEngine instance, with args: [--enable-dart-profiling]
+D/FLTFireContextHolder( 6469): received application context.
+I/FLTFireMsgService( 6469): FlutterFirebaseMessagingBackgroundService started!
+I/flutter ( 6469): LottieSplashScreen: Selected animation: assets/animations/medal_animation.json
+I/flutter ( 6469): LottieSplashScreen: Building widget. Loading: true, Error: null
+I/ging_rights_app( 6469): hiddenapi: Accessing hidden field Ljava/net/Socket;->impl:Ljava/net/SocketImpl; (runtime_flags=0, domain=core-platform, api=unsupported) from Lcom/google/android/gms/org/conscrypt/Platform; (domain=app) using reflection: allowed
+I/flutter ( 6469): LottieSplashScreen: Animation loaded successfully
+I/flutter ( 6469): LottieSplashScreen: Duration: 0:00:02.000000
+I/flutter ( 6469): LottieSplashScreen: Bounds: Rectangle (0, 0) 800 x 600
+I/flutter ( 6469): LottieSplashScreen: Animation status: AnimationStatus.forward
+I/flutter ( 6469): LottieSplashScreen: Building widget. Loading: false, Error: null
+D/InsetsController( 6469): hide(ime(), fromIme=false)
+I/ImeTracker( 6469): com.braggingrights.bragging_rights_app:d4f70c53: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+D/ProfileInstaller( 6469): Installing profile for com.braggingrights.bragging_rights_app
+I/flutter ( 6469): LottieSplashScreen: Animation status: AnimationStatus.completed
+I/flutter ( 6469): LottieSplashScreen: Navigating to login screen...
+I/ging_rights_app( 6469): AssetManager2(0xb400006ff1530f38) locale list changing from [] to [en-US]
+I/ging_rights_app( 6469): AssetManager2(0xb400006ff15385f8) locale list changing from [] to [en-US]
+I/ging_rights_app( 6469): AssetManager2(0xb400006ff1532838) locale list changing from [] to [en-US]
+I/ging_rights_app( 6469): AssetManager2(0xb400006ff1537018) locale list changing from [] to [en-US]
+I/ging_rights_app( 6469): AssetManager2(0xb400006ff1537658) locale list changing from [] to [en-US]
+I/ging_rights_app( 6469): AssetManager2(0xb400006ff1533af8) locale list changing from [] to [en-US]
+I/ging_rights_app( 6469): AssetManager2(0xb400006ff15337d8) locale list changing from [] to [en-US]
+I/ging_rights_app( 6469): AssetManager2(0xb400006ff1534138) locale list changing from [] to [en-US]
+I/ging_rights_app( 6469): AssetManager2(0xb400006ff1531578) locale list changing from [] to [en-US]
+W/WindowOnBackDispatcher( 6469): OnBackInvokedCallback is not enabled for the application.
+W/WindowOnBackDispatcher( 6469): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+I/ContentCaptureHelper( 6469): Setting logging level to OFF
+D/VRI[SignInHubActivity]( 6469): visibilityChanged oldVisibility=true newVisibility=false
+D/InsetsController( 6469): hide(ime(), fromIme=false)
+I/ImeTracker( 6469): com.braggingrights.bragging_rights_app:fd57dc5d: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+W/WindowOnBackDispatcher( 6469): sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda13@1d2f94f
+D/ViewRootImpl( 6469): Skipping stats log for color mode
+D/InsetsController( 6469): hide(ime(), fromIme=false)
+I/ImeTracker( 6469): com.braggingrights.bragging_rights_app:5b020fbd: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+W/System  ( 6469): Ignoring header X-Firebase-Locale because its value was null.
+W/LocalRequestInterceptor( 6469): Error getting App Check token; using placeholder token instead. Error: com.google.firebase.FirebaseException: No AppCheckProvider installed.
+W/System  ( 6469): Ignoring header X-Firebase-Locale because its value was null.
+W/LocalRequestInterceptor( 6469): Error getting App Check token; using placeholder token instead. Error: com.google.firebase.FirebaseException: No AppCheckProvider installed.
+D/FirebaseAuth( 6469): Notifying id token listeners about user ( JLl6AoOXHHUhIIW4t7xWDyqWsPm2 ).
+E/GoogleApiManager( 6469): Failed to get service from broker.
+E/GoogleApiManager( 6469): java.lang.SecurityException: Unknown calling package name 'com.google.android.gms'.
+E/GoogleApiManager( 6469):      at android.os.Parcel.createExceptionOrNull(Parcel.java:3340)
+E/GoogleApiManager( 6469):      at android.os.Parcel.createException(Parcel.java:3324)
+E/GoogleApiManager( 6469):      at android.os.Parcel.readException(Parcel.java:3307)
+E/GoogleApiManager( 6469):      at android.os.Parcel.readException(Parcel.java:3249)
+E/GoogleApiManager( 6469):      at bapg.a(:com.google.android.gms@253434035@25.34.34 (260400-800653487):36)
+E/GoogleApiManager( 6469):      at bann.z(:com.google.android.gms@253434035@25.34.34 (260400-800653487):143)
+E/GoogleApiManager( 6469):      at azuk.run(:com.google.android.gms@253434035@25.34.34 (260400-800653487):42)
+E/GoogleApiManager( 6469):      at android.os.Handler.handleCallback(Handler.java:995)
+E/GoogleApiManager( 6469):      at android.os.Handler.dispatchMessage(Handler.java:103)
+E/GoogleApiManager( 6469):      at cldl.mC(:com.google.android.gms@253434035@25.34.34 (260400-800653487):1)
+E/GoogleApiManager( 6469):      at cldl.dispatchMessage(:com.google.android.gms@253434035@25.34.34 (260400-800653487):5)
+E/GoogleApiManager( 6469):      at android.os.Looper.loopOnce(Looper.java:248)
+E/GoogleApiManager( 6469):      at android.os.Looper.loop(Looper.java:338)
+E/GoogleApiManager( 6469):      at android.os.HandlerThread.run(HandlerThread.java:85)
+I/flutter ( 6469): User has already selected sports, going to home
+I/flutter ( 6469): 📱 Loading games data...
+I/flutter ( 6469): 📦 Loaded 36 games from cache (age: 22 minutes)
+I/flutter ( 6469): Starting PurchaseService initialization...
+D/CompatChangeReporter( 6469): Compat change id reported: 253665015; UID 10440; state: ENABLED
+W/WindowOnBackDispatcher( 6469): OnBackInvokedCallback is not enabled for the application.
+W/WindowOnBackDispatcher( 6469): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+I/flutter ( 6469): ⚡ Returning 36 cached games immediately
+I/flutter ( 6469): 🔄 Background refresh starting...
+I/flutter ( 6469): 🔄 Fetching fresh games from ESPN API...
+I/flutter ( 6469): Fetching MLB games from: https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard
+I/flutter ( 6469): Fetching NFL games from: https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard
+I/flutter ( 6469): Fetching NBA games from: https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard
+I/flutter ( 6469): Fetching NHL games from: https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard
+I/flutter ( 6469): Fetching UFC games from: https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard
+I/flutter ( 6469): Fetching BELLATOR events for next 60 days from: https://site.api.espn.com/apis/site/v2/sports/mma/bellator/scoreboard?dates=20250906-20251105
+I/flutter ( 6469): Fetching PFL events for next 60 days from: https://site.api.espn.com/apis/site/v2/sports/mma/pfl/scoreboard?dates=20250906-20251105
+I/flutter ( 6469): Fetching BOXING events for next 60 days from: https://site.api.espn.com/apis/site/v2/sports/boxing/scoreboard?dates=20250906-20251105
+I/flutter ( 6469): Live games: 0
+I/flutter ( 6469): Today's games: 1
+I/flutter ( 6469): Tomorrow's games: 13
+I/flutter ( 6469): ✅ Games loaded: 36 total
+I/flutter ( 6469): User sports preferences loaded: [Tennis, NFL]
+I/flutter ( 6469): 📱 Loading games data...
+I/flutter ( 6469): ⚡ Returning 36 games from memory cache
+I/flutter ( 6469): ⚡ Returning 36 cached games immediately
+I/flutter ( 6469): 🔄 Background refresh starting...
+I/flutter ( 6469): 🔄 Fetching fresh games from ESPN API...
+I/flutter ( 6469): Fetching MLB games from: https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard
+I/flutter ( 6469): Fetching NFL games from: https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard
+I/flutter ( 6469): Fetching NBA games from: https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard
+I/flutter ( 6469): Fetching NHL games from: https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard
+I/flutter ( 6469): Fetching UFC games from: https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard
+I/flutter ( 6469): Fetching BELLATOR events for next 60 days from: https://site.api.espn.com/apis/site/v2/sports/mma/bellator/scoreboard?dates=20250906-20251105
+I/flutter ( 6469): Fetching PFL events for next 60 days from: https://site.api.espn.com/apis/site/v2/sports/mma/pfl/scoreboard?dates=20250906-20251105
+I/flutter ( 6469): Fetching BOXING events for next 60 days from: https://site.api.espn.com/apis/site/v2/sports/boxing/scoreboard?dates=20250906-20251105
+I/flutter ( 6469): Live games: 0
+I/flutter ( 6469): Today's games: 1
+I/flutter ( 6469): Tomorrow's games: 13
+I/flutter ( 6469): ✅ Games loaded: 36 total
+I/flutter ( 6469): In-app purchases available: true
+I/flutter ( 6469): Attempting to load products: {br_coins_250, br_coins_500}
+I/flutter ( 6469): Products not found in store: [br_coins_250, br_coins_500]
+I/flutter ( 6469): Make sure these product IDs exist in Google Play Console:
+I/flutter ( 6469):   - br_coins_250
+I/flutter ( 6469):   - br_coins_500
+I/flutter ( 6469): Successfully loaded 0 products:
+I/flutter ( 6469): Purchase service initialization complete
+I/flutter ( 6469): Products available: 0
+W/Firestore( 6469): (25.1.4) [Firestore]: Listen for Query(target=Query(pools where buyIn>=5 and buyIn<=15 and status==open order by buyIn, __name__);limitType=LIMIT_TO_FIRST) failed: Status{code=FAILED_PRECONDITION, description=The query requires an index. You can create it here: https://console.firebase.google.com/v1/r/project/bragging-rights-ea6e1/firestore/indexes?create_composite=ClNwcm9qZWN0cy9icmFnZ2luZy1yaWdodHMtZWE2ZTEvZGF0YWJhc2VzLyhkZWZhdWx0KS9jb2xsZWN0aW9uR3JvdXBzL3Bvb2xzL2luZGV4ZXMvXxABGgoKBnN0YXR1cxABGgkKBWJ1eUluEAEaDAoIX19uYW1lX18QAQ, cause=null}
+I/flutter ( 6469): Error fetching quick join pools: [cloud_firestore/failed-precondition] The query requires an index. You can create it here: https://console.firebase.google.com/v1/r/project/bragging-rights-ea6e1/firestore/indexes?create_composite=ClNwcm9qZWN0cy9icmFnZ2luZy1yaWdodHMtZWE2ZTEvZGF0YWJhc2VzLyhkZWZhdWx0KS9jb2xsZWN0aW9uR3JvdXBzL3Bvb2xzL2luZGV4ZXMvXxABGgoKBnN0YXR1cxABGgkKBWJ1eUluEAEaDAoIX19uYW1lX18QAQ
+I/flutter ( 6469): Found 1 UFC events
+I/flutter ( 6469): 🥊 Processing combat sport (UFC) event: UFC Fight Night: Imavov vs. Borralho
+I/flutter ( 6469): Added UFC game: UFC Fight Night: Imavov vs. Borralho @
+I/flutter ( 6469): Found 2 NBA events
+I/flutter ( 6469): Added NBA game: Philadelphia 76ers @ New York Knicks
+I/flutter ( 6469): Added NBA game: Melbourne United @ New Orleans Pelicans
+I/flutter ( 6469): Found 2 NBA events
+I/flutter ( 6469): Added NBA game: Philadelphia 76ers @ New York Knicks
+I/flutter ( 6469): Added NBA game: Melbourne United @ New Orleans Pelicans
+I/flutter ( 6469): Found 1 UFC events
+I/flutter ( 6469): 🥊 Processing combat sport (UFC) event: UFC Fight Night: Imavov vs. Borralho
+I/flutter ( 6469): Added UFC game: UFC Fight Night: Imavov vs. Borralho @
+I/flutter ( 6469): Found 1 NHL events
+I/flutter ( 6469): Added NHL game: St. Louis Blues @ Dallas Stars
+I/flutter ( 6469): Found 1 NHL events
+I/flutter ( 6469): Added NHL game: St. Louis Blues @ Dallas Stars
+I/flutter ( 6469): Found 0 BELLATOR events
+I/flutter ( 6469): No BELLATOR events scheduled in the next 60 days
+I/flutter ( 6469): Returning 0 BELLATOR games
+I/flutter ( 6469): Found 0 BELLATOR events
+I/flutter ( 6469): No BELLATOR events scheduled in the next 60 days
+I/flutter ( 6469): Returning 0 BELLATOR games
+I/flutter ( 6469): Found 1 PFL events
+I/flutter ( 6469): 🥊 Processing combat sport (PFL) event: PFL Champions Series Dubai: Nurmagomedov vs. Hughes 2
+I/flutter ( 6469): Added PFL game: PFL Champions Series Dubai: Nurmagomedov vs. Hughes 2 @
+I/flutter ( 6469): Found 1 PFL events
+I/flutter ( 6469): 🥊 Processing combat sport (PFL) event: PFL Champions Series Dubai: Nurmagomedov vs. Hughes 2
+I/flutter ( 6469): Added PFL game: PFL Champions Series Dubai: Nurmagomedov vs. Hughes 2 @
+I/flutter ( 6469): Found 15 MLB events
+I/flutter ( 6469): Added MLB game: Washington Nationals @ Chicago Cubs
+I/flutter ( 6469): Added MLB game: Chicago White Sox @ Detroit Tigers
+I/flutter ( 6469): Added MLB game: Milwaukee Brewers @ Pittsburgh Pirates
+I/flutter ( 6469): Added MLB game: New York Mets @ Cincinnati Reds
+I/flutter ( 6469): Added MLB game: Los Angeles Dodgers @ Baltimore Orioles
+I/flutter ( 6469): Added MLB game: Toronto Blue Jays @ New York Yankees
+I/flutter ( 6469): Added MLB game: Philadelphia Phillies @ Miami Marlins
+I/flutter ( 6469): Added MLB game: Seattle Mariners @ Atlanta Braves
+I/flutter ( 6469): Added MLB game: Cleveland Guardians @ Tampa Bay Rays
+I/flutter ( 6469): Added MLB game: Minnesota Twins @ Kansas City Royals
+I/flutter ( 6469): Added MLB game: Houston Astros @ Texas Rangers
+I/flutter ( 6469): Added MLB game: San Francisco Giants @ St. Louis Cardinals
+I/flutter ( 6469): Added MLB game: San Diego Padres @ Colorado Rockies
+I/flutter ( 6469): Added MLB game: Athletics @ Los Angeles Angels
+I/flutter ( 6469): Added MLB game: Boston Red Sox @ Arizona Diamondbacks
+I/flutter ( 6469): Saved 2 games to Firestore
+I/flutter ( 6469): 🎲 Enriching games with odds and creating pools...
+I/flutter ( 6469): 🎲 Enriching 2 games with odds...
+I/flutter ( 6469): ✅ Finished enriching games with odds
+I/flutter ( 6469): Returning 2 NBA games
+I/flutter ( 6469): Found 15 MLB events
+I/flutter ( 6469): Added MLB game: Washington Nationals @ Chicago Cubs
+I/flutter ( 6469): Added MLB game: Chicago White Sox @ Detroit Tigers
+I/flutter ( 6469): Added MLB game: Milwaukee Brewers @ Pittsburgh Pirates
+I/flutter ( 6469): Added MLB game: New York Mets @ Cincinnati Reds
+I/flutter ( 6469): Added MLB game: Los Angeles Dodgers @ Baltimore Orioles
+I/flutter ( 6469): Added MLB game: Toronto Blue Jays @ New York Yankees
+I/flutter ( 6469): Added MLB game: Philadelphia Phillies @ Miami Marlins
+I/flutter ( 6469): Added MLB game: Seattle Mariners @ Atlanta Braves
+I/flutter ( 6469): Added MLB game: Cleveland Guardians @ Tampa Bay Rays
+I/flutter ( 6469): Added MLB game: Minnesota Twins @ Kansas City Royals
+I/flutter ( 6469): Added MLB game: Houston Astros @ Texas Rangers
+I/flutter ( 6469): Added MLB game: San Francisco Giants @ St. Louis Cardinals
+I/flutter ( 6469): Added MLB game: San Diego Padres @ Colorado Rockies
+I/flutter ( 6469): Added MLB game: Athletics @ Los Angeles Angels
+I/flutter ( 6469): Added MLB game: Boston Red Sox @ Arizona Diamondbacks
+I/flutter ( 6469): Saved 1 games to Firestore
+I/flutter ( 6469): 🎲 Enriching games with odds and creating pools...
+I/flutter ( 6469): 🎲 Enriching 1 games with odds...
+I/flutter ( 6469): 📊 Fetching odds from ESPN for UFC Fight Night: Imavov vs. Borralho @
+I/flutter ( 6469): Saved 2 games to Firestore
+I/flutter ( 6469): 🎲 Enriching games with odds and creating pools...
+I/flutter ( 6469): 🎲 Enriching 2 games with odds...
+I/flutter ( 6469): ✅ Finished enriching games with odds
+I/flutter ( 6469): Returning 2 NBA games
+I/flutter ( 6469): Found 16 NFL events
+I/flutter ( 6469): Added NFL game: Dallas Cowboys @ Philadelphia Eagles
+I/flutter ( 6469): Added NFL game: Kansas City Chiefs @ Los Angeles Chargers
+I/flutter ( 6469): Added NFL game: Tampa Bay Buccaneers @ Atlanta Falcons
+I/flutter ( 6469): Added NFL game: Cincinnati Bengals @ Cleveland Browns
+I/flutter ( 6469): Added NFL game: Miami Dolphins @ Indianapolis Colts
+I/flutter ( 6469): Added NFL game: Las Vegas Raiders @ New England Patriots
+I/flutter ( 6469): Added NFL game: Arizona Cardinals @ New Orleans Saints
+I/flutter ( 6469): Added NFL game: Pittsburgh Steelers @ New York Jets
+I/flutter ( 6469): Added NFL game: New York Giants @ Washington Commanders
+I/flutter ( 6469): Added NFL game: Carolina Panthers @ Jacksonville Jaguars
+I/flutter ( 6469): Added NFL game: Tennessee Titans @ Denver Broncos
+I/flutter ( 6469): Added NFL game: San Francisco 49ers @ Seattle Seahawks
+I/flutter ( 6469): Added NFL game: Detroit Lions @ Green Bay Packers
+I/flutter ( 6469): Added NFL game: Houston Texans @ Los Angeles Rams
+I/flutter ( 6469): Added NFL game: Baltimore Ravens @ Buffalo Bills
+I/flutter ( 6469): Added NFL game: Minnesota Vikings @ Chicago Bears
+I/flutter ( 6469): Saved 1 games to Firestore
+I/flutter ( 6469): 🎲 Enriching games with odds and creating pools...
+I/flutter ( 6469): 🎲 Enriching 1 games with odds...
+I/flutter ( 6469): 📊 Fetching odds from ESPN for UFC Fight Night: Imavov vs. Borralho @
+I/flutter ( 6469): Saved 1 games to Firestore
+I/flutter ( 6469): 🎲 Enriching games with odds and creating pools...
+I/flutter ( 6469): 🎲 Enriching 1 games with odds...
+I/flutter ( 6469): ✅ Finished enriching games with odds
+I/flutter ( 6469): Returning 1 NHL games
+I/flutter ( 6469): Found 16 NFL events
+I/flutter ( 6469): Added NFL game: Dallas Cowboys @ Philadelphia Eagles
+I/flutter ( 6469): Added NFL game: Kansas City Chiefs @ Los Angeles Chargers
+I/flutter ( 6469): Added NFL game: Tampa Bay Buccaneers @ Atlanta Falcons
+I/flutter ( 6469): Added NFL game: Cincinnati Bengals @ Cleveland Browns
+I/flutter ( 6469): Added NFL game: Miami Dolphins @ Indianapolis Colts
+I/flutter ( 6469): Added NFL game: Las Vegas Raiders @ New England Patriots
+I/flutter ( 6469): Added NFL game: Arizona Cardinals @ New Orleans Saints
+I/flutter ( 6469): Added NFL game: Pittsburgh Steelers @ New York Jets
+I/flutter ( 6469): Added NFL game: New York Giants @ Washington Commanders
+I/flutter ( 6469): Added NFL game: Carolina Panthers @ Jacksonville Jaguars
+I/flutter ( 6469): Added NFL game: Tennessee Titans @ Denver Broncos
+I/flutter ( 6469): Added NFL game: San Francisco 49ers @ Seattle Seahawks
+I/flutter ( 6469): Added NFL game: Detroit Lions @ Green Bay Packers
+I/flutter ( 6469): Added NFL game: Houston Texans @ Los Angeles Rams
+I/flutter ( 6469): Added NFL game: Baltimore Ravens @ Buffalo Bills
+I/flutter ( 6469): Added NFL game: Minnesota Vikings @ Chicago Bears
+I/flutter ( 6469): Saved 1 games to Firestore
+I/flutter ( 6469): 🎲 Enriching games with odds and creating pools...
+I/flutter ( 6469): 🎲 Enriching 1 games with odds...
+I/flutter ( 6469): ✅ Finished enriching games with odds
+I/flutter ( 6469): Returning 1 NHL games
+I/flutter ( 6469): Saved 1 games to Firestore
+I/flutter ( 6469): 🎲 Enriching games with odds and creating pools...
+I/flutter ( 6469): 🎲 Enriching 1 games with odds...
+I/flutter ( 6469): ✅ Finished enriching games with odds
+I/flutter ( 6469): Returning 1 PFL games
+I/flutter ( 6469): Saved 1 games to Firestore
+I/flutter ( 6469): 🎲 Enriching games with odds and creating pools...
+I/flutter ( 6469): 🎲 Enriching 1 games with odds...
+I/flutter ( 6469): ✅ Finished enriching games with odds
+I/flutter ( 6469): Returning 1 PFL games
+I/flutter ( 6469): Saved 15 games to Firestore
+I/flutter ( 6469): 🎲 Enriching games with odds and creating pools...
+I/flutter ( 6469): 🎲 Enriching 15 games with odds...
+I/flutter ( 6469): Saved 15 games to Firestore
+I/flutter ( 6469): 🎲 Enriching games with odds and creating pools...
+I/flutter ( 6469): 🎲 Enriching 15 games with odds...
+I/flutter ( 6469): ❌ No odds available from any source for UFC Fight Night: Imavov vs. Borralho @
+I/flutter ( 6469): ❌ No odds available from any source for UFC Fight Night: Imavov vs. Borralho @
+I/flutter ( 6469): Saved 16 games to Firestore
+I/flutter ( 6469): 🎲 Enriching games with odds and creating pools...
+I/flutter ( 6469): 🎲 Enriching 16 games with odds...
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Tampa Bay Buccaneers @ Atlanta Falcons
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Cincinnati Bengals @ Cleveland Browns
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Miami Dolphins @ Indianapolis Colts
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Saved 16 games to Firestore
+I/flutter ( 6469): 🎲 Enriching games with odds and creating pools...
+I/flutter ( 6469): 🎲 Enriching 16 games with odds...
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Tampa Bay Buccaneers @ Atlanta Falcons
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Cincinnati Bengals @ Cleveland Browns
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Miami Dolphins @ Indianapolis Colts
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ! No odds available for game 600054419: UFC Fight Night: Imavov vs. Borralho @
+I/flutter ( 6469): ! No odds available for game 600054419: UFC Fight Night: Imavov vs. Borralho @
+I/flutter ( 6469): ✅ Finished enriching games with odds
+I/flutter ( 6469): Returning 1 UFC games
+I/flutter ( 6469): ✅ Finished enriching games with odds
+I/flutter ( 6469): Returning 1 UFC games
+I/flutter ( 6469): ⏰ Cache expired: age=1381s, ttl=120s
+I/flutter ( 6469): ❌ Cache miss: games/nfl_espn_2025-09-06/scores - Fetching fresh data...
+I/flutter ( 6469): 🏈 Fetching NFL games from ESPN...
+I/ging_rights_app( 6469): Background concurrent mark compact GC freed 31MB AllocSpace bytes, 53(16MB) LOS objects, 75% free, 18MB/73MB, paused 561us,1.293ms total 112.970ms
+I/flutter ( 6469): ⏰ Cache expired: age=1381s, ttl=120s
+I/flutter ( 6469): ❌ Cache miss: games/nfl_espn_2025-09-06/scores - Fetching fresh data...
+I/flutter ( 6469): 🏈 Fetching NFL games from ESPN...
+I/flutter ( 6469): ⏰ Cache expired: age=1381s, ttl=120s
+I/flutter ( 6469): ❌ Cache miss: games/nfl_espn_2025-09-06/scores - Fetching fresh data...
+I/flutter ( 6469): 🏈 Fetching NFL games from ESPN...
+I/flutter ( 6469): ⏰ Cache expired: age=1381s, ttl=120s
+I/flutter ( 6469): ❌ Cache miss: games/nfl_espn_2025-09-06/scores - Fetching fresh data...
+I/flutter ( 6469): 🏈 Fetching NFL games from ESPN...
+I/flutter ( 6469): ⏰ Cache expired: age=1381s, ttl=120s
+I/flutter ( 6469): ❌ Cache miss: games/nfl_espn_2025-09-06/scores - Fetching fresh data...
+I/flutter ( 6469): 🏈 Fetching NFL games from ESPN...
+I/flutter ( 6469): ⏰ Cache expired: age=1381s, ttl=120s
+I/flutter ( 6469): ❌ Cache miss: games/nfl_espn_2025-09-06/scores - Fetching fresh data...
+I/flutter ( 6469): 🏈 Fetching NFL games from ESPN...
+I/flutter ( 6469): ✅ Finished enriching games with odds
+I/flutter ( 6469): Returning 15 MLB games
+I/flutter ( 6469): ✅ Finished enriching games with odds
+I/flutter ( 6469): Returning 15 MLB games
+I/flutter ( 6469): ✅ ESPN NFL data received: 16 games
+I/flutter ( 6469): ✅ ESPN NFL data received: 16 games
+I/flutter ( 6469): ✅ ESPN NFL data received: 16 games
+I/flutter ( 6469): ✅ ESPN NFL data received: 16 games
+I/flutter ( 6469): ✅ ESPN NFL data received: 16 games
+I/flutter ( 6469): ✅ ESPN NFL data received: 16 games
+I/flutter ( 6469): 💾 Cached new data: games/nfl_espn_2025-09-06/scores (TTL: 120s)
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Miami Dolphins @ Indianapolis Colts
+I/flutter ( 6469): 💾 Cached new data: games/nfl_espn_2025-09-06/scores (TTL: 120s)
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Cincinnati Bengals @ Cleveland Browns
+I/flutter ( 6469): 💾 Cached new data: games/nfl_espn_2025-09-06/scores (TTL: 120s)
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Cincinnati Bengals @ Cleveland Browns
+I/flutter ( 6469): 💾 Cached new data: games/nfl_espn_2025-09-06/scores (TTL: 120s)
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Tampa Bay Buccaneers @ Atlanta Falcons
+I/flutter ( 6469): 💾 Cached new data: games/nfl_espn_2025-09-06/scores (TTL: 120s)
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Tampa Bay Buccaneers @ Atlanta Falcons
+I/flutter ( 6469): 💾 Cached new data: games/nfl_espn_2025-09-06/scores (TTL: 120s)
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Miami Dolphins @ Indianapolis Colts
+I/flutter ( 6469): ! No odds available for game 401772719: Miami Dolphins @ Indianapolis Colts
+I/flutter ( 6469): ! No odds available for game 401772829: Cincinnati Bengals @ Cleveland Browns
+I/flutter ( 6469): ! No odds available for game 401772829: Cincinnati Bengals @ Cleveland Browns
+I/flutter ( 6469): ! No odds available for game 401772830: Tampa Bay Buccaneers @ Atlanta Falcons
+I/flutter ( 6469): ! No odds available for game 401772830: Tampa Bay Buccaneers @ Atlanta Falcons
+I/flutter ( 6469): ! No odds available for game 401772719: Miami Dolphins @ Indianapolis Colts
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Las Vegas Raiders @ New England Patriots
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Arizona Cardinals @ New Orleans Saints
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Pittsburgh Steelers @ New York Jets
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for New York Giants @ Washington Commanders
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Carolina Panthers @ Jacksonville Jaguars
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Las Vegas Raiders @ New England Patriots
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Arizona Cardinals @ New Orleans Saints
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Pittsburgh Steelers @ New York Jets
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for New York Giants @ Washington Commanders
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Carolina Panthers @ Jacksonville Jaguars
+I/flutter ( 6469): ! No odds available for game 401772720: Las Vegas Raiders @ New England Patriots
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Las Vegas Raiders @ New England Patriots
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Arizona Cardinals @ New Orleans Saints
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Pittsburgh Steelers @ New York Jets
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for New York Giants @ Washington Commanders
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Carolina Panthers @ Jacksonville Jaguars
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Las Vegas Raiders @ New England Patriots
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Arizona Cardinals @ New Orleans Saints
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Pittsburgh Steelers @ New York Jets
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for New York Giants @ Washington Commanders
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Carolina Panthers @ Jacksonville Jaguars
+I/flutter ( 6469): ! No odds available for game 401772718: Arizona Cardinals @ New Orleans Saints
+I/flutter ( 6469): ! No odds available for game 401772827: New York Giants @ Washington Commanders
+I/flutter ( 6469): ! No odds available for game 401772721: Pittsburgh Steelers @ New York Jets
+I/flutter ( 6469): ! No odds available for game 401772828: Carolina Panthers @ Jacksonville Jaguars
+I/flutter ( 6469): ! No odds available for game 401772718: Arizona Cardinals @ New Orleans Saints
+I/flutter ( 6469): ! No odds available for game 401772720: Las Vegas Raiders @ New England Patriots
+I/flutter ( 6469): ! No odds available for game 401772827: New York Giants @ Washington Commanders
+I/flutter ( 6469): ! No odds available for game 401772721: Pittsburgh Steelers @ New York Jets
+I/flutter ( 6469): ! No odds available for game 401772828: Carolina Panthers @ Jacksonville Jaguars
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Tennessee Titans @ Denver Broncos
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for San Francisco 49ers @ Seattle Seahawks
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Detroit Lions @ Green Bay Packers
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Houston Texans @ Los Angeles Rams
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Baltimore Ravens @ Buffalo Bills
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Tennessee Titans @ Denver Broncos
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for San Francisco 49ers @ Seattle Seahawks
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Detroit Lions @ Green Bay Packers
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Houston Texans @ Los Angeles Rams
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Baltimore Ravens @ Buffalo Bills
+I/flutter ( 6469): ! No odds available for game 401772722: Detroit Lions @ Green Bay Packers
+I/flutter ( 6469): ! No odds available for game 401772832: Tennessee Titans @ Denver Broncos
+I/flutter ( 6469): ! No odds available for game 401772723: Houston Texans @ Los Angeles Rams
+I/flutter ( 6469): ! No odds available for game 401772831: San Francisco 49ers @ Seattle Seahawks
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Tennessee Titans @ Denver Broncos
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for San Francisco 49ers @ Seattle Seahawks
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Detroit Lions @ Green Bay Packers
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Houston Texans @ Los Angeles Rams
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Baltimore Ravens @ Buffalo Bills
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Tennessee Titans @ Denver Broncos
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for San Francisco 49ers @ Seattle Seahawks
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Detroit Lions @ Green Bay Packers
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Houston Texans @ Los Angeles Rams
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Baltimore Ravens @ Buffalo Bills
+I/flutter ( 6469): ! No odds available for game 401772918: Baltimore Ravens @ Buffalo Bills
+I/flutter ( 6469): ! No odds available for game 401772831: San Francisco 49ers @ Seattle Seahawks
+I/flutter ( 6469): ! No odds available for game 401772832: Tennessee Titans @ Denver Broncos
+I/flutter ( 6469): ! No odds available for game 401772918: Baltimore Ravens @ Buffalo Bills
+I/flutter ( 6469): ! No odds available for game 401772723: Houston Texans @ Los Angeles Rams
+I/flutter ( 6469): ! No odds available for game 401772722: Detroit Lions @ Green Bay Packers
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Minnesota Vikings @ Chicago Bears
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Minnesota Vikings @ Chicago Bears
+I/flutter ( 6469): ! No odds available for game 401772810: Minnesota Vikings @ Chicago Bears
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Minnesota Vikings @ Chicago Bears
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Minnesota Vikings @ Chicago Bears
+I/flutter ( 6469): ✅ Finished enriching games with odds
+I/flutter ( 6469): Returning 16 NFL games
+I/flutter ( 6469): 📦 Cached 36 games to local storage
+I/flutter ( 6469): ✅ Fetched 36 games total
+I/flutter ( 6469): ✅ Background refresh complete: 36 games
+I/flutter ( 6469): ! No odds available for game 401772810: Minnesota Vikings @ Chicago Bears
+I/flutter ( 6469): ✅ Finished enriching games with odds
+I/flutter ( 6469): Returning 16 NFL games
+I/flutter ( 6469): 📦 Cached 36 games to local storage
+I/flutter ( 6469): ✅ Fetched 36 games total
+I/flutter ( 6469): ✅ Background refresh complete: 36 games
+I/flutter ( 6469): Saved 36 games to Firestore
+I/flutter ( 6469): 🎲 Enriching games with odds and creating pools...
+I/flutter ( 6469): 🎲 Enriching 36 games with odds...
+I/flutter ( 6469): Saved 36 games to Firestore
+I/flutter ( 6469): 🎲 Enriching games with odds and creating pools...
+I/flutter ( 6469): 🎲 Enriching 36 games with odds...
+W/WindowOnBackDispatcher( 6469): OnBackInvokedCallback is not enabled for the application.
+W/WindowOnBackDispatcher( 6469): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+I/flutter ( 6469): 📊 Fetching odds from ESPN for UFC Fight Night: Imavov vs. Borralho @
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Tampa Bay Buccaneers @ Atlanta Falcons
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Cincinnati Bengals @ Cleveland Browns
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Tampa Bay Buccaneers @ Atlanta Falcons
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Cincinnati Bengals @ Cleveland Browns
+I/flutter ( 6469): 📊 Fetching odds from ESPN for UFC Fight Night: Imavov vs. Borralho @
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Tampa Bay Buccaneers @ Atlanta Falcons
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Cincinnati Bengals @ Cleveland Browns
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Tampa Bay Buccaneers @ Atlanta Falcons
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Cincinnati Bengals @ Cleveland Browns
+I/flutter ( 6469): ! No odds available for game 401772829: Cincinnati Bengals @ Cleveland Browns
+I/flutter ( 6469): ❌ No odds available from any source for UFC Fight Night: Imavov vs. Borralho @
+I/flutter ( 6469): ❌ No odds available from any source for UFC Fight Night: Imavov vs. Borralho @
+I/flutter ( 6469): ! No odds available for game 401772830: Tampa Bay Buccaneers @ Atlanta Falcons
+I/flutter ( 6469): ! No odds available for game 401772830: Tampa Bay Buccaneers @ Atlanta Falcons
+I/flutter ( 6469): ! No odds available for game 401772829: Cincinnati Bengals @ Cleveland Browns
+I/flutter ( 6469): ! No odds available for game 600054419: UFC Fight Night: Imavov vs. Borralho @
+I/flutter ( 6469): ! No odds available for game 600054419: UFC Fight Night: Imavov vs. Borralho @
+I/flutter ( 6469): =============== QUICK PLAY POOL JOIN ATTEMPT ===============
+I/flutter ( 6469): Pool Name: Quick Play - 100 BR
+I/flutter ( 6469): Pool ID: EmdxeV6LeNbCqodHjjAI
+I/flutter ( 6469): Buy-in Amount: 100 BR
+I/flutter ( 6469): Game Title: Tampa Bay Buccaneers @ Atlanta Falcons
+I/flutter ( 6469): Sport: NFL
+I/flutter ( 6469): Current Balance: 95444 BR
+I/flutter ( 6469): Timestamp: 2025-09-06T01:13:50.439105
+I/flutter ( 6469): ===========================================================
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Miami Dolphins @ Indianapolis Colts
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Las Vegas Raiders @ New England Patriots
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Arizona Cardinals @ New Orleans Saints
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Pittsburgh Steelers @ New York Jets
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Carolina Panthers @ Jacksonville Jaguars
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Miami Dolphins @ Indianapolis Colts
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Las Vegas Raiders @ New England Patriots
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Arizona Cardinals @ New Orleans Saints
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Pittsburgh Steelers @ New York Jets
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Carolina Panthers @ Jacksonville Jaguars
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Miami Dolphins @ Indianapolis Colts
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Las Vegas Raiders @ New England Patriots
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Arizona Cardinals @ New Orleans Saints
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Pittsburgh Steelers @ New York Jets
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Carolina Panthers @ Jacksonville Jaguars
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Miami Dolphins @ Indianapolis Colts
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Las Vegas Raiders @ New England Patriots
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Arizona Cardinals @ New Orleans Saints
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Pittsburgh Steelers @ New York Jets
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Carolina Panthers @ Jacksonville Jaguars
+I/flutter ( 6469): [POOL JOIN] User already in pool, checking if picks submitted...
+I/flutter ( 6469): ! No odds available for game 401772719: Miami Dolphins @ Indianapolis Colts
+I/flutter ( 6469): ! No odds available for game 401772720: Las Vegas Raiders @ New England Patriots
+I/flutter ( 6469): [POOL JOIN] User has not submitted picks, checking sport type...
+I/flutter ( 6469): [POOL JOIN] Team sport detected, navigating to standard bet selection
+I/flutter ( 6469): === BET SELECTION SCREEN INIT ===
+I/flutter ( 6469): Game Title: Tampa Bay Buccaneers @ Atlanta Falcons
+I/flutter ( 6469): Sport: NFL
+I/flutter ( 6469): Pool Name: Quick Play - 100 BR
+I/flutter ( 6469): Pool ID: EmdxeV6LeNbCqodHjjAI
+I/flutter ( 6469): Game ID: 401772830
+I/flutter ( 6469): ================================
+I/flutter ( 6469): Getting tab controller for sport: "NFL"
+I/flutter ( 6469): Creating 5-tab controller for team sports
+I/flutter ( 6469): [InfoEdgeCarousel] initState called for Winner (Moneyline)
+I/flutter ( 6469): [InfoEdgeCarousel] Starting auto-scroll timer for Winner (Moneyline)
+I/flutter ( 6469): [InfoEdgeCarousel] User has interacted: false, Has auto-scrolled: false
+I/flutter ( 6469): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 0
+I/flutter ( 6469): ! No odds available for game 401772828: Carolina Panthers @ Jacksonville Jaguars
+I/flutter ( 6469): ! No odds available for game 401772721: Pittsburgh Steelers @ New York Jets
+I/flutter ( 6469): ! No odds available for game 401772718: Arizona Cardinals @ New Orleans Saints
+I/flutter ( 6469): ! No odds available for game 401772719: Miami Dolphins @ Indianapolis Colts
+I/flutter ( 6469): ! No odds available for game 401772718: Arizona Cardinals @ New Orleans Saints
+I/flutter ( 6469): ! No odds available for game 401772720: Las Vegas Raiders @ New England Patriots
+I/flutter ( 6469): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 0
+I/ging_rights_app( 6469): AssetManager2(0xb400006ff157ced8) locale list changing from [] to [en-US]
+I/ging_rights_app( 6469): AssetManager2(0xb400006ff15706d8) locale list changing from [] to [en-US]
+I/ging_rights_app( 6469): AssetManager2(0xb400006ff15861b8) locale list changing from [] to [en-US]
+I/ging_rights_app( 6469): AssetManager2(0xb400006ff1574eb8) locale list changing from [] to [en-US]
+I/ging_rights_app( 6469): AssetManager2(0xb400006ff15385f8) locale list changing from [] to [en-US]
+I/ging_rights_app( 6469): AssetManager2(0xb400006ff1550658) locale list changing from [] to [en-US]
+I/ging_rights_app( 6469): AssetManager2(0xb400006ff1560cd8) locale list changing from [] to [en-US]
+I/ging_rights_app( 6469): AssetManager2(0xb400006ff15573b8) locale list changing from [] to [en-US]
+I/ging_rights_app( 6469): AssetManager2(0xb400006ff1548f98) locale list changing from [] to [en-US]
+I/flutter ( 6469): ! No odds available for game 401772721: Pittsburgh Steelers @ New York Jets
+I/flutter ( 6469): ! No odds available for game 401772828: Carolina Panthers @ Jacksonville Jaguars
+I/flutter ( 6469): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 0
+I/flutter ( 6469): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 0
+I/flutter ( 6469): 📊 Fetching odds from ESPN for New York Giants @ Washington Commanders
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for San Francisco 49ers @ Seattle Seahawks
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Tennessee Titans @ Denver Broncos
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Detroit Lions @ Green Bay Packers
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Houston Texans @ Los Angeles Rams
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for New York Giants @ Washington Commanders
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for San Francisco 49ers @ Seattle Seahawks
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Tennessee Titans @ Denver Broncos
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Detroit Lions @ Green Bay Packers
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Houston Texans @ Los Angeles Rams
+I/flutter ( 6469): 📊 Fetching odds from ESPN for New York Giants @ Washington Commanders
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for San Francisco 49ers @ Seattle Seahawks
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Tennessee Titans @ Denver Broncos
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Detroit Lions @ Green Bay Packers
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Houston Texans @ Los Angeles Rams
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for New York Giants @ Washington Commanders
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for San Francisco 49ers @ Seattle Seahawks
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Tennessee Titans @ Denver Broncos
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Detroit Lions @ Green Bay Packers
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Houston Texans @ Los Angeles Rams
+I/flutter ( 6469): ! No odds available for game 401772832: Tennessee Titans @ Denver Broncos
+I/flutter ( 6469): ! No odds available for game 401772827: New York Giants @ Washington Commanders
+I/flutter ( 6469): ! No odds available for game 401772831: San Francisco 49ers @ Seattle Seahawks
+I/flutter ( 6469): ! No odds available for game 401772722: Detroit Lions @ Green Bay Packers
+I/flutter ( 6469): ! No odds available for game 401772723: Houston Texans @ Los Angeles Rams
+I/flutter ( 6469): ! No odds available for game 401772827: New York Giants @ Washington Commanders
+I/flutter ( 6469): ! No odds available for game 401772831: San Francisco 49ers @ Seattle Seahawks
+I/flutter ( 6469): ! No odds available for game 401772722: Detroit Lions @ Green Bay Packers
+I/flutter ( 6469): ! No odds available for game 401772723: Houston Texans @ Los Angeles Rams
+I/flutter ( 6469): ! No odds available for game 401772832: Tennessee Titans @ Denver Broncos
+I/flutter ( 6469): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 0
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Baltimore Ravens @ Buffalo Bills
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Minnesota Vikings @ Chicago Bears
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Baltimore Ravens @ Buffalo Bills
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Minnesota Vikings @ Chicago Bears
+I/flutter ( 6469): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 0
+I/flutter ( 6469): [InfoEdgeCarousel] Timer fired for Winner (Moneyline)
+I/flutter ( 6469): [InfoEdgeCarousel] Mounted: true, Current page: 0, User interacted: false
+I/flutter ( 6469): [InfoEdgeCarousel] Executing auto-scroll to page 1
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Baltimore Ravens @ Buffalo Bills
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Minnesota Vikings @ Chicago Bears
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Baltimore Ravens @ Buffalo Bills
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Minnesota Vikings @ Chicago Bears
+I/flutter ( 6469): ! No odds available for game 401772918: Baltimore Ravens @ Buffalo Bills
+I/flutter ( 6469): ! No odds available for game 401772810: Minnesota Vikings @ Chicago Bears
+I/flutter ( 6469): ! No odds available for game 401772918: Baltimore Ravens @ Buffalo Bills
+I/flutter ( 6469): ! No odds available for game 401772810: Minnesota Vikings @ Chicago Bears
+I/flutter ( 6469): [InfoEdgeCarousel] Page changed to: 1
+I/flutter ( 6469): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
+I/flutter ( 6469): [InfoEdgeCarousel] Auto-scroll animation completed
+I/flutter ( 6469): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
+I/flutter ( 6469): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
+I/flutter ( 6469): ✅ Finished enriching games with odds
+I/flutter ( 6469): 🎲 Enriching 36 games with odds...
+I/flutter ( 6469): ✅ Finished enriching games with odds
+I/flutter ( 6469): 🎲 Enriching 36 games with odds...
+I/flutter ( 6469): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
+I/flutter ( 6469): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
+I/flutter ( 6469): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
+I/flutter ( 6469): 📊 Fetching odds from ESPN for UFC Fight Night: Imavov vs. Borralho @
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Tampa Bay Buccaneers @ Atlanta Falcons
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Cincinnati Bengals @ Cleveland Browns
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Tampa Bay Buccaneers @ Atlanta Falcons
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Cincinnati Bengals @ Cleveland Browns
+I/flutter ( 6469): 📊 Fetching odds from ESPN for UFC Fight Night: Imavov vs. Borralho @
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Tampa Bay Buccaneers @ Atlanta Falcons
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Cincinnati Bengals @ Cleveland Browns
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Tampa Bay Buccaneers @ Atlanta Falcons
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Cincinnati Bengals @ Cleveland Browns
+I/flutter ( 6469): ! No odds available for game 401772830: Tampa Bay Buccaneers @ Atlanta Falcons
+I/flutter ( 6469): ❌ No odds available from any source for UFC Fight Night: Imavov vs. Borralho @
+I/flutter ( 6469): ! No odds available for game 401772829: Cincinnati Bengals @ Cleveland Browns
+I/flutter ( 6469): ! No odds available for game 401772829: Cincinnati Bengals @ Cleveland Browns
+I/flutter ( 6469): ❌ No odds available from any source for UFC Fight Night: Imavov vs. Borralho @
+I/flutter ( 6469): ! No odds available for game 401772830: Tampa Bay Buccaneers @ Atlanta Falcons
+I/flutter ( 6469): ! No odds available for game 600054419: UFC Fight Night: Imavov vs. Borralho @
+I/flutter ( 6469): ! No odds available for game 600054419: UFC Fight Night: Imavov vs. Borralho @
+I/flutter ( 6469): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Miami Dolphins @ Indianapolis Colts
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Las Vegas Raiders @ New England Patriots
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Arizona Cardinals @ New Orleans Saints
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Pittsburgh Steelers @ New York Jets
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Carolina Panthers @ Jacksonville Jaguars
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Miami Dolphins @ Indianapolis Colts
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Las Vegas Raiders @ New England Patriots
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Arizona Cardinals @ New Orleans Saints
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Pittsburgh Steelers @ New York Jets
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Carolina Panthers @ Jacksonville Jaguars
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Miami Dolphins @ Indianapolis Colts
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Las Vegas Raiders @ New England Patriots
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Arizona Cardinals @ New Orleans Saints
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Pittsburgh Steelers @ New York Jets
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Carolina Panthers @ Jacksonville Jaguars
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Miami Dolphins @ Indianapolis Colts
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Las Vegas Raiders @ New England Patriots
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Arizona Cardinals @ New Orleans Saints
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Pittsburgh Steelers @ New York Jets
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Carolina Panthers @ Jacksonville Jaguars
+I/flutter ( 6469): ! No odds available for game 401772719: Miami Dolphins @ Indianapolis Colts
+I/flutter ( 6469): ! No odds available for game 401772720: Las Vegas Raiders @ New England Patriots
+I/flutter ( 6469): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
+I/flutter ( 6469): ! No odds available for game 401772718: Arizona Cardinals @ New Orleans Saints
+I/flutter ( 6469): ! No odds available for game 401772828: Carolina Panthers @ Jacksonville Jaguars
+I/flutter ( 6469): ! No odds available for game 401772721: Pittsburgh Steelers @ New York Jets
+I/flutter ( 6469): ! No odds available for game 401772719: Miami Dolphins @ Indianapolis Colts
+I/flutter ( 6469): ! No odds available for game 401772718: Arizona Cardinals @ New Orleans Saints
+I/flutter ( 6469): ! No odds available for game 401772828: Carolina Panthers @ Jacksonville Jaguars
+I/flutter ( 6469): ! No odds available for game 401772720: Las Vegas Raiders @ New England Patriots
+I/flutter ( 6469): ! No odds available for game 401772721: Pittsburgh Steelers @ New York Jets
+I/flutter ( 6469): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
+I/flutter ( 6469): 📊 Fetching odds from ESPN for New York Giants @ Washington Commanders
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for San Francisco 49ers @ Seattle Seahawks
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Tennessee Titans @ Denver Broncos
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Detroit Lions @ Green Bay Packers
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Houston Texans @ Los Angeles Rams
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for New York Giants @ Washington Commanders
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for San Francisco 49ers @ Seattle Seahawks
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Tennessee Titans @ Denver Broncos
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Detroit Lions @ Green Bay Packers
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Houston Texans @ Los Angeles Rams
+I/flutter ( 6469): ! No odds available for game 401772827: New York Giants @ Washington Commanders
+I/flutter ( 6469): ! No odds available for game 401772831: San Francisco 49ers @ Seattle Seahawks
+I/flutter ( 6469): 📊 Fetching odds from ESPN for New York Giants @ Washington Commanders
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for San Francisco 49ers @ Seattle Seahawks
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Tennessee Titans @ Denver Broncos
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Detroit Lions @ Green Bay Packers
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Houston Texans @ Los Angeles Rams
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for New York Giants @ Washington Commanders
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for San Francisco 49ers @ Seattle Seahawks
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Tennessee Titans @ Denver Broncos
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Detroit Lions @ Green Bay Packers
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Houston Texans @ Los Angeles Rams
+I/flutter ( 6469): ! No odds available for game 401772832: Tennessee Titans @ Denver Broncos
+I/flutter ( 6469): ! No odds available for game 401772723: Houston Texans @ Los Angeles Rams
+I/flutter ( 6469): ! No odds available for game 401772722: Detroit Lions @ Green Bay Packers
+I/flutter ( 6469): ! No odds available for game 401772827: New York Giants @ Washington Commanders
+I/flutter ( 6469): ! No odds available for game 401772831: San Francisco 49ers @ Seattle Seahawks
+I/flutter ( 6469): ! No odds available for game 401772832: Tennessee Titans @ Denver Broncos
+I/flutter ( 6469): ! No odds available for game 401772723: Houston Texans @ Los Angeles Rams
+I/flutter ( 6469): ! No odds available for game 401772722: Detroit Lions @ Green Bay Packers
+I/flutter ( 6469): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Baltimore Ravens @ Buffalo Bills
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Minnesota Vikings @ Chicago Bears
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Baltimore Ravens @ Buffalo Bills
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Minnesota Vikings @ Chicago Bears
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Baltimore Ravens @ Buffalo Bills
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): 📊 Fetching odds from ESPN for Minnesota Vikings @ Chicago Bears
+I/flutter ( 6469): 🔍 Cache check: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): ✅ Memory cache hit: games/nfl_espn_2025-09-06/scores
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Baltimore Ravens @ Buffalo Bills
+I/flutter ( 6469): Error getting NFL odds: type 'List<dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast
+I/flutter ( 6469): ❌ No odds available from any source for Minnesota Vikings @ Chicago Bears
+I/flutter ( 6469): ! No odds available for game 401772810: Minnesota Vikings @ Chicago Bears
+I/flutter ( 6469): ! No odds available for game 401772918: Baltimore Ravens @ Buffalo Bills
+I/flutter ( 6469): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
+I/flutter ( 6469): ! No odds available for game 401772918: Baltimore Ravens @ Buffalo Bills
+I/flutter ( 6469): ! No odds available for game 401772810: Minnesota Vikings @ Chicago Bears
+I/flutter ( 6469): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
+I/flutter ( 6469): ✅ Finished enriching games with odds
+I/flutter ( 6469): ✅ Finished enriching games with odds
+I/flutter ( 6469): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
+I/flutter ( 6469): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
+I/flutter ( 6469): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1
+I/flutter ( 6469): [InfoEdgeCarousel] Building Winner (Moneyline), current page: 1

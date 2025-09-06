@@ -11,6 +11,10 @@ class ESPNDirectService {
   final GameOddsEnrichmentService _oddsEnrichmentService = GameOddsEnrichmentService();
   final GameCacheService _cacheService = GameCacheService();
   
+  // Throttle background refreshes to prevent duplicate API calls
+  static DateTime? _lastBackgroundRefresh;
+  static const Duration _backgroundRefreshInterval = Duration(minutes: 30);
+  
   static const Map<String, String> sportEndpoints = {
     'MLB': 'baseball/mlb',
     'NFL': 'football/nfl',
@@ -59,9 +63,10 @@ class ESPNDirectService {
       await batch.commit();
       print('Saved ${games.length} games to Firestore');
       
-      // Enrich games with odds and auto-create pools
-      print('🎲 Enriching games with odds and creating pools...');
-      await _oddsEnrichmentService.enrichGamesWithOdds(games);
+      // DISABLED: Automatic odds enrichment to reduce API calls
+      // Odds will be fetched on-demand when user navigates to betting screen
+      // print('🎲 Enriching games with odds and creating pools...');
+      // await _oddsEnrichmentService.enrichGamesWithOdds(games);
       
     } catch (e) {
       print('Error batch saving games to Firestore: $e');
@@ -121,9 +126,19 @@ class ESPNDirectService {
     return allGames;
   }
   
-  // Background fetch and update
+  // Background fetch and update with throttling
   Future<void> _fetchAndUpdateGamesInBackground() async {
+    // Check if we should throttle this refresh
+    if (_lastBackgroundRefresh != null) {
+      final timeSinceLastRefresh = DateTime.now().difference(_lastBackgroundRefresh!);
+      if (timeSinceLastRefresh < _backgroundRefreshInterval) {
+        print('⏳ Skipping background refresh - last refresh was ${timeSinceLastRefresh.inMinutes} minutes ago');
+        return;
+      }
+    }
+    
     try {
+      _lastBackgroundRefresh = DateTime.now();
       print('🔄 Background refresh starting...');
       final freshGames = await fetchAllGames(forceRefresh: true);
       print('✅ Background refresh complete: ${freshGames.length} games');
@@ -136,8 +151,9 @@ class ESPNDirectService {
   Future<void> _saveGamesToFirestoreInBackground(List<GameModel> games) async {
     try {
       await _saveGamesToFirestore(games);
-      // Also enrich with odds in background
-      _oddsEnrichmentService.enrichGamesWithOdds(games);
+      // DISABLED: Automatic odds enrichment to reduce API calls
+      // Odds will be fetched on-demand when user navigates to betting screen
+      // _oddsEnrichmentService.enrichGamesWithOdds(games);
     } catch (e) {
       print('Error saving to Firestore in background: $e');
     }

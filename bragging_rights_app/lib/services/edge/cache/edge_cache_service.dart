@@ -17,54 +17,54 @@ class EdgeCacheService {
   // Local memory cache for ultra-fast access
   final Map<String, CachedData> _memoryCache = {};
 
-  /// Basketball-specific cache TTLs (in seconds)
+  /// Basketball-specific cache TTLs (in seconds) - Optimized for Firestore sharing
   static const Map<String, Map<String, int>> basketballTTL = {
     'preGame': {
-      'lineups': 300,        // 5 min
-      'injuries': 600,       // 10 min
-      'news': 900,           // 15 min
-      'odds': 120,           // 2 min
-      'social': 300,         // 5 min
+      'lineups': 1800,       // 30 min (was 5 min)
+      'injuries': 3600,      // 1 hour (was 10 min)
+      'news': 3600,          // 1 hour (was 15 min)
+      'odds': 600,           // 10 min (was 2 min)
+      'social': 1800,        // 30 min (was 5 min)
     },
     'firstHalf': {
-      'scores': 30,          // 30 seconds
-      'stats': 60,           // 1 min
-      'playByPlay': 30,      // 30 seconds
-      'news': 600,           // 10 min
-      'social': 120,         // 2 min
+      'scores': 120,         // 2 min (was 30 seconds)
+      'stats': 300,          // 5 min (was 1 min)
+      'playByPlay': 120,     // 2 min (was 30 seconds)
+      'news': 3600,          // 1 hour (was 10 min)
+      'social': 600,         // 10 min (was 2 min)
     },
     'halftime': {
-      'scores': 300,         // 5 min
-      'stats': 180,          // 3 min
-      'news': 300,           // 5 min
-      'social': 60,          // 1 min
+      'scores': 900,         // 15 min (was 5 min)
+      'stats': 600,          // 10 min (was 3 min)
+      'news': 1800,          // 30 min (was 5 min)
+      'social': 300,         // 5 min (was 1 min)
     },
     'secondHalf': {
-      'scores': 30,          // 30 seconds
-      'stats': 60,           // 1 min
-      'playByPlay': 30,      // 30 seconds
-      'news': 600,           // 10 min
-      'social': 120,         // 2 min
+      'scores': 120,         // 2 min (was 30 seconds)
+      'stats': 300,          // 5 min (was 1 min)
+      'playByPlay': 120,     // 2 min (was 30 seconds)
+      'news': 3600,          // 1 hour (was 10 min)
+      'social': 600,         // 10 min (was 2 min)
     },
     'clutchTime': {
-      'scores': 15,          // 15 seconds - critical!
-      'stats': 30,           // 30 seconds
-      'playByPlay': 15,      // 15 seconds
-      'odds': 30,            // 30 seconds
-      'social': 30,          // 30 seconds
+      'scores': 60,          // 1 min (was 15 seconds) - still fast for critical moments
+      'stats': 120,          // 2 min (was 30 seconds)
+      'playByPlay': 60,      // 1 min (was 15 seconds)
+      'odds': 120,           // 2 min (was 30 seconds)
+      'social': 120,         // 2 min (was 30 seconds)
     },
     'blowout': {
-      'scores': 120,         // 2 min - less interest
-      'stats': 300,          // 5 min
-      'playByPlay': 180,     // 3 min
-      'news': 600,           // 10 min
-      'social': 300,         // 5 min
+      'scores': 600,         // 10 min (was 2 min) - less interest
+      'stats': 1800,         // 30 min (was 5 min)
+      'playByPlay': 900,     // 15 min (was 3 min)
+      'news': 3600,          // 1 hour (was 10 min)
+      'social': 1800,        // 30 min (was 5 min)
     },
     'postGame': {
-      'finalStats': 3600,    // 1 hour
-      'news': 300,           // 5 min
-      'social': 180,         // 3 min
-      'recap': 7200,         // 2 hours
+      'finalStats': 86400,   // 24 hours (was 1 hour)
+      'news': 1800,          // 30 min (was 5 min)
+      'social': 900,         // 15 min (was 3 min)
+      'recap': 86400,        // 24 hours (was 2 hours)
     },
   };
 
@@ -102,30 +102,46 @@ class EdgeCacheService {
       // Reconstruct the typed object if needed
       dynamic reconstructedData = firestoreCached['data'];
       
-      // Check if we need to reconstruct an ESPN model
-      if (T == EspnNflScoreboard) {
-        try {
-          reconstructedData = EspnNflScoreboard.fromJson(firestoreCached['data'] as Map<String, dynamic>);
-        } catch (e) {
-          debugPrint('Warning: Could not reconstruct EspnNflScoreboard: $e');
+      // Type safety check - ensure data is correct type before attempting reconstruction
+      if (reconstructedData is List) {
+        // If it's already a list, check if we can cast it properly
+        if (T == List) {
+          // Update memory cache
+          _memoryCache[cacheKey] = CachedData(
+            data: reconstructedData,
+            timestamp: (firestoreCached['timestamp'] as Timestamp).toDate(),
+            ttl: firestoreCached['ttl'] ?? 300,
+          );
+          return reconstructedData as T;
         }
-      } else if (T == EspnScoreboard) {
-        try {
-          reconstructedData = EspnScoreboard.fromJson(firestoreCached['data'] as Map<String, dynamic>);
-        } catch (e) {
-          debugPrint('Warning: Could not reconstruct EspnScoreboard: $e');
-        }
-      } else if (T == EspnNhlScoreboard) {
-        try {
-          reconstructedData = EspnNhlScoreboard.fromJson(firestoreCached['data'] as Map<String, dynamic>);
-        } catch (e) {
-          debugPrint('Warning: Could not reconstruct EspnNhlScoreboard: $e');
-        }
-      } else if (T == EspnMlbScoreboard) {
-        try {
-          reconstructedData = EspnMlbScoreboard.fromJson(firestoreCached['data'] as Map<String, dynamic>);
-        } catch (e) {
-          debugPrint('Warning: Could not reconstruct EspnMlbScoreboard: $e');
+      }
+      
+      // Check if we need to reconstruct an ESPN model from Map data
+      if (reconstructedData is Map<String, dynamic>) {
+        if (T == EspnNflScoreboard) {
+          try {
+            reconstructedData = EspnNflScoreboard.fromJson(reconstructedData);
+          } catch (e) {
+            debugPrint('Warning: Could not reconstruct EspnNflScoreboard: $e');
+          }
+        } else if (T == EspnScoreboard) {
+          try {
+            reconstructedData = EspnScoreboard.fromJson(reconstructedData);
+          } catch (e) {
+            debugPrint('Warning: Could not reconstruct EspnScoreboard: $e');
+          }
+        } else if (T == EspnNhlScoreboard) {
+          try {
+            reconstructedData = EspnNhlScoreboard.fromJson(reconstructedData);
+          } catch (e) {
+            debugPrint('Warning: Could not reconstruct EspnNhlScoreboard: $e');
+          }
+        } else if (T == EspnMlbScoreboard) {
+          try {
+            reconstructedData = EspnMlbScoreboard.fromJson(reconstructedData);
+          } catch (e) {
+            debugPrint('Warning: Could not reconstruct EspnMlbScoreboard: $e');
+          }
         }
       }
       
@@ -136,7 +152,14 @@ class EdgeCacheService {
         ttl: firestoreCached['ttl'] ?? 300,
       );
       
-      return reconstructedData as T;
+      // Final type check before returning
+      try {
+        return reconstructedData as T;
+      } catch (e) {
+        debugPrint('Warning: Type casting error for cached data: $e');
+        debugPrint('Expected type: $T, Got: ${reconstructedData.runtimeType}');
+        return null;
+      }
     }
 
     // 3. Cache miss - fetch fresh data
@@ -315,8 +338,12 @@ class EdgeCacheService {
         return _getHockeyTTL(dataType);
       case 'soccer':
         return _getSoccerTTL(dataType);
+      case 'ufc':
+      case 'mma':
+      case 'boxing':
+        return _getCombatSportsTTL(dataType);
       default:
-        return 300; // 5 min default
+        return 1800; // 30 min default (was 5 min)
     }
   }
 
@@ -377,59 +404,101 @@ class EdgeCacheService {
     }
   }
 
-  /// Get football TTL
+  /// Get football TTL - Optimized for Firestore sharing
   int _getFootballTTL(String dataType) {
     switch (dataType) {
       case 'scores':
-        return 120;  // 2 min
+        return 600;   // 10 min (was 2 min)
       case 'stats':
-        return 180;  // 3 min
+        return 900;   // 15 min (was 3 min)
       case 'news':
-        return 600;  // 10 min
+        return 3600;  // 1 hour (was 10 min)
+      case 'odds':
+        return 900;   // 15 min
+      case 'games':
+        return 1800;  // 30 min for game listings
+      case 'scoreboard':
+        return 600;   // 10 min for scoreboards
       default:
-        return 300;  // 5 min
+        return 1800;  // 30 min default (was 5 min)
     }
   }
 
-  /// Get baseball TTL
+  /// Get baseball TTL - Optimized for Firestore sharing
   int _getBaseballTTL(String dataType) {
     switch (dataType) {
       case 'scores':
-        return 180;  // 3 min
+        return 900;   // 15 min (was 3 min)
       case 'stats':
-        return 300;  // 5 min
+        return 1800;  // 30 min (was 5 min)
       case 'news':
-        return 900;  // 15 min
+        return 3600;  // 1 hour (was 15 min)
+      case 'odds':
+        return 1800;  // 30 min
+      case 'games':
+        return 3600;  // 1 hour for game listings
+      case 'scoreboard':
+        return 900;   // 15 min for scoreboards
       default:
-        return 300;  // 5 min
+        return 1800;  // 30 min default (was 5 min)
     }
   }
 
-  /// Get hockey TTL
+  /// Get hockey TTL - Optimized for Firestore sharing
   int _getHockeyTTL(String dataType) {
     switch (dataType) {
       case 'scores':
-        return 180;  // 3 min
+        return 600;   // 10 min (was 3 min)
       case 'stats':
-        return 240;  // 4 min
+        return 900;   // 15 min (was 4 min)
       case 'news':
-        return 600;  // 10 min
+        return 3600;  // 1 hour (was 10 min)
+      case 'odds':
+        return 900;   // 15 min
+      case 'games':
+        return 1800;  // 30 min for game listings
+      case 'scoreboard':
+        return 600;   // 10 min for scoreboards
       default:
-        return 300;  // 5 min
+        return 1800;  // 30 min default (was 5 min)
     }
   }
 
-  /// Get soccer TTL
+  /// Get soccer TTL - Optimized for Firestore sharing
   int _getSoccerTTL(String dataType) {
     switch (dataType) {
       case 'scores':
-        return 300;  // 5 min (goals are rare)
+        return 1800;  // 30 min (was 5 min - goals are rare)
       case 'stats':
-        return 600;  // 10 min
+        return 3600;  // 1 hour (was 10 min)
       case 'news':
-        return 900;  // 15 min
+        return 3600;  // 1 hour (was 15 min)
+      case 'odds':
+        return 1800;  // 30 min
+      case 'games':
+        return 3600;  // 1 hour for game listings
+      case 'scoreboard':
+        return 1800;  // 30 min for scoreboards
       default:
-        return 600;  // 10 min
+        return 3600;  // 1 hour default (was 10 min)
+    }
+  }
+
+  /// Get combat sports TTL - Optimized for Firestore sharing
+  int _getCombatSportsTTL(String dataType) {
+    switch (dataType) {
+      case 'events':
+        return 7200;  // 2 hours for event listings
+      case 'odds':
+        return 3600;  // 1 hour
+      case 'news':
+        return 3600;  // 1 hour
+      case 'stats':
+        return 7200;  // 2 hours
+      case 'fighters':
+        return 86400; // 24 hours for fighter info
+      default:
+        return 3600;  // 1 hour default
     }
   }
 
