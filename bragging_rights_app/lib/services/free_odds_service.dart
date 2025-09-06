@@ -410,7 +410,16 @@ class FreeOddsService {
     
     // Check for odds in game data
     if (game['odds'] != null) {
-      odds.addAll(game['odds'] as Map<String, dynamic>);
+      final gameOdds = game['odds'];
+      if (gameOdds is Map<String, dynamic>) {
+        odds.addAll(gameOdds);
+      } else if (gameOdds is List && gameOdds.isNotEmpty) {
+        // If odds is a list, take the first item if it's a map
+        final firstOdds = gameOdds[0];
+        if (firstOdds is Map<String, dynamic>) {
+          odds.addAll(firstOdds);
+        }
+      }
     }
     
     // Check for competition odds

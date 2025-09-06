@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/pool_model.dart';
 import 'wallet_service.dart';
 import 'location_service.dart' as location;
+import 'pool_cleanup_service.dart';
 
 class PoolService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -795,15 +796,36 @@ class PoolService {
       final now = DateTime.now();
       
       // Get all open pools that have passed their close time
+      // Exclude already processed pools
       final poolsQuery = await _firestore
           .collection('pools')
           .where('status', isEqualTo: 'open')
           .get();
 
+      int processedCount = 0;
       for (final poolDoc in poolsQuery.docs) {
+        final data = poolDoc.data();
+        
+        // Skip if already processed
+        if (data['processedAt'] != null) {
+          continue;
+        }
+        
         final pool = Pool.fromFirestore(poolDoc);
         if (now.isAfter(pool.closeTime)) {
           await checkPoolActivation(poolDoc.id);
+          processedCount++;
+        }
+      }
+      
+      if (processedCount > 0) {
+        print('Processed $processedCount pools for activation/cancellation');
+        
+        // Run cleanup after processing
+        final cleanupService = PoolCleanupService();
+        final deletedCount = await cleanupService.cleanupExpiredPools();
+        if (deletedCount > 0) {
+          print('Cleaned up $deletedCount expired/empty pools');
         }
       }
     } catch (e) {
