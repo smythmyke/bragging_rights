@@ -575,6 +575,13 @@ class EspnMlbScoreboard {
       leagues: json['leagues']?[0] ?? {},
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'events': events,
+      'leagues': leagues,
+    };
+  }
 }
 
 /// ESPN MLB News model

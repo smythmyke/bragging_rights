@@ -241,7 +241,7 @@ class BetModel {
           .map((b) => BetDetail.fromMap(b))
           .toList(),
       wagerAmount: data['wagerAmount'],
-      totalOdds: data['totalOdds'].toDouble(),
+      totalOdds: (data['totalOdds'] is double) ? data['totalOdds'] : (data['totalOdds'] as num).toDouble(),
       potentialPayout: data['potentialPayout'],
       status: data['status'],
       placedAt: (data['placedAt'] as Timestamp).toDate(),

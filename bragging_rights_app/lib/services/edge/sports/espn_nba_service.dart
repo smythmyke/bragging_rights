@@ -268,6 +268,13 @@ class EspnScoreboard {
     'events': events,
     'league': league,
   };
+
+  Map<String, dynamic> toJson() {
+    return {
+      'events': events,
+      'league': league,
+    };
+  }
 }
 
 class EspnTeams {

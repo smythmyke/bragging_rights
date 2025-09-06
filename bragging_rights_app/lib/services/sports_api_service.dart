@@ -110,14 +110,14 @@ class SportsApiService {
             print('Got odds from FreeOddsService for $gameId');
             // Convert free odds to OddsData format
             final oddsData = OddsData(
-              homeMoneyline: freeOdds['moneylineHome']?.toDouble(),
-              awayMoneyline: freeOdds['moneylineAway']?.toDouble(),
-              spread: freeOdds['spread']?.toDouble(),
-              spreadHomeOdds: freeOdds['spreadHomeOdds']?.toDouble() ?? -110,
-              spreadAwayOdds: freeOdds['spreadAwayOdds']?.toDouble() ?? -110,
-              totalPoints: freeOdds['total']?.toDouble(),
-              overOdds: freeOdds['overOdds']?.toDouble() ?? -110,
-              underOdds: freeOdds['underOdds']?.toDouble() ?? -110,
+              homeMoneyline: OddsData._toDouble(freeOdds['moneylineHome']),
+              awayMoneyline: OddsData._toDouble(freeOdds['moneylineAway']),
+              spread: OddsData._toDouble(freeOdds['spread']),
+              spreadHomeOdds: OddsData._toDouble(freeOdds['spreadHomeOdds']) ?? -110,
+              spreadAwayOdds: OddsData._toDouble(freeOdds['spreadAwayOdds']) ?? -110,
+              totalPoints: OddsData._toDouble(freeOdds['total']),
+              overOdds: OddsData._toDouble(freeOdds['overOdds']) ?? -110,
+              underOdds: OddsData._toDouble(freeOdds['underOdds']) ?? -110,
             );
             
             // Cache in Firestore for next time
@@ -377,17 +377,30 @@ class OddsData {
     this.underOdds,
     this.lastUpdated,
   });
+  
+  // Safe conversion helper
+  static double? _toDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      // Remove any non-numeric characters except . and -
+      final cleaned = value.replaceAll(RegExp(r'[^0-9.-]'), '');
+      return double.tryParse(cleaned);
+    }
+    return null;
+  }
 
   factory OddsData.fromMap(Map<String, dynamic> map) {
     return OddsData(
-      homeMoneyline: map['homeMoneyline']?.toDouble(),
-      awayMoneyline: map['awayMoneyline']?.toDouble(),
-      spread: map['spread']?.toDouble(),
-      spreadHomeOdds: map['spreadHomeOdds']?.toDouble(),
-      spreadAwayOdds: map['spreadAwayOdds']?.toDouble(),
-      totalPoints: map['totalPoints']?.toDouble(),
-      overOdds: map['overOdds']?.toDouble(),
-      underOdds: map['underOdds']?.toDouble(),
+      homeMoneyline: _toDouble(map['homeMoneyline']),
+      awayMoneyline: _toDouble(map['awayMoneyline']),
+      spread: _toDouble(map['spread']),
+      spreadHomeOdds: _toDouble(map['spreadHomeOdds']),
+      spreadAwayOdds: _toDouble(map['spreadAwayOdds']),
+      totalPoints: _toDouble(map['totalPoints']),
+      overOdds: _toDouble(map['overOdds']),
+      underOdds: _toDouble(map['underOdds']),
       lastUpdated: map['lastUpdated'] != null
           ? (map['lastUpdated'] as Timestamp).toDate()
           : null,

@@ -465,22 +465,55 @@ class FreeOddsService {
       // Provider info
       odds['provider'] = primaryOdds['provider']?['name'] ?? 'ESPN Bet';
       
-      // Spread
-      if (primaryOdds['details'] != null) {
+      // Extract moneyline odds (new ESPN structure)
+      if (primaryOdds['moneyline'] != null) {
+        final moneyline = primaryOdds['moneyline'];
+        
+        // Convert ESPN odds format to numeric values
+        String homeOdds = moneyline['home']?['close']?['odds'] ?? moneyline['home']?['open']?['odds'] ?? '';
+        String awayOdds = moneyline['away']?['close']?['odds'] ?? moneyline['away']?['open']?['odds'] ?? '';
+        
+        // Convert "EVEN" to +100, otherwise parse the string
+        odds['moneylineHome'] = homeOdds == 'EVEN' ? 100 : _parseOddsString(homeOdds);
+        odds['moneylineAway'] = awayOdds == 'EVEN' ? 100 : _parseOddsString(awayOdds);
+      }
+      
+      // Extract spread (new ESPN structure)  
+      if (primaryOdds['pointSpread'] != null) {
+        final spread = primaryOdds['pointSpread'];
+        
+        // Get the spread line (e.g., "+1.5" or "-1.5")
+        String homeLine = spread['home']?['close']?['line'] ?? spread['home']?['open']?['line'] ?? '';
+        String homeOdds = spread['home']?['close']?['odds'] ?? spread['home']?['open']?['odds'] ?? '-110';
+        String awayOdds = spread['away']?['close']?['odds'] ?? spread['away']?['open']?['odds'] ?? '-110';
+        
+        // Parse the spread value (remove + or - and convert to double)
+        odds['spread'] = _parseSpreadLine(homeLine);
+        odds['spreadHomeOdds'] = homeOdds == 'EVEN' ? -100 : _parseOddsString(homeOdds);
+        odds['spreadAwayOdds'] = awayOdds == 'EVEN' ? -100 : _parseOddsString(awayOdds);
+      }
+      
+      // Extract total/over-under (new ESPN structure)
+      if (primaryOdds['total'] != null) {
+        final total = primaryOdds['total'];
+        
+        // Get the total line (e.g., "o47.5" or "u47.5")
+        String overLine = total['over']?['close']?['line'] ?? total['over']?['open']?['line'] ?? '';
+        String overOdds = total['over']?['close']?['odds'] ?? total['over']?['open']?['odds'] ?? '-110';
+        String underOdds = total['under']?['close']?['odds'] ?? total['under']?['open']?['odds'] ?? '-110';
+        
+        // Parse the total value (remove o/u prefix)
+        odds['total'] = _parseTotalLine(overLine);
+        odds['overOdds'] = overOdds == 'EVEN' ? -100 : _parseOddsString(overOdds);
+        odds['underOdds'] = underOdds == 'EVEN' ? -100 : _parseOddsString(underOdds);
+      }
+      
+      // Fallback to old structure if new structure doesn't have data
+      if (odds['spread'] == null && primaryOdds['details'] != null) {
         odds['spread'] = primaryOdds['details'];
       }
-      
-      // Over/Under
-      if (primaryOdds['overUnder'] != null) {
+      if (odds['total'] == null && primaryOdds['overUnder'] != null) {
         odds['total'] = primaryOdds['overUnder'];
-      }
-      
-      // Moneyline
-      if (primaryOdds['awayTeamOdds'] != null) {
-        odds['awayMoneyline'] = primaryOdds['awayTeamOdds']['moneyLine'];
-      }
-      if (primaryOdds['homeTeamOdds'] != null) {
-        odds['homeMoneyline'] = primaryOdds['homeTeamOdds']['moneyLine'];
       }
     }
     
@@ -504,6 +537,34 @@ class FreeOddsService {
     }
     
     return odds;
+  }
+  
+  /// Helper to parse odds strings like "+150", "-110", "EVEN"
+  double _parseOddsString(String odds) {
+    if (odds.isEmpty) return 0;
+    if (odds == 'EVEN') return 100;
+    
+    // Remove any non-numeric characters except + and -
+    final cleaned = odds.replaceAll(RegExp(r'[^\d+-]'), '');
+    return double.tryParse(cleaned) ?? 0;
+  }
+  
+  /// Helper to parse spread lines like "+1.5", "-3.5"
+  double _parseSpreadLine(String line) {
+    if (line.isEmpty) return 0;
+    
+    // Remove + sign if present, keep - sign
+    final cleaned = line.replaceAll('+', '');
+    return double.tryParse(cleaned) ?? 0;
+  }
+  
+  /// Helper to parse total lines like "o47.5", "u47.5"  
+  double _parseTotalLine(String line) {
+    if (line.isEmpty) return 0;
+    
+    // Remove o/u prefix
+    final cleaned = line.replaceAll(RegExp(r'^[ou]'), '');
+    return double.tryParse(cleaned) ?? 0;
   }
   
   /// Check if team names match (fuzzy matching)

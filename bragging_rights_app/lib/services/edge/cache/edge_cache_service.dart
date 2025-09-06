@@ -1,5 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../sports/espn_nfl_service.dart';
+import '../sports/espn_nba_service.dart';  // EspnScoreboard class
+import '../sports/espn_nhl_service.dart';
+import '../sports/espn_mlb_service.dart';
 
 /// Edge Cache Service - Multi-User Data Sharing
 /// Implements smart caching with sport-specific TTLs
@@ -95,14 +99,44 @@ class EdgeCacheService {
     if (firestoreCached != null && firestoreCached['data'] != null) {
       debugPrint('✅ Firestore cache hit: $cacheKey');
       
+      // Reconstruct the typed object if needed
+      dynamic reconstructedData = firestoreCached['data'];
+      
+      // Check if we need to reconstruct an ESPN model
+      if (T == EspnNflScoreboard) {
+        try {
+          reconstructedData = EspnNflScoreboard.fromJson(firestoreCached['data'] as Map<String, dynamic>);
+        } catch (e) {
+          debugPrint('Warning: Could not reconstruct EspnNflScoreboard: $e');
+        }
+      } else if (T == EspnScoreboard) {
+        try {
+          reconstructedData = EspnScoreboard.fromJson(firestoreCached['data'] as Map<String, dynamic>);
+        } catch (e) {
+          debugPrint('Warning: Could not reconstruct EspnScoreboard: $e');
+        }
+      } else if (T == EspnNhlScoreboard) {
+        try {
+          reconstructedData = EspnNhlScoreboard.fromJson(firestoreCached['data'] as Map<String, dynamic>);
+        } catch (e) {
+          debugPrint('Warning: Could not reconstruct EspnNhlScoreboard: $e');
+        }
+      } else if (T == EspnMlbScoreboard) {
+        try {
+          reconstructedData = EspnMlbScoreboard.fromJson(firestoreCached['data'] as Map<String, dynamic>);
+        } catch (e) {
+          debugPrint('Warning: Could not reconstruct EspnMlbScoreboard: $e');
+        }
+      }
+      
       // Update memory cache
       _memoryCache[cacheKey] = CachedData(
-        data: firestoreCached['data'],
+        data: reconstructedData,
         timestamp: (firestoreCached['timestamp'] as Timestamp).toDate(),
         ttl: firestoreCached['ttl'] ?? 300,
       );
       
-      return firestoreCached['data'] as T;
+      return reconstructedData as T;
     }
 
     // 3. Cache miss - fetch fresh data
@@ -225,13 +259,27 @@ class EdgeCacheService {
     
     // 2. Save to Firestore (for all users)
     try {
+      // Convert data to JSON-serializable format if needed
+      dynamic serializableData = data;
+      if (data != null) {
+        // Check if the data has a toJson method
+        try {
+          if (data.runtimeType.toString().contains('Espn')) {
+            // It's an ESPN model class, convert to JSON
+            serializableData = data.toJson();
+          }
+        } catch (_) {
+          // If toJson doesn't exist, use the data as-is
+        }
+      }
+      
       await _firestore
           .collection('edge_cache')
           .doc(collection)
           .collection(documentId)
           .doc(dataType)
           .set({
-        'data': data,
+        'data': serializableData,
         'timestamp': Timestamp.fromDate(timestamp),
         'ttl': ttl,
         'expiresAt': Timestamp.fromDate(
@@ -240,6 +288,7 @@ class EdgeCacheService {
       });
     } catch (e) {
       debugPrint('Error saving to Firestore cache: $e');
+      // Don't fail the whole operation if caching fails
     }
   }
 

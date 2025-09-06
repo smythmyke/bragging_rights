@@ -220,6 +220,13 @@ class EspnNhlScoreboard {
     'events': events,
     'league': league,
   };
+
+  Map<String, dynamic> toJson() {
+    return {
+      'events': events,
+      'league': league,
+    };
+  }
 }
 
 class EspnNhlNews {
