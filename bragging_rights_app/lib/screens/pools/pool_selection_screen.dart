@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import '../../services/pool_service.dart';
 import '../../services/wallet_service.dart';
+import '../../services/game_odds_enrichment_service.dart';
 import '../../models/pool_model.dart';
+import '../../models/game_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PoolSelectionScreen extends StatefulWidget {
   final String? gameId;  // Real game ID from ESPN/Firestore
@@ -24,10 +27,12 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
   late TabController _tabController;
   final PoolService _poolService = PoolService();
   final WalletService _walletService = WalletService();
+  final GameOddsEnrichmentService _oddsService = GameOddsEnrichmentService();
   String _selectedPoolType = 'quick';
   Timer? _countdownTimer;
   Duration _poolCloseCountdown = const Duration(minutes: 15, seconds: 30);
   String? gameId;
+  bool _isLoadingOdds = false;
   
   // Cache wallet balance to prevent flickering
   int? _cachedBalance;
@@ -52,6 +57,11 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
     // Load initial balance and listen for changes
     _loadBalance();
     _listenToBalanceChanges();
+    
+    // Load odds on-demand when user enters pool selection
+    if (widget.gameId != null) {
+      _loadOddsOnDemand();
+    }
   }
   
   void _loadBalance() async {
@@ -60,6 +70,87 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
       setState(() {
         _cachedBalance = balance;
       });
+    }
+  }
+  
+  Future<void> _loadOddsOnDemand() async {
+    if (_isLoadingOdds) return;
+    
+    setState(() {
+      _isLoadingOdds = true;
+    });
+    
+    try {
+      // Check if odds already exist for this game
+      final gameDoc = await FirebaseFirestore.instance
+          .collection('games')
+          .doc(widget.gameId)
+          .get();
+      
+      if (gameDoc.exists) {
+        final data = gameDoc.data();
+        final oddsAvailable = data?['oddsAvailable'] as Map<String, dynamic>?;
+        final oddsLastUpdated = data?['oddsLastUpdated'] as Timestamp?;
+        
+        // Check if odds are missing or stale (older than 30 minutes)
+        bool needsUpdate = false;
+        
+        if (oddsAvailable == null || 
+            !(oddsAvailable['moneyline'] == true || 
+              oddsAvailable['spread'] == true || 
+              oddsAvailable['total'] == true)) {
+          needsUpdate = true;
+          debugPrint('📊 No odds available for game ${widget.gameId}, fetching...');
+        } else if (oddsLastUpdated != null) {
+          final lastUpdate = oddsLastUpdated.toDate();
+          final minutesSinceUpdate = DateTime.now().difference(lastUpdate).inMinutes;
+          if (minutesSinceUpdate > 30) {
+            needsUpdate = true;
+            debugPrint('📊 Odds are ${minutesSinceUpdate} minutes old, refreshing...');
+          }
+        }
+        
+        if (needsUpdate) {
+          // Fetch fresh odds
+          final gameModel = await _reconstructGameModel(gameDoc);
+          if (gameModel != null) {
+            await _oddsService.enrichGameWithOdds(gameModel);
+            debugPrint('✅ Odds loaded on-demand for ${widget.gameTitle}');
+          }
+        } else {
+          debugPrint('✅ Using cached odds for ${widget.gameTitle}');
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading odds on-demand: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingOdds = false;
+        });
+      }
+    }
+  }
+  
+  // Helper to reconstruct GameModel from Firestore document
+  dynamic _reconstructGameModel(DocumentSnapshot doc) {
+    try {
+      final data = doc.data() as Map<String, dynamic>;
+      // Import GameModel if needed
+      return GameModel(
+        id: doc.id,
+        sport: data['sport'] ?? widget.sport,
+        homeTeam: data['homeTeam'] ?? '',
+        awayTeam: data['awayTeam'] ?? '',
+        gameTime: (data['gameTime'] as Timestamp).toDate(),
+        status: data['status'] ?? 'scheduled',
+        homeScore: data['homeScore'],
+        awayScore: data['awayScore'],
+        venue: data['venue'],
+      );
+    } catch (e) {
+      debugPrint('Error reconstructing game model: $e');
+      return null;
     }
   }
   
@@ -154,7 +245,21 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
           ],
         ),
       ),
-      body: TabBarView(
+      body: _isLoadingOdds 
+        ? Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(
+                  'Loading latest odds...',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          )
+        : TabBarView(
         controller: _tabController,
         children: [
           _buildQuickPlayTab(),

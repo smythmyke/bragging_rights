@@ -8,6 +8,8 @@ import '../../services/bet_service.dart';
 import '../../services/wallet_service.dart';
 import '../../services/sports_api_service.dart';
 import '../../services/espn_direct_service.dart';
+import '../../services/optimized_games_service.dart';
+import '../../services/pool_management_service.dart';
 import '../../services/pool_data_service.dart';
 import '../../services/pool_service.dart';
 import '../../services/wager_service.dart';
@@ -47,6 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final WalletService _walletService = WalletService();
   final SportsApiService _sportsApiService = SportsApiService();
   final ESPNDirectService _espnService = ESPNDirectService();
+  final OptimizedGamesService _optimizedGamesService = OptimizedGamesService();
   final PoolDataService _poolService = PoolDataService();
   final WagerService _wagerService = WagerService();
   final PurchaseService _purchaseService = PurchaseService();
@@ -91,6 +94,18 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadPoolsData();
     _initializePurchaseService();
     _initializeSoundService();
+    
+    // Start pool management after authentication
+    _startPoolManagement();
+  }
+  
+  Future<void> _startPoolManagement() async {
+    // Check if user is authenticated before starting pool management
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      PoolManagementService().startPoolManagement();
+      print('Pool management service started for user: ${user.uid}');
+    }
   }
   
   Future<void> _initializeSoundService() async {
@@ -195,8 +210,8 @@ class _HomeScreenState extends State<HomeScreen> {
       // Fetch games with caching support - this will return cached data instantly if available
       print('📱 Loading games data...');
       
-      // This now returns cached games immediately if available
-      final allGames = await _espnService.fetchAllGames(forceRefresh: forceRefresh);
+      // Use optimized service for featured games with user preferences
+      final allGames = await _optimizedGamesService.loadFeaturedGames(forceRefresh: forceRefresh);
       
       if (allGames.isNotEmpty) {
         // Update UI immediately with whatever games we have (cached or fresh)
@@ -678,6 +693,16 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(PhosphorIconsRegular.bell),
             onPressed: () {
               // TODO: Show notifications
+            },
+          ),
+          IconButton(
+            icon: const Icon(PhosphorIconsRegular.gear),
+            onPressed: () async {
+              final result = await Navigator.pushNamed(context, '/preferences');
+              if (result == true) {
+                // Refresh games if preferences were changed
+                _loadGamesData(forceRefresh: true);
+              }
             },
           ),
         ],

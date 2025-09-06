@@ -785,6 +785,12 @@ class PoolService {
 
   // Check all open pools for activation or cancellation
   Future<void> checkAllPoolsForActivation() async {
+    // Check if user is authenticated
+    if (_auth.currentUser == null) {
+      print('Skipping pool activation check - user not authenticated');
+      return;
+    }
+    
     try {
       final now = DateTime.now();
       
@@ -812,6 +818,12 @@ class PoolService {
     required String sport,
     required DateTime gameStartTime,
   }) async {
+    // Check if user is authenticated
+    if (_auth.currentUser == null) {
+      print('Skipping pool generation - user not authenticated');
+      return;
+    }
+    
     try {
       // Check existing pools for this game
       final existingPoolsQuery = await _firestore

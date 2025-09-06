@@ -7,6 +7,7 @@ import 'services/game_cache_service.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/onboarding/sports_selection_screen.dart';
 import 'screens/home/home_screen.dart' as home;
+import 'screens/settings/preferences_settings_screen.dart';
 import 'screens/pools/pool_selection_screen.dart';
 import 'screens/game/game_detail_screen.dart';
 import 'screens/betting/bet_selection_screen.dart';
@@ -34,8 +35,8 @@ void main() async {
   // Initialize notification service
   await NotificationService().initialize();
   
-  // Start pool management service
-  PoolManagementService().startPoolManagement();
+  // Don't start pool management here - wait for authentication
+  // PoolManagementService().startPoolManagement();
   
   runApp(const BraggingRightsApp());
 }
@@ -68,6 +69,7 @@ class BraggingRightsApp extends StatelessWidget {
         '/sports-selection': (context) => const SportsSelectionScreen(),
         '/home': (context) => const home.HomeScreen(),
         '/game-detail': (context) => const GameDetailScreen(),
+        '/preferences': (context) => const PreferencesSettingsScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/pool-selection') {
