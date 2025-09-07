@@ -171,16 +171,17 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
     if (user == null) return;
     
     try {
-      // Get user's joined pools
+      // Get user's joined pools from the user_pools collection
       final userPoolsSnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('pools')
-          .where('gameId', isEqualTo: gameId)
+          .collection('user_pools')
+          .where('userId', isEqualTo: user.uid)
+          .where('gameId', isEqualTo: widget.gameId)
           .get();
       
       final joinedPools = <String>{};
       final submissions = <String, bool>{};
+      
+      debugPrint('Found ${userPoolsSnapshot.docs.length} pools for user ${user.uid} and game ${widget.gameId}');
       
       for (final doc in userPoolsSnapshot.docs) {
         final poolId = doc.data()['poolId'] as String?;
@@ -190,6 +191,8 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
           // Check if user has submitted selections
           final hasSubmitted = doc.data()['hasSubmittedSelections'] ?? false;
           submissions[poolId] = hasSubmitted;
+          
+          debugPrint('User joined pool $poolId, hasSubmitted: $hasSubmitted');
         }
       }
       
@@ -228,10 +231,17 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
 
   @override
   void dispose() {
+    debugPrint('=== POOL SELECTION SCREEN DISPOSING ===');
+    debugPrint('Tab controller: ${_tabController}');
+    debugPrint('Countdown timer: ${_countdownTimer}');
+    debugPrint('Balance subscription: ${_balanceSubscription}');
+    
     _tabController.dispose();
     _countdownTimer?.cancel();
     _balanceSubscription?.cancel();
     super.dispose();
+    
+    debugPrint('=== POOL SELECTION SCREEN DISPOSED ===');
   }
 
   String _formatDuration(Duration duration) {
@@ -245,19 +255,55 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
   Widget build(BuildContext context) {
     final isUrgent = _poolCloseCountdown.inMinutes < 5;
     
-    return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(widget.gameTitle, style: const TextStyle(fontSize: 16)),
-            Text(
-              widget.sport,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-          ],
-        ),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+    return WillPopScope(
+      onWillPop: () async {
+        debugPrint('=== BACK BUTTON PRESSED ===');
+        debugPrint('Current route: ${ModalRoute.of(context)?.settings.name}');
+        debugPrint('Can pop: ${Navigator.of(context).canPop()}');
+        debugPrint('Is first route: ${ModalRoute.of(context)?.isFirst}');
+        debugPrint('Has active dialog: ${ModalRoute.of(context)?.isCurrent == false}');
+        
+        // Try to pop any dialogs first
+        if (ModalRoute.of(context)?.isCurrent == false) {
+          debugPrint('Attempting to close dialog first...');
+          Navigator.of(context, rootNavigator: true).pop();
+          return false; // Don't pop the main route yet
+        }
+        
+        debugPrint('Allowing normal back navigation');
+        return true; // Allow normal back navigation
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              debugPrint('=== APP BAR BACK BUTTON PRESSED ===');
+              debugPrint('Current route: ${ModalRoute.of(context)?.settings.name}');
+              debugPrint('Can pop: ${Navigator.of(context).canPop()}');
+              debugPrint('Is first route: ${ModalRoute.of(context)?.isFirst}');
+              debugPrint('Has active dialog: ${ModalRoute.of(context)?.isCurrent == false}');
+              
+              if (ModalRoute.of(context)?.isCurrent == false) {
+                debugPrint('Closing dialog from app bar button...');
+                Navigator.of(context, rootNavigator: true).pop();
+              } else {
+                debugPrint('Navigating back from app bar button...');
+                Navigator.of(context).pop();
+              }
+            },
+          ),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(widget.gameTitle, style: const TextStyle(fontSize: 16)),
+              Text(
+                widget.sport,
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -420,7 +466,8 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
           ),
         ),
       ],
-    );
+    ),
+    );  // Close WillPopScope
   }
   
   Color _getPoolColor(PoolTier tier) {
@@ -1227,6 +1274,11 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                           Navigator.of(context, rootNavigator: true).pop();
                         }
                         
+                        // Check if result is null
+                        if (result == null) {
+                          throw Exception('Failed to get response from pool service');
+                        }
+                        
                         if (result['success'] == true) {
                           print('[POOL JOIN] ✅ Successfully joined pool!');
                           print('[POOL JOIN] Navigating to bet selection screen...');
@@ -1325,7 +1377,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                                   backgroundColor: Colors.red,
                                 ),
                               );
-                            } else {
+                            } else if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(errorMessage),
@@ -1346,13 +1398,18 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                           }
                           
                           // Only show snackbar if widget is still mounted
+                          // Use Future.delayed to ensure context is valid
                           if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error joining pool: ${e.toString()}'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
+                            Future.delayed(Duration.zero, () {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error joining pool: ${e.toString()}'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            });
                           }
                         }
                       }

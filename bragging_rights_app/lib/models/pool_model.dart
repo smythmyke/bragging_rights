@@ -136,7 +136,11 @@ class Pool {
 
   // Create from Firestore document
   factory Pool.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+    final rawData = doc.data();
+    if (rawData == null) {
+      throw Exception('Pool document has no data');
+    }
+    final data = rawData as Map<String, dynamic>;
     return Pool(
       id: doc.id,
       gameId: data['gameId'] ?? '',

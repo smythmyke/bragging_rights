@@ -263,53 +263,43 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     if (widget.poolId != null && widget.gameId != null) {
       final allBets = await _betStorage.getGameBets(widget.poolId!, widget.gameId!);
       
+      debugPrint('Loading existing bets for pool ${widget.poolId}, game ${widget.gameId}');
+      debugPrint('Found ${allBets.length} total bets');
+      
       // Separate temporary and confirmed bets
       final tempBets = allBets.where((b) => b.metadata?['isTemporary'] == true).toList();
       final confirmedBets = allBets.where((b) => b.metadata?['isTemporary'] != true).toList();
       
+      debugPrint('Temporary bets: ${tempBets.length}, Confirmed bets: ${confirmedBets.length}');
+      
       // Store confirmed bets
       _existingBets = confirmedBets;
       
-      // Load temporary selections back into _selectedBets if no confirmed bets exist
-      if (confirmedBets.isEmpty) {
-        for (final bet in tempBets) {
-          final existingSelection = SelectedBet(
-            id: bet.selection,
-            title: bet.description ?? bet.selection,
-            odds: bet.odds,
-            type: _getBetTypeFromString(bet.betType),
-          );
-          
-          // Check if not already in _selectedBets
-          if (!_selectedBets.any((s) => s.id == existingSelection.id)) {
-            _selectedBets.add(existingSelection);
-          }
-          
-          // Mark the tab as picked based on bet type
-          final tabKey = _getTabKeyFromBetType(bet.betType);
-          if (tabKey != null) {
-            _tabPicks[tabKey] = true;
-          }
-        }
-      } else {
-        // Load confirmed bets into selections for display
-        for (final bet in confirmedBets) {
-          final existingSelection = SelectedBet(
-            id: bet.selection,
-            title: bet.description ?? bet.selection,
-            odds: bet.odds,
-            type: _getBetTypeFromString(bet.betType),
-          );
+      // Load the appropriate selections
+      final betsToLoad = confirmedBets.isNotEmpty ? confirmedBets : tempBets;
+      
+      for (final bet in betsToLoad) {
+        final existingSelection = SelectedBet(
+          id: bet.selection,
+          title: bet.description ?? bet.selection,
+          odds: bet.odds,
+          type: _getBetTypeFromString(bet.betType),
+        );
+        
+        // Check if not already in _selectedBets
+        if (!_selectedBets.any((s) => s.id == existingSelection.id)) {
           _selectedBets.add(existingSelection);
-          
-          // Mark the tab as picked based on bet type
-          final tabKey = _getTabKeyFromBetType(bet.betType);
-          if (tabKey != null) {
-            _tabPicks[tabKey] = true;
-          }
+          debugPrint('Loaded selection: ${existingSelection.title}');
+        }
+        
+        // Mark the tab as picked based on bet type
+        final tabKey = _getTabKeyFromBetType(bet.betType);
+        if (tabKey != null) {
+          _tabPicks[tabKey] = true;
         }
       }
       
+      debugPrint('Total selections loaded: ${_selectedBets.length}');
       setState(() {});
     }
   }
@@ -321,7 +311,14 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       // Save current selections as temporary bets
       final tempBets = <UserBet>[];
       
+      debugPrint('=== SAVING SELECTIONS ===');
+      debugPrint('Pool ID: ${widget.poolId}');
+      debugPrint('Game ID: ${widget.gameId}');
+      debugPrint('Number of selections: ${_selectedBets.length}');
+      
       for (final selection in _selectedBets) {
+        debugPrint('Saving selection: ID="${selection.id}", Title="${selection.title}", Odds="${selection.odds}"');
+        
         final bet = UserBet(
           id: 'temp_${selection.id}_${DateTime.now().millisecondsSinceEpoch}',
           poolId: widget.poolId!,
@@ -330,7 +327,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
           gameTitle: widget.gameTitle,
           sport: widget.sport,
           betType: selection.type.toString().split('.').last,
-          selection: selection.id,
+          selection: selection.id,  // This is the key field for matching
           odds: selection.odds,
           amount: _wagerAmount.toDouble(),
           placedAt: DateTime.now(),
@@ -357,9 +354,10 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       // Save to storage
       await _betStorage.saveBets(nonTempBets);
       
-      print('Saved ${tempBets.length} temporary selections');
+      debugPrint('Successfully saved ${tempBets.length} temporary selections for pool ${widget.poolId}');
+      debugPrint('======================');
     } catch (e) {
-      print('Error saving selections: $e');
+      debugPrint('Error saving selections: $e');
     }
   }
   
@@ -1288,6 +1286,16 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     final isSelected = _selectedBets.any((bet) => bet.id == betId);
     final wasAlreadyPlaced = _existingBets.any((bet) => bet.selection == betId);
     
+    // Debug logging for persistence
+    if (_selectedBets.isNotEmpty || _existingBets.isNotEmpty) {
+      debugPrint('=== BET CARD CHECK ===');
+      debugPrint('Bet ID: $betId');
+      debugPrint('Is Selected: $isSelected');
+      debugPrint('Was Already Placed: $wasAlreadyPlaced');
+      debugPrint('Selected Bets IDs: ${_selectedBets.map((b) => b.id).toList()}');
+      debugPrint('Existing Bets Selections: ${_existingBets.map((b) => b.selection).toList()}');
+    }
+    
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       margin: const EdgeInsets.only(bottom: 8),
@@ -1682,19 +1690,19 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   
   // Get all bets from all tabs
   List<SelectedBet> _getAllBets() {
-    final allBets = <SelectedBet>[];
-    _allTabBets.values.forEach((tabBets) {
-      allBets.addAll(tabBets);
-    });
-    return allBets;
+    // Return the current _selectedBets which contains all selections
+    return List.from(_selectedBets);
   }
   
   // Lock in all bets and save to Firestore
   Future<void> _lockInBets() async {
+    debugPrint('Lock in bets clicked');
     setState(() => _isLockingBets = true);
     
     try {
       final allBets = _getAllBets();
+      debugPrint('Found ${allBets.length} bets to lock in');
+      
       if (allBets.isEmpty) {
         throw Exception('No bets selected');
       }
@@ -1745,7 +1753,10 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         )).toList();
         
         await _betStorage.saveBets(userBets);
+        debugPrint('Saved ${userBets.length} bets to storage');
       }
+      
+      debugPrint('Bets locked in successfully! Potential payout: $potentialPayout BR');
       
       // Show success message
       if (mounted) {
@@ -1760,6 +1771,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } catch (e) {
+      debugPrint('Error locking in bets: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
