@@ -12,12 +12,53 @@ class GameOddsEnrichmentService {
   final PoolAutoGenerator _poolGenerator = PoolAutoGenerator();
   final FreeOddsService _freeOddsService = FreeOddsService();
   
+  // Cache for tracking last odds fetch time per game
+  static final Map<String, DateTime> _lastOddsFetchTime = {};
+  static const Duration _oddsFetchDebounce = Duration(seconds: 30);
+  
+  // Track ongoing fetch operations to prevent duplicates
+  static final Map<String, Future<void>> _ongoingFetches = {};
+  
   /// Enrich a game with odds data and create pools
   Future<void> enrichGameWithOdds(GameModel game) async {
     try {
       // Skip if game is not scheduled or too far in future
       if (game.status != 'scheduled') return;
       if (game.gameTime.difference(DateTime.now()).inDays > 7) return;
+      
+      // Check if there's already an ongoing fetch for this game
+      if (_ongoingFetches.containsKey(game.id)) {
+        debugPrint('⏳ Already fetching odds for ${game.id} - waiting for existing fetch');
+        await _ongoingFetches[game.id];
+        return;
+      }
+      
+      // Debounce: Check if we've fetched odds for this game recently
+      final lastFetch = _lastOddsFetchTime[game.id];
+      if (lastFetch != null && 
+          DateTime.now().difference(lastFetch) < _oddsFetchDebounce) {
+        debugPrint('⏳ Skipping odds fetch for ${game.id} - fetched ${DateTime.now().difference(lastFetch).inSeconds}s ago');
+        return;
+      }
+      
+      // Create and store the fetch operation
+      final fetchOperation = _performOddsFetch(game);
+      _ongoingFetches[game.id] = fetchOperation;
+      
+      try {
+        await fetchOperation;
+      } finally {
+        _ongoingFetches.remove(game.id);
+      }
+    } catch (e) {
+      debugPrint('Error enriching game with odds: $e');
+    }
+  }
+  
+  Future<void> _performOddsFetch(GameModel game) async {
+    try {
+      // Update last fetch time
+      _lastOddsFetchTime[game.id] = DateTime.now();
       
       // Fetch odds from SportsGameOdds API
       final odds = await _fetchOddsForGame(game);

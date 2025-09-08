@@ -364,6 +364,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
           _buildTournamentTab(),
         ],
       ),
+    ),
     );
   }
 
@@ -466,8 +467,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
           ),
         ),
       ],
-    ),
-    );  // Close WillPopScope
+    );
   }
   
   Color _getPoolColor(PoolTier tier) {

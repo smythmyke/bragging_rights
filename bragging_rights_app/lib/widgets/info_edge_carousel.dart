@@ -35,7 +35,7 @@ class _InfoEdgeCarouselState extends State<InfoEdgeCarousel> with SingleTickerPr
   @override
   void initState() {
     super.initState();
-    print('[InfoEdgeCarousel] initState called for ${widget.title}');
+    // print('[InfoEdgeCarousel] initState called for ${widget.title}');
     _pageController = PageController(initialPage: 0, viewportFraction: 1.0);
     
     // Setup pulse animation for Edge button
@@ -58,23 +58,23 @@ class _InfoEdgeCarouselState extends State<InfoEdgeCarousel> with SingleTickerPr
 
   void _startAutoScrollTimer() {
     _autoScrollTimer?.cancel();
-    print('[InfoEdgeCarousel] Starting auto-scroll timer for ${widget.title}');
-    print('[InfoEdgeCarousel] User has interacted: $_userHasInteracted, Has auto-scrolled: $_hasAutoScrolled');
+    // print('[InfoEdgeCarousel] Starting auto-scroll timer for ${widget.title}');
+    // print('[InfoEdgeCarousel] User has interacted: $_userHasInteracted, Has auto-scrolled: $_hasAutoScrolled');
     
     if (!_userHasInteracted && !_hasAutoScrolled) {
       _autoScrollTimer = Timer(widget.autoScrollDelay, () {
-        print('[InfoEdgeCarousel] Timer fired for ${widget.title}');
-        print('[InfoEdgeCarousel] Mounted: $mounted, Current page: $_currentPage, User interacted: $_userHasInteracted');
+        // print('[InfoEdgeCarousel] Timer fired for ${widget.title}');
+        // print('[InfoEdgeCarousel] Mounted: $mounted, Current page: $_currentPage, User interacted: $_userHasInteracted');
         
         if (mounted && !_userHasInteracted && _currentPage == 0 && !_hasAutoScrolled) {
-          print('[InfoEdgeCarousel] Executing auto-scroll to page 1');
+          // print('[InfoEdgeCarousel] Executing auto-scroll to page 1');
           _hasAutoScrolled = true;
           _pageController.animateToPage(
             1,
             duration: widget.animationDuration,
             curve: Curves.easeInOut,
           ).then((_) {
-            print('[InfoEdgeCarousel] Auto-scroll animation completed');
+            // print('[InfoEdgeCarousel] Auto-scroll animation completed');
             if (mounted) {
               setState(() {
                 _currentPage = 1;
@@ -82,17 +82,17 @@ class _InfoEdgeCarouselState extends State<InfoEdgeCarousel> with SingleTickerPr
             }
           });
         } else {
-          print('[InfoEdgeCarousel] Auto-scroll cancelled - conditions not met');
+          // print('[InfoEdgeCarousel] Auto-scroll cancelled - conditions not met');
         }
       });
     } else {
-      print('[InfoEdgeCarousel] Auto-scroll not started - user already interacted or already scrolled');
+      // print('[InfoEdgeCarousel] Auto-scroll not started - user already interacted or already scrolled');
     }
   }
 
   @override
   void dispose() {
-    print('[InfoEdgeCarousel] Disposing ${widget.title}');
+    // print('[InfoEdgeCarousel] Disposing ${widget.title}');
     _autoScrollTimer?.cancel();
     _pageController.dispose();
     _pulseController.dispose();
@@ -101,7 +101,7 @@ class _InfoEdgeCarouselState extends State<InfoEdgeCarousel> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
-    print('[InfoEdgeCarousel] Building ${widget.title}, current page: $_currentPage');
+    // print('[InfoEdgeCarousel] Building ${widget.title}, current page: $_currentPage');
     return SizedBox(
       height: 140,
       child: Stack(
@@ -110,7 +110,7 @@ class _InfoEdgeCarouselState extends State<InfoEdgeCarousel> with SingleTickerPr
             onNotification: (notification) {
               // Prevent scroll notifications from bubbling up to parent
               if (notification is UserScrollNotification) {
-                print('[InfoEdgeCarousel] User scrolling detected');
+                // print('[InfoEdgeCarousel] User scrolling detected');
                 _userHasInteracted = true;
                 _autoScrollTimer?.cancel();
               }
@@ -121,7 +121,7 @@ class _InfoEdgeCarouselState extends State<InfoEdgeCarousel> with SingleTickerPr
               pageSnapping: true,
               physics: const PageScrollPhysics(),
               onPageChanged: (page) {
-                print('[InfoEdgeCarousel] Page changed to: $page');
+                // print('[InfoEdgeCarousel] Page changed to: $page');
                 setState(() {
                   _currentPage = page;
                   if (page != 0) {

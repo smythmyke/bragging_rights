@@ -3,8 +3,13 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../models/game_model.dart';
 import '../../services/optimized_games_service.dart';
 import '../../services/user_preferences_service.dart';
+import '../../services/wallet_service.dart';
+import '../../services/card_service.dart';
 import 'package:intl/intl.dart';
 import '../pools/pool_selection_screen.dart';
+import '../cards/card_inventory_screen.dart';
+import '../../widgets/bragging_rights_logo.dart';
+import '../../data/card_definitions.dart';
 
 /// Optimized games screen with lazy loading and smart fetching
 class OptimizedGamesScreen extends StatefulWidget {
@@ -18,6 +23,8 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
     with TickerProviderStateMixin {
   final OptimizedGamesService _gamesService = OptimizedGamesService();
   final UserPreferencesService _prefsService = UserPreferencesService();
+  final WalletService _walletService = WalletService();
+  final CardService _cardService = CardService();
   final ScrollController _scrollController = ScrollController();
   
   List<GameModel> _featuredGames = [];
@@ -31,33 +38,50 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
   @override
   void initState() {
     super.initState();
+    debugPrint('OptimizedGamesScreen: initState called');
     _loadInitialData();
     _scrollController.addListener(_onScroll);
   }
   
   @override
   void dispose() {
+    debugPrint('OptimizedGamesScreen: dispose called - cleaning up resources');
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _tabController?.dispose();
+    // Cancel any pending async operations
+    _gamesService.dispose();
     super.dispose();
+    debugPrint('OptimizedGamesScreen: dispose completed');
   }
   
   Future<void> _loadInitialData() async {
+    debugPrint('OptimizedGamesScreen: Starting initial data load');
+    if (!mounted) return;
+    
     setState(() => _loading = true);
     
     try {
       // Load user preferences
+      debugPrint('OptimizedGamesScreen: Loading user preferences');
       final prefs = await _prefsService.getUserPreferences();
+      if (!mounted) return;
+      
       _userSports = prefs.sportsToLoad;
+      debugPrint('OptimizedGamesScreen: User sports: $_userSports');
       
       // Initialize tab controller
-      _tabController = TabController(
-        length: _userSports.length + 1, // +1 for "All" tab
-        vsync: this,
-      );
+      if (_userSports.isNotEmpty && mounted) {
+        _tabController = TabController(
+          length: _userSports.length + 1, // +1 for "All" tab
+          vsync: this,
+        );
+      }
       
       // Load featured games
+      debugPrint('OptimizedGamesScreen: Loading featured games');
       final games = await _gamesService.loadFeaturedGames();
+      if (!mounted) return;
       
       // Organize games by sport
       _gamesBySport.clear();
@@ -67,16 +91,18 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
         _gamesBySport[sport]!.add(game);
       }
       
-      setState(() {
-        _featuredGames = games;
-        _loading = false;
-      });
-      
-      debugPrint('✅ Loaded ${games.length} featured games');
-    } catch (e) {
-      debugPrint('Error loading initial data: $e');
-      setState(() => _loading = false);
       if (mounted) {
+        setState(() {
+          _featuredGames = games;
+          _loading = false;
+        });
+      }
+      
+      debugPrint('✅ OptimizedGamesScreen: Loaded ${games.length} featured games');
+    } catch (e) {
+      debugPrint('❌ OptimizedGamesScreen: Error loading initial data: $e');
+      if (mounted) {
+        setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error loading games. Pull to refresh.'),
@@ -381,9 +407,108 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Games'),
-        bottom: _tabController != null && _userSports.isNotEmpty
+        appBar: AppBar(
+          title: Align(
+            alignment: Alignment.centerLeft,
+            child: const BraggingRightsLogo(
+              height: 100,
+              showUnderline: true,
+            ),
+          ),
+          centerTitle: false,
+          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              debugPrint('OptimizedGamesScreen: Back arrow pressed - going back');
+              Navigator.of(context).pop();
+            },
+          ),
+          actions: [
+            // Power Cards Indicators
+            StreamBuilder<UserCardInventory>(
+              stream: _cardService.getUserCardInventory(),
+              builder: (context, snapshot) {
+                final inventory = snapshot.data ?? UserCardInventory.empty();
+                
+                return Row(
+                  children: [
+                    // Offensive Cards
+                    _buildCardIndicatorWithIcon(
+                      icon: PhosphorIconsDuotone.lightning,
+                      count: inventory.offensiveCount,
+                      type: CardType.offensive,
+                      context: context,
+                    ),
+                    const SizedBox(width: 4),
+                    // Defensive Cards
+                    _buildCardIndicatorWithIcon(
+                      icon: PhosphorIconsDuotone.castleTurret,
+                      count: inventory.defensiveCount,
+                      type: CardType.defensive,
+                      context: context,
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                );
+              },
+            ),
+            // BR Balance Display
+            InkWell(
+              onTap: () {
+                Navigator.of(context).pushNamed('/more');
+              },
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                margin: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      PhosphorIconsRegular.coins,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 4),
+                    StreamBuilder<int>(
+                      stream: _walletService.getBalanceStream(),
+                      builder: (context, snapshot) {
+                        final balance = snapshot.data ?? 0;
+                        return Text(
+                          '$balance',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(PhosphorIconsRegular.bell),
+              onPressed: () {
+                // TODO: Show notifications
+              },
+            ),
+            IconButton(
+              icon: const Icon(PhosphorIconsRegular.gear),
+              onPressed: () async {
+                final result = await Navigator.pushNamed(context, '/preferences');
+                if (result == true) {
+                  // Refresh games if preferences were changed
+                  _loadInitialData();
+                }
+              },
+            ),
+          ],
+          bottom: _tabController != null && _userSports.isNotEmpty
             ? TabBar(
                 controller: _tabController,
                 isScrollable: true,
@@ -402,19 +527,6 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
                 },
               )
             : null,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              // TODO: Navigate to preferences screen
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Preferences screen coming soon'),
-                ),
-              );
-            },
-          ),
-        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -467,6 +579,70 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
                       },
                     ),
             ),
+      );
+  }
+
+  Widget _buildCardIndicatorWithIcon({
+    required IconData icon,
+    required int count,
+    required CardType type,
+    required BuildContext context,
+  }) {
+    Color iconColor;
+    switch (type) {
+      case CardType.offensive:
+        iconColor = Colors.orange;
+        break;
+      case CardType.defensive:
+        iconColor = Colors.blue;
+        break;
+      case CardType.special:
+        iconColor = Colors.purple;
+        break;
+    }
+    
+    return GestureDetector(
+      onTap: () {
+        // Navigate to card inventory page
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CardInventoryScreen(cardType: type),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: iconColor,
+            ),
+            if (count > 0) ...[
+              const SizedBox(width: 4),
+              Text(
+                '$count',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

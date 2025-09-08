@@ -378,4 +378,11 @@ class OptimizedGamesService {
     // Keeping it as fallback for safety
     return [];
   }
+  
+  /// Clean up resources
+  void dispose() {
+    debugPrint('OptimizedGamesService: Disposing resources');
+    _featuredGamesCache.clear();
+    _lastFeaturedLoad = null;
+  }
 }
