@@ -1,14 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/game_model.dart';
-import 'sports_game_odds_service.dart';
+import 'odds_api_service.dart';
 import 'pool_auto_generator.dart';
 import 'free_odds_service.dart';
 
 /// Service that enriches games with odds data and auto-creates pools
 class GameOddsEnrichmentService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final SportsGameOddsService _oddsService = SportsGameOddsService();
+  final OddsApiService _oddsService = OddsApiService();
   final PoolAutoGenerator _poolGenerator = PoolAutoGenerator();
   final FreeOddsService _freeOddsService = FreeOddsService();
   
@@ -111,7 +111,7 @@ class GameOddsEnrichmentService {
     try {
       // Try The Odds API first (now with correct API key from .env)
       debugPrint('📊 Attempting to fetch odds from The Odds API for ${game.awayTeam} @ ${game.homeTeam}');
-      final odds = await _oddsService.findMatchOdds(
+      final odds = await _oddsService.getMatchOdds(
         sport: game.sport.toLowerCase(),
         homeTeam: game.homeTeam,
         awayTeam: game.awayTeam,
