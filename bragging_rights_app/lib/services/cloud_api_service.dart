@@ -68,7 +68,18 @@ class CloudApiService {
         'markets': markets,
         'bookmakers': bookmakers,
       });
-      return result.data as Map<String, dynamic>;
+      
+      // Handle both List and Map return types
+      final data = result.data;
+      if (data is List) {
+        // If API returns a List (e.g., for NFL), wrap it in a Map
+        return {'events': data};
+      } else if (data is Map<String, dynamic>) {
+        return data;
+      } else {
+        print('Unexpected odds data type: ${data.runtimeType}');
+        return {};
+      }
     } catch (e) {
       print('Error calling getOdds: $e');
       throw e;

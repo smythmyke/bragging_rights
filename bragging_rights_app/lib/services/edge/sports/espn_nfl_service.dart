@@ -39,6 +39,38 @@ class EspnNflService {
       },
     );
   }
+  
+  /// Get NFL games for date range (up to 60 days)
+  Future<EspnNflScoreboard?> getGamesForDateRange({int daysAhead = 60}) async {
+    final now = DateTime.now();
+    final endDate = now.add(Duration(days: daysAhead));
+    final startStr = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+    final endStr = '${endDate.year}${endDate.month.toString().padLeft(2, '0')}${endDate.day.toString().padLeft(2, '0')}';
+    
+    return await _cache.getCachedData<EspnNflScoreboard>(
+      collection: 'games',
+      documentId: 'nfl_espn_range_${startStr}_$endStr',
+      dataType: 'scores',
+      sport: 'nfl',
+      gameState: {'source': 'espn', 'range': '$daysAhead days'},
+      fetchFunction: () async {
+        debugPrint('🏈 Fetching NFL games from ESPN for next $daysAhead days...');
+        
+        // ESPN API supports date ranges with dates parameter
+        final response = await http.get(
+          Uri.parse('$_baseUrl/scoreboard?dates=$startStr-$endStr'),
+          headers: {'Accept': 'application/json'},
+        );
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          debugPrint('✅ ESPN NFL data received: ${data['events']?.length ?? 0} games for next $daysAhead days');
+          return EspnNflScoreboard.fromJson(data);
+        }
+        throw Exception('ESPN NFL API error: ${response.statusCode}');
+      },
+    );
+  }
 
   /// Get NFL teams
   Future<Map<String, dynamic>?> getTeams() async {

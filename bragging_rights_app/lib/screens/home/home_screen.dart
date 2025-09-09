@@ -40,6 +40,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  late PageController _pageController;
   Timer? _countdownTimer;
   Timer? _backgroundRefreshTimer;
   final Map<String, Duration> _countdowns = {};
@@ -85,6 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(initialPage: _selectedIndex);
     _initializeCountdowns();
     _startCountdownTimer();
     _startBackgroundRefresh();
@@ -318,6 +320,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _pageController.dispose();
     _countdownTimer?.cancel();
     _backgroundRefreshTimer?.cancel();
     super.dispose();
@@ -610,6 +613,11 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () {
               setState(() {
                 _selectedIndex = 0; // Navigate to Games tab
+                _pageController.animateToPage(
+                  0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
               });
             },
             child: const BraggingRightsLogo(
@@ -654,6 +662,11 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () {
               setState(() {
                 _selectedIndex = 4; // Navigate to More tab (index 4)
+                _pageController.animateToPage(
+                  4,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
               });
             },
             borderRadius: BorderRadius.circular(20),
@@ -707,8 +720,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: IndexedStack(
-        index: _selectedIndex,
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
         children: [
           _buildGamesTab(),
           _buildBetsTab(),
@@ -723,6 +741,11 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: (index) {
           setState(() {
             _selectedIndex = index;
+            _pageController.animateToPage(
+              index,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
           });
         },
         items: const [
@@ -1895,6 +1918,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             onPressed: () {
                               setState(() {
                                 _selectedIndex = 0; // Go to Games tab
+                                _pageController.animateToPage(
+                                  0,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
                               });
                             },
                             icon: const Icon(PhosphorIconsRegular.gameController),

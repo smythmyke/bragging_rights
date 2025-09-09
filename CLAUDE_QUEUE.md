@@ -9,14 +9,20 @@
 
 ## Tasks:
 
-### Task 1: [PENDING]
+### Task 1: [COMPLETED]
 Description: Start the application so that it runs on the connected pixel 8a
 
-### Task 2: [PENDING]
-Description: 
+### Task 2: [COMPLETED]
+Description: the back button is not working on thepools selection page. review how other pages perform the back or previous page and tell me what if any the difference is.
 
-### Task 3: [PENDING]
-Description: 
+FINDINGS: The pool_selection_screen has overcomplicated back navigation:
+- Uses WillPopScope widget with complex dialog detection (lines 264-275)
+- Custom IconButton with modal route checking (lines 278-294)
+- Other working screens just use simple Navigator.of(context).pop()
+- The complex logic is likely interfering with normal navigation
+
+### Task 3: [COMPLETED]
+Description: restart the app
 
 ### Task 4: [PENDING]
 Description: 

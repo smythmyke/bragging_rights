@@ -255,42 +255,12 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
   Widget build(BuildContext context) {
     final isUrgent = _poolCloseCountdown.inMinutes < 5;
     
-    return WillPopScope(
-      onWillPop: () async {
-        debugPrint('=== BACK BUTTON PRESSED ===');
-        debugPrint('Current route: ${ModalRoute.of(context)?.settings.name}');
-        debugPrint('Can pop: ${Navigator.of(context).canPop()}');
-        debugPrint('Is first route: ${ModalRoute.of(context)?.isFirst}');
-        debugPrint('Has active dialog: ${ModalRoute.of(context)?.isCurrent == false}');
-        
-        // Try to pop any dialogs first
-        if (ModalRoute.of(context)?.isCurrent == false) {
-          debugPrint('Attempting to close dialog first...');
-          Navigator.of(context, rootNavigator: true).pop();
-          return false; // Don't pop the main route yet
-        }
-        
-        debugPrint('Allowing normal back navigation');
-        return true; // Allow normal back navigation
-      },
-      child: Scaffold(
+    return Scaffold(
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
-              debugPrint('=== APP BAR BACK BUTTON PRESSED ===');
-              debugPrint('Current route: ${ModalRoute.of(context)?.settings.name}');
-              debugPrint('Can pop: ${Navigator.of(context).canPop()}');
-              debugPrint('Is first route: ${ModalRoute.of(context)?.isFirst}');
-              debugPrint('Has active dialog: ${ModalRoute.of(context)?.isCurrent == false}');
-              
-              if (ModalRoute.of(context)?.isCurrent == false) {
-                debugPrint('Closing dialog from app bar button...');
-                Navigator.of(context, rootNavigator: true).pop();
-              } else {
-                debugPrint('Navigating back from app bar button...');
-                Navigator.of(context).pop();
-              }
+              Navigator.of(context).pop();
             },
           ),
           title: Column(
@@ -304,43 +274,43 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
             ],
           ),
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        actions: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: isUrgent ? Colors.red : Colors.orange,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.timer,
-                  color: Colors.white,
-                  size: 16,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  _formatDuration(_poolCloseCountdown),
-                  style: const TextStyle(
+          actions: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: isUrgent ? Colors.red : Colors.orange,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.timer,
                     color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                    size: 16,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 4),
+                  Text(
+                    _formatDuration(_poolCloseCountdown),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Quick Play'),
-            Tab(text: 'Regional'),
-            Tab(text: 'Private'),
-            Tab(text: 'Tournament'),
           ],
+          bottom: TabBar(
+            controller: _tabController,
+            tabs: const [
+              Tab(text: 'Quick Play'),
+              Tab(text: 'Regional'),
+              Tab(text: 'Private'),
+              Tab(text: 'Tournament'),
+            ],
+          ),
         ),
-      ),
       body: _isLoadingOdds 
         ? Center(
             child: Column(
@@ -364,7 +334,6 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
           _buildTournamentTab(),
         ],
       ),
-    ),
     );
   }
 
@@ -1151,26 +1120,23 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
   }
   
   void _joinPool(String poolName, int buyIn, String poolId) async {
-    print('=============== QUICK PLAY POOL JOIN ATTEMPT ===============');
-    print('Pool Name: $poolName');
-    print('Pool ID: $poolId');
-    print('Buy-in Amount: $buyIn BR');
-    print('Game Title: ${widget.gameTitle}');
-    print('Sport: ${widget.sport}');
-    print('Current Balance: $_cachedBalance BR');
-    print('Timestamp: ${DateTime.now().toIso8601String()}');
-    print('===========================================================');
-    
-    // First check if user is already in pool
-    final isInPool = await _poolService.isUserInPool(poolId);
-    if (isInPool) {
-      print('[POOL JOIN] User already in pool, checking if picks submitted...');
-      final hasSubmittedPicks = await _poolService.hasUserSubmittedPicks(poolId);
+    try {
+      // Add timeout to prevent infinite waiting
+      final isInPool = await _poolService.isUserInPool(poolId)
+          .timeout(const Duration(seconds: 10), onTimeout: () {
+        throw TimeoutException('Network request timed out');
+      });
       
-      if (hasSubmittedPicks) {
-        print('[POOL JOIN] User has already submitted picks, navigating to active bets');
-        Navigator.pushNamed(context, '/active-bets');
-      } else {
+      if (isInPool) {
+        final hasSubmittedPicks = await _poolService.hasUserSubmittedPicks(poolId)
+            .timeout(const Duration(seconds: 10), onTimeout: () {
+          throw TimeoutException('Network request timed out');
+        });
+      
+        if (hasSubmittedPicks) {
+          print('[POOL JOIN] User has already submitted picks, navigating to active bets');
+          Navigator.pushNamed(context, '/active-bets');
+        } else {
         print('[POOL JOIN] User has not submitted picks, checking sport type...');
         
         // Check if this is a combat sport
@@ -1206,8 +1172,21 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
             },
           );
         }
+        }
+        return; // Exit early since user is already in pool
       }
-      return; // Exit early since user is already in pool
+    } catch (e) {
+      // Handle any errors from the initial pool check
+      print('[POOL JOIN] Error checking pool status: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
     }
     
     showModalBottomSheet(

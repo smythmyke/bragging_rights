@@ -103,6 +103,11 @@ class UserPreferencesService {
   void clearCache() {
     _cachedPreferences = null;
   }
+  
+  /// Get cached preferences without making a network call
+  UserPreferences? getCachedPreferences() {
+    return _cachedPreferences;
+  }
 
   /// Check if user prefers a sport
   Future<bool> prefersSport(String sport) async {

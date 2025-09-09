@@ -35,6 +35,11 @@ class _PreferencesSettingsScreenState extends State<PreferencesSettingsScreen> {
     _loadPreferences();
   }
   
+  @override
+  void dispose() {
+    super.dispose();
+  }
+  
   Future<void> _loadPreferences() async {
     try {
       final prefs = await _prefsService.getUserPreferences();
@@ -111,10 +116,16 @@ class _PreferencesSettingsScreenState extends State<PreferencesSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[SETTINGS] Building PreferencesSettingsScreen');
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Game Preferences'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         actions: [
           if (!_isLoading)
             TextButton(

@@ -16,31 +16,10 @@ class BraggingRightsLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: height,
-      child: Stack(
-        alignment: Alignment.center,
-        clipBehavior: Clip.none,
-        children: [
-          // Main logo image
-          Image.asset(
-            'assets/images/bragging_rights_logo.png',
-            height: height,
-            fit: BoxFit.contain,
-          ),
-          
-          // Decorative underlines for "Rights"
-          if (showUnderline)
-            Positioned(
-              bottom: height * 0.15, // Position below "Rights"
-              right: 0,
-              left: height * 0.4, // Start from where "Rights" begins
-              child: CustomPaint(
-                size: Size(height * 0.6, height * 0.15),
-                painter: UnderlinePainter(
-                  animate: animate,
-                ),
-              ),
-            ),
-        ],
+      child: Image.asset(
+        'assets/images/bragging_rights_logo.png',
+        height: height,
+        fit: BoxFit.contain,
       ),
     );
   }
@@ -209,17 +188,10 @@ class _AnimatedBraggingRightsLogoState extends State<AnimatedBraggingRightsLogo>
       builder: (context, child) {
         return SizedBox(
           height: widget.height,
-          child: Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
-            children: [
-              // Main logo image
-              Image.asset(
-                'assets/images/bragging_rights_logo.png',
-                height: widget.height,
-                fit: BoxFit.contain,
-              ),
-            ],
+          child: Image.asset(
+            'assets/images/bragging_rights_logo.png',
+            height: widget.height,
+            fit: BoxFit.contain,
           ),
         );
       },

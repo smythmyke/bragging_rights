@@ -48,6 +48,39 @@ class EspnNbaService {
       },
     );
   }
+  
+  /// Get NBA games for date range (up to 60 days)
+  Future<EspnScoreboard?> getGamesForDateRange({int daysAhead = 60}) async {
+    final now = DateTime.now();
+    final endDate = now.add(Duration(days: daysAhead));
+    final startStr = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+    final endStr = '${endDate.year}${endDate.month.toString().padLeft(2, '0')}${endDate.day.toString().padLeft(2, '0')}';
+    
+    return await _cache.getCachedData<EspnScoreboard>(
+      collection: 'games',
+      documentId: 'nba_range_${startStr}_$endStr',
+      dataType: 'scores',
+      sport: 'nba',
+      gameState: {'source': 'espn', 'range': '$daysAhead days'},
+      fetchFunction: () async {
+        debugPrint('🏀 Fetching NBA games from ESPN for next $daysAhead days...');
+        
+        final response = await _gateway.request(
+          apiName: _apiName,
+          endpoint: _scoreboardEndpoint,
+          queryParams: {
+            'dates': '$startStr-$endStr',
+          },
+        );
+
+        if (response.data != null) {
+          debugPrint('✅ ESPN NBA data received: ${response.data['events']?.length ?? 0} games for next $daysAhead days');
+          return EspnScoreboard.fromJson(response.data);
+        }
+        throw Exception('No data from ESPN');
+      },
+    );
+  }
 
   /// Get NBA teams
   Future<EspnTeams?> getTeams() async {

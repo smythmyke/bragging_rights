@@ -9,7 +9,7 @@ import 'edge/sports/espn_nhl_service.dart';
 import 'edge/sports/espn_mlb_service.dart';
 import 'game_odds_enrichment_service.dart';
 
-/// Optimized games service with intelligent loading
+/// Optimized games service with intelligent loading and timeframe categorization
 class OptimizedGamesService {
   static final OptimizedGamesService _instance = OptimizedGamesService._internal();
   factory OptimizedGamesService() => _instance;
@@ -25,14 +25,20 @@ class OptimizedGamesService {
   final EspnNhlService _nhlService = EspnNhlService();
   final EspnMlbService _mlbService = EspnMlbService();
   
+  // All available sports
+  static const List<String> ALL_SPORTS = ['NFL', 'NBA', 'NHL', 'MLB'];
+  
   // Feature flag for gradual rollout
   static const bool USE_OPTIMIZED_LOADING = true;
   
   // Cache for featured games
   final Map<String, List<GameModel>> _featuredGamesCache = {};
   DateTime? _lastFeaturedLoad;
+  
+  // Timeframe categories
+  static const int MAX_GAMES_PER_TIMEFRAME = 4;
 
-  /// Load featured games based on user preferences
+  /// Load featured games based on user preferences with timeframe categorization
   Future<List<GameModel>> loadFeaturedGames({
     bool forceRefresh = false,
   }) async {
@@ -52,96 +58,158 @@ class OptimizedGamesService {
       return _loadAllGames();
     }
 
-    debugPrint('🎯 Loading featured games with optimization...');
+    debugPrint('🎯 Loading featured games with optimization and timeframe categorization...');
     
     // Get user preferences
     final prefs = await _prefsService.getUserPreferences();
-    final sportsToLoad = prefs.sportsToLoad;
-    final maxPerSport = prefs.maxGamesPerSport;
+    final preferredSports = prefs.sportsToLoad;
     
-    debugPrint('📊 Loading sports: ${sportsToLoad.join(', ')} (max $maxPerSport per sport)');
+    debugPrint('📊 User preferred sports: ${preferredSports.join(', ')}');
+    debugPrint('📊 Loading ALL sports with 60-day lookahead');
     
-    final allGames = <GameModel>[];
+    // Load games from ALL sports with date range
+    final allGamesMap = <String, List<GameModel>>{};
     
-    // Load games for each preferred sport
-    for (final sport in sportsToLoad) {
+    for (final sport in ALL_SPORTS) {
       try {
-        final sportGames = await _loadSportGames(
-          sport: sport,
-          limit: maxPerSport,
-        );
-        allGames.addAll(sportGames);
-        
-        // Cache by sport
-        _featuredGamesCache[sport] = sportGames;
-        
-        debugPrint('✅ Loaded ${sportGames.length} $sport games');
+        final sportGames = await _loadSportGamesWithRange(sport: sport);
+        if (sportGames.isNotEmpty) {
+          allGamesMap[sport] = sportGames;
+          debugPrint('✅ Loaded ${sportGames.length} $sport games');
+        }
       } catch (e) {
         debugPrint('❌ Error loading $sport games: $e');
       }
     }
     
-    // Sort by priority
-    allGames.sort((a, b) {
-      final priorityA = _prefsService.calculateGamePriority(
-        homeTeam: a.homeTeam,
-        awayTeam: a.awayTeam,
-        status: a.status,
-        gameTime: a.gameTime,
-      );
-      final priorityB = _prefsService.calculateGamePriority(
-        homeTeam: b.homeTeam,
-        awayTeam: b.awayTeam,
-        status: b.status,
-        gameTime: b.gameTime,
-      );
-      return priorityB.compareTo(priorityA);
-    });
+    // Categorize games by timeframe
+    final categorizedGames = _categorizeGamesByTimeframe(
+      allGamesMap: allGamesMap,
+      preferredSports: preferredSports,
+    );
     
+    // Cache the results
+    _featuredGamesCache.clear();
+    _featuredGamesCache.addAll(allGamesMap);
     _lastFeaturedLoad = DateTime.now();
     
-    debugPrint('🏆 Loaded ${allGames.length} total featured games');
+    debugPrint('🏆 Loaded ${categorizedGames.length} total featured games across all timeframes');
     
     // Save to Firestore for offline access
-    await _saveGamesToFirestore(allGames);
+    await _saveGamesToFirestore(categorizedGames);
     
-    return allGames;
+    return categorizedGames;
+  }
+  
+  /// Categorize games by timeframe with user preferences prioritized
+  List<GameModel> _categorizeGamesByTimeframe({
+    required Map<String, List<GameModel>> allGamesMap,
+    required List<String> preferredSports,
+  }) {
+    final now = DateTime.now();
+    final categorizedGames = <GameModel>[];
+    
+    // Create lists for each timeframe
+    final liveGames = <GameModel>[];
+    final startingSoonGames = <GameModel>[]; // Within 3 hours
+    final todayGames = <GameModel>[];
+    final thisWeekGames = <GameModel>[];
+    final upcomingGames = <GameModel>[]; // Next 60 days
+    
+    // Categorize all games
+    allGamesMap.forEach((sport, games) {
+      for (final game in games) {
+        if (game.isLive) {
+          liveGames.add(game);
+        } else {
+          final hoursUntilGame = game.gameTime.difference(now).inHours;
+          final daysUntilGame = game.gameTime.difference(now).inDays;
+          
+          if (hoursUntilGame <= 3 && hoursUntilGame >= 0) {
+            startingSoonGames.add(game);
+          } else if (game.gameTime.day == now.day && 
+                     game.gameTime.month == now.month &&
+                     game.gameTime.year == now.year) {
+            todayGames.add(game);
+          } else if (daysUntilGame <= 7 && daysUntilGame >= 0) {
+            thisWeekGames.add(game);
+          } else if (daysUntilGame <= 60 && daysUntilGame >= 0) {
+            upcomingGames.add(game);
+          }
+        }
+      }
+    });
+    
+    // Sort each category with user preferences first
+    final sortWithPreferences = (List<GameModel> games) {
+      games.sort((a, b) {
+        // Check if sports are in user preferences
+        final aPreferred = preferredSports.contains(a.sport.toUpperCase());
+        final bPreferred = preferredSports.contains(b.sport.toUpperCase());
+        
+        // Preferred sports come first
+        if (aPreferred && !bPreferred) return -1;
+        if (!aPreferred && bPreferred) return 1;
+        
+        // Within same preference tier, sort by game time
+        return a.gameTime.compareTo(b.gameTime);
+      });
+    };
+    
+    // Sort each timeframe
+    sortWithPreferences(liveGames);
+    sortWithPreferences(startingSoonGames);
+    sortWithPreferences(todayGames);
+    sortWithPreferences(thisWeekGames);
+    sortWithPreferences(upcomingGames);
+    
+    // Add games respecting the max limit per timeframe
+    categorizedGames.addAll(liveGames.take(MAX_GAMES_PER_TIMEFRAME));
+    categorizedGames.addAll(startingSoonGames.take(MAX_GAMES_PER_TIMEFRAME));
+    categorizedGames.addAll(todayGames.take(MAX_GAMES_PER_TIMEFRAME));
+    categorizedGames.addAll(thisWeekGames.take(MAX_GAMES_PER_TIMEFRAME));
+    categorizedGames.addAll(upcomingGames.take(MAX_GAMES_PER_TIMEFRAME));
+    
+    debugPrint('📊 Categorized games:');
+    debugPrint('  - Live: ${liveGames.length} games (showing ${liveGames.take(MAX_GAMES_PER_TIMEFRAME).length})');
+    debugPrint('  - Starting Soon: ${startingSoonGames.length} games (showing ${startingSoonGames.take(MAX_GAMES_PER_TIMEFRAME).length})');
+    debugPrint('  - Today: ${todayGames.length} games (showing ${todayGames.take(MAX_GAMES_PER_TIMEFRAME).length})');
+    debugPrint('  - This Week: ${thisWeekGames.length} games (showing ${thisWeekGames.take(MAX_GAMES_PER_TIMEFRAME).length})');
+    debugPrint('  - Upcoming: ${upcomingGames.length} games (showing ${upcomingGames.take(MAX_GAMES_PER_TIMEFRAME).length})');
+    
+    return categorizedGames;
   }
 
-  /// Load games for a specific sport with limit
-  Future<List<GameModel>> _loadSportGames({
+  /// Load games for a specific sport with date range
+  Future<List<GameModel>> _loadSportGamesWithRange({
     required String sport,
-    required int limit,
   }) async {
     switch (sport.toLowerCase()) {
       case 'nfl':
       case 'football':
-        return _loadNflGames(limit);
+        return _loadNflGamesWithRange();
       case 'nba':
       case 'basketball':
-        return _loadNbaGames(limit);
+        return _loadNbaGamesWithRange();
       case 'nhl':
       case 'hockey':
-        return _loadNhlGames(limit);
+        return _loadNhlGamesWithRange();
       case 'mlb':
       case 'baseball':
-        return _loadMlbGames(limit);
+        return _loadMlbGamesWithRange();
       default:
         return [];
     }
   }
 
-  /// Load NFL games with limit
-  Future<List<GameModel>> _loadNflGames(int limit) async {
-    final scoreboard = await _nflService.getTodaysGames();
+  /// Load NFL games with 60-day range
+  Future<List<GameModel>> _loadNflGamesWithRange() async {
+    final scoreboard = await _nflService.getGamesForDateRange(daysAhead: 60);
     if (scoreboard == null) return [];
     
     final games = <GameModel>[];
-    final events = scoreboard.events.take(limit * 2); // Get extra to filter
     
-    for (final event in events) {
-      if (games.length >= limit) break;
-      
+    for (final event in scoreboard.events) {
       try {
         final game = _convertEspnEventToGame(event, 'NFL');
         if (game != null) {
@@ -155,17 +223,14 @@ class OptimizedGamesService {
     return games;
   }
 
-  /// Load NBA games with limit
-  Future<List<GameModel>> _loadNbaGames(int limit) async {
-    final scoreboard = await _nbaService.getTodaysGames();
+  /// Load NBA games with 60-day range
+  Future<List<GameModel>> _loadNbaGamesWithRange() async {
+    final scoreboard = await _nbaService.getGamesForDateRange(daysAhead: 60);
     if (scoreboard == null) return [];
     
     final games = <GameModel>[];
-    final events = scoreboard.events.take(limit * 2);
     
-    for (final event in events) {
-      if (games.length >= limit) break;
-      
+    for (final event in scoreboard.events) {
       try {
         final game = _convertEspnEventToGame(event, 'NBA');
         if (game != null) {
@@ -179,17 +244,14 @@ class OptimizedGamesService {
     return games;
   }
 
-  /// Load NHL games with limit
-  Future<List<GameModel>> _loadNhlGames(int limit) async {
-    final scoreboard = await _nhlService.getTodaysGames();
+  /// Load NHL games with 60-day range
+  Future<List<GameModel>> _loadNhlGamesWithRange() async {
+    final scoreboard = await _nhlService.getGamesForDateRange(daysAhead: 60);
     if (scoreboard == null) return [];
     
     final games = <GameModel>[];
-    final events = scoreboard.events.take(limit * 2);
     
-    for (final event in events) {
-      if (games.length >= limit) break;
-      
+    for (final event in scoreboard.events) {
       try {
         final game = _convertEspnEventToGame(event, 'NHL');
         if (game != null) {
@@ -203,17 +265,14 @@ class OptimizedGamesService {
     return games;
   }
 
-  /// Load MLB games with limit
-  Future<List<GameModel>> _loadMlbGames(int limit) async {
-    final scoreboard = await _mlbService.getTodaysGames();
+  /// Load MLB games with 60-day range
+  Future<List<GameModel>> _loadMlbGamesWithRange() async {
+    final scoreboard = await _mlbService.getGamesForDateRange(daysAhead: 60);
     if (scoreboard == null) return [];
     
     final games = <GameModel>[];
-    final events = scoreboard.events.take(limit * 2);
     
-    for (final event in events) {
-      if (games.length >= limit) break;
-      
+    for (final event in scoreboard.events) {
       try {
         final game = _convertEspnEventToGame(event, 'MLB');
         if (game != null) {
@@ -228,9 +287,7 @@ class OptimizedGamesService {
   }
 
   /// Convert ESPN event to GameModel
-  GameModel? _convertEspnEventToGame(dynamic event, String sport) {
-    if (event is! Map<String, dynamic>) return null;
-    
+  GameModel? _convertEspnEventToGame(Map<String, dynamic> event, String sport) {
     try {
       final competition = event['competitions']?[0];
       if (competition == null) return null;
@@ -238,41 +295,37 @@ class OptimizedGamesService {
       final competitors = competition['competitors'] ?? [];
       if (competitors.length < 2) return null;
       
-      // Extract team info
-      final homeTeam = competitors[0]['team']?['displayName'] ?? '';
-      final awayTeam = competitors[1]['team']?['displayName'] ?? '';
-      final homeScore = competitors[0]['score'] != null 
-          ? int.tryParse(competitors[0]['score'].toString()) 
-          : null;
-      final awayScore = competitors[1]['score'] != null 
-          ? int.tryParse(competitors[1]['score'].toString()) 
-          : null;
+      // Find home and away teams
+      final homeTeam = competitors.firstWhere(
+        (c) => c['homeAway'] == 'home',
+        orElse: () => competitors[0],
+      );
+      final awayTeam = competitors.firstWhere(
+        (c) => c['homeAway'] == 'away',
+        orElse: () => competitors[1],
+      );
       
-      // Extract game info
-      final dateStr = event['date'] ?? competition['date'];
-      final gameTime = DateTime.tryParse(dateStr ?? '') ?? DateTime.now();
+      // Parse game time
+      final dateStr = competition['date'] ?? event['date'];
+      final gameTime = DateTime.parse(dateStr).toLocal();
       
       // Determine status
-      final statusType = event['status']?['type']?['name'] ?? '';
-      String status = 'scheduled';
-      if (statusType == 'STATUS_FINAL') {
-        status = 'final';
-      } else if (statusType == 'STATUS_IN_PROGRESS') {
-        status = 'live';
-      }
+      final status = competition['status']?['type']?['name'] ?? 'scheduled';
+      final isLive = status.toLowerCase().contains('in progress') || 
+                     status.toLowerCase().contains('halftime');
+      final isFinal = status.toLowerCase().contains('final');
       
       return GameModel(
         id: event['id'] ?? '${sport}_${DateTime.now().millisecondsSinceEpoch}',
         sport: sport,
-        homeTeam: homeTeam,
-        awayTeam: awayTeam,
+        homeTeam: homeTeam['team']?['displayName'] ?? 'Home Team',
+        awayTeam: awayTeam['team']?['displayName'] ?? 'Away Team',
+        homeScore: int.tryParse(homeTeam['score']?.toString() ?? '0'),
+        awayScore: int.tryParse(awayTeam['score']?.toString() ?? '0'),
         gameTime: gameTime,
-        status: status,
-        homeScore: homeScore,
-        awayScore: awayScore,
+        status: isLive ? 'live' : (isFinal ? 'final' : 'scheduled'),
         venue: competition['venue']?['fullName'],
-        broadcast: competition['broadcasts']?[0]?['names']?[0],
-        odds: null, // Will be enriched on-demand
+        odds: null, // Will be enriched on demand
       );
     } catch (e) {
       debugPrint('Error converting ESPN event: $e');
@@ -280,26 +333,24 @@ class OptimizedGamesService {
     }
   }
 
-  /// Load more games for a specific sport (pagination)
+  /// Load more games for a specific sport (for pagination)
   Future<List<GameModel>> loadMoreGames({
     required String sport,
     required int offset,
-    int limit = 10,
+    required int limit,
   }) async {
-    debugPrint('📄 Loading more $sport games (offset: $offset, limit: $limit)');
+    // Get cached games for the sport
+    final cachedSportGames = _featuredGamesCache[sport.toUpperCase()] ?? [];
     
-    // For now, just get all and slice
-    // TODO: Implement proper pagination with ESPN API
-    final allSportGames = await _loadSportGames(
-      sport: sport,
-      limit: offset + limit,
-    );
-    
-    if (allSportGames.length <= offset) {
+    // If we don't have enough cached, try to load more
+    if (cachedSportGames.length <= offset) {
+      debugPrint('⚠️ No more games available for $sport');
       return [];
     }
     
-    return allSportGames.skip(offset).take(limit).toList();
+    // Return the requested slice
+    final endIndex = (offset + limit).clamp(0, cachedSportGames.length);
+    return cachedSportGames.sublist(offset, endIndex);
   }
 
   /// Enrich a specific game with odds on-demand
@@ -362,6 +413,18 @@ class OptimizedGamesService {
     _featuredGamesCache.values.forEach((sportGames) {
       allGames.addAll(sportGames);
     });
+    
+    // Re-categorize cached games
+    if (allGames.isNotEmpty) {
+      final prefs = _prefsService.getCachedPreferences();
+      final preferredSports = prefs?.sportsToLoad ?? [];
+      
+      return _categorizeGamesByTimeframe(
+        allGamesMap: _featuredGamesCache,
+        preferredSports: preferredSports,
+      );
+    }
+    
     return allGames;
   }
 
