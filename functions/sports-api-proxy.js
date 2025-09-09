@@ -13,7 +13,7 @@ const db = admin.firestore();
 
 // Cache durations (in seconds)
 const CACHE_DURATIONS = {
-  odds: 300,        // 5 minutes for odds
+  odds: 1800,       // 30 minutes for odds (was 5 minutes)
   games: 300,       // 5 minutes for live games
   news: 3600,       // 1 hour for news
   stats: 86400,     // 24 hours for player stats

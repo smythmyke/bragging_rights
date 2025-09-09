@@ -3,24 +3,25 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 /// Odds API Quota Manager
-/// Manages the 500 monthly request limit across all sports
+/// Manages the monthly request limit across all sports
+/// Initially 500 free requests, upgradeable to 20K ($30) or 100K ($59)
 /// Implements smart allocation and fallback strategies
 class OddsQuotaManager {
-  static const int MONTHLY_LIMIT = 500;
+  static const int MONTHLY_LIMIT = 20000; // Starting with 20K tier ($30/month)
   static const String QUOTA_KEY = 'odds_api_quota';
   static const String LAST_RESET_KEY = 'odds_api_last_reset';
   
-  // Sport-specific monthly allocations (total = 490, keeping 10 as buffer)
+  // Sport-specific monthly allocations (total = 18,000, keeping 2,000 as buffer)
   static const Map<String, int> SPORT_ALLOCATIONS = {
-    'nba': 100,      // High volume, Oct-Apr season
-    'nfl': 80,       // High volume, Sep-Jan season
-    'mlb': 100,      // Long season, Apr-Oct
-    'nhl': 80,       // Oct-Apr season
-    'tennis': 40,    // Year-round, major tournaments
-    'mma': 30,       // Monthly events
-    'boxing': 20,    // Fewer events
-    'soccer': 30,    // Year-round leagues
-    'golf': 10,      // Weekly tournaments
+    'nba': 4000,     // High volume, Oct-Apr season
+    'nfl': 3000,     // High volume, Sep-Jan season
+    'mlb': 3500,     // Long season, Apr-Oct
+    'nhl': 3000,     // Oct-Apr season
+    'tennis': 1500,  // Year-round, major tournaments
+    'mma': 1000,     // Monthly events
+    'boxing': 500,   // Fewer events
+    'soccer': 1000,  // Year-round leagues
+    'golf': 500,     // Weekly tournaments
     'ncaab': 0,      // Reserved for March Madness
     'ncaaf': 0,      // Reserved for season
   };

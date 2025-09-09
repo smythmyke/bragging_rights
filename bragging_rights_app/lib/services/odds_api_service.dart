@@ -1,15 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'odds_quota_manager.dart';
 
 /// The Odds API Service
 /// Provides betting odds for all supported sports
-/// API Key: 3386d47aa3fe4a7f (500 requests/month)
+/// API Key from .env file (500 requests/month initially, upgradeable)
 /// Now integrated with quota management system
 class OddsApiService {
   static const String _baseUrl = 'https://api.the-odds-api.com/v4';
-  static const String _apiKey = '3386d47aa3fe4a7f';
+  static String _apiKey = dotenv.env['ODDS_API_KEY'] ?? '';
   
   // Quota manager instance
   final OddsQuotaManager _quotaManager = OddsQuotaManager();

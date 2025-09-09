@@ -109,9 +109,7 @@ class GameOddsEnrichmentService {
   /// Fetch odds from SportsGameOdds API with FreeOddsService fallback
   Future<Map<String, dynamic>?> _fetchOddsForGame(GameModel game) async {
     try {
-      // Skip The Odds API since key is invalid - go straight to ESPN
-      // TODO: Re-enable when we have a valid API key
-      /*
+      // Try The Odds API first (now with correct API key from .env)
       debugPrint('📊 Attempting to fetch odds from The Odds API for ${game.awayTeam} @ ${game.homeTeam}');
       final odds = await _oddsService.findMatchOdds(
         sport: game.sport.toLowerCase(),
@@ -123,9 +121,8 @@ class GameOddsEnrichmentService {
         debugPrint('✅ Got odds from The Odds API');
         return odds;
       }
-      */
       
-      // Use FreeOddsService (ESPN) as primary source for now
+      // Fall back to FreeOddsService (ESPN) if The Odds API doesn't have data
       debugPrint('📊 Fetching odds from ESPN for ${game.awayTeam} @ ${game.homeTeam}');
       final freeOdds = await _freeOddsService.getFreeOdds(
         sport: game.sport.toLowerCase(),
