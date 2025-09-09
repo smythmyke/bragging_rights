@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-import 'dart:math';
 
 class VideoSplashScreen extends StatefulWidget {
   const VideoSplashScreen({super.key});
@@ -9,105 +8,120 @@ class VideoSplashScreen extends StatefulWidget {
   State<VideoSplashScreen> createState() => _VideoSplashScreenState();
 }
 
-class _VideoSplashScreenState extends State<VideoSplashScreen> {
-  VideoPlayerController? _videoController;
-  bool _isVideoInitialized = false;
-  
-  // Randomly select video
-  final List<String> _videos = [
-    'assets/videos/trophy_animation.mp4',
-    'assets/videos/braggy_face_animation.mp4',
-  ];
-  
-  late String _selectedVideo;
+class _VideoSplashScreenState extends State<VideoSplashScreen>
+    with SingleTickerProviderStateMixin {
+  VideoPlayerController? _controller;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+  bool _isVideoReady = false;
+  bool _hasNavigated = false;
 
   @override
   void initState() {
     super.initState();
     
-    // Randomly select which video to play
-    final random = Random();
-    _selectedVideo = _videos[random.nextInt(_videos.length)];
+    // Setup fade animation for smooth video appearance
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(_fadeController);
     
-    print('VideoSplashScreen: Selected video: $_selectedVideo');
     _initializeVideo();
+    
+    // Fallback navigation after 4 seconds if video fails
+    Future.delayed(const Duration(seconds: 4), () {
+      if (!_hasNavigated && mounted) {
+        _navigateToLogin();
+      }
+    });
   }
 
   Future<void> _initializeVideo() async {
     try {
-      print('VideoSplashScreen: Initializing video controller...');
-      _videoController = VideoPlayerController.asset(_selectedVideo);
-      await _videoController!.initialize();
+      _controller = VideoPlayerController.asset('assets/videos/splash_video.mp4');
       
-      print('VideoSplashScreen: Video initialized. Duration: ${_videoController!.value.duration}');
+      // Initialize the video controller
+      await _controller!.initialize();
       
       if (mounted) {
         setState(() {
-          _isVideoInitialized = true;
+          _isVideoReady = true;
         });
         
-        // Play video
-        print('VideoSplashScreen: Starting video playback...');
-        await _videoController!.play();
+        // Start fade in animation
+        _fadeController.forward();
         
-        // Listen for video completion
-        _videoController!.addListener(_checkVideoProgress);
+        // Set video properties
+        _controller!.setLooping(false);
+        _controller!.setVolume(0); // Mute the video
+        
+        // Add listener for when video completes
+        _controller!.addListener(() {
+          if (_controller!.value.position >= _controller!.value.duration && 
+              _controller!.value.duration > Duration.zero &&
+              !_hasNavigated) {
+            _navigateToLogin();
+          }
+        });
+        
+        // Start playing
+        await _controller!.play();
       }
     } catch (e) {
-      print('VideoSplashScreen: Error loading video: $e');
-      // If video fails to load, navigate to login immediately
-      _navigateToLogin();
-    }
-  }
-
-  void _checkVideoProgress() {
-    if (_videoController != null && 
-        _videoController!.value.position >= _videoController!.value.duration &&
-        _videoController!.value.duration > Duration.zero) {
-      print('VideoSplashScreen: Video completed. Navigating to login...');
-      _navigateToLogin();
+      print('VideoSplashScreen: Error initializing video: $e');
+      // If video fails, navigate after a short delay
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted && !_hasNavigated) {
+          _navigateToLogin();
+        }
+      });
     }
   }
 
   void _navigateToLogin() {
+    if (_hasNavigated) return;
+    _hasNavigated = true;
+    
     if (!mounted) return;
     
     print('VideoSplashScreen: Navigating to login screen...');
-    // Remove listener to prevent multiple navigations
-    _videoController?.removeListener(_checkVideoProgress);
-    
-    // Navigate to login screen
     Navigator.pushReplacementNamed(context, '/login');
   }
 
   @override
   void dispose() {
-    _videoController?.removeListener(_checkVideoProgress);
-    _videoController?.dispose();
+    _controller?.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    print('VideoSplashScreen: Building widget. Video initialized: $_isVideoInitialized');
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF1A1A2E), // Dark blue background
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Video Player - Full Screen
-          if (_isVideoInitialized && _videoController != null)
-            Center(
-              child: AspectRatio(
-                aspectRatio: _videoController!.value.aspectRatio,
-                child: VideoPlayer(_videoController!),
+          // Video background with fade animation
+          if (_isVideoReady && _controller != null)
+            FadeTransition(
+              opacity: _fadeAnimation,
+              child: SizedBox.expand(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: _controller!.value.size.width,
+                    height: _controller!.value.size.height,
+                    child: VideoPlayer(_controller!),
+                  ),
+                ),
               ),
-            )
-          else
-            // Black screen while loading
-            Container(
-              color: Colors.black,
             ),
+          
         ],
       ),
     );

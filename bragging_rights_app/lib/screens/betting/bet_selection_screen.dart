@@ -189,19 +189,20 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   }
   
   List<String> _getTabOrder() {
-    // Return the order of tabs based on sport
+    // Return the order of tabs based on sport (Props removed)
     switch (widget.sport.toUpperCase()) {
       case 'NBA':
       case 'NFL':
       case 'NHL':
-        return ['winner', 'spread', 'totals', 'props', 'live'];
+      case 'MLB':
+        return ['winner', 'spread', 'totals', 'live'];
       case 'MMA':
       case 'BOXING':
-        return ['winner', 'method', 'rounds', 'live'];
+        return ['winner', 'method', 'rounds'];
       case 'TENNIS':
-        return ['match', 'sets', 'games', 'live'];
+        return ['match', 'sets', 'games'];
       default:
-        return ['main', 'props', 'live'];
+        return ['main', 'live'];
     }
   }
   
@@ -216,31 +217,31 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     
     print('Getting tab controller for sport: "$sportUpper"');
     
-    // Check for NBA, NFL, NHL, MLB
+    // Check for NBA, NFL, NHL, MLB - Now 4 tabs without Props
     if (sportUpper.contains('NBA') || sportUpper.contains('BASKETBALL') ||
         sportUpper.contains('NFL') || sportUpper.contains('FOOTBALL') ||
         sportUpper.contains('NHL') || sportUpper.contains('HOCKEY') ||
         sportUpper.contains('MLB') || sportUpper.contains('BASEBALL')) {
-      print('Creating 5-tab controller for team sports');
-      return TabController(length: 5, vsync: this); // Winner, Spread, Totals, Props, Live
+      print('Creating 4-tab controller for team sports (no props)');
+      return TabController(length: 4, vsync: this); // Winner, Spread, Totals, Live
     }
     
-    // Check for MMA/Boxing
+    // Check for MMA/Boxing - Keep as is since no props tab
     if (sportUpper.contains('MMA') || sportUpper.contains('UFC') || 
         sportUpper.contains('BOXING') || sportUpper.contains('FIGHT')) {
-      print('Creating 4-tab controller for combat sports');
-      return TabController(length: 4, vsync: this); // Main, Method, Rounds, Live
+      print('Creating 3-tab controller for combat sports');
+      return TabController(length: 3, vsync: this); // Winner, Method, Rounds (no live for now)
     }
     
     // Check for Tennis
     if (sportUpper.contains('TENNIS')) {
-      print('Creating 4-tab controller for tennis');
-      return TabController(length: 4, vsync: this); // Match, Sets, Games, Live
+      print('Creating 3-tab controller for tennis');
+      return TabController(length: 3, vsync: this); // Match, Sets, Games (no live for now)
     }
     
     // Default fallback
-    print('Creating default 3-tab controller');
-    return TabController(length: 3, vsync: this); // Main, Props, Live
+    print('Creating default 2-tab controller');
+    return TabController(length: 2, vsync: this); // Main, Live
   }
   
   void _startCountdownTimer() {
@@ -371,9 +372,6 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       case 'total':
       case 'totals':
         return BetType.total;
-      case 'prop':
-      case 'props':
-        return BetType.prop;
       case 'method':
         return BetType.method;
       case 'rounds':
@@ -381,7 +379,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       case 'live':
         return BetType.live;
       default:
-        return BetType.prop;
+        return BetType.moneyline; // Default to moneyline instead of removed prop
     }
   }
   
@@ -395,9 +393,6 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       case 'total':
       case 'totals':
         return 'totals';
-      case 'prop':
-      case 'props':
-        return 'props';
       case 'method':
         return 'method';
       case 'rounds':
@@ -513,12 +508,11 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         sportUpper.contains('MLB') || sportUpper.contains('BASEBALL')) {
       return TabBar(
         controller: _betTypeController,
-        isScrollable: true,
+        isScrollable: false,
         tabs: const [
           Tab(text: 'Winner'),
           Tab(text: 'Spread'),
           Tab(text: 'Totals'),
-          Tab(text: 'Props'),
           Tab(text: 'Live'),
         ],
       );
@@ -532,7 +526,17 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
           Tab(text: 'Winner'),
           Tab(text: 'Method'),
           Tab(text: 'Rounds'),
-          Tab(text: 'Live'),
+        ],
+      );
+    }
+    
+    if (sportUpper.contains('TENNIS')) {
+      return TabBar(
+        controller: _betTypeController,
+        tabs: const [
+          Tab(text: 'Match'),
+          Tab(text: 'Sets'),
+          Tab(text: 'Games'),
         ],
       );
     }
@@ -542,7 +546,6 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       controller: _betTypeController,
       tabs: const [
         Tab(text: 'Main'),
-        Tab(text: 'Props'),
         Tab(text: 'Live'),
       ],
     );
@@ -559,7 +562,6 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         _buildMoneylineTab(),
         _buildSpreadTab(),
         _buildTotalsTab(),
-        _buildNBAPropsTab(),
         _buildLiveBettingTab(),
       ];
     }
@@ -570,14 +572,20 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         _buildMoneylineTab(),
         _buildMethodOfVictoryTab(),
         _buildRoundBettingTab(),
-        _buildLiveBettingTab(),
+      ];
+    }
+    
+    if (sportUpper.contains('TENNIS')) {
+      return [
+        _buildMoneylineTab(),
+        _buildSetsTab(),
+        _buildGamesTab(),
       ];
     }
     
     // Default
     return [
       _buildMoneylineTab(),
-      _buildGenericPropsTab(),
       _buildLiveBettingTab(),
     ];
   }
@@ -1015,24 +1023,10 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     );
   }
   
+  // Props tab removed - not supported by API
+  // Keeping method stub in case of future API upgrade
   Widget _buildNBAPropsTab() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        InfoEdgeCarousel(
-          title: 'Prop Bets',
-          description: 'Bet on specific events or player performances within the game.',
-          icon: Icons.star_outline,
-          onEdgePressed: _navigateToEdge,
-          autoScrollDelay: const Duration(seconds: 3),
-        ),
-        const SizedBox(height: 16),
-        _buildEmptyBettingState(
-          'No prop bets available',
-          'Player and game prop bets will appear when live data is connected',
-        ),
-      ],
-    );
+    return const SizedBox.shrink();
   }
   
   Widget _buildMethodOfVictoryTab() {
@@ -1099,29 +1093,152 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       );
     }
     
-    // Live betting when available
+    // Live betting when available - show same markets with updated odds
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         InfoEdgeCarousel(
           title: 'Live Betting',
-          description: 'Place bets while watching. Odds update in real-time.',
+          description: 'Updated odds during the game. Same markets, live prices.',
           icon: Icons.live_tv,
           onEdgePressed: _navigateToEdge,
           autoScrollDelay: const Duration(seconds: 3),
         ),
         const SizedBox(height: 16),
+        // Live odds notice
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.red.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.red.withOpacity(0.3)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.live_tv, color: Colors.red, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'LIVE - Odds update every 30 seconds',
+                  style: TextStyle(fontSize: 12, color: Colors.red[700], fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Show live versions of the same markets
+        if (_oddsData != null) ...[
+          const Text('Live Moneyline', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          if (_oddsData!.homeMoneyline != null && _oddsData!.awayMoneyline != null) ...[
+            _buildBetCard(
+              '${_awayTeam ?? "Away"} to Win (LIVE)',
+              _oddsData!.formatMoneyline(_oddsData!.awayMoneyline),
+              'Live moneyline odds',
+              Colors.red,
+              BetType.live,
+              'live_${_awayTeam ?? "Away"}_ML',
+            ),
+            _buildBetCard(
+              '${_homeTeam ?? "Home"} to Win (LIVE)',
+              _oddsData!.formatMoneyline(_oddsData!.homeMoneyline),
+              'Live moneyline odds',
+              Colors.red,
+              BetType.live,
+              'live_${_homeTeam ?? "Home"}_ML',
+            ),
+          ],
+          const SizedBox(height: 16),
+          const Text('Live Spread', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          if (_oddsData!.spread != null) ...[
+            _buildBetCard(
+              '${_awayTeam ?? "Away"} ${_oddsData!.formatSpread(_oddsData!.spread, isHome: false)} (LIVE)',
+              _oddsData!.formatMoneyline(_oddsData!.spreadAwayOdds ?? -110),
+              'Live spread betting',
+              Colors.orange,
+              BetType.live,
+              'live_${_awayTeam ?? "Away"}_spread',
+            ),
+            _buildBetCard(
+              '${_homeTeam ?? "Home"} ${_oddsData!.formatSpread(_oddsData!.spread, isHome: true)} (LIVE)',
+              _oddsData!.formatMoneyline(_oddsData!.spreadHomeOdds ?? -110),
+              'Live spread betting',
+              Colors.orange,
+              BetType.live,
+              'live_${_homeTeam ?? "Home"}_spread',
+            ),
+          ],
+          const SizedBox(height: 16),
+          const Text('Live Total', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          if (_oddsData!.totalPoints != null) ...[
+            _buildBetCard(
+              'Over ${_oddsData!.formatTotal(_oddsData!.totalPoints)} (LIVE)',
+              _oddsData!.formatMoneyline(_oddsData!.overOdds ?? -110),
+              'Live total points',
+              Colors.green,
+              BetType.live,
+              'live_Over_${_oddsData!.totalPoints}',
+            ),
+            _buildBetCard(
+              'Under ${_oddsData!.formatTotal(_oddsData!.totalPoints)} (LIVE)',
+              _oddsData!.formatMoneyline(_oddsData!.underOdds ?? -110),
+              'Live total points',
+              Colors.blue,
+              BetType.live,
+              'live_Under_${_oddsData!.totalPoints}',
+            ),
+          ],
+        ] else
+          _buildEmptyBettingState(
+            'Live odds updating...',
+            'Live betting markets will appear once the game starts',
+          ),
+      ],
+    );
+  }
+  
+  // Tennis Sets betting
+  Widget _buildSetsTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        InfoEdgeCarousel(
+          title: 'Set Betting',
+          description: 'Bet on the number of sets in the match.',
+          icon: Icons.sports_tennis,
+          onEdgePressed: _navigateToEdge,
+          autoScrollDelay: const Duration(seconds: 3),
+        ),
+        const SizedBox(height: 16),
         _buildEmptyBettingState(
-          'No live bets available',
-          'Live betting options will appear during the event',
+          'Set betting coming soon',
+          'Set betting options will appear when tennis data is available',
         ),
       ],
     );
   }
   
-  Widget _buildGenericPropsTab() {
-    return const Center(
-      child: Text('Sport-specific props coming soon'),
+  // Tennis Games betting
+  Widget _buildGamesTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        InfoEdgeCarousel(
+          title: 'Game Betting',
+          description: 'Bet on total games in the match.',
+          icon: Icons.sports_tennis,
+          onEdgePressed: _navigateToEdge,
+          autoScrollDelay: const Duration(seconds: 3),
+        ),
+        const SizedBox(height: 16),
+        _buildEmptyBettingState(
+          'Game betting coming soon',
+          'Game betting options will appear when tennis data is available',
+        ),
+      ],
     );
   }
   
@@ -1445,8 +1562,6 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         return Icons.trending_up;
       case BetType.total:
         return Icons.add_circle;
-      case BetType.prop:
-        return Icons.star;
       case BetType.method:
         return Icons.sports_mma;
       case BetType.rounds:
@@ -1856,11 +1971,10 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     // Map tab indices to pick status
     final tabOrder = _getTabOrder();
     
-    // Only check non-live tabs (exclude the last 'live' tab)
-    final checkLength = Math.min(tabOrder.length - 1, _betTypeController.length - 1);
-    
-    for (int i = 0; i < checkLength; i++) {
-      if (tabOrder[i] != 'live' && !(_tabPicks[tabOrder[i]] ?? false)) {
+    // Only check non-live tabs (exclude 'live' tab if it exists)
+    for (int i = 0; i < tabOrder.length && i < _betTypeController.length; i++) {
+      final tabKey = tabOrder[i];
+      if (tabKey != 'live' && !(_tabPicks[tabKey] ?? false)) {
         return i;
       }
     }
@@ -1900,9 +2014,9 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     final tabOrder = _getTabOrder();
     final displayNames = _getTabDisplayNames();
     
-    for (int i = 0; i < tabOrder.length && i < _betTypeController.length - 1; i++) {
+    for (int i = 0; i < tabOrder.length; i++) {
       final tabKey = tabOrder[i];
-      if (tabKey != 'live') {
+      if (tabKey != 'live' && displayNames.containsKey(tabKey)) {
         widgets.add(_buildTabStatus(
           displayNames[tabKey] ?? tabKey,
           _tabPicks[tabKey] ?? false,
@@ -1917,11 +2031,11 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       case 'NBA':
       case 'NFL':
       case 'NHL':
+      case 'MLB':
         return {
           'winner': 'Winner',
           'spread': 'Spread',
           'totals': 'O/U',
-          'props': 'Props',
         };
       case 'MMA':
       case 'BOXING':
@@ -1939,7 +2053,6 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       default:
         return {
           'main': 'Main',
-          'props': 'Props',
         };
     }
   }
@@ -2221,7 +2334,6 @@ enum BetType {
   moneyline,
   spread,
   total,
-  prop,
   method,
   rounds,
   live,

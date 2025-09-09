@@ -14,6 +14,7 @@ class OddsApiService {
   
   // Quota manager instance
   final OddsQuotaManager _quotaManager = OddsQuotaManager();
+  bool _isInitialized = false;
   
   // Singleton instance
   static final OddsApiService _instance = OddsApiService._internal();
@@ -23,7 +24,16 @@ class OddsApiService {
   }
   
   Future<void> _initialize() async {
-    await _quotaManager.initialize();
+    if (!_isInitialized) {
+      await _quotaManager.initialize();
+      _isInitialized = true;
+    }
+  }
+  
+  Future<void> ensureInitialized() async {
+    if (!_isInitialized) {
+      await _initialize();
+    }
   }
   
   // Sport keys mapping
@@ -86,11 +96,14 @@ class OddsApiService {
     String markets = 'h2h,spreads,totals',
     String oddsFormat = 'american',
   }) async {
+    // Ensure quota manager is initialized
+    await ensureInitialized();
     return await _quotaManager.executeWithQuota<List<Map<String, dynamic>>>(
       sport: sport,
       apiCall: () async {
         // Get sport key
         String sportKey = _sportKeys[sport.toLowerCase()] ?? sport;
+        debugPrint('🔑 Sport mapping: "$sport" -> "$sportKey"');
         
         // Special handling for tennis tournaments
         if (sport.toLowerCase() == 'tennis' && tournament != null) {
@@ -103,6 +116,8 @@ class OddsApiService {
             '&markets=$markets'
             '&oddsFormat=$oddsFormat';
         
+        debugPrint('📡 Calling Odds API: $url');
+        
         final response = await http.get(Uri.parse(url));
         
         if (response.statusCode == 200) {
@@ -112,6 +127,7 @@ class OddsApiService {
         }
         
         debugPrint('❌ Failed to get odds: ${response.statusCode}');
+        debugPrint('Response body: ${response.body}');
         return null;
       },
       getCached: null, // Could add caching here
@@ -181,25 +197,56 @@ class OddsApiService {
     required String awayTeam,
   }) async {
     try {
+      // Ensure initialization
+      await ensureInitialized();
+      
+      debugPrint('🎯 OddsApiService.getMatchOdds called');
+      debugPrint('   Sport: $sport');
+      debugPrint('   Looking for: $awayTeam @ $homeTeam');
+      
       // Get all events for the sport
       final events = await getSportOdds(sport: sport);
       
       if (events == null || events.isEmpty) {
-        debugPrint('No events found for $sport');
+        debugPrint('❌ No events found for $sport');
         return null;
+      }
+      
+      debugPrint('✅ Found ${events.length} $sport events from API');
+      
+      // Log all available games for debugging
+      debugPrint('📋 Available $sport games from API:');
+      for (int i = 0; i < events.length && i < 5; i++) {
+        final e = events[i];
+        debugPrint('   ${i+1}. ${e['away_team']} @ ${e['home_team']}');
       }
       
       // Find matching event
       for (final event in events) {
-        final eventHome = event['home_team']?.toString().toLowerCase() ?? '';
-        final eventAway = event['away_team']?.toString().toLowerCase() ?? '';
+        final eventHome = event['home_team']?.toString() ?? '';
+        final eventAway = event['away_team']?.toString() ?? '';
+        
+        final eventHomeLower = eventHome.toLowerCase();
+        final eventAwayLower = eventAway.toLowerCase();
         
         final homeNormalized = _normalizeTeamName(homeTeam);
         final awayNormalized = _normalizeTeamName(awayTeam);
         
+        // Debug each comparison
+        debugPrint('🔍 Comparing:');
+        debugPrint('   API: $eventAway @ $eventHome');
+        debugPrint('   Looking for: $awayTeam @ $homeTeam');
+        debugPrint('   Normalized API: $eventAwayLower @ $eventHomeLower');
+        debugPrint('   Normalized search: $awayNormalized @ $homeNormalized');
+        
         // Check if this is our match
-        if (_teamsMatch(eventHome, homeNormalized) && 
-            _teamsMatch(eventAway, awayNormalized)) {
+        final homeMatches = _teamsMatch(eventHomeLower, homeNormalized, sport);
+        final awayMatches = _teamsMatch(eventAwayLower, awayNormalized, sport);
+        
+        debugPrint('   Home match: $homeMatches, Away match: $awayMatches');
+        
+        if (homeMatches && awayMatches) {
+          debugPrint('✅ MATCH FOUND!');
           
           // Extract odds data
           final bookmakers = event['bookmakers'] ?? [];
@@ -218,7 +265,10 @@ class OddsApiService {
         }
       }
       
-      debugPrint('No matching event found for $homeTeam vs $awayTeam');
+      debugPrint('❌ No matching event found');
+      debugPrint('   Was looking for: $awayTeam @ $homeTeam');
+      debugPrint('   Sport: $sport');
+      debugPrint('   Total events checked: ${events.length}');
       return null;
       
     } catch (e) {
@@ -306,20 +356,78 @@ class OddsApiService {
 
   /// Normalize team name for matching
   String _normalizeTeamName(String name) {
-    return name
+    // Common MLB abbreviations and variations
+    final mlbMap = {
+      'diamondbacks': 'd-backs',
+      'athletics': 'a\'s',
+      'red sox': 'redsox',
+      'white sox': 'whitesox',
+    };
+    
+    var normalized = name
         .toLowerCase()
         .replaceAll('the ', '')
         .replaceAll(' fc', '')
         .replaceAll(' united', '')
         .replaceAll(' city', '')
+        .replaceAll('st.', 'st')
+        .replaceAll('saint', 'st')
         .trim();
+    
+    // Check for MLB specific mappings
+    for (final entry in mlbMap.entries) {
+      if (normalized.contains(entry.key)) {
+        normalized = normalized.replaceAll(entry.key, entry.value);
+      }
+    }
+    
+    return normalized;
   }
 
   /// Check if team names match
-  bool _teamsMatch(String eventTeam, String searchTeam) {
+  bool _teamsMatch(String eventTeam, String searchTeam, String sport) {
     // Direct match
     if (eventTeam.contains(searchTeam) || searchTeam.contains(eventTeam)) {
       return true;
+    }
+    
+    // For MLB, be more flexible with city names and team names
+    if (sport.toLowerCase() == 'mlb') {
+      // Extract the last word (usually the team name)
+      final eventParts = eventTeam.split(' ');
+      final searchParts = searchTeam.split(' ');
+      
+      if (eventParts.isNotEmpty && searchParts.isNotEmpty) {
+        final eventTeamName = eventParts.last;
+        final searchTeamName = searchParts.last;
+        
+        // Check if team names match
+        if (eventTeamName == searchTeamName) {
+          return true;
+        }
+        
+        // Check if one contains the other (for cases like "yankees" vs "ny yankees")
+        if (eventTeam.contains(searchTeamName) || searchTeam.contains(eventTeamName)) {
+          return true;
+        }
+        
+        // Special cases for common MLB variations
+        final mlbVariations = {
+          'sox': ['redsox', 'whitesox', 'red sox', 'white sox'],
+          'jays': ['bluejays', 'blue jays'],
+          'cards': ['cardinals'],
+          'backs': ['diamondbacks', 'd-backs', 'dbacks'],
+          'a\'s': ['athletics', 'as'],
+        };
+        
+        for (final entry in mlbVariations.entries) {
+          if ((eventTeamName.contains(entry.key) || searchTeamName.contains(entry.key)) &&
+              (entry.value.any((v) => eventTeam.contains(v)) || 
+               entry.value.any((v) => searchTeam.contains(v)))) {
+            return true;
+          }
+        }
+      }
     }
     
     // Check last name for individual sports
@@ -347,4 +455,193 @@ class OddsApiService {
 
   /// Get list of supported sports
   List<String> getSupportedSports() => _sportKeys.keys.toList();
+  
+  /// Get event-specific odds including prop bets and alternate lines
+  /// This endpoint supports player props and alternate markets
+  Future<Map<String, dynamic>?> getEventOdds({
+    required String sport,
+    required String eventId,
+    bool includeProps = true,
+    bool includeAlternates = true,
+  }) async {
+    // Ensure initialization
+    await ensureInitialized();
+    
+    try {
+      // Build markets string based on requested data
+      List<String> markets = ['h2h', 'spreads', 'totals'];
+      
+      if (includeProps) {
+        // Add sport-specific prop markets
+        switch (sport.toLowerCase()) {
+          case 'nfl':
+          case 'americanfootball_nfl':
+            markets.addAll([
+              'player_pass_tds',
+              'player_pass_yds',
+              'player_pass_attempts',
+              'player_rush_yds',
+              'player_rush_attempts',
+              'player_rush_tds',
+              'player_reception_yds',
+              'player_receptions',
+            ]);
+            break;
+          case 'nba':
+          case 'basketball_nba':
+            markets.addAll([
+              'player_points',
+              'player_rebounds',
+              'player_assists',
+              'player_threes',
+              'player_blocks',
+              'player_steals',
+              'player_points_rebounds_assists',
+              'player_double_double',
+            ]);
+            break;
+          case 'mlb':
+          case 'baseball_mlb':
+            markets.addAll([
+              'batter_home_runs',
+              'batter_hits',
+              'batter_rbis',
+              'batter_runs_scored',
+              'pitcher_strikeouts',
+              'pitcher_hits_allowed',
+              'batter_total_bases',
+            ]);
+            break;
+          case 'nhl':
+          case 'icehockey_nhl':
+            markets.addAll([
+              'player_goals',
+              'player_assists',
+              'player_points',
+              'player_shots_on_goal',
+              'player_blocked_shots',
+            ]);
+            break;
+        }
+      }
+      
+      if (includeAlternates) {
+        markets.addAll(['alternate_spreads', 'alternate_totals']);
+      }
+      
+      // Get sport key
+      String sportKey = _sportKeys[sport.toLowerCase()] ?? sport;
+      
+      // Build URL for event-specific endpoint
+      final url = '$_baseUrl/sports/$sportKey/events/$eventId/odds?'
+          'apiKey=$_apiKey'
+          '&regions=us'
+          '&markets=${markets.join(',')}'
+          '&oddsFormat=american';
+      
+      debugPrint('📡 Fetching event odds with props: $url');
+      
+      final response = await http.get(Uri.parse(url));
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        // Process and organize the odds data
+        final processedData = _processEventOdds(data);
+        
+        debugPrint('✅ Got event odds with ${processedData['marketCount']} market types');
+        return processedData;
+      }
+      
+      debugPrint('❌ Failed to get event odds: ${response.statusCode}');
+      return null;
+      
+    } catch (e) {
+      debugPrint('Error fetching event odds: $e');
+      return null;
+    }
+  }
+  
+  /// Process event odds data to organize by market type
+  Map<String, dynamic> _processEventOdds(Map<String, dynamic> data) {
+    final result = {
+      'eventId': data['id'],
+      'homeTeam': data['home_team'],
+      'awayTeam': data['away_team'],
+      'commenceTime': data['commence_time'],
+      'bookmakers': data['bookmakers'] ?? [],
+      'markets': <String, dynamic>{},
+      'marketCount': 0,
+    };
+    
+    // Organize markets by type
+    final bookmakers = data['bookmakers'] ?? [];
+    final marketTypes = <String>{};
+    
+    for (final bookmaker in bookmakers) {
+      final markets = bookmaker['markets'] ?? [];
+      
+      for (final market in markets) {
+        final key = market['key'];
+        marketTypes.add(key);
+        
+        // Initialize market category if not exists
+        if (!result['markets'].containsKey(key)) {
+          result['markets'][key] = {
+            'type': key,
+            'bookmakers': [],
+          };
+        }
+        
+        // Add bookmaker data for this market
+        result['markets'][key]['bookmakers'].add({
+          'name': bookmaker['title'],
+          'outcomes': market['outcomes'],
+        });
+      }
+    }
+    
+    // Categorize markets
+    result['standardMarkets'] = marketTypes.where((m) => 
+      m == 'h2h' || m == 'spreads' || m == 'totals').toList();
+    
+    result['propMarkets'] = marketTypes.where((m) => 
+      m.contains('player') || m.contains('batter') || m.contains('pitcher')).toList();
+    
+    result['alternateMarkets'] = marketTypes.where((m) => 
+      m.contains('alternate')).toList();
+    
+    result['marketCount'] = marketTypes.length;
+    
+    return result;
+  }
+  
+  /// Get all events for a sport
+  Future<List<Map<String, dynamic>>?> getSportEvents(String sport) async {
+    try {
+      // Ensure initialization
+      await ensureInitialized();
+      
+      String sportKey = _sportKeys[sport.toLowerCase()] ?? sport;
+      
+      final url = '$_baseUrl/sports/$sportKey/events?apiKey=$_apiKey';
+      
+      debugPrint('📡 Fetching events for $sport');
+      
+      final response = await http.get(Uri.parse(url));
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as List;
+        debugPrint('✅ Found ${data.length} events for $sport');
+        return data.cast<Map<String, dynamic>>();
+      }
+      
+      debugPrint('❌ Failed to get events: ${response.statusCode}');
+      return null;
+      
+    } catch (e) {
+      debugPrint('Error fetching events: $e');
+      return null;
+    }
+  }
 }

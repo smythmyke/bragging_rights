@@ -7,6 +7,7 @@ import '../../widgets/edge/edge_card_types.dart';
 import '../../widgets/edge/sport_card_generator.dart';
 import '../../services/edge/edge_intelligence_service.dart';
 import '../../services/wallet_service.dart';
+import '../../widgets/loading_video_overlay.dart';
 import 'edge_detail_screen_v2.dart';
 
 /// Enhanced Edge Screen with new Edge Cards UI System
@@ -644,12 +645,12 @@ class _EdgeScreenV2State extends State<EdgeScreenV2> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: Text('The Edge', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.black,
-        iconTheme: IconThemeData(color: Colors.white),
-        actions: [
+        appBar: AppBar(
+          title: Text('The Edge', style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.black,
+          iconTheme: IconThemeData(color: Colors.white),
+          actions: [
           // BR Balance
           Container(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -678,21 +679,21 @@ class _EdgeScreenV2State extends State<EdgeScreenV2> with TickerProviderStateMix
             onPressed: _loadData,
           ),
         ],
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.black,
-              Colors.purple[900]!,
-              Colors.black,
-            ],
-          ),
         ),
-        child: Column(
-          children: [
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black,
+                Colors.purple[900]!,
+                Colors.black,
+              ],
+            ),
+          ),
+          child: Column(
+            children: [
             // Header
             Container(
               padding: EdgeInsets.all(20),
@@ -740,7 +741,7 @@ class _EdgeScreenV2State extends State<EdgeScreenV2> with TickerProviderStateMix
                           CircularProgressIndicator(color: Colors.purple),
                           SizedBox(height: 16),
                           Text(
-                            'Gathering Intelligence...',
+                            'Analyzing game intelligence...',
                             style: TextStyle(color: Colors.white70),
                           ),
                         ],
@@ -802,10 +803,10 @@ class _EdgeScreenV2State extends State<EdgeScreenV2> with TickerProviderStateMix
                   onPurchase: () => _unlockAllCards(),
                 ),
               ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
+      );
   }
   
   String _getTimeUntilGame() {

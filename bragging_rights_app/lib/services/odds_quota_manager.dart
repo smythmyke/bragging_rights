@@ -2,6 +2,15 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
+/// Error thrown when the quota manager is not initialized
+class NotInitializedError implements Exception {
+  final String message;
+  NotInitializedError([this.message = 'OddsQuotaManager not initialized']);
+  
+  @override
+  String toString() => 'NotInitializedError: $message';
+}
+
 /// Odds API Quota Manager
 /// Manages the monthly request limit across all sports
 /// Initially 500 free requests, upgradeable to 20K ($30) or 100K ($59)
@@ -291,6 +300,17 @@ extension OddsQuotaIntegration on OddsQuotaManager {
     required Future<T?> Function() apiCall,
     T? Function()? getCached,
   }) async {
+    // Check if initialized
+    if (_prefs == null) {
+      debugPrint('⚠️ OddsQuotaManager not initialized, initializing now...');
+      await initialize();
+      
+      // If still not initialized, throw error
+      if (_prefs == null) {
+        throw NotInitializedError('Failed to initialize SharedPreferences');
+      }
+    }
+    
     // Check if should use cache
     if (shouldUseCache(sport)) {
       if (getCached != null) {
@@ -320,7 +340,7 @@ extension OddsQuotaIntegration on OddsQuotaManager {
       return result;
     } catch (e) {
       debugPrint('Error in quota-managed API call: $e');
-      return null;
+      rethrow;  // Rethrow to see the actual error
     }
   }
 }
