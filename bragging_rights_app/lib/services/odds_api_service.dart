@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'odds_quota_manager.dart';
+import '../models/game_model.dart';
 
 /// The Odds API Service
 /// Provides betting odds for all supported sports
@@ -41,6 +42,11 @@ class OddsApiService {
     'nhl': 'icehockey_nhl',
     'mlb': 'baseball_mlb',
     'mma': 'mma_mixed_martial_arts',
+    'ufc': 'mma_mixed_martial_arts',  // UFC uses same API endpoint
+    'bellator': 'mma_mixed_martial_arts',  // Bellator uses same API endpoint
+    'pfl': 'mma_mixed_martial_arts',  // PFL uses same API endpoint
+    'invicta': 'mma_mixed_martial_arts',  // Invicta FC uses same API endpoint
+    'one': 'mma_mixed_martial_arts',  // ONE Championship uses same API endpoint
     'boxing': 'boxing_boxing',
     'tennis': 'tennis_atp_french_open', // Default to major tournament
     'soccer': 'soccer_epl', // Premier League as default
@@ -520,6 +526,27 @@ class OddsApiService {
               'player_blocked_shots',
             ]);
             break;
+          case 'mma':
+          case 'ufc':
+          case 'bellator':
+          case 'pfl':
+          case 'invicta':
+          case 'one':
+            // All MMA promotions use the same API endpoint and markets
+            // MMA typically has method of victory and round betting
+            markets.addAll([
+              'fight_outcome',  // May include method of victory
+              'total_rounds',   // Round over/under
+            ]);
+            break;
+          case 'boxing':
+            // Boxing prop markets
+            markets.addAll([
+              'fight_outcome',  // Method of victory
+              'total_rounds',   // Round over/under
+              'fight_goes_distance',  // Goes to decision
+            ]);
+            break;
         }
       }
       
@@ -654,6 +681,99 @@ class OddsApiService {
     }
   }
   
+  /// Get games for a sport converted to GameModel format
+  /// This can be used as the primary source for game listings
+  Future<List<GameModel>> getSportGames(String sport, {int? daysAhead}) async {
+    try {
+      final events = await getSportEvents(sport);
+      if (events == null || events.isEmpty) {
+        return [];
+      }
+      
+      final games = <GameModel>[];
+      final now = DateTime.now();
+      final cutoffDate = daysAhead != null 
+          ? now.add(Duration(days: daysAhead))
+          : null;
+      
+      for (final event in events) {
+        try {
+          final gameTime = DateTime.parse(event['commence_time']);
+          
+          // Filter by date range if specified
+          if (cutoffDate != null && gameTime.isAfter(cutoffDate)) {
+            continue;
+          }
+          
+          // Convert Odds API event to GameModel
+          final game = GameModel(
+            id: event['id'], // Use Odds API event ID
+            sport: sport.toUpperCase(),
+            homeTeam: event['home_team'] ?? '',
+            awayTeam: event['away_team'] ?? '',
+            gameTime: gameTime,
+            status: 'scheduled', // Will be updated from scores endpoint
+            league: event['sport_title'] ?? sport.toUpperCase(),
+            // These fields will be null but can be enhanced with ESPN data later
+            venue: null,
+            broadcast: null,
+            homeTeamLogo: null,
+            awayTeamLogo: null,
+          );
+          
+          games.add(game);
+        } catch (e) {
+          debugPrint('Error parsing event: $e');
+          continue;
+        }
+      }
+      
+      // Sort by game time
+      games.sort((a, b) => a.gameTime.compareTo(b.gameTime));
+      
+      debugPrint('📊 Converted ${games.length} $sport events to GameModel');
+      return games;
+    } catch (e) {
+      debugPrint('❌ Error getting sport games: $e');
+      return [];
+    }
+  }
+  
+  /// Get live scores for a sport
+  Future<Map<String, Map<String, dynamic>>> getSportScores(String sport) async {
+    try {
+      await ensureInitialized();
+      
+      String sportKey = _sportKeys[sport.toLowerCase()] ?? sport;
+      
+      // Get scores for games in the last day and next day
+      final url = '$_baseUrl/sports/$sportKey/scores?apiKey=$_apiKey&daysFrom=1';
+      
+      debugPrint('📡 Fetching scores for $sport');
+      
+      final response = await http.get(Uri.parse(url));
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as List;
+        
+        // Convert to map for easy lookup by event ID
+        final scoresMap = <String, Map<String, dynamic>>{};
+        for (final score in data) {
+          scoresMap[score['id']] = score;
+        }
+        
+        debugPrint('✅ Found scores for ${scoresMap.length} $sport games');
+        return scoresMap;
+      }
+      
+      debugPrint('❌ Failed to get scores: ${response.statusCode}');
+      return {};
+    } catch (e) {
+      debugPrint('❌ Error getting scores: $e');
+      return {};
+    }
+  }
+  
   /// Find The Odds API event ID by matching team names
   Future<String?> findOddsApiEventId({
     required String sport,
@@ -661,41 +781,55 @@ class OddsApiService {
     required String awayTeam,
   }) async {
     try {
+      debugPrint('🔎 findOddsApiEventId called with:');
+      debugPrint('   Sport: $sport');
+      debugPrint('   Home Team: "$homeTeam"');
+      debugPrint('   Away Team: "$awayTeam"');
+      
       final events = await getSportEvents(sport);
-      if (events == null || events.isEmpty) return null;
+      if (events == null || events.isEmpty) {
+        debugPrint('❌ No events found for sport: $sport');
+        return null;
+      }
+      
+      debugPrint('📋 Found ${events.length} events for $sport');
       
       // Normalize team names for comparison
       final normalizedHome = _normalizeTeamName(homeTeam);
       final normalizedAway = _normalizeTeamName(awayTeam);
       
-      debugPrint('🔍 Looking for match: $normalizedHome vs $normalizedAway');
+      debugPrint('🔍 Looking for match:');
+      debugPrint('   Normalized Home: "$normalizedHome"');
+      debugPrint('   Normalized Away: "$normalizedAway"');
       
       for (final event in events) {
-        final eventHome = _normalizeTeamName(event['home_team'] ?? '');
-        final eventAway = _normalizeTeamName(event['away_team'] ?? '');
+        final apiHome = event['home_team'] ?? '';
+        final apiAway = event['away_team'] ?? '';
+        final eventHome = _normalizeTeamName(apiHome);
+        final eventAway = _normalizeTeamName(apiAway);
+        
+        debugPrint('   Checking event: ${event['id']}');
+        debugPrint('     API Teams: "$apiAway" @ "$apiHome"');
+        debugPrint('     Normalized: "$eventAway" @ "$eventHome"');
         
         // Check if teams match (in either order)
-        if ((eventHome.contains(normalizedHome) || normalizedHome.contains(eventHome)) &&
-            (eventAway.contains(normalizedAway) || normalizedAway.contains(eventAway))) {
-          debugPrint('✅ Found matching event: ${event['id']} - ${event['home_team']} vs ${event['away_team']}');
+        final homeMatches = eventHome.contains(normalizedHome) || normalizedHome.contains(eventHome);
+        final awayMatches = eventAway.contains(normalizedAway) || normalizedAway.contains(eventAway);
+        
+        debugPrint('     Home match: $homeMatches, Away match: $awayMatches');
+        
+        if (homeMatches && awayMatches) {
+          debugPrint('✅ Found matching event: ${event['id']} - $apiHome vs $apiAway');
           return event['id'];
         }
       }
       
-      debugPrint('❌ No matching event found for $homeTeam vs $awayTeam');
+      debugPrint('❌ No matching event found for "$awayTeam" @ "$homeTeam"');
       return null;
     } catch (e) {
-      debugPrint('Error finding event ID: $e');
+      debugPrint('❌ Error finding event ID: $e');
       return null;
     }
   }
   
-  String _normalizeTeamName(String name) {
-    return name.toLowerCase()
-        .replaceAll('the ', '')
-        .replaceAll('.', '')
-        .replaceAll(',', '')
-        .replaceAll('\'', '')
-        .trim();
-  }
 }

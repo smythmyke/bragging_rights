@@ -127,27 +127,56 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     
     try {
       // Try to extract team names from game title first
+      print('[BetSelection] Game Title: "${widget.gameTitle}"');
       if (widget.gameTitle.contains(' @ ') || widget.gameTitle.contains(' vs ')) {
         final separator = widget.gameTitle.contains(' @ ') ? ' @ ' : ' vs ';
+        print('[BetSelection] Using separator: "$separator"');
         final teams = widget.gameTitle.split(separator);
+        print('[BetSelection] Split into ${teams.length} parts: $teams');
         if (teams.length == 2) {
           _awayTeam = teams[0].trim();
           _homeTeam = teams[1].trim();
-          print('[BetSelection] Teams from title: $_awayTeam vs $_homeTeam');
+          print('[BetSelection] Extracted teams:');
+          print('[BetSelection]   Away: "$_awayTeam"');
+          print('[BetSelection]   Home: "$_homeTeam"');
+        } else {
+          print('[BetSelection] Could not parse teams from title');
         }
+      } else {
+        print('[BetSelection] Title does not contain expected separators');
       }
       
       if (widget.gameId != null) {
         print('[BetSelection] Fetching event odds from API...');
+        print('[BetSelection] Game ID type: ${widget.gameId} (looks like ${widget.gameId!.contains('-') ? "Odds API" : "ESPN"} format)');
+        
+        // If we have team names and ESPN ID, try to find Odds API event ID
+        String eventIdToUse = widget.gameId!;
+        if (!widget.gameId!.contains('-') && _homeTeam != null && _awayTeam != null) {
+          print('[BetSelection] ESPN ID detected, finding Odds API event ID for $_awayTeam @ $_homeTeam');
+          final oddsApiEventId = await _oddsApiService.findOddsApiEventId(
+            sport: widget.sport,
+            homeTeam: _homeTeam!,
+            awayTeam: _awayTeam!,
+          );
+          if (oddsApiEventId != null) {
+            eventIdToUse = oddsApiEventId;
+            print('[BetSelection] Found Odds API event ID: $eventIdToUse');
+          } else {
+            print('[BetSelection] WARNING: Could not find matching Odds API event ID, will try with ESPN ID');
+          }
+        }
         
         // Use OddsApiService to get event odds
         final eventOdds = await _oddsApiService.getEventOdds(
           sport: widget.sport,
-          eventId: widget.gameId!,
-          includeProps: false,  // Just basic markets for now
+          eventId: eventIdToUse,
+          includeProps: true,  // Include props for complete data
+          includeAlternates: true,
         );
         
         print('[BetSelection] API Response: ${eventOdds != null ? "Success" : "Null"}');
+        print('[BetSelection] Response status code: ${eventOdds?['status_code'] ?? 'N/A'}');
         
         if (eventOdds != null) {
           // Extract teams
@@ -187,7 +216,8 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                 } else if (key == 'spreads' && spread == null) {
                   for (final outcome in outcomes) {
                     if (outcome['name'] == _homeTeam) {
-                      spread = (outcome['point'] as num?)?.toDouble();
+                      final point = outcome['point'];
+                      spread = point is num ? point.toDouble() : null;
                       if (outcome['price'] != null) {
                         spreadHomeOdds = _convertToAmericanOdds((outcome['price'] as num).toDouble());
                       }
@@ -198,7 +228,8 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                 } else if (key == 'totals' && total == null) {
                   for (final outcome in outcomes) {
                     if (outcome['name'] == 'Over') {
-                      total = (outcome['point'] as num?)?.toDouble();
+                      final point = outcome['point'];
+                      total = point is num ? point.toDouble() : null;
                       if (outcome['price'] != null) {
                         overOdds = _convertToAmericanOdds((outcome['price'] as num).toDouble());
                       }
@@ -212,6 +243,34 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
             
             print('[BetSelection] Parsed - ML: $homeML/$awayML, Spread: $spread, Total: $total');
             
+            // Parse props data from the same bookmakers response
+            print('[BetSelection] Parsing props from initial load...');
+            
+            // Check what markets we have
+            final availableMarkets = <String>{};
+            final availableProps = <String>{};
+            for (final bookmaker in bookmakers) {
+              final markets = bookmaker['markets'] as List? ?? [];
+              for (final market in markets) {
+                final key = market['key'] as String;
+                availableMarkets.add(key);
+                if (key.startsWith('player_') || key.startsWith('batter_') || key.startsWith('pitcher_')) {
+                  availableProps.add(key);
+                }
+              }
+            }
+            
+            print('[BetSelection] Initial load markets: ${availableMarkets.toList()}');
+            print('[BetSelection] Initial load prop markets: ${availableProps.toList()}');
+            
+            final propsData = _parsePropsFromBookmakers(
+              bookmakers,
+              _homeTeam ?? 'Home',
+              _awayTeam ?? 'Away',
+            );
+            
+            print('[BetSelection] Initial load parsed ${propsData?.playersByName.length ?? 0} players with props');
+            
             setState(() {
               _oddsData = OddsModel(
                 homeMoneyline: homeML,
@@ -223,6 +282,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                 overOdds: overOdds,
                 underOdds: underOdds,
               );
+              _propsData = propsData;
               _isLoadingData = false;
             });
             return;
@@ -240,8 +300,9 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         print('[BetSelection] No data available');
         setState(() => _isLoadingData = false);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('[BetSelection] Error: $e');
+      print('[BetSelection] Stack trace: $stackTrace');
       if (widget.sport.toUpperCase().contains('NFL') || widget.sport.toUpperCase().contains('FOOTBALL')) {
         _loadMockFootballData();
       } else {
@@ -1009,6 +1070,13 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   }
   
   Widget _buildMoneylineTab() {
+    print('[BetSelection] Building Moneyline Tab');
+    print('[BetSelection]   _oddsData: ${_oddsData != null ? "EXISTS" : "NULL"}');
+    if (_oddsData != null) {
+      print('[BetSelection]   homeMoneyline: ${_oddsData!.homeMoneyline}');
+      print('[BetSelection]   awayMoneyline: ${_oddsData!.awayMoneyline}');
+    }
+    
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -1130,8 +1198,8 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   
   // Props tab with real data from event-specific endpoint
   Widget _buildPropsTab() {
-    // Load props on first access - but add a flag to prevent repeated calls
-    if (_propsData == null && !_isLoadingProps && !_hasAttemptedPropsLoad && widget.gameId != null) {
+    // Load props on first access only if not already loaded from main data load
+    if (_propsData == null && !_isLoadingProps && !_hasAttemptedPropsLoad && widget.gameId != null && !_isLoadingData) {
       _hasAttemptedPropsLoad = true;
       _loadPropsData();
     }
@@ -1214,12 +1282,23 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         final bookmakers = eventOdds['bookmakers'] as List;
         print('[BetSelection] Props: ${bookmakers.length} bookmakers');
         
-        // Check available markets
-        if (bookmakers.isNotEmpty) {
-          final markets = bookmakers[0]['markets'] as List? ?? [];
-          final marketKeys = markets.map((m) => m['key']).toList();
-          print('[BetSelection] Available prop markets: $marketKeys');
+        // Check available markets across all bookmakers
+        final allMarkets = <String>{};
+        final propMarkets = <String>{};
+        
+        for (final bookmaker in bookmakers) {
+          final markets = bookmaker['markets'] as List? ?? [];
+          for (final market in markets) {
+            final key = market['key'] as String;
+            allMarkets.add(key);
+            if (key.startsWith('player_') || key.startsWith('batter_') || key.startsWith('pitcher_')) {
+              propMarkets.add(key);
+            }
+          }
         }
+        
+        print('[BetSelection] Total markets found: ${allMarkets.toList()}');
+        print('[BetSelection] Prop markets found: ${propMarkets.toList()}');
         
         // Parse props data from bookmakers
         final propsData = _parsePropsFromBookmakers(
@@ -1228,7 +1307,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
           _awayTeam ?? 'Away',
         );
         
-        print('[BetSelection] Parsed ${propsData?.playersByName.length ?? 0} players');
+        print('[BetSelection] Parsed ${propsData?.playersByName.length ?? 0} players with props');
         
         if (mounted) {
           setState(() {
@@ -1237,13 +1316,14 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
           });
         }
       } else {
-        print('[BetSelection] No props data');
+        print('[BetSelection] No props data - eventOdds: ${eventOdds != null}, bookmakers: ${eventOdds?['bookmakers'] != null}');
         if (mounted) {
           setState(() => _isLoadingProps = false);
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('[BetSelection] Props error: $e');
+      print('[BetSelection] Stack trace: $stackTrace');
       if (mounted) {
         setState(() => _isLoadingProps = false);
       }
@@ -1299,14 +1379,14 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
             marketKey: marketKey,
             type: PropsParser.getMarketDisplayName(marketKey),
             displayName: PropsParser.getMarketDisplayName(marketKey),
-            line: outcome['point']?.toDouble(),
+            line: outcome['point'] is num ? (outcome['point'] as num).toDouble() : null,
             overOdds: outcome['name'].toString().contains('Over') 
-                ? outcome['price']?.toDouble() : null,
+                ? (outcome['price'] is num ? (outcome['price'] as num).toDouble() : null) : null,
             underOdds: outcome['name'].toString().contains('Under') 
-                ? outcome['price']?.toDouble() : null,
+                ? (outcome['price'] is num ? (outcome['price'] as num).toDouble() : null) : null,
             straightOdds: (!outcome['name'].toString().contains('Over') && 
                           !outcome['name'].toString().contains('Under')) 
-                ? outcome['price']?.toDouble() : null,
+                ? (outcome['price'] is num ? (outcome['price'] as num).toDouble() : null) : null,
             bookmaker: bookmaker['title'] ?? 'Unknown',
             description: outcome['name'] as String,
           );

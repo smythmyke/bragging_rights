@@ -6,6 +6,7 @@ import '../../services/wallet_service.dart';
 import '../../services/game_odds_enrichment_service.dart';
 import '../../models/pool_model.dart';
 import '../../models/game_model.dart';
+import '../../utils/sport_utils.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PoolSelectionScreen extends StatefulWidget {
@@ -1088,13 +1089,8 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
   }
 
   void _completeSelections(String poolId) async {
-    // Navigate to bet selection screen for this pool
-    final isCombatSport = widget.sport == 'UFC' || 
-                         widget.sport == 'BOXING' ||
-                         widget.sport == 'BELLATOR' ||
-                         widget.sport == 'PFL';
-    
-    if (isCombatSport) {
+    // Navigate to appropriate screen based on sport type
+    if (SportUtils.isCombatSport(widget.sport)) {
       Navigator.pushNamed(
         context,
         '/fight-card-grid',
@@ -1140,12 +1136,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
         print('[POOL JOIN] User has not submitted picks, checking sport type...');
         
         // Check if this is a combat sport
-        final isCombatSport = widget.sport == 'UFC' || 
-                             widget.sport == 'BOXING' ||
-                             widget.sport == 'BELLATOR' ||
-                             widget.sport == 'PFL';
-        
-        if (isCombatSport) {
+        if (SportUtils.isCombatSport(widget.sport)) {
           print('[POOL JOIN] Combat sport detected, navigating to fight card grid');
           Navigator.pushNamed(
             context,
@@ -1267,12 +1258,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                           await _loadUserPoolStatus();
                           
                           // Check if this is a combat sport
-                          final isCombatSport = widget.sport == 'UFC' || 
-                                               widget.sport == 'BOXING' ||
-                                               widget.sport == 'BELLATOR' ||
-                                               widget.sport == 'PFL';
-                          
-                          if (isCombatSport) {
+                          if (SportUtils.isCombatSport(widget.sport)) {
                             // Navigate to fight card grid for combat sports
                             Navigator.pushNamed(
                               context,

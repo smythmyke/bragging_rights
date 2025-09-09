@@ -8,6 +8,7 @@ import 'edge/sports/espn_nba_service.dart';
 import 'edge/sports/espn_nhl_service.dart';
 import 'edge/sports/espn_mlb_service.dart';
 import 'game_odds_enrichment_service.dart';
+import 'odds_api_service.dart';
 
 /// Optimized games service with intelligent loading and timeframe categorization
 class OptimizedGamesService {
@@ -18,8 +19,9 @@ class OptimizedGamesService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final UserPreferencesService _prefsService = UserPreferencesService();
   final GameOddsEnrichmentService _oddsService = GameOddsEnrichmentService();
+  final OddsApiService _oddsApiService = OddsApiService();
   
-  // Sport-specific services
+  // Sport-specific services (ESPN as fallback)
   final EspnNflService _nflService = EspnNflService();
   final EspnNbaService _nbaService = EspnNbaService();
   final EspnNhlService _nhlService = EspnNhlService();
@@ -198,10 +200,59 @@ class OptimizedGamesService {
   }
 
   /// Load games for a specific sport with date range
+  /// Try Odds API first (primary), fall back to ESPN if needed
   Future<List<GameModel>> _loadSportGamesWithRange({
     required String sport,
     int daysAhead = INITIAL_DAYS_AHEAD,
   }) async {
+    try {
+      // TRY ODDS API FIRST (Primary source)
+      debugPrint('🎯 Attempting to load $sport games from Odds API...');
+      final oddsApiGames = await _oddsApiService.getSportGames(
+        sport, 
+        daysAhead: daysAhead
+      );
+      
+      if (oddsApiGames.isNotEmpty) {
+        debugPrint('✅ Loaded ${oddsApiGames.length} $sport games from Odds API');
+        
+        // Update scores if available
+        final scores = await _oddsApiService.getSportScores(sport);
+        final updatedGames = <GameModel>[];
+        for (final game in oddsApiGames) {
+          final scoreData = scores[game.id];
+          if (scoreData != null && scoreData['scores'] != null) {
+            // Create updated game with score data
+            updatedGames.add(GameModel(
+              id: game.id,
+              sport: game.sport,
+              homeTeam: game.homeTeam,
+              awayTeam: game.awayTeam,
+              gameTime: game.gameTime,
+              status: scoreData['completed'] == true ? 'final' : 'live',
+              homeScore: scoreData['scores']?['home_team'],
+              awayScore: scoreData['scores']?['away_team'],
+              league: game.league,
+              venue: game.venue,
+              broadcast: game.broadcast,
+              homeTeamLogo: game.homeTeamLogo,
+              awayTeamLogo: game.awayTeamLogo,
+            ));
+          } else {
+            updatedGames.add(game);
+          }
+        }
+        
+        return updatedGames;
+      }
+      
+      debugPrint('⚠️ No games from Odds API, falling back to ESPN...');
+    } catch (e) {
+      debugPrint('❌ Odds API failed for $sport: $e');
+      debugPrint('📺 Falling back to ESPN...');
+    }
+    
+    // FALL BACK TO ESPN
     switch (sport.toLowerCase()) {
       case 'nfl':
       case 'football':
