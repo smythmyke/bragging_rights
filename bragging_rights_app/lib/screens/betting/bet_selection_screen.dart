@@ -5,9 +5,12 @@ import '../../services/bet_service.dart';
 import '../../services/wallet_service.dart';
 import '../../services/bet_storage_service.dart';
 import '../../services/sports_api_service.dart';
+import '../../services/odds_api_service.dart';
 import '../../models/game_model.dart';
 import '../../models/odds_model.dart';
 import '../../widgets/info_edge_carousel.dart';
+import '../../models/props_models.dart';
+import '../../widgets/props_tab_content.dart';
 
 class BetSelectionScreen extends StatefulWidget {
   final String gameTitle;
@@ -40,6 +43,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   final BetService _betService = BetService();
   final WalletService _walletService = WalletService();
   final SportsApiService _sportsApiService = SportsApiService();
+  final OddsApiService _oddsApiService = OddsApiService();
   
   // Selected team/fighter
   String? _selectedTeam;
@@ -79,6 +83,15 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   String? _homeTeam;
   String? _awayTeam;
   
+  // Props data
+  PropsTabData? _propsData;
+  bool _isLoadingProps = false;
+  bool _hasAttemptedPropsLoad = false;
+  String _propsSearchQuery = '';
+  bool _showHomeTeamProps = true;
+  final Map<String, bool> _expandedPlayers = {};
+  final Map<String, bool> _expandedPositions = {};
+  
   @override
   void initState() {
     super.initState();
@@ -110,6 +123,8 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   }
   
   Future<void> _loadGameAndOddsData() async {
+    print('[BetSelection] _loadGameAndOddsData - Sport: ${widget.sport}, GameID: ${widget.gameId}');
+    
     try {
       // Try to extract team names from game title first
       if (widget.gameTitle.contains(' @ ') || widget.gameTitle.contains(' vs ')) {
@@ -118,46 +133,128 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         if (teams.length == 2) {
           _awayTeam = teams[0].trim();
           _homeTeam = teams[1].trim();
+          print('[BetSelection] Teams from title: $_awayTeam vs $_homeTeam');
         }
       }
       
       if (widget.gameId != null) {
-        // Try to load real game data
-        final game = await _sportsApiService.getGameDetails(widget.gameId!);
-        if (game != null) {
-          // Load odds data
-          final odds = await _sportsApiService.getGameOdds(widget.gameId!);
+        print('[BetSelection] Fetching event odds from API...');
+        
+        // Use OddsApiService to get event odds
+        final eventOdds = await _oddsApiService.getEventOdds(
+          sport: widget.sport,
+          eventId: widget.gameId!,
+          includeProps: false,  // Just basic markets for now
+        );
+        
+        print('[BetSelection] API Response: ${eventOdds != null ? "Success" : "Null"}');
+        
+        if (eventOdds != null) {
+          // Extract teams
+          if (eventOdds['home_team'] != null) {
+            _homeTeam = eventOdds['home_team'];
+            _awayTeam = eventOdds['away_team'];
+            print('[BetSelection] Teams from API: $_awayTeam vs $_homeTeam');
+          }
           
-          setState(() {
-            _gameData = game.toGameModel();
-            _oddsData = odds?.toOddsModel();
-            _homeTeam = game.homeTeam;
-            _awayTeam = game.awayTeam;
-            _gameStartCountdown = game.timeUntilGame;
-            _isLoadingData = false;
-          });
-          return;
+          // Parse odds from bookmakers
+          if (eventOdds['bookmakers'] != null && eventOdds['bookmakers'].isNotEmpty) {
+            final bookmakers = eventOdds['bookmakers'] as List;
+            print('[BetSelection] Found ${bookmakers.length} bookmakers');
+            
+            // Parse odds data
+            double? homeML, awayML, spread, total;
+            double? spreadHomeOdds = -110, spreadAwayOdds = -110;
+            double? overOdds = -110, underOdds = -110;
+            
+            for (final bookmaker in bookmakers) {
+              final markets = bookmaker['markets'] as List? ?? [];
+              
+              for (final market in markets) {
+                final key = market['key'];
+                final outcomes = market['outcomes'] as List? ?? [];
+                
+                print('[BetSelection] Market: $key with ${outcomes.length} outcomes');
+                
+                if (key == 'h2h' && homeML == null) {
+                  for (final outcome in outcomes) {
+                    if (outcome['name'] == _homeTeam) {
+                      homeML = _convertToAmericanOdds((outcome['price'] as num).toDouble());
+                    } else if (outcome['name'] == _awayTeam) {
+                      awayML = _convertToAmericanOdds((outcome['price'] as num).toDouble());
+                    }
+                  }
+                } else if (key == 'spreads' && spread == null) {
+                  for (final outcome in outcomes) {
+                    if (outcome['name'] == _homeTeam) {
+                      spread = (outcome['point'] as num?)?.toDouble();
+                      if (outcome['price'] != null) {
+                        spreadHomeOdds = _convertToAmericanOdds((outcome['price'] as num).toDouble());
+                      }
+                    } else if (outcome['name'] == _awayTeam && outcome['price'] != null) {
+                      spreadAwayOdds = _convertToAmericanOdds((outcome['price'] as num).toDouble());
+                    }
+                  }
+                } else if (key == 'totals' && total == null) {
+                  for (final outcome in outcomes) {
+                    if (outcome['name'] == 'Over') {
+                      total = (outcome['point'] as num?)?.toDouble();
+                      if (outcome['price'] != null) {
+                        overOdds = _convertToAmericanOdds((outcome['price'] as num).toDouble());
+                      }
+                    } else if (outcome['name'] == 'Under' && outcome['price'] != null) {
+                      underOdds = _convertToAmericanOdds((outcome['price'] as num).toDouble());
+                    }
+                  }
+                }
+              }
+            }
+            
+            print('[BetSelection] Parsed - ML: $homeML/$awayML, Spread: $spread, Total: $total');
+            
+            setState(() {
+              _oddsData = OddsModel(
+                homeMoneyline: homeML,
+                awayMoneyline: awayML,
+                spread: spread,
+                spreadHomeOdds: spreadHomeOdds,
+                spreadAwayOdds: spreadAwayOdds,
+                totalPoints: total,
+                overOdds: overOdds,
+                underOdds: underOdds,
+              );
+              _isLoadingData = false;
+            });
+            return;
+          } else {
+            print('[BetSelection] No bookmakers in response');
+          }
         }
       }
       
-      // If no real data available, use mock data for football
+      // Fallback logic
       if (widget.sport.toUpperCase().contains('NFL') || widget.sport.toUpperCase().contains('FOOTBALL')) {
+        print('[BetSelection] Using mock football data');
         _loadMockFootballData();
       } else {
-        setState(() {
-          _isLoadingData = false;
-        });
+        print('[BetSelection] No data available');
+        setState(() => _isLoadingData = false);
       }
     } catch (e) {
-      print('Error loading game/odds data: $e');
-      // Fall back to mock data for football
+      print('[BetSelection] Error: $e');
       if (widget.sport.toUpperCase().contains('NFL') || widget.sport.toUpperCase().contains('FOOTBALL')) {
         _loadMockFootballData();
       } else {
-        setState(() {
-          _isLoadingData = false;
-        });
+        setState(() => _isLoadingData = false);
       }
+    }
+  }
+  
+  double _convertToAmericanOdds(double decimalOdds) {
+    if (decimalOdds >= 2.0) {
+      return (decimalOdds - 1) * 100;
+    } else {
+      return -100 / (decimalOdds - 1);
     }
   }
   
@@ -195,7 +292,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       case 'NFL':
       case 'NHL':
       case 'MLB':
-        return ['winner', 'spread', 'totals', 'live'];
+        return ['winner', 'spread', 'totals', 'props', 'live'];
       case 'MMA':
       case 'BOXING':
         return ['winner', 'method', 'rounds'];
@@ -217,13 +314,13 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     
     print('Getting tab controller for sport: "$sportUpper"');
     
-    // Check for NBA, NFL, NHL, MLB - Now 4 tabs without Props
+    // Check for NBA, NFL, NHL, MLB - Now 5 tabs WITH Props
     if (sportUpper.contains('NBA') || sportUpper.contains('BASKETBALL') ||
         sportUpper.contains('NFL') || sportUpper.contains('FOOTBALL') ||
         sportUpper.contains('NHL') || sportUpper.contains('HOCKEY') ||
         sportUpper.contains('MLB') || sportUpper.contains('BASEBALL')) {
-      print('Creating 4-tab controller for team sports (no props)');
-      return TabController(length: 4, vsync: this); // Winner, Spread, Totals, Live
+      print('Creating 5-tab controller for team sports with props');
+      return TabController(length: 5, vsync: this); // Winner, Spread, Totals, Props, Live
     }
     
     // Check for MMA/Boxing - Keep as is since no props tab
@@ -372,6 +469,9 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       case 'total':
       case 'totals':
         return BetType.total;
+      case 'prop':
+      case 'props':
+        return BetType.prop;
       case 'method':
         return BetType.method;
       case 'rounds':
@@ -393,6 +493,9 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       case 'total':
       case 'totals':
         return 'totals';
+      case 'prop':
+      case 'props':
+        return 'props';
       case 'method':
         return 'method';
       case 'rounds':
@@ -508,11 +611,12 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         sportUpper.contains('MLB') || sportUpper.contains('BASEBALL')) {
       return TabBar(
         controller: _betTypeController,
-        isScrollable: false,
+        isScrollable: true,
         tabs: const [
           Tab(text: 'Winner'),
           Tab(text: 'Spread'),
           Tab(text: 'Totals'),
+          Tab(text: 'Props'),
           Tab(text: 'Live'),
         ],
       );
@@ -562,6 +666,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         _buildMoneylineTab(),
         _buildSpreadTab(),
         _buildTotalsTab(),
+        _buildPropsTab(),
         _buildLiveBettingTab(),
       ];
     }
@@ -1023,10 +1128,287 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     );
   }
   
-  // Props tab removed - not supported by API
-  // Keeping method stub in case of future API upgrade
-  Widget _buildNBAPropsTab() {
-    return const SizedBox.shrink();
+  // Props tab with real data from event-specific endpoint
+  Widget _buildPropsTab() {
+    // Load props on first access - but add a flag to prevent repeated calls
+    if (_propsData == null && !_isLoadingProps && !_hasAttemptedPropsLoad && widget.gameId != null) {
+      _hasAttemptedPropsLoad = true;
+      _loadPropsData();
+    }
+    
+    if (_isLoadingProps) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Loading player props...'),
+          ],
+        ),
+      );
+    }
+    
+    if (_propsData == null) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          InfoEdgeCarousel(
+            title: 'Player Props',
+            description: 'Bet on individual player performances',
+            icon: Icons.person,
+            onEdgePressed: _navigateToEdge,
+            autoScrollDelay: const Duration(seconds: 3),
+          ),
+          const SizedBox(height: 16),
+          _buildEmptyBettingState(
+            'Props not available',
+            'Player props will appear when game data is available',
+          ),
+        ],
+      );
+    }
+    
+    return _buildPropsContent();
+  }
+  
+  Future<void> _loadPropsData() async {
+    if (_isLoadingProps || widget.gameId == null) return;
+    
+    print('[BetSelection] Loading props for ${widget.sport} - Event: ${widget.gameId}');
+    if (mounted) {
+      setState(() => _isLoadingProps = true);
+    }
+    
+    try {
+      // First, try to find the correct Odds API event ID using team names
+      String? oddsApiEventId = widget.gameId;
+      
+      if (_homeTeam != null && _awayTeam != null) {
+        print('[BetSelection] Finding Odds API event ID for: $_homeTeam vs $_awayTeam');
+        final foundEventId = await _oddsApiService.findOddsApiEventId(
+          sport: widget.sport,
+          homeTeam: _homeTeam!,
+          awayTeam: _awayTeam!,
+        );
+        
+        if (foundEventId != null) {
+          oddsApiEventId = foundEventId;
+          print('[BetSelection] Using Odds API event ID: $oddsApiEventId');
+        } else {
+          print('[BetSelection] Could not find matching Odds API event');
+        }
+      }
+      
+      // Get event odds with props using the correct event ID
+      final eventOdds = await _oddsApiService.getEventOdds(
+        sport: widget.sport,
+        eventId: oddsApiEventId!,
+        includeProps: true,
+        includeAlternates: true,
+      );
+      
+      print('[BetSelection] Props response: ${eventOdds != null ? "Success" : "Null"}');
+      
+      if (eventOdds != null && eventOdds['bookmakers'] != null) {
+        final bookmakers = eventOdds['bookmakers'] as List;
+        print('[BetSelection] Props: ${bookmakers.length} bookmakers');
+        
+        // Check available markets
+        if (bookmakers.isNotEmpty) {
+          final markets = bookmakers[0]['markets'] as List? ?? [];
+          final marketKeys = markets.map((m) => m['key']).toList();
+          print('[BetSelection] Available prop markets: $marketKeys');
+        }
+        
+        // Parse props data from bookmakers
+        final propsData = _parsePropsFromBookmakers(
+          bookmakers,
+          _homeTeam ?? 'Home',
+          _awayTeam ?? 'Away',
+        );
+        
+        print('[BetSelection] Parsed ${propsData?.playersByName.length ?? 0} players');
+        
+        if (mounted) {
+          setState(() {
+            _propsData = propsData;
+            _isLoadingProps = false;
+          });
+        }
+      } else {
+        print('[BetSelection] No props data');
+        if (mounted) {
+          setState(() => _isLoadingProps = false);
+        }
+      }
+    } catch (e) {
+      print('[BetSelection] Props error: $e');
+      if (mounted) {
+        setState(() => _isLoadingProps = false);
+      }
+    }
+  }
+  
+  
+  PropsTabData? _parsePropsFromBookmakers(
+    List<dynamic> bookmakers,
+    String homeTeam,
+    String awayTeam,
+  ) {
+    if (bookmakers.isEmpty) return null;
+    
+    final playersByName = <String, PlayerProps>{};
+    final playersByTeam = <String, List<String>>{
+      homeTeam: [],
+      awayTeam: [],
+    };
+    final playersByPosition = <String, List<String>>{};
+    
+    // Process each bookmaker
+    for (final bookmaker in bookmakers) {
+      final markets = bookmaker['markets'] as List? ?? [];
+      
+      for (final market in markets) {
+        final marketKey = market['key'] as String;
+        
+        // Skip non-prop markets
+        if (!marketKey.startsWith('player_') && 
+            !marketKey.startsWith('batter_') && 
+            !marketKey.startsWith('pitcher_')) {
+          continue;
+        }
+        
+        final outcomes = market['outcomes'] as List? ?? [];
+        
+        for (final outcome in outcomes) {
+          final playerName = PropsParser.extractPlayerName(outcome['name'] as String);
+          
+          if (!playersByName.containsKey(playerName)) {
+            playersByName[playerName] = PlayerProps(
+              name: playerName,
+              team: homeTeam, // Default to home, will need roster data to improve
+              position: '',
+              isStar: false,
+              props: [],
+            );
+          }
+          
+          // Create prop option
+          final prop = PropOption(
+            marketKey: marketKey,
+            type: PropsParser.getMarketDisplayName(marketKey),
+            displayName: PropsParser.getMarketDisplayName(marketKey),
+            line: outcome['point']?.toDouble(),
+            overOdds: outcome['name'].toString().contains('Over') 
+                ? outcome['price']?.toDouble() : null,
+            underOdds: outcome['name'].toString().contains('Under') 
+                ? outcome['price']?.toDouble() : null,
+            straightOdds: (!outcome['name'].toString().contains('Over') && 
+                          !outcome['name'].toString().contains('Under')) 
+                ? outcome['price']?.toDouble() : null,
+            bookmaker: bookmaker['title'] ?? 'Unknown',
+            description: outcome['name'] as String,
+          );
+          
+          playersByName[playerName]!.props.add(prop);
+        }
+      }
+    }
+    
+    // Identify star players and organize by position
+    final starPlayers = <String>[];
+    
+    playersByName.forEach((name, player) {
+      // Infer position from prop types
+      final propTypes = player.props.map((p) => p.marketKey).toList();
+      final position = PropsParser.inferPosition(propTypes);
+      
+      // Check if star player
+      final isStar = PropsParser.isStarPlayer(player.props);
+      
+      // Update player
+      final updatedPlayer = PlayerProps(
+        name: player.name,
+        team: player.team,
+        position: position,
+        isStar: isStar,
+        props: player.props,
+      );
+      
+      playersByName[name] = updatedPlayer;
+      
+      // Track by team
+      if (!playersByTeam[player.team]!.contains(name)) {
+        playersByTeam[player.team]!.add(name);
+      }
+      
+      // Track by position
+      if (!playersByPosition.containsKey(position)) {
+        playersByPosition[position] = [];
+      }
+      if (!playersByPosition[position]!.contains(name)) {
+        playersByPosition[position]!.add(name);
+      }
+      
+      // Track stars
+      if (isStar) {
+        starPlayers.add(name);
+      }
+    });
+    
+    // Sort stars by prop count
+    starPlayers.sort((a, b) => 
+      playersByName[b]!.propCount.compareTo(playersByName[a]!.propCount));
+    
+    return PropsTabData(
+      homeTeam: homeTeam,
+      awayTeam: awayTeam,
+      playersByName: playersByName,
+      starPlayers: starPlayers.take(5).toList(),
+      playersByPosition: playersByPosition,
+      playersByTeam: playersByTeam,
+      cacheTime: DateTime.now(),
+      eventId: widget.gameId ?? '',
+    );
+  }
+  
+  Widget _buildPropsContent() {
+    if (_propsData == null) {
+      return const SizedBox.shrink();
+    }
+    
+    return PropsTabContent(
+      propsData: _propsData!,
+      onBetSelected: (id, title, odds, type) {
+        setState(() {
+          final betId = 'prop_$id';
+          if (_selectedBets.any((bet) => bet.id == betId)) {
+            _selectedBets.removeWhere((bet) => bet.id == betId);
+          } else {
+            _selectedBets.add(SelectedBet(
+              id: betId,
+              title: title,
+              odds: odds,
+              type: type,
+            ));
+          }
+        });
+        // Save selection
+        _saveSelectionsToStorage();
+      },
+      selectedBetIds: _selectedBets
+          .where((bet) => bet.type == BetType.prop)
+          .map((bet) => bet.id.replaceFirst('prop_', ''))
+          .toSet(),
+      onRefresh: () {
+        setState(() {
+          _propsData = null;
+          _isLoadingProps = false;
+        });
+        _loadPropsData();
+      },
+    );
   }
   
   Widget _buildMethodOfVictoryTab() {
@@ -1444,9 +1826,18 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
             : null,
         child: ListTile(
         onTap: wasAlreadyPlaced ? null : () async {
+          debugPrint('\n=== BET CARD TAPPED ===');
+          debugPrint('Bet ID: $betId');
+          debugPrint('Title: $title');
+          debugPrint('Odds: $odds');
+          debugPrint('Type: $type');
+          debugPrint('Was Selected: $isSelected');
+          debugPrint('Before: ${_selectedBets.length} bets selected');
+          
           setState(() {
             if (isSelected) {
               _selectedBets.removeWhere((bet) => bet.id == betId);
+              debugPrint('REMOVED bet from selections');
             } else {
               _selectedBets.add(SelectedBet(
                 id: betId,
@@ -1454,8 +1845,13 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                 odds: odds,
                 type: type,
               ));
+              debugPrint('ADDED bet to selections');
             }
           });
+          
+          debugPrint('After: ${_selectedBets.length} bets selected');
+          debugPrint('Selected IDs: ${_selectedBets.map((b) => b.id).toList()}');
+          
           // Save selection immediately to persist
           await _saveSelectionsToStorage();
         },
@@ -1562,6 +1958,8 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         return Icons.trending_up;
       case BetType.total:
         return Icons.add_circle;
+      case BetType.prop:
+        return Icons.person;
       case BetType.method:
         return Icons.sports_mma;
       case BetType.rounds:
@@ -2036,6 +2434,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
           'winner': 'Winner',
           'spread': 'Spread',
           'totals': 'O/U',
+          'props': 'Props',
         };
       case 'MMA':
       case 'BOXING':
@@ -2315,7 +2714,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                           const Icon(Icons.lock, size: 20),
                           const SizedBox(width: 8),
                           Text(
-                            'Lock In All Bets (${_getAllBets().length} selections)',
+                            'Lock In All Bets (${_selectedBets.length} selections)',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -2334,6 +2733,7 @@ enum BetType {
   moneyline,
   spread,
   total,
+  prop,
   method,
   rounds,
   live,

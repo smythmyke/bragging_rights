@@ -31,6 +31,10 @@ class OptimizedGamesService {
   // Feature flag for gradual rollout
   static const bool USE_OPTIMIZED_LOADING = true;
   
+  // Optimization: Reduce initial load from 60 to 14 days
+  static const int INITIAL_DAYS_AHEAD = 14;  // 2 weeks for quick load
+  static const int EXTENDED_DAYS_AHEAD = 60; // Full range for background load
+  
   // Cache for featured games
   final Map<String, List<GameModel>> _featuredGamesCache = {};
   DateTime? _lastFeaturedLoad;
@@ -65,20 +69,33 @@ class OptimizedGamesService {
     final preferredSports = prefs.sportsToLoad;
     
     debugPrint('📊 User preferred sports: ${preferredSports.join(', ')}');
-    debugPrint('📊 Loading ALL sports with 60-day lookahead');
+    debugPrint('📊 Loading ALL sports with ${INITIAL_DAYS_AHEAD}-day lookahead for faster startup');
     
-    // Load games from ALL sports with date range
+    // Load games from ALL sports with reduced date range for faster startup
     final allGamesMap = <String, List<GameModel>>{};
     
+    // Optimization: Load all sports in parallel instead of sequentially
+    final sportFutures = <Future<MapEntry<String, List<GameModel>>>>[];
+    
     for (final sport in ALL_SPORTS) {
-      try {
-        final sportGames = await _loadSportGamesWithRange(sport: sport);
-        if (sportGames.isNotEmpty) {
-          allGamesMap[sport] = sportGames;
-          debugPrint('✅ Loaded ${sportGames.length} $sport games');
-        }
-      } catch (e) {
-        debugPrint('❌ Error loading $sport games: $e');
+      sportFutures.add(
+        _loadSportGamesWithRange(sport: sport, daysAhead: INITIAL_DAYS_AHEAD)
+          .then((games) => MapEntry(sport, games))
+          .catchError((e) {
+            debugPrint('❌ Error loading $sport games: $e');
+            return MapEntry(sport, <GameModel>[]);
+          })
+      );
+    }
+    
+    // Wait for all sports to load in parallel
+    final results = await Future.wait(sportFutures);
+    
+    // Process results
+    for (final entry in results) {
+      if (entry.value.isNotEmpty) {
+        allGamesMap[entry.key] = entry.value;
+        debugPrint('✅ Loaded ${entry.value.length} ${entry.key} games');
       }
     }
     
@@ -183,28 +200,29 @@ class OptimizedGamesService {
   /// Load games for a specific sport with date range
   Future<List<GameModel>> _loadSportGamesWithRange({
     required String sport,
+    int daysAhead = INITIAL_DAYS_AHEAD,
   }) async {
     switch (sport.toLowerCase()) {
       case 'nfl':
       case 'football':
-        return _loadNflGamesWithRange();
+        return _loadNflGamesWithRange(daysAhead: daysAhead);
       case 'nba':
       case 'basketball':
-        return _loadNbaGamesWithRange();
+        return _loadNbaGamesWithRange(daysAhead: daysAhead);
       case 'nhl':
       case 'hockey':
-        return _loadNhlGamesWithRange();
+        return _loadNhlGamesWithRange(daysAhead: daysAhead);
       case 'mlb':
       case 'baseball':
-        return _loadMlbGamesWithRange();
+        return _loadMlbGamesWithRange(daysAhead: daysAhead);
       default:
         return [];
     }
   }
 
-  /// Load NFL games with 60-day range
-  Future<List<GameModel>> _loadNflGamesWithRange() async {
-    final scoreboard = await _nflService.getGamesForDateRange(daysAhead: 60);
+  /// Load NFL games with configurable date range
+  Future<List<GameModel>> _loadNflGamesWithRange({int daysAhead = INITIAL_DAYS_AHEAD}) async {
+    final scoreboard = await _nflService.getGamesForDateRange(daysAhead: daysAhead);
     if (scoreboard == null) return [];
     
     final games = <GameModel>[];
@@ -223,9 +241,9 @@ class OptimizedGamesService {
     return games;
   }
 
-  /// Load NBA games with 60-day range
-  Future<List<GameModel>> _loadNbaGamesWithRange() async {
-    final scoreboard = await _nbaService.getGamesForDateRange(daysAhead: 60);
+  /// Load NBA games with configurable date range
+  Future<List<GameModel>> _loadNbaGamesWithRange({int daysAhead = INITIAL_DAYS_AHEAD}) async {
+    final scoreboard = await _nbaService.getGamesForDateRange(daysAhead: daysAhead);
     if (scoreboard == null) return [];
     
     final games = <GameModel>[];
@@ -244,9 +262,9 @@ class OptimizedGamesService {
     return games;
   }
 
-  /// Load NHL games with 60-day range
-  Future<List<GameModel>> _loadNhlGamesWithRange() async {
-    final scoreboard = await _nhlService.getGamesForDateRange(daysAhead: 60);
+  /// Load NHL games with configurable date range
+  Future<List<GameModel>> _loadNhlGamesWithRange({int daysAhead = INITIAL_DAYS_AHEAD}) async {
+    final scoreboard = await _nhlService.getGamesForDateRange(daysAhead: daysAhead);
     if (scoreboard == null) return [];
     
     final games = <GameModel>[];
@@ -265,9 +283,9 @@ class OptimizedGamesService {
     return games;
   }
 
-  /// Load MLB games with 60-day range
-  Future<List<GameModel>> _loadMlbGamesWithRange() async {
-    final scoreboard = await _mlbService.getGamesForDateRange(daysAhead: 60);
+  /// Load MLB games with configurable date range
+  Future<List<GameModel>> _loadMlbGamesWithRange({int daysAhead = INITIAL_DAYS_AHEAD}) async {
+    final scoreboard = await _mlbService.getGamesForDateRange(daysAhead: daysAhead);
     if (scoreboard == null) return [];
     
     final games = <GameModel>[];

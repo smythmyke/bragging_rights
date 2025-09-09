@@ -19,9 +19,7 @@ class OddsApiService {
   // Singleton instance
   static final OddsApiService _instance = OddsApiService._internal();
   factory OddsApiService() => _instance;
-  OddsApiService._internal() {
-    _initialize();
-  }
+  OddsApiService._internal();
   
   Future<void> _initialize() async {
     if (!_isInitialized) {
@@ -553,6 +551,12 @@ class OddsApiService {
         return processedData;
       }
       
+      // Handle 422 specifically - invalid event ID, don't retry
+      if (response.statusCode == 422) {
+        debugPrint('⚠️ Invalid event ID $eventId - event may be expired or ID format incorrect');
+        return {};  // Return empty data instead of null to prevent retries
+      }
+      
       debugPrint('❌ Failed to get event odds: ${response.statusCode}');
       return null;
       
@@ -569,7 +573,7 @@ class OddsApiService {
       'homeTeam': data['home_team'],
       'awayTeam': data['away_team'],
       'commenceTime': data['commence_time'],
-      'bookmakers': data['bookmakers'] ?? [],
+      'bookmakers': data['bookmakers'] ?? [], // Keep original bookmakers array
       'markets': <String, dynamic>{},
       'marketCount': 0,
     };
@@ -613,6 +617,11 @@ class OddsApiService {
     
     result['marketCount'] = marketTypes.length;
     
+    // Debug logging for props
+    if (result['propMarkets'].isNotEmpty) {
+      debugPrint('📊 Found prop markets: ${result['propMarkets']}');
+    }
+    
     return result;
   }
   
@@ -643,5 +652,50 @@ class OddsApiService {
       debugPrint('Error fetching events: $e');
       return null;
     }
+  }
+  
+  /// Find The Odds API event ID by matching team names
+  Future<String?> findOddsApiEventId({
+    required String sport,
+    required String homeTeam,
+    required String awayTeam,
+  }) async {
+    try {
+      final events = await getSportEvents(sport);
+      if (events == null || events.isEmpty) return null;
+      
+      // Normalize team names for comparison
+      final normalizedHome = _normalizeTeamName(homeTeam);
+      final normalizedAway = _normalizeTeamName(awayTeam);
+      
+      debugPrint('🔍 Looking for match: $normalizedHome vs $normalizedAway');
+      
+      for (final event in events) {
+        final eventHome = _normalizeTeamName(event['home_team'] ?? '');
+        final eventAway = _normalizeTeamName(event['away_team'] ?? '');
+        
+        // Check if teams match (in either order)
+        if ((eventHome.contains(normalizedHome) || normalizedHome.contains(eventHome)) &&
+            (eventAway.contains(normalizedAway) || normalizedAway.contains(eventAway))) {
+          debugPrint('✅ Found matching event: ${event['id']} - ${event['home_team']} vs ${event['away_team']}');
+          return event['id'];
+        }
+      }
+      
+      debugPrint('❌ No matching event found for $homeTeam vs $awayTeam');
+      return null;
+    } catch (e) {
+      debugPrint('Error finding event ID: $e');
+      return null;
+    }
+  }
+  
+  String _normalizeTeamName(String name) {
+    return name.toLowerCase()
+        .replaceAll('the ', '')
+        .replaceAll('.', '')
+        .replaceAll(',', '')
+        .replaceAll('\'', '')
+        .trim();
   }
 }
