@@ -28,7 +28,7 @@ class OptimizedGamesService {
   final EspnMlbService _mlbService = EspnMlbService();
   
   // All available sports
-  static const List<String> ALL_SPORTS = ['NFL', 'NBA', 'NHL', 'MLB'];
+  static const List<String> ALL_SPORTS = ['NFL', 'NBA', 'NHL', 'MLB', 'BOXING', 'MMA', 'SOCCER'];
   
   // Feature flag for gradual rollout
   static const bool USE_OPTIMIZED_LOADING = true;
