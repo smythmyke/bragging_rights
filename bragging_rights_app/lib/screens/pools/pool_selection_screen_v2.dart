@@ -853,16 +853,69 @@ class _PoolSelectionScreenV2State extends State<PoolSelectionScreenV2> with Sing
   }
   
   Future<void> _createAutoPool(PoolType type) async {
-    // Auto-create pool based on type
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Creating ${type.toString().split('.').last} pool...'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-    
-    // TODO: Implement auto pool creation
-    // This would call a service to create a new pool with default settings
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please log in to create a pool'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Check if user is already in a pool for this game
+    try {
+      // Get all pools for this game that the user has joined
+      final userPoolsSnapshot = await _firestore
+          .collection('pools')
+          .where('gameId', isEqualTo: widget.gameId)
+          .where('participants', arrayContains: userId)
+          .get();
+      
+      if (userPoolsSnapshot.docs.isNotEmpty) {
+        // User is already in a pool for this game
+        final existingPool = userPoolsSnapshot.docs.first;
+        final poolData = existingPool.data();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('You are already in the pool: ${poolData['name'] ?? 'Unnamed Pool'}'),
+            backgroundColor: Colors.orange,
+            action: SnackBarAction(
+              label: 'Go to Pool',
+              textColor: Colors.white,
+              onPressed: () {
+                // Navigate to the existing pool
+                final pool = Pool.fromMap(poolData, existingPool.id);
+                _continueInPool(pool);
+              },
+            ),
+          ),
+        );
+        return;
+      }
+      
+      // If user is not in any pool, proceed with creation
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Creating ${type.toString().split('.').last} pool...'),
+          backgroundColor: Colors.blue,
+        ),
+      );
+      
+      // TODO: Implement actual pool creation logic here
+      // For now, just show that we checked membership first
+      
+    } catch (e) {
+      print('Error checking/creating pool: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error creating pool. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _continueInPool(Pool pool) {
@@ -1009,11 +1062,61 @@ class _PoolSelectionScreenV2State extends State<PoolSelectionScreenV2> with Sing
     );
   }
 
-  void _createPrivatePool() {
-    // TODO: Navigate to create pool screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Create Private Pool - Coming Soon')),
-    );
+  void _createPrivatePool() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please log in to create a pool'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Check if user is already in a pool for this game
+    try {
+      final userPoolsSnapshot = await _firestore
+          .collection('pools')
+          .where('gameId', isEqualTo: widget.gameId)
+          .where('participants', arrayContains: userId)
+          .get();
+      
+      if (userPoolsSnapshot.docs.isNotEmpty) {
+        // User is already in a pool for this game
+        final existingPool = userPoolsSnapshot.docs.first;
+        final poolData = existingPool.data();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('You are already in: ${poolData['name'] ?? 'a pool for this game'}'),
+            backgroundColor: Colors.orange,
+            action: SnackBarAction(
+              label: 'Go to Pool',
+              textColor: Colors.white,
+              onPressed: () {
+                final pool = Pool.fromMap(poolData, existingPool.id);
+                _continueInPool(pool);
+              },
+            ),
+          ),
+        );
+        return;
+      }
+      
+      // TODO: Navigate to create private pool screen
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Create Private Pool - Coming Soon')),
+      );
+    } catch (e) {
+      print('Error checking pools: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error checking pool membership'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _joinWithCode(String code) async {

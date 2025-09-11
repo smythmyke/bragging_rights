@@ -122,26 +122,37 @@ class PoolDataService {
         {'name': 'Whale Pool', 'min': 200, 'max': 1000},
       ];
       
+      // Simplified query to avoid compound index requirement
+      // First get all open pools, then filter by buy-in range in memory
+      final snapshot = await _firestore
+          .collection('pools')
+          .where('status', isEqualTo: 'open')
+          .get();
+      
+      print('Found ${snapshot.docs.length} open pools total');
+      
       for (final range in ranges) {
-        final snapshot = await _firestore
-            .collection('pools')
-            .where('buyIn', isGreaterThanOrEqualTo: range['min'])
-            .where('buyIn', isLessThanOrEqualTo: range['max'])
-            .where('status', isEqualTo: 'open')
-            .limit(1)
-            .get();
-        
-        if (snapshot.docs.isNotEmpty) {
-          final doc = snapshot.docs.first;
-          final data = doc.data();
+        // Filter by buy-in range in memory
+        try {
+          final rangePool = snapshot.docs.firstWhere(
+            (doc) {
+              final buyIn = doc.data()['buyIn'] ?? 0;
+              return buyIn >= range['min'] && buyIn <= range['max'];
+            },
+          );
+          
+          final data = rangePool.data();
           pools.add({
-            'id': doc.id,
+            'id': rangePool.id,
             'name': data['name'] ?? range['name'],
             'buyIn': data['buyIn'] ?? range['min'],
             'currentPlayers': data['currentPlayers'] ?? 0,
             'maxPlayers': data['maxPlayers'] ?? 0,
             'category': range['name'],
           });
+        } catch (e) {
+          // No pool found in this range, skip it
+          print('No pool found for range: ${range['name']}');
         }
       }
       

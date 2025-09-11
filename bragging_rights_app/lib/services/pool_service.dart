@@ -28,14 +28,21 @@ class PoolService {
 
   // Get pools by type
   Stream<List<Pool>> getPoolsByType(String gameId, PoolType type) {
+    // Simplified query - get all pools for the game and filter in memory
+    // This avoids the compound index requirement
     return _firestore
         .collection('pools')
         .where('gameId', isEqualTo: gameId)
-        .where('type', isEqualTo: type.toString().split('.').last)
-        .where('status', isEqualTo: 'open')
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => Pool.fromFirestore(doc)).toList();
+      final typeString = type.toString().split('.').last;
+      return snapshot.docs
+          .where((doc) {
+            final data = doc.data();
+            return data['type'] == typeString && data['status'] == 'open';
+          })
+          .map((doc) => Pool.fromFirestore(doc))
+          .toList();
     });
   }
 

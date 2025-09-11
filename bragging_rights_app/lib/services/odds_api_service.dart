@@ -493,16 +493,8 @@ class OddsApiService {
             break;
           case 'nba':
           case 'basketball_nba':
-            markets.addAll([
-              'player_points',
-              'player_rebounds',
-              'player_assists',
-              'player_threes',
-              'player_blocks',
-              'player_steals',
-              'player_points_rebounds_assists',
-              'player_double_double',
-            ]);
+            // NBA props not currently available from API
+            // Only h2h and totals are supported
             break;
           case 'mlb':
           case 'baseball_mlb':
@@ -518,13 +510,8 @@ class OddsApiService {
             break;
           case 'nhl':
           case 'icehockey_nhl':
-            markets.addAll([
-              'player_goals',
-              'player_assists',
-              'player_points',
-              'player_shots_on_goal',
-              'player_blocked_shots',
-            ]);
+            // NHL props not currently available from API
+            // Only h2h and totals are supported
             break;
           case 'mma':
           case 'ufc':
@@ -532,20 +519,12 @@ class OddsApiService {
           case 'pfl':
           case 'invicta':
           case 'one':
-            // All MMA promotions use the same API endpoint and markets
-            // MMA typically has method of victory and round betting
-            markets.addAll([
-              'fight_outcome',  // May include method of victory
-              'total_rounds',   // Round over/under
-            ]);
+            // MMA/UFC props not currently available from API
+            // Only h2h (winner) market is supported
             break;
           case 'boxing':
-            // Boxing prop markets
-            markets.addAll([
-              'fight_outcome',  // Method of victory
-              'total_rounds',   // Round over/under
-              'fight_goes_distance',  // Goes to decision
-            ]);
+            // Boxing props not currently available from API
+            // Only h2h (winner) market is supported
             break;
         }
       }

@@ -11,6 +11,8 @@ import '../../models/odds_model.dart';
 import '../../widgets/info_edge_carousel.dart';
 import '../../models/props_models.dart';
 import '../../widgets/props_tab_content.dart';
+import '../../widgets/props_player_selection.dart';
+import '../../services/props_cache_service.dart';
 
 class BetSelectionScreen extends StatefulWidget {
   final String gameTitle;
@@ -1249,6 +1251,20 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     }
     
     try {
+      // Check Firestore cache first
+      final cacheService = PropsCacheService();
+      final cachedProps = await cacheService.getCachedProps(widget.gameId!);
+      
+      if (cachedProps != null) {
+        print('[BetSelection] Using cached props data');
+        if (mounted) {
+          setState(() {
+            _propsData = cachedProps;
+            _isLoadingProps = false;
+          });
+        }
+        return;
+      }
       // First, try to find the correct Odds API event ID using team names
       String? oddsApiEventId = widget.gameId;
       
@@ -1314,6 +1330,14 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
             _propsData = propsData;
             _isLoadingProps = false;
           });
+          
+          // Cache the props data
+          if (propsData != null) {
+            final isLive = DateTime.now().isAfter(
+              DateTime.parse(widget.commenceTime ?? DateTime.now().toString())
+            );
+            await cacheService.cacheProps(widget.gameId!, propsData, isLive);
+          }
         }
       } else {
         print('[BetSelection] No props data - eventOdds: ${eventOdds != null}, bookmakers: ${eventOdds?['bookmakers'] != null}');
@@ -1381,12 +1405,12 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
             displayName: PropsParser.getMarketDisplayName(marketKey),
             line: outcome['point'] is num ? (outcome['point'] as num).toDouble() : null,
             overOdds: outcome['name'].toString().contains('Over') 
-                ? (outcome['price'] is num ? (outcome['price'] as num).toDouble() : null) : null,
+                ? (outcome['price'] is num ? (outcome['price'] as num).toInt() : null) : null,
             underOdds: outcome['name'].toString().contains('Under') 
-                ? (outcome['price'] is num ? (outcome['price'] as num).toDouble() : null) : null,
+                ? (outcome['price'] is num ? (outcome['price'] as num).toInt() : null) : null,
             straightOdds: (!outcome['name'].toString().contains('Over') && 
                           !outcome['name'].toString().contains('Under')) 
-                ? (outcome['price'] is num ? (outcome['price'] as num).toDouble() : null) : null,
+                ? (outcome['price'] is num ? (outcome['price'] as num).toInt() : null) : null,
             bookmaker: bookmaker['title'] ?? 'Unknown',
             description: outcome['name'] as String,
           );
@@ -1458,7 +1482,8 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       return const SizedBox.shrink();
     }
     
-    return PropsTabContent(
+    // Use new player selection screen for props
+    return PropsPlayerSelection(
       propsData: _propsData!,
       onBetSelected: (id, title, odds, type) {
         setState(() {
@@ -2278,13 +2303,175 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   
   // Check if any bets have been made across all tabs
   bool _hasAnyBets() {
-    return _allTabBets.values.any((bets) => bets.isNotEmpty);
+    // Check the current _selectedBets list instead of _allTabBets
+    return _selectedBets.isNotEmpty;
   }
   
   // Get all bets from all tabs
   List<SelectedBet> _getAllBets() {
     // Return the current _selectedBets which contains all selections
     return List.from(_selectedBets);
+  }
+  
+  // Show bet confirmation bottom sheet
+  void _showBetConfirmationSheet() {
+    final allBets = _getAllBets();
+    if (allBets.isEmpty) return;
+    
+    final totalWager = _wagerAmount * allBets.length;
+    final totalOdds = _calculateTotalOdds(allBets);
+    final potentialPayout = (totalWager * totalOdds).round();
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // Drag handle
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[400],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Header with close button
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Confirm Your Bets',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            // Bet details
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: [
+                  ...allBets.map((bet) => Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      title: Text(bet.title),
+                      subtitle: Text('Odds: ${bet.odds}'),
+                      trailing: Text(
+                        '$_wagerAmount BR',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  )),
+                  const SizedBox(height: 16),
+                  // Summary card
+                  Card(
+                    color: Colors.green.withOpacity(0.1),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Total Selections:'),
+                              Text(
+                                '${allBets.length}',
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Total Wager:'),
+                              Text(
+                                '$totalWager BR',
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Potential Payout:'),
+                              Text(
+                                '$potentialPayout BR',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green,
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Confirm button
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isLockingBets ? null : () {
+                    Navigator.pop(context);
+                    _lockInBets();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Confirm & Place Bets',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
   
   // Lock in all bets and save to Firestore
@@ -2401,10 +2588,21 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Icon(Icons.check_circle, color: Colors.green, size: 24),
-            const SizedBox(width: 8),
-            const Text('Bet Placed!'),
+            Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.green, size: 24),
+                const SizedBox(width: 8),
+                const Text('Bet Placed!'),
+              ],
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, size: 20),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () => Navigator.pop(context),
+            ),
           ],
         ),
         content: Column(
@@ -2769,7 +2967,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                 ],
               ),
               child: ElevatedButton(
-                onPressed: _isLockingBets ? null : _lockInBets,
+                onPressed: _isLockingBets ? null : _showBetConfirmationSheet,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
