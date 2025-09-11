@@ -37,7 +37,13 @@ class BetStorageService {
   
   // Save multiple bets at once (for when user locks in all bets)
   Future<void> saveBets(List<UserBet> bets) async {
+    print('[BetStorageService] Saving ${bets.length} bets...');
+    for (final bet in bets) {
+      print('[BetStorageService] Bet: ${bet.selection} - Pool: ${bet.poolId}, Game: ${bet.gameId}');
+    }
+    
     final activeBets = await getActiveBets();
+    print('[BetStorageService] Current active bets: ${activeBets.length}');
     
     // Remove any existing bets for the same pool/game
     for (final bet in bets) {
@@ -49,9 +55,12 @@ class BetStorageService {
     }
     
     activeBets.addAll(bets);
+    print('[BetStorageService] Total active bets after save: ${activeBets.length}');
     
     final jsonList = activeBets.map((b) => b.toJson()).toList();
-    await _prefs.setString(_activeBetsKey, jsonEncode(jsonList));
+    final jsonString = jsonEncode(jsonList);
+    await _prefs.setString(_activeBetsKey, jsonString);
+    print('[BetStorageService] Saved to SharedPreferences key: $_activeBetsKey');
     
     // Save pool-specific bets
     for (final bet in bets) {

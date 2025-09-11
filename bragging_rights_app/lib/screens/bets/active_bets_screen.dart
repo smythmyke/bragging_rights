@@ -11,7 +11,7 @@ class ActiveBetsScreen extends StatefulWidget {
 
 class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  late BetStorageService _betStorage;
+  BetStorageService? _betStorage;
   List<UserBet> _activeBets = [];
   List<UserBet> _pastBets = [];
   bool _isLoading = true;
@@ -30,11 +30,20 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
   }
   
   Future<void> _loadBets() async {
+    print('[ActiveBetsScreen] Loading bets...');
     setState(() => _isLoading = true);
     
     _betStorage = await BetStorageService.create();
     _activeBets = await _betStorage.getActiveBets();
     _pastBets = await _betStorage.getPastBets();
+    
+    print('[ActiveBetsScreen] Loaded ${_activeBets.length} active bets');
+    print('[ActiveBetsScreen] Loaded ${_pastBets.length} past bets');
+    
+    // Debug: Print details of active bets
+    for (final bet in _activeBets) {
+      print('[ActiveBetsScreen] Active bet: ${bet.selection} in pool ${bet.poolName} (${bet.poolId})');
+    }
     
     // Calculate stats from past bets
     _calculateStats();

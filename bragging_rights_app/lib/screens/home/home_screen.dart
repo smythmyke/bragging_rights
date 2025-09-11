@@ -803,60 +803,6 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Optimized Version Banner
-                  if (USE_OPTIMIZED_GAMES) 
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.blue.shade600, Colors.blue.shade800],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.speed, color: Colors.white),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '⚡ Try Optimized Games',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  '90% faster loading, personalized for you',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: Colors.blue.shade700,
-                            ),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const OptimizedGamesScreen(),
-                                ),
-                              );
-                            },
-                            child: const Text('Open'),
-                          ),
-                        ],
-                      ),
-                    ),
                   
                   // Next Game Alert (when no games today)
                   if (_liveGames.isEmpty && _todayGames.isEmpty && _nextGame != null)
@@ -917,46 +863,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildGamesListBySport(_todayGames, showCountdown: true),
                     const SizedBox(height: 24),
                   ] else if (_liveGames.isEmpty) ...[
-                    // Show "No games today" only if there are no live games either
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[900],
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey[800]!),
-                      ),
-                      child: Center(
-                        child: Column(
-                          children: [
-                            Icon(
-                              PhosphorIconsRegular.calendar,
-                              size: 48,
-                              color: Colors.grey[600],
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'No games scheduled for today',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            if (_nextGame != null) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                'Next game: ${_formatGameDate(_nextGame!.gameTime)}',
-                                style: TextStyle(
-                                  color: Colors.grey[500],
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+                    // The _buildNextGameAlert already shows the "no games" message, so we don't need another one
+                    const SizedBox.shrink(),
                   ],
                   
                   // Tomorrow's Games Section
@@ -1117,6 +1025,61 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ],
+                  
+                  // Optimized Version Banner - At the bottom
+                  if (USE_OPTIMIZED_GAMES) 
+                    Container(
+                      margin: const EdgeInsets.only(top: 16),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.blue.shade600, Colors.blue.shade800],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.speed, color: Colors.white),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '⚡ Try Optimized Games',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  '90% faster loading, personalized for you',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: Colors.blue.shade700,
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const OptimizedGamesScreen(),
+                                ),
+                              );
+                            },
+                            child: const Text('Open'),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),

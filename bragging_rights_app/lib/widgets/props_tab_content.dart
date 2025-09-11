@@ -23,8 +23,32 @@ class PropsTabContent extends StatefulWidget {
 class _PropsTabContentState extends State<PropsTabContent> {
   String _searchQuery = '';
   bool _showHomeTeam = true;
+  String? _selectedCategory;
   final Map<String, bool> _expandedPlayers = {};
-  final Map<String, bool> _expandedPositions = {};
+  final Map<String, bool> _expandedCategories = {};
+  
+  // Football prop categories
+  static const Map<String, List<String>> _propCategories = {
+    'PASSING': [
+      'player_pass_tds', 'player_pass_yds', 'player_pass_completions',
+      'player_pass_attempts', 'player_interceptions'
+    ],
+    'RUSHING': [
+      'player_rush_yds', 'player_rush_attempts', 'player_rush_tds',
+      'player_longest_rush'
+    ],
+    'RECEIVING': [
+      'player_reception_yds', 'player_receptions', 'player_reception_tds',
+      'player_longest_reception'
+    ],
+    'SCORING': [
+      'player_anytime_td', 'player_1st_td', 'player_last_td',
+      'player_2_plus_tds', 'player_field_goals'
+    ],
+    'DEFENSIVE': [
+      'player_tackles', 'player_sacks', 'player_interceptions_defensive'
+    ],
+  };
   
   @override
   void initState() {
@@ -42,12 +66,91 @@ class _PropsTabContentState extends State<PropsTabContent> {
         // Search and Team Toggle
         _buildHeaderControls(),
         
+        // Category Filter
+        _buildCategoryFilter(),
+        
         // Props List
         Expanded(
           child: _buildPropsList(),
         ),
       ],
     );
+  }
+  
+  Widget _buildCategoryFilter() {
+    final availableCategories = _getAvailableCategories();
+    
+    if (availableCategories.isEmpty) return const SizedBox.shrink();
+    
+    return Container(
+      height: 50,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: [
+          _buildFilterChip('All', null),
+          const SizedBox(width: 8),
+          ...availableCategories.map((category) => Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: _buildFilterChip(category, category),
+          )),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildFilterChip(String label, String? value) {
+    final isSelected = _selectedCategory == value;
+    
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        setState(() {
+          _selectedCategory = selected ? value : null;
+        });
+      },
+      selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
+      checkmarkColor: Theme.of(context).primaryColor,
+      labelStyle: TextStyle(
+        color: isSelected ? Theme.of(context).primaryColor : Colors.grey[700],
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      ),
+    );
+  }
+  
+  List<String> _getAvailableCategories() {
+    final categories = <String>{};
+    final players = widget.propsData.getTeamPlayers(_showHomeTeam);
+    
+    for (final player in players) {
+      for (final prop in player.props) {
+        final category = _getPropCategory(prop.marketKey);
+        if (category != null && category != 'OTHER') {
+          categories.add(category);
+        }
+      }
+    }
+    
+    // Sort categories in desired order
+    final orderedCategories = <String>[];
+    for (final cat in ['PASSING', 'RUSHING', 'RECEIVING', 'SCORING', 'DEFENSIVE']) {
+      if (categories.contains(cat)) {
+        orderedCategories.add(cat);
+      }
+    }
+    
+    return orderedCategories;
+  }
+  
+  String? _getPropCategory(String marketKey) {
+    for (final entry in _propCategories.entries) {
+      if (entry.value.contains(marketKey)) {
+        return entry.key;
+      }
+    }
+    return 'OTHER';
   }
   
   Widget _buildHeaderControls() {
@@ -178,24 +281,74 @@ class _PropsTabContentState extends State<PropsTabContent> {
       displayPlayers = widget.propsData.getTeamPlayers(_showHomeTeam);
     }
     
-    // Group players
-    final starPlayers = displayPlayers
-        .where((p) => p.isStar)
-        .toList()
-      ..sort((a, b) => b.propCount.compareTo(a.propCount));
-    
-    final positionGroups = <String, List<PlayerProps>>{};
-    for (final player in displayPlayers.where((p) => !p.isStar)) {
-      if (!positionGroups.containsKey(player.position)) {
-        positionGroups[player.position] = [];
-      }
-      positionGroups[player.position]!.add(player);
+    // Filter by category if selected
+    if (_selectedCategory != null) {
+      displayPlayers = displayPlayers.where((player) {
+        return player.props.any((prop) => 
+          _getPropCategory(prop.marketKey) == _selectedCategory
+        );
+      }).toList();
     }
     
-    // Sort players within each position by prop count
-    positionGroups.forEach((pos, players) {
-      players.sort((a, b) => b.propCount.compareTo(a.propCount));
+    if (displayPlayers.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.person_off, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'No player props available',
+              style: TextStyle(color: Colors.grey[600], fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: widget.onRefresh,
+              child: const Text('Refresh'),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // Group players by category based on their props
+    final categoryGroups = <String, List<PlayerProps>>{};
+    final starPlayers = <PlayerProps>[];
+    
+    for (final player in displayPlayers) {
+      if (player.isStar) {
+        starPlayers.add(player);
+      }
+      
+      // Group by prop categories
+      final playerCategories = <String>{};
+      for (final prop in player.props) {
+        final category = _getPropCategory(prop.marketKey) ?? 'OTHER';
+        if (_selectedCategory == null || category == _selectedCategory) {
+          playerCategories.add(category);
+        }
+      }
+      
+      for (final category in playerCategories) {
+        if (!categoryGroups.containsKey(category)) {
+          categoryGroups[category] = [];
+        }
+        if (!categoryGroups[category]!.contains(player)) {
+          categoryGroups[category]!.add(player);
+        }
+      }
+    }
+    
+    // Sort players within each category by prop count
+    categoryGroups.forEach((cat, players) {
+      players.sort((a, b) {
+        if (a.isStar && !b.isStar) return -1;
+        if (!a.isStar && b.isStar) return 1;
+        return b.propCount.compareTo(a.propCount);
+      });
     });
+    
+    starPlayers.sort((a, b) => b.propCount.compareTo(a.propCount));
     
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -228,31 +381,16 @@ class _PropsTabContentState extends State<PropsTabContent> {
             ),
           ),
         
-        // Star Players Section
-        if (starPlayers.isNotEmpty) ...[
+        // Star Players Section (only if no category filter)
+        if (starPlayers.isNotEmpty && _selectedCategory == null) ...[
           _buildSectionHeader('⭐ Star Players', true),
           const SizedBox(height: 8),
           ...starPlayers.map((player) => _buildPlayerCard(player)),
           const SizedBox(height: 16),
         ],
         
-        // Position Groups
-        ...positionGroups.entries.map((entry) {
-          final position = entry.key;
-          final players = entry.value.take(5).toList(); // Limit to 5 per position
-          
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildPositionHeader(position, players.length),
-              if (_expandedPositions[position] ?? false) ...[
-                const SizedBox(height: 8),
-                ...players.map((player) => _buildPlayerCard(player)),
-              ],
-              const SizedBox(height: 16),
-            ],
-          );
-        }),
+        // Category Groups
+        ..._buildCategoryGroups(categoryGroups),
       ],
     );
   }
@@ -267,13 +405,47 @@ class _PropsTabContentState extends State<PropsTabContent> {
     );
   }
   
-  Widget _buildPositionHeader(String position, int count) {
-    final isExpanded = _expandedPositions[position] ?? false;
+  List<Widget> _buildCategoryGroups(Map<String, List<PlayerProps>> categoryGroups) {
+    final widgets = <Widget>[];
+    
+    // Order categories properly with OTHER last
+    final orderedCategories = <String>[];
+    for (final cat in ['PASSING', 'RUSHING', 'RECEIVING', 'SCORING', 'DEFENSIVE']) {
+      if (categoryGroups.containsKey(cat)) {
+        orderedCategories.add(cat);
+      }
+    }
+    if (categoryGroups.containsKey('OTHER')) {
+      orderedCategories.add('OTHER');
+    }
+    
+    for (final category in orderedCategories) {
+      final players = categoryGroups[category]!;
+      widgets.add(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildCategoryHeader(category, players.length),
+            if (_expandedCategories[category] ?? true) ...[
+              const SizedBox(height: 8),
+              ...players.map((player) => _buildPlayerCard(player, category)),
+            ],
+            const SizedBox(height: 16),
+          ],
+        ),
+      );
+    }
+    
+    return widgets;
+  }
+  
+  Widget _buildCategoryHeader(String category, int count) {
+    final isExpanded = _expandedCategories[category] ?? true;
     
     return GestureDetector(
       onTap: () {
         setState(() {
-          _expandedPositions[position] = !isExpanded;
+          _expandedCategories[category] = !isExpanded;
         });
       },
       child: Container(
@@ -290,10 +462,11 @@ class _PropsTabContentState extends State<PropsTabContent> {
             ),
             const SizedBox(width: 8),
             Text(
-              _getPositionDisplayName(position),
+              category,
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
               ),
             ),
             const SizedBox(width: 8),
@@ -318,7 +491,7 @@ class _PropsTabContentState extends State<PropsTabContent> {
     );
   }
   
-  Widget _buildPlayerCard(PlayerProps player) {
+  Widget _buildPlayerCard(PlayerProps player, [String? filterCategory]) {
     final isExpanded = _expandedPlayers[player.name] ?? player.isStar;
     final isHighlighted = _searchQuery.isNotEmpty && 
         player.name.toLowerCase().contains(_searchQuery.toLowerCase());
@@ -381,10 +554,14 @@ class _PropsTabContentState extends State<PropsTabContent> {
             ),
           ),
           
-          // Player Props
+          // Player Props (filtered by category if provided)
           if (isExpanded) ...[
             const Divider(height: 1),
-            ...player.props.map((prop) => _buildPropItem(player, prop)),
+            ...(filterCategory != null 
+              ? player.props.where((prop) => 
+                  _getPropCategory(prop.marketKey) == filterCategory)
+              : player.props
+            ).map((prop) => _buildPropItem(player, prop)),
           ],
         ],
       ),
@@ -395,22 +572,66 @@ class _PropsTabContentState extends State<PropsTabContent> {
     final propId = '${player.name}_${prop.marketKey}';
     
     if (prop.isOverUnder) {
-      // Over/Under prop with two options
-      return Column(
-        children: [
-          _buildPropOption(
-            propId: '${propId}_over',
-            title: '${prop.displayName} Over ${prop.formattedLine}',
-            odds: prop.formatOdds(prop.overOdds),
-            player: player,
-          ),
-          _buildPropOption(
-            propId: '${propId}_under',
-            title: '${prop.displayName} Under ${prop.formattedLine}',
-            odds: prop.formatOdds(prop.underOdds),
-            player: player,
-          ),
-        ],
+      // Over/Under prop - display both on same row
+      final overBetId = '${propId}_over';
+      final underBetId = '${propId}_under';
+      final isOverSelected = widget.selectedBetIds.contains(overBetId);
+      final isUnderSelected = widget.selectedBetIds.contains(underBetId);
+      
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Prop title with line
+            Text(
+              '${prop.displayName} ${prop.formattedLine}',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Over and Under buttons in a row
+            Row(
+              children: [
+                // Over button
+                Expanded(
+                  child: _buildCompactBetButton(
+                    label: 'Over',
+                    odds: prop.formatOdds(prop.overOdds),
+                    isSelected: isOverSelected,
+                    onTap: () {
+                      widget.onBetSelected(
+                        overBetId,
+                        '${player.name} ${prop.displayName} Over ${prop.formattedLine}',
+                        prop.formatOdds(prop.overOdds),
+                        BetType.prop,
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Under button
+                Expanded(
+                  child: _buildCompactBetButton(
+                    label: 'Under',
+                    odds: prop.formatOdds(prop.underOdds),
+                    isSelected: isUnderSelected,
+                    onTap: () {
+                      widget.onBetSelected(
+                        underBetId,
+                        '${player.name} ${prop.displayName} Under ${prop.formattedLine}',
+                        prop.formatOdds(prop.underOdds),
+                        BetType.prop,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       );
     } else {
       // Straight prop (like Anytime TD)
@@ -421,6 +642,57 @@ class _PropsTabContentState extends State<PropsTabContent> {
         player: player,
       );
     }
+  }
+  
+  Widget _buildCompactBetButton({
+    required String label,
+    required String odds,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? Theme.of(context).primaryColor.withOpacity(0.2)
+              : Colors.grey[100],
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected 
+                ? Theme.of(context).primaryColor 
+                : Colors.grey[300]!,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: isSelected 
+                    ? Theme.of(context).primaryColor 
+                    : Colors.black87,
+              ),
+            ),
+            Text(
+              odds.isEmpty ? '--' : odds,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: isSelected 
+                    ? Theme.of(context).primaryColor 
+                    : Colors.black,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
   
   Widget _buildPropOption({

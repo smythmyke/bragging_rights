@@ -929,6 +929,7 @@ class _PoolSelectionScreenV2State extends State<PoolSelectionScreenV2> with Sing
         'sport': widget.sport,
         'poolName': pool.name,
         'poolId': pool.id,
+        'poolId': pool.id,
       },
     );
   }
@@ -1017,6 +1018,7 @@ class _PoolSelectionScreenV2State extends State<PoolSelectionScreenV2> with Sing
                             'sport': widget.sport,
                             'poolName': pool.name,
                             'poolId': pool.id,
+                            'poolId': pool.id,
                           },
                         );
                         return;
@@ -1033,6 +1035,7 @@ class _PoolSelectionScreenV2State extends State<PoolSelectionScreenV2> with Sing
                             'gameTitle': widget.gameTitle,
                             'sport': widget.sport,
                             'poolName': pool.name,
+                            'poolId': pool.id,
                             'poolId': pool.id,
                           },
                         );

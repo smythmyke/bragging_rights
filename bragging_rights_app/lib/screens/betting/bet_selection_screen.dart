@@ -10,8 +10,9 @@ import '../../models/game_model.dart';
 import '../../models/odds_model.dart';
 import '../../widgets/info_edge_carousel.dart';
 import '../../models/props_models.dart';
-import '../../widgets/props_tab_content.dart';
 import '../../widgets/props_player_selection.dart';
+import '../../widgets/props_tab_content.dart';
+import '../../widgets/baseball_props_widget.dart';
 import '../../services/props_cache_service.dart';
 
 class BetSelectionScreen extends StatefulWidget {
@@ -65,6 +66,9 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   // Track picks made per tab - initialized based on sport
   late Map<String, bool> _tabPicks;
   
+  // Track which tabs have available data
+  Map<String, bool> _tabAvailability = {};
+  
   // Track if we should show summary
   bool _showingSummary = false;
   
@@ -91,6 +95,8 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   bool _hasAttemptedPropsLoad = false;
   String _propsSearchQuery = '';
   bool _showHomeTeamProps = true;
+  bool _isBetSlipMinimized = false;
+  String _currentTabName = 'Winner';
   final Map<String, bool> _expandedPlayers = {};
   final Map<String, bool> _expandedPositions = {};
   
@@ -209,10 +215,19 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                 
                 if (key == 'h2h' && homeML == null) {
                   for (final outcome in outcomes) {
+                    // DEBUG: Log raw price values from API
+                    print('[BetSelection] H2H Outcome: ${outcome['name']}, Raw Price: ${outcome['price']}, Type: ${outcome['price'].runtimeType}');
+                    
                     if (outcome['name'] == _homeTeam) {
-                      homeML = _convertToAmericanOdds((outcome['price'] as num).toDouble());
+                      final rawPrice = (outcome['price'] as num).toDouble();
+                      print('[BetSelection] Home team raw price: $rawPrice');
+                      homeML = _convertToAmericanOdds(rawPrice);
+                      print('[BetSelection] Home team converted odds: $homeML');
                     } else if (outcome['name'] == _awayTeam) {
-                      awayML = _convertToAmericanOdds((outcome['price'] as num).toDouble());
+                      final rawPrice = (outcome['price'] as num).toDouble();
+                      print('[BetSelection] Away team raw price: $rawPrice');
+                      awayML = _convertToAmericanOdds(rawPrice);
+                      print('[BetSelection] Away team converted odds: $awayML');
                     }
                   }
                 } else if (key == 'spreads' && spread == null) {
@@ -286,6 +301,9 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
               );
               _propsData = propsData;
               _isLoadingData = false;
+              
+              // Update tab availability based on data
+              _updateTabAvailability();
             });
             return;
           } else {
@@ -313,11 +331,43 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     }
   }
   
-  double _convertToAmericanOdds(double decimalOdds) {
-    if (decimalOdds >= 2.0) {
-      return (decimalOdds - 1) * 100;
+  double _convertToAmericanOdds(double odds) {
+    // Check if odds are already in American format
+    // American odds are typically > 100 or < -100, or very close to -100 to +100
+    // Decimal odds are typically between 1.0 and 10.0
+    
+    print('[BetSelection] _convertToAmericanOdds input: $odds');
+    
+    // If odds are already American (large positive or negative values)
+    if (odds >= 100 || odds <= -100) {
+      print('[BetSelection] Odds appear to be already in American format, returning as-is');
+      return odds;
+    }
+    
+    // If odds are between -100 and 100 but not close to 0, likely American
+    if (odds > -100 && odds < 100 && odds != 0) {
+      // Check if it looks like a decimal odd (1.x to 9.x range)
+      if (odds >= 1.0 && odds <= 10.0) {
+        print('[BetSelection] Odds appear to be decimal format, converting...');
+        // This is likely decimal odds, convert it
+        if (odds >= 2.0) {
+          return (odds - 1) * 100;
+        } else {
+          return -100 / (odds - 1);
+        }
+      } else {
+        // Odds between -100 and 100 but not in decimal range, likely American
+        print('[BetSelection] Small American odds, returning as-is');
+        return odds;
+      }
+    }
+    
+    // Default: treat as decimal and convert
+    print('[BetSelection] Treating as decimal odds, converting...');
+    if (odds >= 2.0) {
+      return (odds - 1) * 100;
     } else {
-      return -100 / (decimalOdds - 1);
+      return -100 / (odds - 1);
     }
   }
   
@@ -341,10 +391,13 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   void _initializeTabPicks() {
     final tabOrder = _getTabOrder();
     _tabPicks = {};
+    _tabAvailability = {};
     for (var tab in tabOrder) {
       if (tab != 'live') { // Don't track live tab
         _tabPicks[tab] = false;
       }
+      // Initialize all tabs as unavailable initially (will be updated when data loads)
+      _tabAvailability[tab] = false;
     }
   }
   
@@ -366,9 +419,82 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     }
   }
   
+  String _getTabDisplayName(String tabKey) {
+    switch (tabKey) {
+      case 'winner':
+        return 'Winner';
+      case 'spread':
+        return 'Spread';
+      case 'totals':
+        return 'Totals';
+      case 'props':
+        return 'Props';
+      case 'live':
+        return 'Live';
+      case 'method':
+        return 'Method';
+      case 'rounds':
+        return 'Rounds';
+      case 'match':
+        return 'Match';
+      case 'sets':
+        return 'Sets';
+      case 'games':
+        return 'Games';
+      case 'main':
+        return 'Main';
+      default:
+        return tabKey;
+    }
+  }
+  
   void _onTabChanged() {
     // Track which tab user is currently on
+    // Skip to next available tab if current tab is unavailable
+    final tabOrder = _getTabOrder();
+    if (_betTypeController.index >= tabOrder.length) return;
+    
+    final currentTab = tabOrder[_betTypeController.index];
+    
+    // Update current tab name for bet slip display
+    setState(() {
+      _currentTabName = _getTabDisplayName(currentTab);
+    });
+    
+    if (_tabAvailability[currentTab] == false) {
+      // Find next available tab
+      for (int i = _betTypeController.index + 1; i < tabOrder.length; i++) {
+        if (_tabAvailability[tabOrder[i]] == true) {
+          _betTypeController.animateTo(i);
+          return;
+        }
+      }
+      // If no available tabs forward, check backwards
+      for (int i = _betTypeController.index - 1; i >= 0; i--) {
+        if (_tabAvailability[tabOrder[i]] == true) {
+          _betTypeController.animateTo(i);
+          return;
+        }
+      }
+    }
+    
     setState(() {});
+  }
+  
+  void _updateTabAvailability() {
+    // Update availability based on what data we have
+    _tabAvailability['winner'] = _oddsData?.homeMoneyline != null && _oddsData?.awayMoneyline != null;
+    _tabAvailability['spread'] = _oddsData?.spread != null;
+    _tabAvailability['totals'] = _oddsData?.totalPoints != null;
+    _tabAvailability['props'] = _propsData != null && _propsData!.playersByName.isNotEmpty;
+    _tabAvailability['live'] = _isLiveBetting;
+    
+    // For combat sports
+    _tabAvailability['method'] = false; // Not available from API yet
+    _tabAvailability['rounds'] = false; // Not available from API yet
+    
+    // Log availability
+    print('[BetSelection] Tab availability: $_tabAvailability');
   }
   
   TabController _getSportSpecificTabController() {
@@ -675,12 +801,47 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       return TabBar(
         controller: _betTypeController,
         isScrollable: true,
-        tabs: const [
-          Tab(text: 'Winner'),
-          Tab(text: 'Spread'),
-          Tab(text: 'Totals'),
-          Tab(text: 'Props'),
-          Tab(text: 'Live'),
+        tabs: [
+          Tab(
+            child: Text(
+              'Winner',
+              style: TextStyle(
+                color: _tabAvailability['winner'] == false ? Colors.grey : null,
+              ),
+            ),
+          ),
+          Tab(
+            child: Text(
+              'Spread',
+              style: TextStyle(
+                color: _tabAvailability['spread'] == false ? Colors.grey : null,
+              ),
+            ),
+          ),
+          Tab(
+            child: Text(
+              'Totals',
+              style: TextStyle(
+                color: _tabAvailability['totals'] == false ? Colors.grey : null,
+              ),
+            ),
+          ),
+          Tab(
+            child: Text(
+              'Props',
+              style: TextStyle(
+                color: _tabAvailability['props'] == false ? Colors.grey : null,
+              ),
+            ),
+          ),
+          Tab(
+            child: Text(
+              'Live',
+              style: TextStyle(
+                color: _tabAvailability['live'] == false ? Colors.grey : null,
+              ),
+            ),
+          ),
         ],
       );
     }
@@ -1332,10 +1493,11 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
           });
           
           // Cache the props data
-          if (propsData != null) {
-            final isLive = DateTime.now().isAfter(
-              DateTime.parse(widget.commenceTime ?? DateTime.now().toString())
-            );
+          if (propsData != null && eventOdds != null) {
+            final commenceTime = eventOdds['commence_time'];
+            final isLive = commenceTime != null 
+              ? DateTime.now().isAfter(DateTime.parse(commenceTime))
+              : false;
             await cacheService.cacheProps(widget.gameId!, propsData, isLive);
           }
         }
@@ -1478,12 +1640,39 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   }
   
   Widget _buildPropsContent() {
-    if (_propsData == null) {
-      return const SizedBox.shrink();
+    if (_propsData == null || _propsData!.playersByName.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.sports_football, size: 64, color: Colors.grey[400]),
+              const SizedBox(height: 16),
+              const Text(
+                'Player Props Not Available',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Props typically become available closer to game time',
+                style: TextStyle(color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
     }
     
-    // Use new player selection screen for props
-    return PropsPlayerSelection(
+    // Check if this is baseball/MLB and use specialized widget
+    final sportUpper = widget.sport.toUpperCase();
+    if (sportUpper.contains('MLB') || sportUpper.contains('BASEBALL')) {
+      return _buildBaseballPropsContent();
+    }
+    
+    // Use PropsTabContent for other sports to show Over/Under together
+    return PropsTabContent(
       propsData: _propsData!,
       onBetSelected: (id, title, odds, type) {
         setState(() {
@@ -1514,6 +1703,91 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         _loadPropsData();
       },
     );
+  }
+  
+  Widget _buildBaseballPropsContent() {
+    // Parse props data into categories for baseball
+    final propsByCategory = _parseBaseballProps();
+    
+    if (propsByCategory.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.sports_baseball, size: 64, color: Colors.grey[400]),
+              const SizedBox(height: 16),
+              const Text(
+                'Baseball Props Not Available',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Props data is being loaded',
+                style: TextStyle(color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        InfoEdgeCarousel(
+          title: 'Baseball Props',
+          description: 'Select category, then line, then Over/Under',
+          icon: Icons.sports_baseball,
+          onEdgePressed: _navigateToEdge,
+          autoScrollDelay: const Duration(seconds: 3),
+        ),
+        const SizedBox(height: 16),
+        BaseballPropsWidget(
+          propsByCategory: propsByCategory,
+          onBetSelected: (id, title, odds, type) {
+            setState(() {
+              final betId = 'prop_$id';
+              if (_selectedBets.any((bet) => bet.id == betId)) {
+                _selectedBets.removeWhere((bet) => bet.id == betId);
+              } else {
+                _selectedBets.add(SelectedBet(
+                  id: betId,
+                  title: title,
+                  odds: odds,
+                  type: BetType.prop,
+                ));
+              }
+            });
+            _saveSelectionsToStorage();
+          },
+          selectedBetIds: _selectedBets
+              .where((bet) => bet.type == BetType.prop)
+              .map((bet) => bet.id.replaceFirst('prop_', ''))
+              .toSet(),
+        ),
+      ],
+    );
+  }
+  
+  Map<String, List<PropOption>> _parseBaseballProps() {
+    if (_propsData == null) return {};
+    
+    final propsByCategory = <String, List<PropOption>>{};
+    
+    // Group all props by their market key (category)
+    for (final player in _propsData!.playersByName.values) {
+      for (final prop in player.props) {
+        if (!propsByCategory.containsKey(prop.marketKey)) {
+          propsByCategory[prop.marketKey] = [];
+        }
+        propsByCategory[prop.marketKey]!.add(prop);
+      }
+    }
+    
+    return propsByCategory;
   }
   
   Widget _buildMethodOfVictoryTab() {
@@ -2091,150 +2365,267 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       );
     }
     
+    // Show minimized view if minimized
+    if (_isBetSlipMinimized) {
+      return GestureDetector(
+        onTap: () {
+          setState(() {
+            _isBetSlipMinimized = false;
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).primaryColor,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${_selectedBets.length}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Bet Slip • $_currentTabName',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+              const Icon(
+                Icons.keyboard_arrow_up,
+                color: Colors.white,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
     final isParlay = _selectedBets.length > 1;
     final totalOdds = _calculateParlayOdds();
     final potentialPayout = _calculatePayout(totalOdds);
     
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                isParlay ? 'Parlay (${_selectedBets.length} legs)' : 'Single Bet',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+    return GestureDetector(
+      onVerticalDragUpdate: (details) {
+        // Allow swipe down to minimize
+        if (details.delta.dy > 5) {
+          setState(() {
+            _isBetSlipMinimized = true;
+          });
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-              if (isParlay)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.green,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '+${totalOdds.toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ..._selectedBets.map((bet) => Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Row(
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Text(
-                    bet.title,
-                    style: const TextStyle(fontSize: 12),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isParlay ? 'Parlay (${_selectedBets.length} legs)' : 'Single Bet',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    Text(
+                      'Current Tab: $_currentTabName',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  bet.odds,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedBets.remove(bet);
-                    });
-                  },
-                  child: const Icon(Icons.close, size: 16, color: Colors.red),
+                Row(
+                  children: [
+                    if (isParlay)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '+${totalOdds.toStringAsFixed(0)}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.keyboard_arrow_down),
+                      onPressed: () {
+                        setState(() {
+                          _isBetSlipMinimized = true;
+                        });
+                      },
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
                 ),
               ],
             ),
-          )),
-          const Divider(),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Wager Amount', style: TextStyle(fontSize: 12)),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey[300]!),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: TextField(
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          hintText: '50',
+            const SizedBox(height: 8),
+            ..._selectedBets.map((bet) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      bet.title,
+                      style: const TextStyle(fontSize: 12),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Text(
+                    bet.odds,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedBets.remove(bet);
+                      });
+                    },
+                    child: const Icon(Icons.close, size: 16, color: Colors.red),
+                  ),
+                ],
+              ),
+            )),
+            const Divider(),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Wager Amount', style: TextStyle(fontSize: 12)),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey[300]!),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        onChanged: (value) {
-                          setState(() {
-                            _wagerAmount = int.tryParse(value) ?? 50;
-                          });
-                        },
+                        child: TextField(
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            hintText: '50',
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(vertical: 8),
+                          ),
+                          onChanged: (value) {
+                            setState(() {
+                              _wagerAmount = int.tryParse(value) ?? 50;
+                            });
+                          },
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Potential Payout', style: TextStyle(fontSize: 12)),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$potentialPayout BR',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Potential Payout', style: TextStyle(fontSize: 12)),
+                      const SizedBox(height: 4),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          '$potentialPayout BR',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _placeBet,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              child: Text(
-                'Place Bet ($_wagerAmount BR)',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _placeBet,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text(
+                  'Place Bet ($_wagerAmount BR)',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
+      ),
       ),
     );
   }
@@ -2515,26 +2906,28 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         potentialPayout: potentialPayout,
       );
       
-      // Save bets to local storage
-      if (widget.poolId != null && widget.gameId != null) {
-        final userBets = allBets.map((bet) => UserBet(
-          id: DateTime.now().millisecondsSinceEpoch.toString() + bet.id,
-          poolId: widget.poolId!,
-          poolName: widget.poolName,
-          gameId: widget.gameId!,
-          gameTitle: widget.gameTitle,
-          sport: widget.sport,
-          betType: bet.type.toString().split('.').last,
-          selection: bet.title,
-          odds: bet.odds,
-          amount: _wagerAmount.toDouble(),
-          placedAt: DateTime.now(),
-          description: bet.title, // Using title as description since subtitle doesn't exist
-        )).toList();
-        
-        await _betStorage.saveBets(userBets);
-        debugPrint('Saved ${userBets.length} bets to storage');
-      }
+      // Save bets to local storage - always save regardless of poolId/gameId
+      // Use the generated gameId if widget.gameId is not available
+      final actualGameId = widget.gameId ?? gameId;
+      final actualPoolId = widget.poolId ?? 'default_pool_${widget.poolName.replaceAll(' ', '_').toLowerCase()}';
+      
+      final userBets = allBets.map((bet) => UserBet(
+        id: DateTime.now().millisecondsSinceEpoch.toString() + bet.id,
+        poolId: actualPoolId,
+        poolName: widget.poolName,
+        gameId: actualGameId,
+        gameTitle: widget.gameTitle,
+        sport: widget.sport,
+        betType: bet.type.toString().split('.').last,
+        selection: bet.title,
+        odds: bet.odds,
+        amount: _wagerAmount.toDouble(),
+        placedAt: DateTime.now(),
+        description: bet.title, // Using title as description since subtitle doesn't exist
+      )).toList();
+      
+      await _betStorage.saveBets(userBets);
+      debugPrint('Saved ${userBets.length} bets to storage with poolId: $actualPoolId and gameId: $actualGameId');
       
       debugPrint('Bets locked in successfully! Potential payout: $potentialPayout BR');
       
@@ -2617,9 +3010,9 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
             _buildProgressIndicator(),
             const SizedBox(height: 16),
             if (nextTabIndex != -1)
-              const Text(
-                '💡 Try the Spread next for more betting options!',
-                style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+              Text(
+                '💡 Try ${_getTabDisplayName(_getTabOrder()[nextTabIndex])} next for more betting options!',
+                style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
               ),
           ],
         ),
@@ -2636,7 +3029,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                 _betTypeController.animateTo(nextTabIndex);
               }
             },
-            child: Text(nextTabIndex != -1 ? 'Next Tab' : 'Continue'),
+            child: Text(nextTabIndex != -1 ? 'Next: ${_getTabDisplayName(_getTabOrder()[nextTabIndex])}' : 'Continue'),
           ),
         ],
       ),
@@ -2647,33 +3040,47 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     // Map tab indices to pick status
     final tabOrder = _getTabOrder();
     
-    // Only check non-live tabs (exclude 'live' tab if it exists)
+    // Only check non-live tabs that are available (exclude 'live' tab and unavailable tabs)
     for (int i = 0; i < tabOrder.length && i < _betTypeController.length; i++) {
       final tabKey = tabOrder[i];
-      if (tabKey != 'live' && !(_tabPicks[tabKey] ?? false)) {
+      // Skip live tab, unavailable tabs, and tabs that already have picks
+      if (tabKey != 'live' && 
+          (_tabAvailability[tabKey] ?? false) && 
+          !(_tabPicks[tabKey] ?? false)) {
         return i;
       }
     }
-    return -1; // All tabs have picks
+    return -1; // All available tabs have picks
   }
   
   Widget _buildProgressIndicator() {
-    final pickedCount = _tabPicks.values.where((v) => v).length;
-    final totalTabs = _tabPicks.length;
+    // Count only available tabs (exclude live and unavailable tabs)
+    final tabOrder = _getTabOrder();
+    int availableTabCount = 0;
+    int pickedAvailableCount = 0;
+    
+    for (final tabKey in tabOrder) {
+      if (tabKey != 'live' && (_tabAvailability[tabKey] ?? false)) {
+        availableTabCount++;
+        if (_tabPicks[tabKey] ?? false) {
+          pickedAvailableCount++;
+        }
+      }
+    }
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Progress: $pickedCount of $totalTabs picks made',
+          'Progress: $pickedAvailableCount of $availableTabCount picks made',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         LinearProgressIndicator(
-          value: totalTabs > 0 ? pickedCount / totalTabs : 0,
+          value: availableTabCount > 0 ? pickedAvailableCount / availableTabCount : 0,
           backgroundColor: Colors.grey[300],
           valueColor: AlwaysStoppedAnimation<Color>(
-            pickedCount == totalTabs ? Colors.green : Theme.of(context).colorScheme.primary,
+            pickedAvailableCount == availableTabCount ? Colors.green : Theme.of(context).colorScheme.primary,
           ),
         ),
         const SizedBox(height: 8),
