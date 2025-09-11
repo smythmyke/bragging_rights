@@ -34,8 +34,8 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
     setState(() => _isLoading = true);
     
     _betStorage = await BetStorageService.create();
-    _activeBets = await _betStorage.getActiveBets();
-    _pastBets = await _betStorage.getPastBets();
+    _activeBets = await _betStorage!.getActiveBets();
+    _pastBets = await _betStorage!.getPastBets();
     
     print('[ActiveBetsScreen] Loaded ${_activeBets.length} active bets');
     print('[ActiveBetsScreen] Loaded ${_pastBets.length} past bets');

@@ -19,6 +19,8 @@ import 'screens/bets/active_bets_screen.dart';
 import 'screens/pools/my_pools_screen.dart';
 import 'screens/transactions/transaction_history_screen.dart';
 import 'screens/wagers/active_wagers_screen.dart';
+import 'screens/leaderboard/leaderboard_screen.dart';
+import 'screens/friends/invite_friends_screen.dart';
 import 'models/fight_card_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -74,6 +76,8 @@ class BraggingRightsApp extends StatelessWidget {
         '/home': (context) => const home.HomeScreen(),
         '/game-detail': (context) => const GameDetailScreen(),
         '/preferences': (context) => const PreferencesSettingsScreen(),
+        '/leaderboard': (context) => const LeaderboardScreen(),
+        '/invite-friends': (context) => const InviteFriendsScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/pool-selection') {

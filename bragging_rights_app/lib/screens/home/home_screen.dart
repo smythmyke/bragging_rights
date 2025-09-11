@@ -28,8 +28,11 @@ import '../cards/card_inventory_screen.dart';
 import '../games/all_games_screen.dart';
 import '../games/optimized_games_screen.dart';
 import '../../services/sound_service.dart';
+import '../bets/active_bets_screen.dart';
 import '../intel_detail_screen.dart';
 import '../../widgets/bragging_rights_logo.dart';
+import '../../widgets/standings_info_card.dart';
+import '../../services/friend_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -44,6 +47,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _countdownTimer;
   Timer? _backgroundRefreshTimer;
   final Map<String, Duration> _countdowns = {};
+  bool _showStandingsCard = false;
+  DateTime? _lastStandingsShown;
   
   // Services
   final BetService _betService = BetService();
@@ -56,6 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final PurchaseService _purchaseService = PurchaseService();
   final CardService _cardService = CardService();
   final SoundService _soundService = SoundService();
+  final FriendService _friendService = FriendService();
   
   // Feature flag for optimized loading
   static const bool USE_OPTIMIZED_GAMES = true;
@@ -79,6 +85,8 @@ class _HomeScreenState extends State<HomeScreen> {
   
   // Pool data
   List<Map<String, dynamic>> _userPools = [];
+  List<Map<String, dynamic>> _createdPools = [];
+  List<Map<String, dynamic>> _joinedPools = [];
   List<Map<String, dynamic>> _featuredPools = [];
   List<Map<String, dynamic>> _quickJoinPools = [];
   bool _isLoadingPools = false;
@@ -99,6 +107,24 @@ class _HomeScreenState extends State<HomeScreen> {
     
     // Start pool management after authentication
     _startPoolManagement();
+    
+    // Check if we should show standings card
+    _checkShowStandingsCard();
+  }
+  
+  void _checkShowStandingsCard() {
+    final now = DateTime.now();
+    if (_lastStandingsShown == null || 
+        now.difference(_lastStandingsShown!).inHours >= 12) {
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          setState(() {
+            _showStandingsCard = true;
+            _lastStandingsShown = now;
+          });
+        }
+      });
+    }
   }
   
   Future<void> _startPoolManagement() async {
@@ -149,13 +175,30 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     
     try {
-      final userPools = await _poolService.getUserActivePools();
-      final featuredPools = await _poolService.getFeaturedPools();
-      final quickJoinPools = await _poolService.getQuickJoinPools();
+      // Fetch all pool data in parallel
+      final results = await Future.wait([
+        _poolService.getUserCreatedPools(),
+        _poolService.getUserActivePools(),
+        _poolService.getFeaturedPools(),
+        _poolService.getQuickJoinPools(),
+      ]);
+      
+      final createdPools = results[0];
+      final allUserPools = results[1];
+      final featuredPools = results[2];
+      final quickJoinPools = results[3];
+      
+      // Filter joined pools (exclude created ones)
+      final createdPoolIds = createdPools.map((p) => p['id']).toSet();
+      final joinedPools = allUserPools.where((pool) => 
+        !createdPoolIds.contains(pool['id'])
+      ).toList();
       
       if (mounted) {
         setState(() {
-          _userPools = userPools;
+          _createdPools = createdPools;
+          _joinedPools = joinedPools;
+          _userPools = allUserPools; // Keep for backwards compatibility
           _featuredPools = featuredPools;
           _quickJoinPools = quickJoinPools;
           _isLoadingPools = false;
@@ -605,8 +648,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: AppBar(
         title: Align(
           alignment: Alignment.centerLeft,
           child: GestureDetector(
@@ -771,6 +816,16 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    ),
+        if (_showStandingsCard)
+          StandingsInfoCard(
+            onDismiss: () {
+              setState(() {
+                _showStandingsCard = false;
+              });
+            },
+          ),
+      ],
     );
   }
 
@@ -1800,6 +1855,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBetsTab() {
+    return const ActiveBetsScreen();
+  }
+
+  Widget _buildBetsTabOld() {
     return RefreshIndicator(
       onRefresh: () async {
         await Future.delayed(const Duration(seconds: 1));
@@ -2090,28 +2149,54 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // My Active Pools Section
-                _buildSectionHeader('🎲 My Active Pools', 'Pools you\'ve joined'),
+                // Pools I Created Section
+                _buildSectionHeader('👑 Pools I Created', 'Manage your pools'),
                 const SizedBox(height: 12),
-                _userPools.isEmpty
-                  ? _buildEmptyPoolsCard('You haven\'t joined any pools yet')
+                _createdPools.isEmpty
+                  ? _buildEmptyPoolsCard('You haven\'t created any pools yet')
                   : SizedBox(
-                      height: 120,
+                      height: 140,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
-                        itemCount: _userPools.length,
+                        itemCount: _createdPools.length,
                         itemBuilder: (context, index) {
-                          final pool = _userPools[index];
-                          return _buildMyPoolCard(
+                          final pool = _createdPools[index];
+                          return _buildCreatedPoolCard(
                             pool['name'],
                             '${pool['buyIn']} BR',
                             '${pool['currentPlayers']}/${pool['maxPlayers']} players',
                             _getSportColor(pool['sport']),
                             pool['isLive'],
+                            pool['id'],
                           );
                         },
                       ),
                     ),
+            
+            const SizedBox(height: 24),
+            
+            // Pools I Joined Section
+            _buildSectionHeader('🎯 Pools I Joined', 'Your active participations'),
+            const SizedBox(height: 12),
+            _joinedPools.isEmpty
+              ? _buildEmptyPoolsCard('You haven\'t joined any pools yet')
+              : SizedBox(
+                  height: 120,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _joinedPools.length,
+                    itemBuilder: (context, index) {
+                      final pool = _joinedPools[index];
+                      return _buildMyPoolCard(
+                        pool['name'],
+                        '${pool['buyIn']} BR',
+                        '${pool['currentPlayers']}/${pool['maxPlayers']} players',
+                        _getSportColor(pool['sport']),
+                        pool['isLive'],
+                      );
+                    },
+                  ),
+                ),
             
             const SizedBox(height: 24),
             
@@ -2225,6 +2310,139 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildCreatedPoolCard(String name, String buyIn, String players, Color color, bool isLive, String poolId) {
+    return Container(
+      width: 180,
+      margin: const EdgeInsets.only(right: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            color.withOpacity(0.15),
+            color.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.4), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.pushNamed(context, '/my-pools');
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.amber.withOpacity(0.4)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.star, color: Colors.amber, size: 10),
+                        SizedBox(width: 2),
+                        Text(
+                          'OWNER',
+                          style: TextStyle(
+                            color: Colors.amber,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (isLive) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.circle, color: Colors.red, size: 6),
+                          SizedBox(width: 2),
+                          Text(
+                            'LIVE',
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              Text(
+                name,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.monetization_on_outlined, size: 14, color: Colors.green[600]),
+                      const SizedBox(width: 4),
+                      Text(
+                        buyIn,
+                        style: TextStyle(
+                          color: Colors.green[600],
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.people_outline, size: 14, color: Colors.grey[600]),
+                      const SizedBox(width: 4),
+                      Text(
+                        players,
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -3229,7 +3447,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 PhosphorIconsRegular.userPlus,
                 Colors.purple,
                 () {
-                  // TODO: Share invite
+                  Navigator.pushNamed(context, '/invite-friends');
                 },
               ),
             ],

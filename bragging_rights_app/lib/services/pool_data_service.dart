@@ -53,6 +53,38 @@ class PoolDataService {
     }
   }
   
+  // Get pools created by the user
+  Future<List<Map<String, dynamic>>> getUserCreatedPools() async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) return [];
+      
+      final snapshot = await _firestore
+          .collection('pools')
+          .where('createdBy', isEqualTo: userId)
+          .where('status', whereIn: ['open', 'active'])
+          .get();
+      
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'name': data['name'] ?? 'Unnamed Pool',
+          'buyIn': data['buyIn'] ?? 0,
+          'currentPlayers': data['currentPlayers'] ?? 0,
+          'maxPlayers': data['maxPlayers'] ?? 0,
+          'sport': data['sport'] ?? 'General',
+          'isLive': data['status'] == 'active',
+          'prizePool': data['prizePool'] ?? 0,
+          'isCreator': true,
+        };
+      }).toList();
+    } catch (e) {
+      print('Error fetching user created pools: $e');
+      return [];
+    }
+  }
+  
   // Get featured/public pools
   Future<List<Map<String, dynamic>>> getFeaturedPools() async {
     try {
