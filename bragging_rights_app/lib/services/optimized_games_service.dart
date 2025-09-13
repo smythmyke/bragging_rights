@@ -276,12 +276,58 @@ class OptimizedGamesService {
       if (oddsApiGames.isNotEmpty) {
         debugPrint('✅ Loaded ${oddsApiGames.length} $sport games from Odds API');
         
-        // Update scores if available
-        final scores = await _oddsApiService.getSportScores(sport);
-        final updatedGames = <GameModel>[];
-        for (final game in oddsApiGames) {
-          final scoreData = scores[game.id];
+        // Update scores if available (skip for soccer due to format issues)
+        List<GameModel> finalGames;
+        if (sport.toLowerCase() == 'soccer') {
+          debugPrint('⚠️ Skipping score updates for soccer (format incompatibility)');
+          finalGames = oddsApiGames;
+        } else {
+          final scores = await _oddsApiService.getSportScores(sport);
+          final updatedGames = <GameModel>[];
+          for (final game in oddsApiGames) {
+            final scoreData = scores[game.id];
           if (scoreData != null && scoreData['scores'] != null) {
+            // Soccer scores might be in a different format
+            int? homeScore;
+            int? awayScore;
+
+            try {
+              // Try to get scores - handle both map and list structures
+              final scoresData = scoreData['scores'];
+              if (scoresData is List && scoresData.isNotEmpty) {
+                // Soccer uses array of scores by period
+                homeScore = 0;
+                awayScore = 0;
+                for (var i = 0; i < scoresData.length; i++) {
+                  final period = scoresData[i];
+                  if (period is Map) {
+                    // Access home score
+                    final homeData = period['home'];
+                    if (homeData != null && homeData is Map) {
+                      final points = homeData['points'];
+                      if (points != null) {
+                        homeScore = homeScore! + (int.tryParse(points.toString()) ?? 0);
+                      }
+                    }
+                    // Access away score
+                    final awayData = period['away'];
+                    if (awayData != null && awayData is Map) {
+                      final points = awayData['points'];
+                      if (points != null) {
+                        awayScore = awayScore! + (int.tryParse(points.toString()) ?? 0);
+                      }
+                    }
+                  }
+                }
+              } else if (scoresData is Map) {
+                // Standard format for other sports
+                homeScore = scoresData['home_team'];
+                awayScore = scoresData['away_team'];
+              }
+            } catch (e) {
+              debugPrint('Error parsing scores for ${game.id}: $e');
+            }
+
             // Create updated game with score data
             updatedGames.add(GameModel(
               id: game.id,
@@ -290,8 +336,8 @@ class OptimizedGamesService {
               awayTeam: game.awayTeam,
               gameTime: game.gameTime,
               status: scoreData['completed'] == true ? 'final' : 'live',
-              homeScore: scoreData['scores']?['home_team'],
-              awayScore: scoreData['scores']?['away_team'],
+              homeScore: homeScore,
+              awayScore: awayScore,
               league: game.league,
               venue: game.venue,
               broadcast: game.broadcast,
@@ -301,12 +347,22 @@ class OptimizedGamesService {
           } else {
             updatedGames.add(game);
           }
+          }
+
+          // Group combat sports by event before returning
+          if (sport.toUpperCase() == 'MMA' || sport.toUpperCase() == 'BOXING') {
+            debugPrint('🥊 Applying grouping to $sport with ${updatedGames.length} fights');
+            finalGames = await _groupCombatSportsByEvent(updatedGames, sport);
+            debugPrint('✅ Grouped into ${finalGames.length} events for display');
+          } else {
+            finalGames = updatedGames;
+          }
         }
-        
+
         // Save to Firestore cache
-        await _saveGamesToFirestore(updatedGames, sport: sport);
-        
-        return updatedGames;
+        await _saveGamesToFirestore(finalGames, sport: sport);
+
+        return finalGames;
       }
       
       debugPrint('⚠️ No games from Odds API, falling back to ESPN...');
@@ -581,13 +637,22 @@ class OptimizedGamesService {
       // Group combat sports by event
       List<GameModel> processedGames;
       if (sport.toUpperCase() == 'MMA' || sport.toUpperCase() == 'BOXING') {
+        debugPrint('🥊 Processing combat sport: $sport with ${games.length} fights');
         processedGames = await _groupCombatSportsByEvent(games, sport);
+        debugPrint('✅ Grouped into ${processedGames.length} events');
+        for (int i = 0; i < processedGames.length && i < 3; i++) {
+          final event = processedGames[i];
+          debugPrint('  Event ${i+1}: ${event.awayTeam} vs ${event.homeTeam}');
+          if (event.fights != null && event.fights!.isNotEmpty) {
+            debugPrint('    Contains ${event.fights!.length} fights');
+          }
+        }
       } else {
         // Sort by game time for non-combat sports
         games.sort((a, b) => a.gameTime.compareTo(b.gameTime));
         processedGames = games;
       }
-      
+
       debugPrint('📊 Processed ${processedGames.length} $sport events');
       
       // Update scores if available
@@ -597,6 +662,47 @@ class OptimizedGamesService {
         for (final game in processedGames) {
           final scoreData = scores[game.id];
           if (scoreData != null && scoreData['scores'] != null) {
+            // Soccer scores might be in a different format
+            int? homeScore;
+            int? awayScore;
+
+            try {
+              // Try to get scores - handle both map and list structures
+              final scoresData = scoreData['scores'];
+              if (scoresData is List && scoresData.isNotEmpty) {
+                // Soccer uses array of scores by period
+                homeScore = 0;
+                awayScore = 0;
+                for (var i = 0; i < scoresData.length; i++) {
+                  final period = scoresData[i];
+                  if (period is Map) {
+                    // Access home score
+                    final homeData = period['home'];
+                    if (homeData != null && homeData is Map) {
+                      final points = homeData['points'];
+                      if (points != null) {
+                        homeScore = homeScore! + (int.tryParse(points.toString()) ?? 0);
+                      }
+                    }
+                    // Access away score
+                    final awayData = period['away'];
+                    if (awayData != null && awayData is Map) {
+                      final points = awayData['points'];
+                      if (points != null) {
+                        awayScore = awayScore! + (int.tryParse(points.toString()) ?? 0);
+                      }
+                    }
+                  }
+                }
+              } else if (scoresData is Map) {
+                // Standard format for other sports
+                homeScore = scoresData['home_team'];
+                awayScore = scoresData['away_team'];
+              }
+            } catch (e) {
+              debugPrint('Error parsing scores for ${game.id}: $e');
+            }
+
             // Create new game with updated scores
             updatedGames.add(GameModel(
               id: game.id,
@@ -605,8 +711,8 @@ class OptimizedGamesService {
               awayTeam: game.awayTeam,
               gameTime: game.gameTime,
               status: scoreData['completed'] == true ? 'final' : 'live',
-              homeScore: scoreData['scores']?['home_team'],
-              awayScore: scoreData['scores']?['away_team'],
+              homeScore: homeScore,
+              awayScore: awayScore,
               league: game.league,
               venue: game.venue,
               broadcast: game.broadcast,

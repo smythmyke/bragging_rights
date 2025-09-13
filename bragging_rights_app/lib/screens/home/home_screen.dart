@@ -1338,6 +1338,31 @@ class _HomeScreenState extends State<HomeScreen> {
     for (final game in games) {
       gamesBySport.putIfAbsent(game.sport, () => []).add(game);
     }
+
+    // Log combat sports to verify grouping
+    if (gamesBySport.containsKey('BOXING')) {
+      final boxingGames = gamesBySport['BOXING']!;
+      debugPrint('🥊 HOME: Displaying ${boxingGames.length} BOXING items');
+      for (int i = 0; i < boxingGames.length && i < 3; i++) {
+        final game = boxingGames[i];
+        debugPrint('  - ${game.awayTeam} vs ${game.homeTeam}');
+        if (game.fights != null && game.fights!.isNotEmpty) {
+          debugPrint('    (Event with ${game.fights!.length} fights)');
+        }
+      }
+    }
+
+    if (gamesBySport.containsKey('MMA')) {
+      final mmaGames = gamesBySport['MMA']!;
+      debugPrint('🥊 HOME: Displaying ${mmaGames.length} MMA items');
+      for (int i = 0; i < mmaGames.length && i < 3; i++) {
+        final game = mmaGames[i];
+        debugPrint('  - ${game.awayTeam} vs ${game.homeTeam}');
+        if (game.fights != null && game.fights!.isNotEmpty) {
+          debugPrint('    (Event with ${game.fights!.length} fights)');
+        }
+      }
+    }
     
     // Sort sports to put user's favorite sports first
     final sortedSports = gamesBySport.keys.toList()
@@ -1451,7 +1476,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildGameCard(GameModel game, {bool showCountdown = false, bool showDate = false}) {
     final countdown = _countdowns[game.id] ?? Duration.zero;
     final hasBet = _gamesWithBets.contains(game.id);
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
@@ -1461,13 +1486,11 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: () {
           Navigator.pushNamed(
             context,
-            '/pool-selection',
+            '/game-details',
             arguments: {
               'gameId': game.id,
-              'gameTitle': game.gameTitle,
               'sport': game.sport,
-              'homeTeam': game.homeTeam,
-              'awayTeam': game.awayTeam,
+              'gameData': game,
             },
           );
         },
@@ -1675,13 +1698,11 @@ class _HomeScreenState extends State<HomeScreen> {
           onTap: () {
             Navigator.pushNamed(
               context,
-              '/pool-selection',
+              '/game-details',
               arguments: {
                 'gameId': game.id,
-                'gameTitle': game.gameTitle,
                 'sport': game.sport,
-                'homeTeam': game.homeTeam,
-                'awayTeam': game.awayTeam,
+                'gameData': game,
               },
             );
           },
@@ -1764,7 +1785,7 @@ class _HomeScreenState extends State<HomeScreen> {
   
   Widget _buildUpcomingGameCard(GameModel game) {
     final countdown = _countdowns[game.id] ?? Duration.zero;
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
@@ -1774,13 +1795,11 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: () {
           Navigator.pushNamed(
             context,
-            '/pool-selection',
+            '/game-details',
             arguments: {
               'gameId': game.id,
-              'gameTitle': game.gameTitle,
               'sport': game.sport,
-              'homeTeam': game.homeTeam,
-              'awayTeam': game.awayTeam,
+              'gameData': game,
             },
           );
         },
