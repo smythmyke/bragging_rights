@@ -181,19 +181,20 @@ class OptimizedGamesService {
       for (final game in games) {
         if (game.isLive) {
           liveGames.add(game);
-        } else {
+        } else if (game.gameTime.isAfter(now)) { // Only future games
           final hoursUntilGame = game.gameTime.difference(now).inHours;
           final daysUntilGame = game.gameTime.difference(now).inDays;
           
-          if (hoursUntilGame <= 3 && hoursUntilGame >= 0) {
+          // Categorize without overlaps
+          if (hoursUntilGame <= 3) {
             startingSoonGames.add(game);
           } else if (game.gameTime.day == now.day && 
                      game.gameTime.month == now.month &&
                      game.gameTime.year == now.year) {
             todayGames.add(game);
-          } else if (daysUntilGame <= 7 && daysUntilGame >= 0) {
+          } else if (daysUntilGame <= 7) {
             thisWeekGames.add(game);
-          } else if (daysUntilGame <= 60 && daysUntilGame >= 0) {
+          } else if (daysUntilGame <= 60) {
             upcomingGames.add(game);
           }
         }
@@ -484,7 +485,8 @@ class OptimizedGamesService {
 
   /// Load ALL games for a specific sport (no date limit)
   Future<List<GameModel>> loadAllGamesForSport(String sport) async {
-    debugPrint('🎯 Loading ALL games for $sport (no date limit)...');
+    debugPrint('\n🎯 Loading ALL games for $sport (no date limit)...');
+    debugPrint('================================================');
     
     try {
       // CHECK FIRESTORE CACHE FIRST (30 min cache for full sport listings)
@@ -513,6 +515,12 @@ class OptimizedGamesService {
       }
       
       debugPrint('✅ Got ${events.length} $sport events from API');
+
+      // Debug: Show sport_title for first few events
+      debugPrint('First few events sport_title values:');
+      for (int i = 0; i < events.length && i < 3; i++) {
+        debugPrint('  Event ${i+1}: sport_title="${events[i]['sport_title']}"');
+      }
       
       // Convert to GameModel
       final games = <GameModel>[];
@@ -520,9 +528,30 @@ class OptimizedGamesService {
         try {
           final gameTime = DateTime.parse(event['commence_time']);
           
+          // Determine actual sport from sport_title for MMA/UFC detection
+          String actualSport = sport.toUpperCase();
+          final sportTitle = event['sport_title'] ?? '';
+          
+          // Check if it's actually MMA/UFC based on the sport_title
+          debugPrint('Sport detection - Original sport: $sport, sport_title: "$sportTitle"');
+          if (sportTitle.toLowerCase().contains('ufc') ||
+              sportTitle.toLowerCase().contains('mma') ||
+              sportTitle.toLowerCase().contains('mixed martial') ||
+              sportTitle.toLowerCase().contains('bellator') ||
+              sportTitle.toLowerCase().contains('pfl') ||
+              sportTitle.toLowerCase().contains('one championship')) {
+            actualSport = 'MMA';
+            debugPrint('  -> Detected as MMA based on sport_title');
+          } else if (sportTitle.toLowerCase().contains('boxing')) {
+            actualSport = 'BOXING';
+            debugPrint('  -> Detected as BOXING based on sport_title');
+          } else {
+            debugPrint('  -> Keeping original sport: $actualSport');
+          }
+          
           final game = GameModel(
             id: event['id'],
-            sport: sport.toUpperCase(),
+            sport: actualSport,
             homeTeam: event['home_team'] ?? '',
             awayTeam: event['away_team'] ?? '',
             gameTime: gameTime,
@@ -547,16 +576,23 @@ class OptimizedGamesService {
         }
       }
       
-      // Sort by game time
-      games.sort((a, b) => a.gameTime.compareTo(b.gameTime));
+      // Group combat sports by event
+      List<GameModel> processedGames;
+      if (sport.toUpperCase() == 'MMA' || sport.toUpperCase() == 'BOXING') {
+        processedGames = _groupCombatSportsByEvent(games);
+      } else {
+        // Sort by game time for non-combat sports
+        games.sort((a, b) => a.gameTime.compareTo(b.gameTime));
+        processedGames = games;
+      }
       
-      debugPrint('📊 Converted ${games.length} $sport events to GameModel');
+      debugPrint('📊 Processed ${processedGames.length} $sport events');
       
       // Update scores if available
       try {
         final scores = await _oddsApiService.getSportScores(sport);
         final updatedGames = <GameModel>[];
-        for (final game in games) {
+        for (final game in processedGames) {
           final scoreData = scores[game.id];
           if (scoreData != null && scoreData['scores'] != null) {
             // Create new game with updated scores
@@ -585,13 +621,149 @@ class OptimizedGamesService {
       } catch (e) {
         debugPrint('Could not update scores: $e');
         // Save to Firestore cache even without scores
-        await _saveGamesToFirestore(games, sport: sport);
-        return games;
+        await _saveGamesToFirestore(processedGames, sport: sport);
+        return processedGames;
       }
     } catch (e) {
       debugPrint('❌ Error loading all games for $sport: $e');
       return [];
     }
+  }
+
+  /// Group MMA/Boxing fights by event (e.g., UFC 311, Bellator 300)
+  List<GameModel> _groupCombatSportsByEvent(List<GameModel> fights) {
+    if (fights.isEmpty) return fights;
+    
+    debugPrint('🥊 Grouping ${fights.length} combat sports fights into events...');
+    
+    // Group fights by date and extract event name
+    final Map<String, List<GameModel>> eventGroups = {};
+    
+    for (final fight in fights) {
+      // Extract event name from the fight
+      String eventName = _extractEventName(fight);
+      
+      if (!eventGroups.containsKey(eventName)) {
+        eventGroups[eventName] = [];
+      }
+      eventGroups[eventName]!.add(fight);
+    }
+    
+    debugPrint('📦 Created ${eventGroups.length} event groups from ${fights.length} fights');
+    
+    // Create a single GameModel for each event
+    final List<GameModel> groupedEvents = [];
+    
+    for (final entry in eventGroups.entries) {
+      final eventName = entry.key;
+      final eventFights = entry.value;
+      
+      if (eventFights.isEmpty) continue;
+      
+      // Sort fights by importance (main event first)
+      eventFights.sort((a, b) {
+        // Main events typically have championship or bigger names
+        final aImportance = _getFightImportance(a);
+        final bImportance = _getFightImportance(b);
+        return bImportance.compareTo(aImportance);
+      });
+      
+      // Use the first fight (main event) as the base
+      final mainEvent = eventFights.first;
+      final totalFights = eventFights.length;
+      
+      debugPrint('🎯 Event: $eventName with $totalFights fights');
+      debugPrint('   Main Event: ${mainEvent.awayTeam} vs ${mainEvent.homeTeam}');
+      
+      // Create a grouped event model
+      final groupedEvent = GameModel(
+        id: '${mainEvent.sport.toLowerCase()}_${eventName.toLowerCase().replaceAll(' ', '_')}',
+        sport: mainEvent.sport,
+        homeTeam: mainEvent.homeTeam, // Main event fighter 2
+        awayTeam: mainEvent.awayTeam, // Main event fighter 1
+        gameTime: mainEvent.gameTime,
+        status: mainEvent.status,
+        venue: mainEvent.venue,
+        broadcast: mainEvent.broadcast,
+        league: eventName,
+        homeTeamLogo: mainEvent.homeTeamLogo,
+        awayTeamLogo: mainEvent.awayTeamLogo,
+        isCombatSport: true,
+        totalFights: totalFights,
+        mainEventFighters: '${mainEvent.awayTeam} vs ${mainEvent.homeTeam}',
+        fights: eventFights.map((f) => {
+          'id': f.id,
+          'fighter1': f.awayTeam,
+          'fighter2': f.homeTeam,
+          'time': f.gameTime.toIso8601String(),
+        }).toList(),
+      );
+      
+      groupedEvents.add(groupedEvent);
+    }
+    
+    // Sort events by date
+    groupedEvents.sort((a, b) => a.gameTime.compareTo(b.gameTime));
+    
+    debugPrint('✅ Grouped into ${groupedEvents.length} events');
+    
+    return groupedEvents;
+  }
+  
+  /// Extract event name from fight data
+  String _extractEventName(GameModel fight) {
+    // Try to extract from league field first
+    if (fight.league != null && fight.league!.isNotEmpty) {
+      // Check for UFC, Bellator, PFL patterns
+      if (fight.league!.contains('UFC') || 
+          fight.league!.contains('Bellator') || 
+          fight.league!.contains('PFL') ||
+          fight.league!.contains('ONE')) {
+        return fight.league!;
+      }
+    }
+    
+    // For MMA, try to determine from venue or date
+    if (fight.sport.toUpperCase() == 'MMA') {
+      // Default to date-based grouping
+      final dateStr = '${fight.gameTime.month}/${fight.gameTime.day}';
+      return 'MMA Event $dateStr';
+    }
+    
+    // For boxing, group by date
+    if (fight.sport.toUpperCase() == 'BOXING') {
+      final dateStr = '${fight.gameTime.month}/${fight.gameTime.day}';
+      return 'Boxing Card $dateStr';
+    }
+    
+    return 'Event';
+  }
+  
+  /// Get fight importance score for sorting
+  int _getFightImportance(GameModel fight) {
+    int score = 0;
+    
+    // Check for championship keywords
+    final title = '${fight.awayTeam} ${fight.homeTeam}'.toLowerCase();
+    if (title.contains('championship') || title.contains('title')) {
+      score += 100;
+    }
+    
+    // Check for well-known fighters (you can expand this list)
+    final knownFighters = [
+      'jones', 'miocic', 'makhachev', 'poirier', 'mcgregor', 'adesanya',
+      'volkanovski', 'oliveira', 'gaethje', 'canelo', 'crawford', 'fury',
+      'usyk', 'joshua', 'wilder', 'spence', 'garcia', 'tsarukyan', 'hill',
+      'prochazka', 'dvalishvili', 'nurmagomedov', 'holland'
+    ];
+    
+    for (final fighter in knownFighters) {
+      if (title.contains(fighter)) {
+        score += 50;
+      }
+    }
+    
+    return score;
   }
 
   /// Enrich a specific game with odds on-demand
@@ -655,8 +827,21 @@ class OptimizedGamesService {
           .map((doc) => GameModel.fromFirestore(doc))
           .toList();
       
-      debugPrint('✅ Found ${games.length} cached $sport games in Firestore');
-      return games;
+      // IMPORTANT: Filter out past games (unless they're live)
+      final pastCutoff = now.subtract(const Duration(hours: 6)); // Allow 6 hours for completed games
+      final filteredGames = games.where((game) {
+        // Keep live games
+        if (game.status == 'live' || game.isLive) return true;
+        // Keep future games
+        if (game.gameTime.isAfter(now)) return true;
+        // Keep recently completed games (within 6 hours)
+        if (game.gameTime.isAfter(pastCutoff)) return true;
+        // Filter out old games
+        return false;
+      }).toList();
+      
+      debugPrint('✅ Found ${games.length} cached $sport games, ${filteredGames.length} after filtering past games');
+      return filteredGames.isEmpty ? null : filteredGames;
     } catch (e) {
       debugPrint('Error reading from Firestore cache: $e');
       return null;

@@ -114,18 +114,51 @@ class _HomeScreenState extends State<HomeScreen> {
     _checkShowStandingsCard();
   }
   
-  void _checkShowStandingsCard() {
+  void _checkShowStandingsCard() async {
     final now = DateTime.now();
-    if (_lastStandingsShown == null || 
+    if (_lastStandingsShown == null ||
         now.difference(_lastStandingsShown!).inHours >= 12) {
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          setState(() {
-            _showStandingsCard = true;
-            _lastStandingsShown = now;
-          });
+      // Check if there's actual data to display before showing the card
+      try {
+        // Check for friend activity and rankings
+        final activityFuture = _friendService.getFriendActivityStream().first;
+        final rankingsFuture = _friendService.getUserRankings();
+
+        List<dynamic> results;
+        try {
+          results = await Future.wait([
+            activityFuture,
+            rankingsFuture,
+          ]).timeout(const Duration(seconds: 3));
+        } catch (e) {
+          // Timeout or error - don't show the card
+          debugPrint('Timeout or error loading standings data: $e');
+          return;
         }
-      });
+
+        final activity = results.length > 0 ? results[0] as FriendActivity? : null;
+        final rankings = results.length > 1 ? results[1] as Map<String, dynamic>? : null;
+
+        // Only show if there's actual data to display
+        final hasActivity = activity != null && activity.recentActivities.isNotEmpty;
+        final hasRankings = rankings != null && rankings.isNotEmpty;
+
+        if (hasActivity || hasRankings) {
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) {
+              setState(() {
+                _showStandingsCard = true;
+                _lastStandingsShown = now;
+              });
+            }
+          });
+        } else {
+          debugPrint('Skipping Today\'s Standings - no data to display');
+        }
+      } catch (e) {
+        debugPrint('Error checking standings data: $e');
+        // Don't show the card if we can't load data
+      }
     }
   }
   

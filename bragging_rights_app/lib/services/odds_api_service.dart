@@ -648,6 +648,12 @@ class OddsApiService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as List;
         debugPrint('✅ Found ${data.length} events for $sport');
+
+        // Debug first few events to see sport_title
+        if (data.isNotEmpty) {
+          debugPrint('First event sport_title: "${data.first['sport_title']}"');
+        }
+
         return data.cast<Map<String, dynamic>>();
       }
       
@@ -700,9 +706,25 @@ class OddsApiService {
           }
           
           // Convert Odds API event to GameModel
+          // Determine actual sport from sport_title for MMA/UFC detection
+          String actualSport = sport.toUpperCase();
+          final sportTitle = event['sport_title'] ?? '';
+          
+          // Check if it's actually MMA/UFC based on the sport_title
+          if (sportTitle.toLowerCase().contains('ufc') || 
+              sportTitle.toLowerCase().contains('mma') ||
+              sportTitle.toLowerCase().contains('mixed martial') ||
+              sportTitle.toLowerCase().contains('bellator') ||
+              sportTitle.toLowerCase().contains('pfl') ||
+              sportTitle.toLowerCase().contains('one championship')) {
+            actualSport = 'MMA';
+          } else if (sportTitle.toLowerCase().contains('boxing')) {
+            actualSport = 'BOXING';
+          }
+          
           final game = GameModel(
             id: event['id'], // Use Odds API event ID
-            sport: sport.toUpperCase(),
+            sport: actualSport,
             homeTeam: event['home_team'] ?? '',
             awayTeam: event['away_team'] ?? '',
             gameTime: gameTime,

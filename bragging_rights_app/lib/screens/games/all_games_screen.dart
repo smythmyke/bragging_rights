@@ -114,6 +114,7 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
         return PhosphorIconsRegular.hockey;
       case 'MMA':
       case 'UFC':
+        return PhosphorIconsRegular.handFist; // Different icon for MMA
       case 'BOXING':
         return PhosphorIconsRegular.boxingGlove;
       case 'TENNIS':
@@ -135,7 +136,7 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
         return Colors.red;
       case 'MMA':
       case 'UFC':
-        return Colors.purple;
+        return Colors.orange[600]!;  // Bright orange for better visibility on dark theme
       case 'BOXING':
         return Colors.amber;
       case 'TENNIS':
@@ -194,13 +195,40 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      game.gameTitle,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                    // Show event title for combat sports, regular title for others
+                    if (game.isCombatSport && game.league != null) ...[
+                      Text(
+                        game.league!, // Event name (UFC 311, Boxing Card, etc.)
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 2),
+                      Text(
+                        game.mainEventFighters ?? game.gameTitle,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      if (game.totalFights != null && game.totalFights! > 1)
+                        Text(
+                          '${game.totalFights} fights',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                    ] else
+                      Text(
+                        game.gameTitle,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     const SizedBox(height: 4),
                     Row(
                       children: [

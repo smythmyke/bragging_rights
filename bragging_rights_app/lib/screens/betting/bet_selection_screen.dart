@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math' as Math;
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../services/bet_service.dart';
 import '../../services/wallet_service.dart';
 import '../../services/bet_storage_service.dart';
 import '../../services/sports_api_service.dart';
 import '../../services/odds_api_service.dart';
+import '../../services/team_logo_service.dart';
 import '../../models/game_model.dart';
 import '../../models/odds_model.dart';
 import '../../widgets/info_edge_carousel.dart';
@@ -15,6 +17,7 @@ import '../../widgets/props_tab_content.dart';
 import '../../widgets/baseball_props_widget.dart';
 import '../../services/props_cache_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/team_bet_card.dart' as team_card;
 
 class BetSelectionScreen extends StatefulWidget {
   final String gameTitle;
@@ -48,6 +51,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   final WalletService _walletService = WalletService();
   final SportsApiService _sportsApiService = SportsApiService();
   final OddsApiService _oddsApiService = OddsApiService();
+  final TeamLogoService _logoService = TeamLogoService();
   
   // Selected team/fighter
   String? _selectedTeam;
@@ -89,6 +93,10 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   bool _isLoadingData = true;
   String? _homeTeam;
   String? _awayTeam;
+
+  // Team logos
+  TeamLogoData? _homeTeamLogo;
+  TeamLogoData? _awayTeamLogo;
   
   // Props data
   PropsTabData? _propsData;
@@ -315,7 +323,10 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
               );
               _propsData = propsData;
               _isLoadingData = false;
-              
+
+              // Load team logos for soccer
+              _loadTeamLogos();
+
               // Update tab availability based on data
               _updateTabAvailability();
             });
@@ -413,6 +424,45 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     }
   }
   
+  Future<void> _loadTeamLogos() async {
+    // Only load logos for soccer
+    if (!widget.sport.toLowerCase().contains('soccer')) {
+      return;
+    }
+
+    try {
+      // Fetch home team logo
+      if (_homeTeam != null) {
+        final homeLogo = await _logoService.getTeamLogo(
+          teamName: _homeTeam!,
+          sport: widget.sport,
+          league: 'EPL', // Default to EPL for now
+        );
+        if (mounted && homeLogo != null) {
+          setState(() {
+            _homeTeamLogo = homeLogo;
+          });
+        }
+      }
+
+      // Fetch away team logo
+      if (_awayTeam != null) {
+        final awayLogo = await _logoService.getTeamLogo(
+          teamName: _awayTeam!,
+          sport: widget.sport,
+          league: 'EPL', // Default to EPL for now
+        );
+        if (mounted && awayLogo != null) {
+          setState(() {
+            _awayTeamLogo = awayLogo;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading team logos: $e');
+    }
+  }
+
   void _loadMockFootballData() {
     // Create mock odds data for demonstration
     setState(() {
@@ -1002,6 +1052,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                   _getTeamAbbr(_awayTeam ?? 'AWAY'),
                   Theme.of(context).colorScheme.secondary,
                   _oddsData?.formatMoneyline(_oddsData?.awayMoneyline) ?? '--',
+                  _awayTeamLogo,
                 ),
                 Column(
                   children: [
@@ -1026,6 +1077,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                   _getTeamAbbr(_homeTeam ?? 'HOME'),
                   Theme.of(context).colorScheme.primary,
                   _oddsData?.formatMoneyline(_oddsData?.homeMoneyline) ?? '--',
+                  _homeTeamLogo,
                 ),
               ],
             ),
@@ -1183,7 +1235,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     );
   }
   
-  Widget _buildTeamInfo(String team, String abbreviation, Color color, String odds) {
+  Widget _buildTeamInfo(String team, String abbreviation, Color color, String odds, TeamLogoData? logoData) {
     return Container(
       width: 120,
       padding: const EdgeInsets.all(12),
@@ -1197,18 +1249,56 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       ),
       child: Column(
         children: [
-          CircleAvatar(
-            radius: 25,
-            backgroundColor: color,
-            child: Text(
-              abbreviation,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-          ),
+          // Show logo if available, otherwise show abbreviation
+          logoData != null && logoData.logoUrl.isNotEmpty
+              ? Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                  ),
+                  child: ClipOval(
+                    child: CachedNetworkImage(
+                      imageUrl: logoData.logoUrl,
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.contain,
+                      placeholder: (context, url) => CircleAvatar(
+                        radius: 25,
+                        backgroundColor: color,
+                        child: const CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => CircleAvatar(
+                        radius: 25,
+                        backgroundColor: color,
+                        child: Text(
+                          abbreviation,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              : CircleAvatar(
+                  radius: 25,
+                  backgroundColor: color,
+                  child: Text(
+                    abbreviation,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
           const SizedBox(height: 4),
           Text(team, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
           const SizedBox(height: 2),
@@ -2206,6 +2296,67 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     final isSelected = _selectedBets.any((bet) => bet.id == betId);
     final wasAlreadyPlaced = _existingBets.any((bet) => bet.selection == betId);
     
+    // Extract team name from title for logo display
+    String teamName = title;
+    if (title.contains(' to Win')) {
+      teamName = title.replaceAll(' to Win', '');
+    } else if (title.contains(' ML')) {
+      teamName = title.replaceAll(' ML', '');
+    } else if (title.contains('+') || title.contains('-')) {
+      // For spread bets, extract team name before the spread
+      final parts = title.split(RegExp(r'[+-]'));
+      if (parts.isNotEmpty) {
+        teamName = parts[0].trim();
+      }
+    }
+    
+    // Use TeamBetCard for team-based bets
+    if (type == BetType.moneyline || type == BetType.spread) {
+      return team_card.TeamBetCard(
+        teamName: teamName,
+        sport: widget.sport,
+        title: title,
+        odds: odds,
+        description: description,
+        color: color,
+        type: team_card.BetType.values[type.index],
+        betId: betId,
+        isSelected: isSelected,
+        wasAlreadyPlaced: wasAlreadyPlaced,
+        isPremium: isPremium,
+        onTap: wasAlreadyPlaced ? () {} : () async {
+          debugPrint('\n=== BET CARD TAPPED ===');
+          debugPrint('Bet ID: $betId');
+          debugPrint('Title: $title');
+          debugPrint('Odds: $odds');
+          debugPrint('Type: $type');
+          debugPrint('Was Selected: $isSelected');
+          debugPrint('Before: ${_selectedBets.length} bets selected');
+          
+          setState(() {
+            if (isSelected) {
+              _selectedBets.removeWhere((bet) => bet.id == betId);
+              debugPrint('REMOVED bet from selections');
+            } else {
+              _selectedBets.add(SelectedBet(
+                id: betId,
+                title: title,
+                odds: odds,
+                type: type,
+              ));
+              debugPrint('ADDED bet to selections');
+            }
+          });
+          
+          debugPrint('After: ${_selectedBets.length} bets selected');
+          debugPrint('Selected IDs: ${_selectedBets.map((b) => b.id).toList()}');
+          
+          // Save selection immediately to persist
+          await _saveSelectionsToStorage();
+        },
+      );
+    }
+    
     // Debug logging for persistence
     if (_selectedBets.isNotEmpty || _existingBets.isNotEmpty) {
       debugPrint('=== BET CARD CHECK ===');
@@ -2343,26 +2494,41 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: wasAlreadyPlaced 
-              ? AppTheme.neonGreen 
-              : isSelected 
-                ? color 
-                : AppTheme.surfaceBlue,
+            gradient: LinearGradient(
+              colors: wasAlreadyPlaced 
+                ? [AppTheme.neonGreen, AppTheme.neonGreen.withOpacity(0.8)]
+                : isSelected 
+                  ? [color, color.withOpacity(0.8)]
+                  : Theme.of(context).brightness == Brightness.dark
+                    ? [Colors.white, Colors.white.withOpacity(0.9)]
+                    : [AppTheme.primaryCyan, AppTheme.primaryCyan.withOpacity(0.8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             borderRadius: BorderRadius.circular(20),
-            boxShadow: isSelected || wasAlreadyPlaced ? [
+            boxShadow: [
               BoxShadow(
-                color: (wasAlreadyPlaced ? AppTheme.neonGreen : color).withOpacity(0.3),
-                blurRadius: 4,
+                color: wasAlreadyPlaced 
+                  ? AppTheme.neonGreen.withOpacity(0.4)
+                  : isSelected 
+                    ? color.withOpacity(0.4)
+                    : Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white.withOpacity(0.3)
+                      : AppTheme.primaryCyan.withOpacity(0.3),
+                blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
-            ] : [],
+            ],
           ),
           child: Text(
             odds,
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: 14,
-              color: isSelected || wasAlreadyPlaced ? Colors.white : AppTheme.deepBlue.withOpacity(0.87),
+              fontSize: 15,
+              color: isSelected || wasAlreadyPlaced || Theme.of(context).brightness == Brightness.light
+                ? Colors.white
+                : AppTheme.deepBlue,
+              letterSpacing: 0.5,
             ),
           ),
         ),

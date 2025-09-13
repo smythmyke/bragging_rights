@@ -14,6 +14,7 @@ import 'screens/pools/pool_selection_screen.dart';
 import 'screens/game/game_detail_screen.dart';
 import 'screens/betting/bet_selection_screen.dart';
 import 'screens/betting/fight_card_grid_screen.dart';
+import 'screens/betting/quick_pick_screen.dart';
 import 'screens/premium/edge_screen_v2.dart';
 import 'screens/splash/video_splash_screen.dart';
 import 'screens/bets/active_bets_screen.dart';
@@ -87,6 +88,17 @@ class BraggingRightsApp extends StatelessWidget {
               sport: args['sport']?.toString() ?? 'Sport',
               poolName: args['poolName']?.toString() ?? 'Pool',
               poolId: args['poolId']?.toString(),
+              gameId: args['gameId']?.toString(),
+            ),
+          );
+        } else if (settings.name == '/quick-pick') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => QuickPickScreen(
+              gameTitle: args['gameTitle']?.toString() ?? 'Game',
+              sport: args['sport']?.toString() ?? 'Sport',
+              poolName: args['poolName']?.toString() ?? 'Pool',
+              poolId: args['poolId']?.toString() ?? '',
               gameId: args['gameId']?.toString(),
             ),
           );

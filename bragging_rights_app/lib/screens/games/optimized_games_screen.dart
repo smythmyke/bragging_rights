@@ -74,6 +74,10 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
       _gamesBySport.clear();
       for (final game in games) {
         final sport = game.sport.toLowerCase();
+        debugPrint('Adding game to sport category: "${game.sport}" -> "$sport"');
+        if (game.sport.toUpperCase() == 'MMA' || game.sport.toUpperCase() == 'BOXING') {
+          debugPrint('  Combat sport event: ${game.league ?? "Unknown"} - ${game.awayTeam} vs ${game.homeTeam}');
+        }
         _gamesBySport[sport] ??= [];
         _gamesBySport[sport]!.add(game);
       }
@@ -239,6 +243,7 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
   }
   
   IconData _getSportIcon(String sport) {
+    debugPrint('Getting icon for sport: "$sport"');
     switch (sport.toUpperCase()) {
       case 'NFL':
         return PhosphorIconsRegular.football;
@@ -250,13 +255,17 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
         return PhosphorIconsRegular.hockey;
       case 'MMA':
       case 'UFC':
+        debugPrint('  -> MMA/UFC detected, using hand fist icon');
+        return PhosphorIconsRegular.handFist; // Different icon for MMA
       case 'BOXING':
+        debugPrint('  -> Boxing detected, using boxing glove icon');
         return PhosphorIconsRegular.boxingGlove;
       case 'TENNIS':
         return Icons.sports_tennis;
       case 'SOCCER':
         return PhosphorIconsRegular.soccerBall;
       default:
+        debugPrint('  -> Unknown sport, using trophy icon');
         return PhosphorIconsRegular.trophy;
     }
   }
@@ -273,7 +282,7 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
         return Colors.red;
       case 'MMA':
       case 'UFC':
-        return Colors.red[400]!;  // Changed from purple to a brighter red
+        return Colors.redAccent;  // Bright red-orange for excellent visibility
       case 'BOXING':
         return Colors.amber;
       case 'TENNIS':
@@ -377,21 +386,51 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          game.awayTeam,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                        // Show event title for combat sports, regular matchup for others
+                        if (game.isCombatSport && game.league != null) ...[
+                          Text(
+                            game.league!, // Event name (UFC 311, Boxing Card, etc.)
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          game.homeTeam,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                          const SizedBox(height: 4),
+                          Text(
+                            game.mainEventFighters ?? '${game.awayTeam} vs ${game.homeTeam}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[700],
+                            ),
                           ),
-                        ),
+                          if (game.totalFights != null && game.totalFights! > 1) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              '${game.totalFights} fights on card',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
+                        ] else ...[
+                          Text(
+                            game.awayTeam,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            game.homeTeam,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -566,11 +605,12 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
                   } else {
                     // Specific sport tab - load ALL games for that sport
                     final sport = _availableSports[index - 1];
+                    debugPrint('Tab selected: $sport (index $index)');
                     setState(() {
                       _selectedSport = sport;
                       _loadingMore = true;
                     });
-                    
+
                     // Load ALL games for this sport (not just 14 days)
                     await _loadAllGamesForSport(sport);
                   }

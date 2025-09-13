@@ -1,407 +1,324 @@
-import 'dart:convert';
-import 'dart:io';
-import 'dart:typed_data';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:convert';
 
-/// Service for managing team logos with intelligent caching
-/// Uses The-Sports-DB API for complete team coverage
+/// Service for fetching and caching team logos from ESPN API
 class TeamLogoService {
-  static const String _apiBaseUrl = 'https://www.thesportsdb.com/api/v1/json/3';
-  static const String _apiKey = '3'; // TheSportsDB free tier key (public)
-  
-  // Cache duration in days
-  static const int _cacheDurationDays = 30;
-  
-  // Singleton pattern
   static final TeamLogoService _instance = TeamLogoService._internal();
   factory TeamLogoService() => _instance;
   TeamLogoService._internal();
 
-  final Map<String, Uint8List> _memoryCache = {};
-  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Get team logo with multi-level caching strategy
-  /// Priority: Memory > Local File > Firebase > API
-  Future<Uint8List?> getTeamLogo({
-    required String sport,
-    required String teamId,
+  // Memory cache for current session
+  final Map<String, TeamLogoData> _memoryCache = {};
+
+  // ESPN API endpoints by sport
+  static const Map<String, String> _espnEndpoints = {
+    'soccer': 'https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/teams',
+    'soccer_epl': 'https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/teams',
+    'soccer_laliga': 'https://site.api.espn.com/apis/site/v2/sports/soccer/esp.1/teams',
+    'soccer_seriea': 'https://site.api.espn.com/apis/site/v2/sports/soccer/ita.1/teams',
+    'soccer_bundesliga': 'https://site.api.espn.com/apis/site/v2/sports/soccer/ger.1/teams',
+    'soccer_ligue1': 'https://site.api.espn.com/apis/site/v2/sports/soccer/fra.1/teams',
+    'soccer_mls': 'https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/teams',
+  };
+
+  // Team name variations for matching
+  static const Map<String, List<String>> _teamNameVariations = {
+    'Manchester United': ['Man United', 'Man Utd', 'MUFC', 'Manchester Utd'],
+    'Manchester City': ['Man City', 'MCFC', 'City'],
+    'Tottenham Hotspur': ['Tottenham', 'Spurs', 'THFC'],
+    'Wolverhampton Wanderers': ['Wolves', 'Wolverhampton'],
+    'Brighton & Hove Albion': ['Brighton', 'Brighton and Hove Albion'],
+    'Newcastle United': ['Newcastle', 'NUFC'],
+    'West Ham United': ['West Ham', 'WHU'],
+    'Leicester City': ['Leicester', 'LCFC'],
+    'Nottingham Forest': ['Nott\'m Forest', 'Forest'],
+  };
+
+  /// Get team logo data with intelligent caching
+  Future<TeamLogoData?> getTeamLogo({
     required String teamName,
+    required String sport,
+    String? league,
   }) async {
-    final cacheKey = '${sport}_$teamId';
-    
-    // 1. Check memory cache (fastest)
-    if (_memoryCache.containsKey(cacheKey)) {
-      return _memoryCache[cacheKey];
-    }
-
-    // 2. Check local file cache
-    final localLogo = await _getLocalCachedLogo(cacheKey);
-    if (localLogo != null) {
-      _memoryCache[cacheKey] = localLogo;
-      return localLogo;
-    }
-
-    // 3. Check Firebase Storage (CDN)
-    final firebaseLogo = await _getFirebaseLogo(sport, teamId);
-    if (firebaseLogo != null) {
-      await _saveToLocalCache(cacheKey, firebaseLogo);
-      _memoryCache[cacheKey] = firebaseLogo;
-      return firebaseLogo;
-    }
-
-    // 4. Fetch from The-Sports-DB API
-    final apiLogo = await _fetchFromApi(sport, teamName);
-    if (apiLogo != null) {
-      // Save to all cache levels
-      await _saveToFirebase(sport, teamId, apiLogo);
-      await _saveToLocalCache(cacheKey, apiLogo);
-      _memoryCache[cacheKey] = apiLogo;
-      return apiLogo;
-    }
-
-    // 5. Return placeholder if all fails
-    return await _getPlaceholderLogo(sport);
-  }
-
-  /// Pre-cache popular teams for instant loading
-  Future<void> preCachePopularTeams() async {
-    final popularTeams = {
-      'nba': [
-        {'id': 'lakers', 'name': 'Los Angeles Lakers'},
-        {'id': 'warriors', 'name': 'Golden State Warriors'},
-        {'id': 'celtics', 'name': 'Boston Celtics'},
-        {'id': 'heat', 'name': 'Miami Heat'},
-        {'id': 'bulls', 'name': 'Chicago Bulls'},
-      ],
-      'nfl': [
-        {'id': 'cowboys', 'name': 'Dallas Cowboys'},
-        {'id': 'patriots', 'name': 'New England Patriots'},
-        {'id': 'packers', 'name': 'Green Bay Packers'},
-        {'id': 'chiefs', 'name': 'Kansas City Chiefs'},
-        {'id': '49ers', 'name': 'San Francisco 49ers'},
-      ],
-      'mlb': [
-        {'id': 'yankees', 'name': 'New York Yankees'},
-        {'id': 'dodgers', 'name': 'Los Angeles Dodgers'},
-        {'id': 'redsox', 'name': 'Boston Red Sox'},
-        {'id': 'cubs', 'name': 'Chicago Cubs'},
-        {'id': 'giants', 'name': 'San Francisco Giants'},
-      ],
-      'nhl': [
-        {'id': 'rangers', 'name': 'New York Rangers'},
-        {'id': 'bruins', 'name': 'Boston Bruins'},
-        {'id': 'blackhawks', 'name': 'Chicago Blackhawks'},
-        {'id': 'penguins', 'name': 'Pittsburgh Penguins'},
-        {'id': 'redwings', 'name': 'Detroit Red Wings'},
-      ],
-    };
-
-    for (final sport in popularTeams.keys) {
-      for (final team in popularTeams[sport]!) {
-        await getTeamLogo(
-          sport: sport,
-          teamId: team['id']!,
-          teamName: team['name']!,
-        );
-      }
-    }
-  }
-
-  /// Get local cached logo
-  Future<Uint8List?> _getLocalCachedLogo(String cacheKey) async {
     try {
-      final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/team_logos/$cacheKey.png');
-      
-      if (await file.exists()) {
-        // Check if cache is still valid
-        final prefs = await SharedPreferences.getInstance();
-        final cachedTime = prefs.getInt('logo_cache_time_$cacheKey') ?? 0;
-        final now = DateTime.now().millisecondsSinceEpoch;
-        
-        if (now - cachedTime < (_cacheDurationDays * 24 * 60 * 60 * 1000)) {
-          return await file.readAsBytes();
+      debugPrint('🎯 TeamLogoService: Getting logo for $teamName ($sport)');
+
+      // Create a unique key for this team
+      final cacheKey = _createCacheKey(teamName, sport);
+
+      // Check memory cache first
+      if (_memoryCache.containsKey(cacheKey)) {
+        debugPrint('✅ Found in memory cache');
+        return _memoryCache[cacheKey];
+      }
+
+      // Check Firestore cache
+      final firestoreData = await _getFromFirestore(cacheKey);
+      if (firestoreData != null) {
+        debugPrint('✅ Found in Firestore cache');
+        _memoryCache[cacheKey] = firestoreData;
+        return firestoreData;
+      }
+
+      // Fetch from ESPN API
+      if (sport.toLowerCase().contains('soccer')) {
+        final espnData = await _fetchFromEspn(teamName, sport, league);
+        if (espnData != null) {
+          debugPrint('✅ Fetched from ESPN API');
+          await _saveToFirestore(espnData);
+          _memoryCache[cacheKey] = espnData;
+          return espnData;
         }
-        
-        // Cache expired, delete it
-        await file.delete();
       }
-    } catch (e) {
-      print('Error reading local cache: $e');
-    }
-    return null;
-  }
 
-  /// Save logo to local cache
-  Future<void> _saveToLocalCache(String cacheKey, Uint8List data) async {
-    try {
-      final directory = await getApplicationDocumentsDirectory();
-      final logosDir = Directory('${directory.path}/team_logos');
-      if (!await logosDir.exists()) {
-        await logosDir.create(recursive: true);
-      }
-      
-      final file = File('${logosDir.path}/$cacheKey.png');
-      await file.writeAsBytes(data);
-      
-      // Save cache timestamp
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(
-        'logo_cache_time_$cacheKey',
-        DateTime.now().millisecondsSinceEpoch,
-      );
+      debugPrint('❌ No logo found for $teamName');
+      return null;
     } catch (e) {
-      print('Error saving to local cache: $e');
-    }
-  }
-
-  /// Get logo from Firebase Storage
-  Future<Uint8List?> _getFirebaseLogo(String sport, String teamId) async {
-    try {
-      final ref = _storage.ref('team_logos/$sport/$teamId/logo.png');
-      final data = await ref.getData();
-      return data;
-    } catch (e) {
-      print('Logo not in Firebase: $e');
+      debugPrint('❌ Error getting team logo: $e');
       return null;
     }
   }
 
-  /// Save logo to Firebase Storage
-  Future<void> _saveToFirebase(String sport, String teamId, Uint8List data) async {
+  /// Create a unique cache key for a team
+  String _createCacheKey(String teamName, String sport) {
+    return '${sport.toLowerCase()}_${teamName.toLowerCase().replaceAll(' ', '_')}';
+  }
+
+  /// Get team logo data from Firestore
+  Future<TeamLogoData?> _getFromFirestore(String cacheKey) async {
     try {
-      final ref = _storage.ref('team_logos/$sport/$teamId/logo.png');
-      await ref.putData(
-        data,
-        SettableMetadata(
-          contentType: 'image/png',
-          customMetadata: {
-            'sport': sport,
-            'teamId': teamId,
-            'source': 'thesportsdb',
-            'cached': DateTime.now().toIso8601String(),
-          },
-        ),
-      );
+      final doc = await _firestore
+          .collection('team_logos')
+          .doc(cacheKey)
+          .get();
+
+      if (doc.exists && doc.data() != null) {
+        return TeamLogoData.fromMap(doc.data()!);
+      }
+      return null;
     } catch (e) {
-      print('Error saving to Firebase: $e');
+      debugPrint('Error reading from Firestore: $e');
+      return null;
     }
   }
 
-  /// Fetch logo from The-Sports-DB API
-  Future<Uint8List?> _fetchFromApi(String sport, String teamName) async {
+  /// Save team logo data to Firestore
+  Future<void> _saveToFirestore(TeamLogoData data) async {
     try {
-      // Map sport codes to league IDs for TheSportsDB
-      // Using the most popular leagues for each sport
-      final leagueMapping = {
-        'nba': '4387', // NBA
-        'nfl': '4391', // NFL  
-        'mlb': '4424', // MLB
-        'nhl': '4380', // NHL
-      };
-
-      // First try to get all teams from the league
-      // This is more reliable than searching by name
-      final leagueId = leagueMapping[sport];
-      if (leagueId != null) {
-        final teamsUrl = Uri.parse(
-          '$_apiBaseUrl/lookup_all_teams.php?id=$leagueId',
-        );
-        
-        final response = await http.get(teamsUrl);
-        if (response.statusCode == 200) {
-          final data = json.decode(response.body);
-          final teams = data['teams'] as List?;
-          
-          if (teams != null && teams.isNotEmpty) {
-            // Find team by name (case insensitive, partial match)
-            final team = teams.firstWhere(
-              (t) {
-                final strTeam = (t['strTeam'] ?? '').toLowerCase();
-                final searchName = teamName.toLowerCase();
-                return strTeam.contains(searchName) || 
-                       searchName.contains(strTeam) ||
-                       strTeam.split(' ').any((word) => searchName.contains(word));
-              },
-              orElse: () => <String, dynamic>{},
-            );
-            
-            if (team.isNotEmpty) {
-              // Try different logo fields in order of preference
-              final logoUrl = team['strTeamBadge'] ?? 
-                             team['strLogo'] ??
-                             team['strTeamLogo'];
-              
-              if (logoUrl != null && logoUrl.toString().isNotEmpty) {
-                // Download the logo
-                final logoResponse = await http.get(Uri.parse(logoUrl));
-                if (logoResponse.statusCode == 200) {
-                  return logoResponse.bodyBytes;
-                }
-              }
-            }
-          }
-        }
-      }
-
-      // Fallback: Search by team name if league lookup fails
-      final searchUrl = Uri.parse(
-        '$_apiBaseUrl/searchteams.php?t=${Uri.encodeComponent(teamName)}',
-      );
-      
-      final searchResponse = await http.get(searchUrl);
-      if (searchResponse.statusCode == 200) {
-        final data = json.decode(searchResponse.body);
-        final teams = data['teams'] as List?;
-        
-        if (teams != null && teams.isNotEmpty) {
-          // Get first result
-          final team = teams.first;
-          final logoUrl = team['strTeamBadge'] ?? 
-                         team['strLogo'] ??
-                         team['strTeamLogo'];
-          
-          if (logoUrl != null && logoUrl.toString().isNotEmpty) {
-            final logoResponse = await http.get(Uri.parse(logoUrl));
-            if (logoResponse.statusCode == 200) {
-              return logoResponse.bodyBytes;
-            }
-          }
-        }
-      }
+      await _firestore
+          .collection('team_logos')
+          .doc(data.cacheKey)
+          .set(data.toMap());
+      debugPrint('💾 Saved to Firestore: ${data.teamName}');
     } catch (e) {
-      print('Error fetching from TheSportsDB API: $e');
+      debugPrint('Error saving to Firestore: $e');
     }
-    return null;
   }
 
-  /// Get placeholder logo for sport
-  Future<Uint8List?> _getPlaceholderLogo(String sport) async {
+  /// Fetch team logo from ESPN API
+  Future<TeamLogoData?> _fetchFromEspn(
+    String teamName,
+    String sport,
+    String? league,
+  ) async {
     try {
-      final assetPath = 'assets/team_logos/placeholders/${sport}_placeholder.png';
-      final byteData = await rootBundle.load(assetPath);
-      return byteData.buffer.asUint8List();
-    } catch (e) {
-      // Return generic placeholder if sport-specific not found
-      try {
-        final byteData = await rootBundle.load('assets/team_logos/placeholders/generic.png');
-        return byteData.buffer.asUint8List();
-      } catch (e) {
+      // Determine the correct ESPN endpoint
+      String endpoint;
+      if (league != null && _espnEndpoints.containsKey('soccer_${league.toLowerCase()}')) {
+        endpoint = _espnEndpoints['soccer_${league.toLowerCase()}']!;
+      } else {
+        endpoint = _espnEndpoints['soccer']!; // Default to EPL
+      }
+
+      debugPrint('📡 Fetching from ESPN: $endpoint');
+
+      final response = await http.get(Uri.parse(endpoint));
+
+      if (response.statusCode != 200) {
+        debugPrint('❌ ESPN API returned ${response.statusCode}');
         return null;
       }
-    }
-  }
 
-  /// Clear all caches (useful for updates)
-  Future<void> clearCache() async {
-    _memoryCache.clear();
-    
-    try {
-      final directory = await getApplicationDocumentsDirectory();
-      final logosDir = Directory('${directory.path}/team_logos');
-      if (await logosDir.exists()) {
-        await logosDir.delete(recursive: true);
-      }
-      
-      final prefs = await SharedPreferences.getInstance();
-      final keys = prefs.getKeys().where((key) => key.startsWith('logo_cache_time_'));
-      for (final key in keys) {
-        await prefs.remove(key);
-      }
-    } catch (e) {
-      print('Error clearing cache: $e');
-    }
-  }
+      final data = json.decode(response.body);
+      final teams = data['sports']?[0]?['leagues']?[0]?['teams'] ?? [];
 
-  /// Get cache size in MB
-  Future<double> getCacheSize() async {
-    try {
-      final directory = await getApplicationDocumentsDirectory();
-      final logosDir = Directory('${directory.path}/team_logos');
-      
-      if (!await logosDir.exists()) return 0.0;
-      
-      int totalSize = 0;
-      await for (final file in logosDir.list(recursive: true)) {
-        if (file is File) {
-          totalSize += await file.length();
+      // Find matching team
+      for (final teamData in teams) {
+        final team = teamData['team'];
+        if (team == null) continue;
+
+        final espnName = team['displayName']?.toString() ?? '';
+        final espnShortName = team['shortDisplayName']?.toString() ?? '';
+        final espnAbbr = team['abbreviation']?.toString() ?? '';
+
+        // Check if this is our team
+        if (_teamsMatch(teamName, espnName) ||
+            _teamsMatch(teamName, espnShortName) ||
+            _teamsMatch(teamName, espnAbbr)) {
+
+          // Extract logo URL
+          final logos = team['logos'];
+          String? logoUrl;
+
+          if (logos is List && logos.isNotEmpty) {
+            logoUrl = logos[0]['href'];
+          }
+
+          if (logoUrl == null) {
+            debugPrint('❌ No logo URL for $espnName');
+            continue;
+          }
+
+          debugPrint('✅ Found match: $espnName -> $logoUrl');
+
+          return TeamLogoData(
+            cacheKey: _createCacheKey(teamName, sport),
+            teamName: teamName,
+            displayName: espnName,
+            sport: sport,
+            league: league ?? 'EPL',
+            logoUrl: logoUrl,
+            espnId: team['id']?.toString(),
+            abbreviation: espnAbbr,
+            primaryColor: team['color'],
+            secondaryColor: team['alternateColor'],
+            lastUpdated: DateTime.now(),
+          );
         }
       }
-      
-      return totalSize / (1024 * 1024); // Convert to MB
+
+      debugPrint('❌ No matching team found for $teamName');
+      return null;
     } catch (e) {
-      return 0.0;
+      debugPrint('❌ Error fetching from ESPN: $e');
+      return null;
     }
+  }
+
+  /// Check if two team names match
+  bool _teamsMatch(String name1, String name2) {
+    // Direct match
+    if (name1.toLowerCase() == name2.toLowerCase()) return true;
+
+    // Check variations
+    for (final entry in _teamNameVariations.entries) {
+      final variations = [entry.key, ...entry.value];
+
+      bool name1Matches = variations.any((v) =>
+        v.toLowerCase() == name1.toLowerCase());
+      bool name2Matches = variations.any((v) =>
+        v.toLowerCase() == name2.toLowerCase());
+
+      if (name1Matches && name2Matches) return true;
+    }
+
+    // Partial match for simple cases
+    final n1Lower = name1.toLowerCase();
+    final n2Lower = name2.toLowerCase();
+
+    if (n1Lower.contains(n2Lower) || n2Lower.contains(n1Lower)) {
+      // Avoid false positives like "United" matching "Manchester United" and "Newcastle United"
+      if (!n1Lower.contains('united') && !n2Lower.contains('united')) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /// Batch fetch logos for multiple teams (efficient for game lists)
+  Future<Map<String, TeamLogoData>> getBatchLogos({
+    required List<String> teamNames,
+    required String sport,
+    String? league,
+  }) async {
+    final results = <String, TeamLogoData>{};
+
+    for (final teamName in teamNames) {
+      final logo = await getTeamLogo(
+        teamName: teamName,
+        sport: sport,
+        league: league,
+      );
+
+      if (logo != null) {
+        results[teamName] = logo;
+      }
+    }
+
+    return results;
+  }
+
+  /// Clear memory cache
+  void clearCache() {
+    _memoryCache.clear();
+    debugPrint('🗑️ TeamLogoService: Memory cache cleared');
   }
 }
 
-/// Extension for easy widget integration
-extension TeamLogoWidget on TeamLogoService {
-  /// Get a Flutter Image widget for the team logo
-  Future<Widget> getTeamLogoWidget({
-    required String sport,
-    required String teamId,
-    required String teamName,
-    double? width,
-    double? height,
-    BoxFit fit = BoxFit.contain,
-  }) async {
-    final logoData = await getTeamLogo(
-      sport: sport,
-      teamId: teamId,
-      teamName: teamName,
-    );
+/// Data model for team logo information
+class TeamLogoData {
+  final String cacheKey;
+  final String teamName;
+  final String displayName;
+  final String sport;
+  final String league;
+  final String logoUrl;
+  final String? espnId;
+  final String? abbreviation;
+  final String? primaryColor;
+  final String? secondaryColor;
+  final DateTime lastUpdated;
 
-    if (logoData != null) {
-      return Image.memory(
-        logoData,
-        width: width,
-        height: height,
-        fit: fit,
-        errorBuilder: (context, error, stackTrace) {
-          return _getPlaceholderWidget(sport, width, height);
-        },
-      );
-    }
+  TeamLogoData({
+    required this.cacheKey,
+    required this.teamName,
+    required this.displayName,
+    required this.sport,
+    required this.league,
+    required this.logoUrl,
+    this.espnId,
+    this.abbreviation,
+    this.primaryColor,
+    this.secondaryColor,
+    required this.lastUpdated,
+  });
 
-    return _getPlaceholderWidget(sport, width, height);
+  Map<String, dynamic> toMap() {
+    return {
+      'cacheKey': cacheKey,
+      'teamName': teamName,
+      'displayName': displayName,
+      'sport': sport,
+      'league': league,
+      'logoUrl': logoUrl,
+      'espnId': espnId,
+      'abbreviation': abbreviation,
+      'primaryColor': primaryColor,
+      'secondaryColor': secondaryColor,
+      'lastUpdated': lastUpdated.toIso8601String(),
+    };
   }
 
-  Widget _getPlaceholderWidget(String sport, double? width, double? height) {
-    return Container(
-      width: width ?? 50,
-      height: height ?? 50,
-      decoration: BoxDecoration(
-        color: Colors.grey[300],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Center(
-        child: Icon(
-          _getSportIcon(sport),
-          color: Colors.grey[600],
-          size: (width ?? 50) * 0.5,
-        ),
-      ),
+  factory TeamLogoData.fromMap(Map<String, dynamic> map) {
+    return TeamLogoData(
+      cacheKey: map['cacheKey'] ?? '',
+      teamName: map['teamName'] ?? '',
+      displayName: map['displayName'] ?? '',
+      sport: map['sport'] ?? '',
+      league: map['league'] ?? '',
+      logoUrl: map['logoUrl'] ?? '',
+      espnId: map['espnId'],
+      abbreviation: map['abbreviation'],
+      primaryColor: map['primaryColor'],
+      secondaryColor: map['secondaryColor'],
+      lastUpdated: map['lastUpdated'] != null
+          ? DateTime.parse(map['lastUpdated'])
+          : DateTime.now(),
     );
-  }
-
-  IconData _getSportIcon(String sport) {
-    switch (sport) {
-      case 'nba':
-        return Icons.sports_basketball;
-      case 'nfl':
-        return Icons.sports_football;
-      case 'mlb':
-        return Icons.sports_baseball;
-      case 'nhl':
-        return Icons.sports_hockey;
-      default:
-        return Icons.sports;
-    }
   }
 }

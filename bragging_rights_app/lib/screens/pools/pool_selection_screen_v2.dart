@@ -6,6 +6,7 @@ import '../../models/pool_model.dart';
 import '../../services/pool_service.dart';
 import '../../services/wallet_service.dart';
 import '../../services/bet_storage_service.dart';
+import '../../widgets/mode_selection_dialog.dart';
 
 class PoolSelectionScreenV2 extends StatefulWidget {
   final String gameId;
@@ -919,18 +920,21 @@ class _PoolSelectionScreenV2State extends State<PoolSelectionScreenV2> with Sing
   }
 
   void _continueInPool(Pool pool) {
-    // Navigate directly to bet selection for existing pool members
-    Navigator.pushNamed(
-      context,
-      '/bet-selection',
-      arguments: {
-        'gameId': widget.gameId,
-        'gameTitle': widget.gameTitle,
-        'sport': widget.sport,
-        'poolName': pool.name,
-        'poolId': pool.id,
-        'poolId': pool.id,
-      },
+    // Show mode selection dialog for pick method
+    final navigationArgs = {
+      'gameId': widget.gameId,
+      'gameTitle': widget.gameTitle,
+      'sport': widget.sport,
+      'poolName': pool.name,
+      'poolId': pool.id,
+    };
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => ModeSelectionDialog(
+        navigationArgs: navigationArgs,
+      ),
     );
   }
 
@@ -1007,19 +1011,23 @@ class _PoolSelectionScreenV2State extends State<PoolSelectionScreenV2> with Sing
                     onPressed: () async {
                       Navigator.pop(context);
                       
-                      // For mock data, just navigate
+                      // Prepare navigation arguments
+                      final navigationArgs = {
+                        'gameId': widget.gameId,
+                        'gameTitle': widget.gameTitle,
+                        'sport': widget.sport,
+                        'poolName': pool.name,
+                        'poolId': pool.id,
+                      };
+                      
+                      // For mock data, just show mode selection
                       if (_useMockData) {
-                        Navigator.pushNamed(
-                          context,
-                          '/bet-selection',
-                          arguments: {
-                            'gameId': widget.gameId,
-                            'gameTitle': widget.gameTitle,
-                            'sport': widget.sport,
-                            'poolName': pool.name,
-                            'poolId': pool.id,
-                            'poolId': pool.id,
-                          },
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (context) => ModeSelectionDialog(
+                            navigationArgs: navigationArgs,
+                          ),
                         );
                         return;
                       }
@@ -1027,17 +1035,12 @@ class _PoolSelectionScreenV2State extends State<PoolSelectionScreenV2> with Sing
                       // Real pool joining
                       final success = await _poolService.joinPool(pool.id, pool.buyIn);
                       if (success) {
-                        Navigator.pushNamed(
-                          context,
-                          '/bet-selection',
-                          arguments: {
-                            'gameId': widget.gameId,
-                            'gameTitle': widget.gameTitle,
-                            'sport': widget.sport,
-                            'poolName': pool.name,
-                            'poolId': pool.id,
-                            'poolId': pool.id,
-                          },
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (context) => ModeSelectionDialog(
+                            navigationArgs: navigationArgs,
+                          ),
                         );
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(

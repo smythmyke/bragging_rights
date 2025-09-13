@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Logo/Badge Display Options - Bragging Rights</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 32px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .subtitle {
+            text-align: center;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+        
+        .section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        
+        h2 {
+            margin-bottom: 20px;
+            color: #ffd700;
+            font-size: 24px;
+        }
+        
+        .matchup-container {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .matchup {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #333;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .matchup:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+        }
+        
+        .team {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+        }
+        
+        .team-logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .team-logo img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .team-badge {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 10px;
+            position: relative;
+        }
+        
+        .team-badge img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2));
+        }
+        
+        .team-shield {
+            width: 90px;
+            height: 100px;
+            margin: 0 auto 10px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .team-shield img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .team-name {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 5px;
+            color: #1e3c72;
+        }
+        
+        .team-record {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .odds {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .odds.favorite {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .odds.underdog {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        
+        .odds.even {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        
+        .vs {
+            padding: 0 20px;
+            font-weight: bold;
+            font-size: 18px;
+            color: #666;
+        }
+        
+        .option-label {
+            position: absolute;
+            top: -25px;
+            left: 0;
+            font-size: 11px;
+            color: #ffd700;
+            font-weight: bold;
+            text-transform: uppercase;
+            background: rgba(0,0,0,0.3);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        
+        .matchup-header {
+            position: relative;
+            padding-top: 25px;
+        }
+        
+        .sport-label {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #2a5298;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .api-mapping {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .api-mapping h3 {
+            color: #ffd700;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .mapping-table {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .mapping-row {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .source-api {
+            color: #4facfe;
+            font-weight: bold;
+        }
+        
+        .mapped-id {
+            color: #f5576c;
+            font-family: monospace;
+        }
+        
+        .select-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s;
+            margin-top: 10px;
+        }
+        
+        .select-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .selected {
+            border: 3px solid #4facfe;
+            background: rgba(79, 172, 254, 0.1);
+        }
+        
+        .odds-visibility-fix {
+            background: rgba(255, 255, 255, 0.9);
+            color: #1e3c72;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            border: 2px solid;
+        }
+        
+        .odds-visibility-fix.favorite {
+            border-color: #667eea;
+            color: #667eea;
+        }
+        
+        .odds-visibility-fix.underdog {
+            border-color: #f5576c;
+            color: #f5576c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏆 Bragging Rights - Team Logo Display Options</h1>
+        <p class="subtitle">Choose the best visual representation for teams in betting selection</p>
+        
+        <!-- Option 1: Traditional Logos -->
+        <div class="section">
+            <h2>Option 1: Traditional Team Logos</h2>
+            <div class="matchup-container">
+                <div class="matchup">
+                    <span class="sport-label">SOCCER</span>
+                    <div class="team">
+                        <div class="team-logo">
+                            <img src="https://a.espncdn.com/i/teamlogos/soccer/500/359.png" alt="Arsenal">
+                        </div>
+                        <div class="team-name">Arsenal</div>
+                        <div class="team-record">15-3-2</div>
+                        <div class="odds favorite">-150</div>
+                    </div>
+                    <div class="vs">VS</div>
+                    <div class="team">
+                        <div class="team-logo">
+                            <img src="https://a.espncdn.com/i/teamlogos/soccer/500/363.png" alt="Chelsea">
+                        </div>
+                        <div class="team-name">Chelsea</div>
+                        <div class="team-record">12-4-4</div>
+                        <div class="odds underdog">+130</div>
+                    </div>
+                </div>
+                
+                <div class="matchup">
+                    <span class="sport-label">NFL</span>
+                    <div class="team">
+                        <div class="team-logo">
+                            <img src="https://a.espncdn.com/i/teamlogos/nfl/500/dal.png" alt="Cowboys">
+                        </div>
+                        <div class="team-name">Dallas Cowboys</div>
+                        <div class="team-record">9-3</div>
+                        <div class="odds favorite">-200</div>
+                    </div>
+                    <div class="vs">VS</div>
+                    <div class="team">
+                        <div class="team-logo">
+                            <img src="https://a.espncdn.com/i/teamlogos/nfl/500/phi.png" alt="Eagles">
+                        </div>
+                        <div class="team-name">Philadelphia Eagles</div>
+                        <div class="team-record">10-2</div>
+                        <div class="odds underdog">+170</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Option 2: Badge Style -->
+        <div class="section">
+            <h2>Option 2: Badge/Crest Style (Best for Soccer)</h2>
+            <div class="matchup-container">
+                <div class="matchup">
+                    <span class="sport-label">SOCCER</span>
+                    <div class="team">
+                        <div class="team-badge">
+                            <img src="https://resources.premierleague.com/premierleague/badges/100/t3.png" alt="Arsenal Badge">
+                        </div>
+                        <div class="team-name">Arsenal FC</div>
+                        <div class="team-record">Premier League • 2nd</div>
+                        <div class="odds favorite">-175</div>
+                    </div>
+                    <div class="vs">VS</div>
+                    <div class="team">
+                        <div class="team-badge">
+                            <img src="https://resources.premierleague.com/premierleague/badges/100/t8.png" alt="Chelsea Badge">
+                        </div>
+                        <div class="team-name">Chelsea FC</div>
+                        <div class="team-record">Premier League • 6th</div>
+                        <div class="odds underdog">+155</div>
+                    </div>
+                </div>
+                
+                <div class="matchup">
+                    <span class="sport-label">LA LIGA</span>
+                    <div class="team">
+                        <div class="team-badge">
+                            <img src="https://a.espncdn.com/i/teamlogos/soccer/500/86.png" alt="Real Madrid">
+                        </div>
+                        <div class="team-name">Real Madrid</div>
+                        <div class="team-record">La Liga • 1st</div>
+                        <div class="odds even">-110</div>
+                    </div>
+                    <div class="vs">VS</div>
+                    <div class="team">
+                        <div class="team-badge">
+                            <img src="https://a.espncdn.com/i/teamlogos/soccer/500/83.png" alt="Barcelona">
+                        </div>
+                        <div class="team-name">FC Barcelona</div>
+                        <div class="team-record">La Liga • 3rd</div>
+                        <div class="odds even">-110</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Option 3: Shield Style -->
+        <div class="section">
+            <h2>Option 3: Shield/Emblem Style</h2>
+            <div class="matchup-container">
+                <div class="matchup">
+                    <span class="sport-label">MLS</span>
+                    <div class="team">
+                        <div class="team-shield">
+                            <img src="https://a.espncdn.com/i/teamlogos/soccer/500/9723.png" alt="LA Galaxy">
+                        </div>
+                        <div class="team-name">LA Galaxy</div>
+                        <div class="team-record">Western • 22-10-4</div>
+                        <div class="odds favorite">-140</div>
+                    </div>
+                    <div class="vs">VS</div>
+                    <div class="team">
+                        <div class="team-shield">
+                            <img src="https://a.espncdn.com/i/teamlogos/soccer/500/11690.png" alt="LAFC">
+                        </div>
+                        <div class="team-name">LAFC</div>
+                        <div class="team-record">Western • 19-12-3</div>
+                        <div class="odds underdog">+120</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Odds Visibility Fix -->
+        <div class="section">
+            <h2>Fixed Odds Display (High Contrast)</h2>
+            <div class="matchup-container">
+                <div class="matchup" style="background: #1e3c72;">
+                    <span class="sport-label" style="background: white; color: #1e3c72;">IMPROVED</span>
+                    <div class="team">
+                        <div class="team-logo">
+                            <img src="https://a.espncdn.com/i/teamlogos/soccer/500/359.png" alt="Arsenal">
+                        </div>
+                        <div class="team-name" style="color: white;">Arsenal</div>
+                        <div class="team-record" style="color: rgba(255,255,255,0.8);">15-3-2</div>
+                        <div class="odds-visibility-fix favorite">-150</div>
+                    </div>
+                    <div class="vs" style="color: white;">VS</div>
+                    <div class="team">
+                        <div class="team-logo">
+                            <img src="https://a.espncdn.com/i/teamlogos/soccer/500/363.png" alt="Chelsea">
+                        </div>
+                        <div class="team-name" style="color: white;">Chelsea</div>
+                        <div class="team-record" style="color: rgba(255,255,255,0.8);">12-4-4</div>
+                        <div class="odds-visibility-fix underdog">+130</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- API Mapping Strategy -->
+        <div class="section">
+            <h2>API Team Mapping Strategy</h2>
+            <div class="api-mapping">
+                <h3>Team Name Mapping System</h3>
+                <div class="mapping-table">
+                    <div class="mapping-row">
+                        <span class="source-api">Odds API:</span>
+                        <span class="mapped-id">"Arsenal"</span>
+                    </div>
+                    <div class="mapping-row">
+                        <span class="source-api">ESPN ID:</span>
+                        <span class="mapped-id">"359"</span>
+                    </div>
+                    <div class="mapping-row">
+                        <span class="source-api">TheSportsDB:</span>
+                        <span class="mapped-id">"133604"</span>
+                    </div>
+                    <div class="mapping-row">
+                        <span class="source-api">Normalized:</span>
+                        <span class="mapped-id">"arsenal_fc"</span>
+                    </div>
+                </div>
+                
+                <h3 style="margin-top: 20px;">Mapping Rules</h3>
+                <ul style="margin-left: 20px; line-height: 1.8;">
+                    <li>Strip common suffixes: FC, CF, SC, United, City</li>
+                    <li>Normalize spaces and special characters</li>
+                    <li>Use abbreviation mappings (Man Utd → Manchester United)</li>
+                    <li>Maintain lookup table for edge cases</li>
+                    <li>Fallback to fuzzy string matching (85% threshold)</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Recommended Implementation -->
+        <div class="section">
+            <h2>🎯 Recommended Implementation</h2>
+            <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 10px;">
+                <h3 style="color: #ffd700; margin-bottom: 15px;">Best Practices:</h3>
+                <ul style="line-height: 2; margin-left: 20px;">
+                    <li><strong>Soccer:</strong> Use Badge/Crest style (Option 2) - Most authentic representation</li>
+                    <li><strong>NFL/NBA/MLB/NHL:</strong> Use Traditional logos (Option 1) - Familiar to US audiences</li>
+                    <li><strong>MLS:</strong> Shield style works well (Option 3)</li>
+                    <li><strong>Odds Display:</strong> White background with colored borders for visibility</li>
+                    <li><strong>Fallback:</strong> Team initials in colored circle when logo unavailable</li>
+                </ul>
+                
+                <h3 style="color: #ffd700; margin: 15px 0;">Image Sources Priority:</h3>
+                <ol style="line-height: 2; margin-left: 20px;">
+                    <li>ESPN CDN (fastest, most reliable)</li>
+                    <li>TheSportsDB API (comprehensive coverage)</li>
+                    <li>Firebase Storage (cached versions)</li>
+                    <li>Generated placeholder (team colors + initials)</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Add click selection functionality
+        document.querySelectorAll('.matchup').forEach(matchup => {
+            matchup.addEventListener('click', function() {
+                this.classList.toggle('selected');
+            });
+        });
+        
+        // Simulate loading different logo styles
+        document.querySelectorAll('.select-button').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                alert('Style selected! This would update all team displays.');
+            });
+        });
+    </script>
+</body>
+</html>
