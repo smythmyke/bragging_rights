@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../models/game_model.dart';
 import '../../services/espn_direct_service.dart';
+import '../../services/optimized_games_service.dart';
 import 'package:intl/intl.dart';
 
 class AllGamesScreen extends StatefulWidget {
@@ -25,6 +26,9 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
   List<GameModel> _games = [];
   bool _loading = true;
   String? _selectedSport;
+
+  // Define all supported sports
+  static const List<String> ALL_SUPPORTED_SPORTS = ['NFL', 'NBA', 'NHL', 'MLB', 'BOXING', 'MMA', 'SOCCER'];
   
   @override
   void initState() {
@@ -39,11 +43,20 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
   
   Future<void> _loadGames() async {
     setState(() => _loading = true);
-    
+
     try {
       List<GameModel> games = [];
-      
-      switch (widget.category) {
+
+      // If a specific sport is selected, only load that sport
+      if (_selectedSport != null) {
+        debugPrint('Loading games for selected sport: $_selectedSport');
+        // Import the optimized service for consistent data fetching
+        final optimizedService = OptimizedGamesService();
+        games = await optimizedService.loadAllGamesForSport(_selectedSport!);
+        debugPrint('Loaded ${games.length} $_selectedSport games');
+      } else {
+        // Load games based on category
+        switch (widget.category) {
         case 'live':
           games = await _espnService.getLiveGames();
           break;
@@ -73,8 +86,9 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
           break;
         default:
           games = await _espnService.fetchAllGames();
+        }
       }
-      
+
       setState(() {
         _games = games;
         _loading = false;
@@ -90,11 +104,8 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
   }
   
   List<String> _getAvailableSports() {
-    final sports = <String>{};
-    for (final game in _games) {
-      sports.add(game.sport);
-    }
-    return sports.toList()..sort();
+    // Always return all supported sports for consistent UI
+    return ALL_SUPPORTED_SPORTS;
   }
   
   List<GameModel> _getFilteredGames() {
@@ -117,8 +128,6 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
         return Icons.sports_mma;
       case 'BOXING':
         return Icons.sports_mma;
-      case 'TENNIS':
-        return Icons.sports_tennis;
       case 'SOCCER':
         return Icons.sports_soccer;
       default:
@@ -141,7 +150,7 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
         return Colors.orange[600]!;  // Bright orange for better visibility on dark theme
       case 'BOXING':
         return Colors.amber;
-      case 'TENNIS':
+      case 'SOCCER':
         return Colors.green;
       default:
         return Colors.grey;
@@ -403,39 +412,48 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
       ),
       body: Column(
         children: [
-          // Sport Filter
-          if (availableSports.length > 1) ...[
-            Container(
-              height: 50,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: [
-                  FilterChip(
-                    label: const Text('All'),
-                    selected: _selectedSport == null,
+          // Sport Filter - Always show for consistency
+          Container(
+            height: 50,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                FilterChip(
+                  label: const Text('All Sports'),
+                  selected: _selectedSport == null,
+                  onSelected: (selected) {
+                    setState(() => _selectedSport = null);
+                  },
+                ),
+                const SizedBox(width: 8),
+                ...availableSports.map((sport) => Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _getSportIcon(sport),
+                          size: 16,
+                          color: _selectedSport == sport ? Colors.white : _getSportColor(sport),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(sport),
+                      ],
+                    ),
+                    selected: _selectedSport == sport,
+                    backgroundColor: _getSportColor(sport).withOpacity(0.2),
+                    selectedColor: _getSportColor(sport).withOpacity(0.4),
                     onSelected: (selected) {
-                      setState(() => _selectedSport = null);
+                      setState(() => _selectedSport = selected ? sport : null);
                     },
                   ),
-                  const SizedBox(width: 8),
-                  ...availableSports.map((sport) => Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: Text(sport),
-                      selected: _selectedSport == sport,
-                      backgroundColor: _getSportColor(sport).withOpacity(0.2),
-                      selectedColor: _getSportColor(sport).withOpacity(0.4),
-                      onSelected: (selected) {
-                        setState(() => _selectedSport = selected ? sport : null);
-                      },
-                    ),
-                  )),
-                ],
-              ),
+                )),
+              ],
             ),
-            const Divider(height: 1),
-          ],
+          ),
+          const Divider(height: 1),
           
           // Games List
           Expanded(
@@ -447,19 +465,31 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          PhosphorIconsRegular.empty,
+                          _selectedSport != null ? _getSportIcon(_selectedSport!) : PhosphorIconsRegular.empty,
                           size: 64,
-                          color: Colors.grey[600],
+                          color: _selectedSport != null ? _getSportColor(_selectedSport!).withOpacity(0.5) : Colors.grey[600],
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'No games available',
+                          _selectedSport != null
+                            ? 'No $_selectedSport games ${widget.title.toLowerCase()}'
+                            : 'No games available',
                           style: TextStyle(
                             fontSize: 18,
                             color: Colors.grey[600],
                           ),
                         ),
                         const SizedBox(height: 8),
+                        Text(
+                          _selectedSport != null
+                            ? 'Check back later for $_selectedSport games'
+                            : 'Select a sport or check back later',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                         ElevatedButton.icon(
                           onPressed: _loadGames,
                           icon: const Icon(Icons.refresh),

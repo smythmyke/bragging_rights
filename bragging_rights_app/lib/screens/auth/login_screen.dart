@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'dart:math' as math;
+import 'dart:math' show sin, pi;
 import 'package:lottie/lottie.dart';
+import 'package:video_player/video_player.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 
@@ -49,6 +51,15 @@ class _LoginScreenState extends State<LoginScreen>
   late AnimationController _glowAnimationController;
   late Animation<double> _glowAnimation;
 
+  // Shake animation for failed login
+  late AnimationController _shakeController;
+  late Animation<double> _shakeAnimation;
+  bool _isShaking = false;
+
+  // Video player for success animation
+  VideoPlayerController? _videoController;
+  bool _showVideoOverlay = false;
+
   @override
   void initState() {
     super.initState();
@@ -84,7 +95,23 @@ class _LoginScreenState extends State<LoginScreen>
       parent: _glowAnimationController,
       curve: Curves.easeInOut,
     ));
-    
+
+    // Initialize shake animation controller for failed login
+    _shakeController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+
+    _shakeAnimation = Tween<double>(
+      begin: 0,
+      end: 10,
+    ).animate(
+      CurvedAnimation(
+        parent: _shakeController,
+        curve: Curves.elasticIn,
+      ),
+    );
+
     // Set up animations for "Bragging" sliding from left
     _braggingAnimation = Tween<Offset>(
       begin: const Offset(-2.0, 0.0),
@@ -112,9 +139,20 @@ class _LoginScreenState extends State<LoginScreen>
       curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
     ));
     
+    // Initialize video controller
+    _initializeVideo();
+
     // Start the animations
     _playNextAnimation();
     _logoAnimationController.forward();
+  }
+
+  Future<void> _initializeVideo() async {
+    _videoController = VideoPlayerController.asset(
+      'assets/videos/BR_Zoom_Animation.mp4',
+    );
+    await _videoController!.initialize();
+    _videoController!.setVolume(0.0);  // Mute the video
   }
   
   void _playNextAnimation() async {
@@ -148,7 +186,44 @@ class _LoginScreenState extends State<LoginScreen>
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _displayNameController.dispose();
+    _gridAnimationController.dispose();
+    _glowAnimationController.dispose();
+    _shakeController.dispose();
+    _videoController?.dispose();
     super.dispose();
+  }
+
+  void _triggerShakeAnimation() async {
+    setState(() => _isShaking = true);
+    await _shakeController.forward();
+    await _shakeController.reverse();
+    _shakeController.reset();
+    setState(() => _isShaking = false);
+  }
+
+  Future<void> _playSuccessVideoAndNavigate(String route) async {
+    // Show video overlay
+    setState(() => _showVideoOverlay = true);
+
+    // Play video
+    if (_videoController != null && _videoController!.value.isInitialized) {
+      await _videoController!.play();
+
+      // Wait for 5 seconds of video
+      await Future.delayed(const Duration(seconds: 5));
+
+      // Stop video and reset
+      await _videoController!.pause();
+      await _videoController!.seekTo(Duration.zero);
+    } else {
+      // Fallback if video doesn't load
+      await Future.delayed(const Duration(seconds: 1));
+    }
+
+    // Navigate to next screen
+    if (mounted) {
+      Navigator.pushReplacementNamed(context, route);
+    }
   }
 
   void _handleAuth() async {
@@ -196,23 +271,27 @@ class _LoginScreenState extends State<LoginScreen>
             
             if (hasSelectedSports) {
               print('User has already selected sports, going to home');
-              Navigator.pushReplacementNamed(context, '/home');
+              await _playSuccessVideoAndNavigate('/home');
             } else {
               print('First time user, going to sports selection');
-              Navigator.pushReplacementNamed(context, '/sports-selection');
+              await _playSuccessVideoAndNavigate('/sports-selection');
             }
           } catch (e) {
             print('Error checking sports selection: $e');
             // Default to sports selection on error
-            Navigator.pushReplacementNamed(context, '/sports-selection');
+            await _playSuccessVideoAndNavigate('/sports-selection');
           }
         } else {
-          Navigator.pushReplacementNamed(context, '/sports-selection');
+          await _playSuccessVideoAndNavigate('/sports-selection');
         }
       }
     } catch (e, stackTrace) {
       print('Auth error: $e');
       print('Stack trace: $stackTrace');
+
+      // Trigger shake animation on login failure
+      _triggerShakeAnimation();
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -248,18 +327,21 @@ class _LoginScreenState extends State<LoginScreen>
           
           if (hasSelectedSports) {
             print('User has already selected sports, going to home');
-            Navigator.pushReplacementNamed(context, '/home');
+            await _playSuccessVideoAndNavigate('/home');
           } else {
             print('First time user, going to sports selection');
-            Navigator.pushReplacementNamed(context, '/sports-selection');
+            await _playSuccessVideoAndNavigate('/sports-selection');
           }
         } catch (e) {
           print('Error checking sports selection: $e');
           // Default to sports selection on error
-          Navigator.pushReplacementNamed(context, '/sports-selection');
+          await _playSuccessVideoAndNavigate('/sports-selection');
         }
       }
     } catch (e) {
+      // Trigger shake animation on social login failure
+      _triggerShakeAnimation();
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -690,89 +772,153 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
         ),
+
+        // Video Overlay for successful login
+        if (_showVideoOverlay)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black,
+              child: _videoController != null && _videoController!.value.isInitialized
+                  ? Transform.translate(
+                      offset: const Offset(20, 0), // Shift 20 pixels to the right
+                      child: Transform.scale(
+                        scale: 0.95, // Slightly zoom out (95% of original)
+                        child: FittedBox(
+                          fit: BoxFit.cover,
+                          child: SizedBox(
+                            width: _videoController!.value.size.width,
+                            height: _videoController!.value.size.height,
+                            child: VideoPlayer(_videoController!),
+                          ),
+                        ),
+                      ),
+                    )
+                  : const Center(
+                      child: CircularProgressIndicator(
+                        color: goldPrimary,
+                      ),
+                    ),
+            ),
+          ),
       ],
     ),
     );
   }
   
   Widget _buildGoldRushLogo() {
-    return Container(
-      height: 120,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Gold glow effect behind logo
-          AnimatedBuilder(
+    return Column(
+      children: [
+        // BR Logo Container with Shake Animation
+        AnimatedBuilder(
+          animation: _shakeController,
+          builder: (context, child) {
+            final sineValue = sin(4 * 2 * pi * _shakeController.value);
+            return Transform.translate(
+              offset: Offset(sineValue * _shakeAnimation.value, 0),
+              child: child,
+            );
+          },
+          child: AnimatedBuilder(
             animation: _glowAnimation,
             builder: (context, child) {
               return Container(
-                width: 200,
-                height: 120,
+                width: 100,
+                height: 100,
                 decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      goldPrimary.withOpacity(0.3),
+                      goldSecondary.withOpacity(0.3),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: _isShaking ? Colors.red : goldPrimary,
+                    width: 2,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: goldPrimary.withOpacity(0.3 * _glowAnimation.value),
-                      blurRadius: 50,
-                      spreadRadius: 20,
+                      color: _isShaking
+                        ? Colors.red.withOpacity(0.5 * _glowAnimation.value)
+                        : goldPrimary.withOpacity(0.5 * _glowAnimation.value),
+                      blurRadius: 30,
+                      spreadRadius: 0,
                     ),
                     BoxShadow(
-                      color: goldSecondary.withOpacity(0.2 * _glowAnimation.value),
-                      blurRadius: 100,
-                      spreadRadius: 40,
+                      color: _isShaking
+                        ? Colors.red.withOpacity(0.2)
+                        : goldPrimary.withOpacity(0.2),
+                      blurRadius: 20,
+                      spreadRadius: -5,
                     ),
                   ],
+                ),
+                child: Center(
+                  child: ShaderMask(
+                    shaderCallback: (Rect bounds) {
+                      return LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: _isShaking
+                          ? [Colors.red, Colors.redAccent, Colors.white, Colors.red]
+                          : [goldSecondary, goldPrimary, Colors.white, goldPrimary],
+                        stops: [0.0, 0.3, 0.5, 1.0],
+                        transform: GradientRotation(_glowAnimation.value * math.pi),
+                      ).createShader(bounds);
+                    },
+                    child: Text(
+                      'BR',
+                      style: TextStyle(
+                        fontSize: 40,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                  ),
                 ),
               );
             },
           ),
-          // Main logo text with shimmer effect
-          ShaderMask(
-            shaderCallback: (Rect bounds) {
-              return LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  goldSecondary,
-                  goldPrimary,
-                  Colors.white,
-                  goldPrimary,
-                  goldSecondary,
-                ],
-                stops: [0.0, 0.3, 0.5, 0.7, 1.0],
-                transform: GradientRotation(_glowAnimation.value * 2 * math.pi),
-              ).createShader(bounds);
-            },
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'BRAGGING',
-                  style: TextStyle(
-                    fontFamily: 'Arial Black',
-                    fontSize: 42,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 4,
-                    color: Colors.white,
-                    height: 1,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'RIGHTS',
-                  style: TextStyle(
-                    fontFamily: 'Arial Black',
-                    fontSize: 42,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 4,
-                    color: Colors.white,
-                    height: 1,
-                  ),
-                ),
+        ),
+        const SizedBox(height: 20),
+        // App Name below the logo
+        ShaderMask(
+          shaderCallback: (Rect bounds) {
+            return LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                goldSecondary,
+                goldPrimary,
+                Colors.white,
+                goldPrimary,
               ],
+            ).createShader(bounds);
+          },
+          child: Text(
+            'BRAGGING RIGHTS',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 3,
+              color: Colors.white,
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 8),
+        // Tagline
+        Text(
+          'Own Your Predictions',
+          style: TextStyle(
+            fontSize: 14,
+            color: goldPrimary.withOpacity(0.8),
+            letterSpacing: 1,
+          ),
+        ),
+      ],
     );
   }
 

@@ -82,9 +82,10 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
         _gamesBySport[sport]!.add(game);
       }
       
-      // Use all sports that have games available (not just featured)
-      _availableSports = allSports.map((s) => s.toLowerCase()).toList()..sort();
-      debugPrint('OptimizedGamesScreen: Available sports: $_availableSports');
+      // Always show ALL supported sports, regardless of whether they have games
+      // This ensures Boxing and other sports are always visible
+      _availableSports = ['nfl', 'nba', 'nhl', 'mlb', 'boxing', 'mma', 'soccer'];
+      debugPrint('OptimizedGamesScreen: Available sports: $_availableSports (showing all supported sports)');
       
       // Initialize tab controller with actual sports found
       if (_availableSports.isNotEmpty && mounted) {
@@ -120,8 +121,16 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
   }
   
   Future<void> _onRefresh() async {
-    final result = await _gamesService.loadFeaturedGames(forceRefresh: true);
-    await _loadInitialData();
+    // If a sport is selected, refresh that sport's games
+    if (_selectedSport != null && _selectedSport != 'all') {
+      setState(() => _loadingMore = true);
+      await _loadAllGamesForSport(_selectedSport!);
+      setState(() => _loadingMore = false);
+    } else {
+      // Otherwise refresh all featured games
+      await _gamesService.loadFeaturedGames(forceRefresh: true);
+      await _loadInitialData();
+    }
   }
   
   void _onScroll() {

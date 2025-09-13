@@ -13,6 +13,7 @@ import 'screens/settings/preferences_settings_screen.dart';
 import 'screens/pools/pool_selection_screen.dart';
 import 'screens/game/game_detail_screen.dart';
 import 'screens/game/game_details_screen.dart';
+import 'screens/fighter/fighter_details_screen.dart';
 import 'screens/betting/bet_selection_screen.dart';
 import 'screens/betting/fight_card_grid_screen.dart';
 import 'screens/betting/quick_pick_screen.dart';
@@ -135,6 +136,17 @@ class BraggingRightsApp extends StatelessWidget {
               gameId: args['gameId']?.toString() ?? '',
               sport: args['sport']?.toString() ?? '',
               gameData: args['gameData'],
+            ),
+          );
+        } else if (settings.name == '/fighter-details') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => FighterDetailsScreen(
+              fighterId: args['fighterId']?.toString() ?? '',
+              fighterName: args['fighterName']?.toString() ?? 'Unknown Fighter',
+              record: args['record']?.toString(),
+              sport: args['sport']?.toString() ?? 'MMA',
+              espnId: args['espnId']?.toString(),
             ),
           );
         } else if (settings.name == '/fight-card-grid') {

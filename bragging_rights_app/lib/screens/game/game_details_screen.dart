@@ -145,12 +145,15 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                 unselectedLabelColor: Colors.grey,
                 indicatorColor: AppTheme.primaryCyan,
                 indicatorWeight: 3,
-                tabs: const [
-                  Tab(text: 'Overview'),
-                  Tab(text: 'Odds'),
-                  Tab(text: 'Stats'),
-                  Tab(text: 'News'),
-                  Tab(text: 'Pools'),
+                tabs: [
+                  const Tab(text: 'Overview'),
+                  if (_isCombatSport)
+                    const Tab(text: 'Fighters')
+                  else
+                    const Tab(text: 'Odds'),
+                  const Tab(text: 'Stats'),
+                  const Tab(text: 'News'),
+                  const Tab(text: 'Pools'),
                 ],
               ),
             ),
@@ -164,7 +167,10 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                     controller: _tabController,
                     children: [
                       _buildOverviewTab(),
-                      _buildOddsTab(),
+                      if (_isCombatSport)
+                        _buildFightersTab()
+                      else
+                        _buildOddsTab(),
                       _buildStatsTab(),
                       _buildNewsTab(),
                       _buildPoolsTab(),
@@ -370,8 +376,10 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
             itemCount: _game!.fights!.length,
             separatorBuilder: (_, __) => const Divider(height: 1),
             itemBuilder: (context, index) {
-              final fight = _game!.fights![index];
-              final isMainEvent = index == _game!.fights!.length - 1;
+              // Reverse the order - show main event (last in list) first
+              final reversedIndex = _game!.fights!.length - 1 - index;
+              final fight = _game!.fights![reversedIndex];
+              final isMainEvent = reversedIndex == _game!.fights!.length - 1;
 
               return Container(
                 color: isMainEvent
@@ -681,6 +689,249 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
   Widget _buildOddsTab() {
     return const Center(
       child: Text('Odds comparison coming soon'),
+    );
+  }
+
+  Widget _buildFightersTab() {
+    if (_game?.fights == null || _game!.fights!.isEmpty) {
+      return const Center(
+        child: Text('No fighter information available'),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Fighters on Card',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _game!.fights!.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              // Show fights in reverse order (main event first)
+              final reversedIndex = _game!.fights!.length - 1 - index;
+              final fight = _game!.fights![reversedIndex];
+              final isMainEvent = reversedIndex == _game!.fights!.length - 1;
+
+              return Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceBlue,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isMainEvent
+                      ? AppTheme.primaryCyan
+                      : AppTheme.borderCyan.withOpacity(0.3),
+                    width: isMainEvent ? 2 : 1,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    if (isMainEvent)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryCyan,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(11),
+                            topRight: Radius.circular(11),
+                          ),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'MAIN EVENT',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          // Fighter 1
+                          InkWell(
+                            onTap: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/fighter-details',
+                                arguments: {
+                                  'fighterId': fight['fighter1Id'],
+                                  'fighterName': fight['fighter1Name'] ?? fight['fighter1'],
+                                  'record': fight['fighter1Record'],
+                                  'sport': widget.sport,
+                                },
+                              );
+                            },
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 50,
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryCyan.withOpacity(0.2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.person,
+                                    color: AppTheme.primaryCyan,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        fight['fighter1Name'] ?? fight['fighter1'] ?? 'TBD',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      if (fight['fighter1Record'] != null && fight['fighter1Record'] != '')
+                                        Text(
+                                          fight['fighter1Record'],
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey[400],
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.chevron_right,
+                                  color: Colors.grey[600],
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Row(
+                              children: [
+                                Expanded(child: Divider(color: Colors.grey[700])),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  child: Text(
+                                    'VS',
+                                    style: TextStyle(
+                                      color: Colors.grey[500],
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(child: Divider(color: Colors.grey[700])),
+                              ],
+                            ),
+                          ),
+
+                          // Fighter 2
+                          InkWell(
+                            onTap: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/fighter-details',
+                                arguments: {
+                                  'fighterId': fight['fighter2Id'],
+                                  'fighterName': fight['fighter2Name'] ?? fight['fighter2'],
+                                  'record': fight['fighter2Record'],
+                                  'sport': widget.sport,
+                                },
+                              );
+                            },
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 50,
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.warningAmber.withOpacity(0.2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.person,
+                                    color: AppTheme.warningAmber,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        fight['fighter2Name'] ?? fight['fighter2'] ?? 'TBD',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      if (fight['fighter2Record'] != null && fight['fighter2Record'] != '')
+                                        Text(
+                                          fight['fighter2Record'],
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey[400],
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.chevron_right,
+                                  color: Colors.grey[600],
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          if (fight['weightClass'] != null) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[800],
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                fight['weightClass'],
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[300],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 

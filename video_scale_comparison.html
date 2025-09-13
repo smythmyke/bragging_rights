@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Scale Comparison - Pixel Screen</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #FFD700, #FFC107);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #888;
+            -webkit-text-fill-color: #888;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .variation {
+            background: #111;
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+            position: relative;
+        }
+
+        .variation.recommended {
+            border-color: #FFD700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+
+        .variation-title {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            color: #FFD700;
+        }
+
+        .variation-description {
+            color: #aaa;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+
+        .phone-container {
+            width: 360px;
+            height: 800px;
+            margin: 0 auto;
+            background: #1a1a1a;
+            border: 3px solid #444;
+            border-radius: 30px;
+            padding: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: #000;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .video-placeholder {
+            position: absolute;
+            background: linear-gradient(45deg, #0F0C29, #302B63, #24243e);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #FFD700;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        /* Variation 1: Contain (Letterbox) */
+        .contain .video-placeholder {
+            width: 100%;
+            height: 100%;
+            background-image:
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(255, 215, 0, 0.1),
+                    rgba(255, 215, 0, 0.1) 2px,
+                    transparent 2px,
+                    transparent 20px
+                );
+        }
+
+        .contain .video-box {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 100%;
+            height: 450px; /* 16:9 aspect ratio */
+            background: linear-gradient(135deg, #302B63, #24243e);
+            border: 2px solid #FFD700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        /* Variation 2: Cover (Cropped) */
+        .cover .video-placeholder {
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            border: 2px solid #FF6B6B;
+        }
+
+        /* Variation 3: Stretch (Distorted) */
+        .stretch .video-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: 2px solid #764ba2;
+        }
+
+        /* Variation 4: Zoom to Fill */
+        .zoom-fill .video-placeholder {
+            width: 120%;
+            height: 120%;
+            left: -10%;
+            top: -10%;
+            background: radial-gradient(circle at center, #24243e, #0F0C29);
+            border: 2px solid #00D9FF;
+            animation: zoomPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes zoomPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .specs {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 8px;
+            font-family: monospace;
+        }
+
+        .specs-title {
+            color: #FFD700;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .spec-item {
+            color: #bbb;
+            margin: 4px 0;
+            font-size: 0.9em;
+        }
+
+        .flutter-code {
+            margin-top: 15px;
+            padding: 15px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            color: #4CAF50;
+            overflow-x: auto;
+        }
+
+        .letterbox-bar {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 175px;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+        }
+
+        .letterbox-bar.top {
+            top: 0;
+        }
+
+        .letterbox-bar.bottom {
+            bottom: 0;
+        }
+
+        .recommended-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #FFD700;
+            color: #000;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.8em;
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.8); }
+            50% { box-shadow: 0 0 20px rgba(255, 215, 0, 1); }
+        }
+
+        .note {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid #FFD700;
+            border-radius: 10px;
+            color: #FFD700;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Video Scale Comparison</h1>
+        <p>Pixel 8a Screen (360x800 logical pixels) - Video Aspect Ratio 16:9</p>
+    </div>
+
+    <div class="container">
+        <div class="grid">
+            <!-- Variation 1: Contain with Letterbox -->
+            <div class="variation">
+                <h2 class="variation-title">1. Contain (Letterbox)</h2>
+                <p class="variation-description">Video maintains aspect ratio with black bars top/bottom</p>
+
+                <div class="phone-container">
+                    <div class="phone-screen contain">
+                        <video
+                            src="C:/Users/smyth/Downloads/BR_Zoom_and_D_Reveal_Animation.mp4"
+                            style="width: 100%; height: 100%; object-fit: contain;"
+                            autoplay
+                            loop
+                            muted
+                            playsinline>
+                        </video>
+                    </div>
+                </div>
+
+                <div class="specs">
+                    <div class="specs-title">Specifications:</div>
+                    <div class="spec-item">• Video Size: 360x202px (16:9)</div>
+                    <div class="spec-item">• Black Bars: 175px each</div>
+                    <div class="spec-item">• No distortion</div>
+                    <div class="spec-item">• Full video visible</div>
+                </div>
+
+                <div class="flutter-code">
+                    AspectRatio(<br>
+                    &nbsp;&nbsp;aspectRatio: 16/9,<br>
+                    &nbsp;&nbsp;child: VideoPlayer(_controller),<br>
+                    )
+                </div>
+            </div>
+
+            <!-- Variation 2: Cover (Cropped) -->
+            <div class="variation recommended">
+                <span class="recommended-badge">RECOMMENDED</span>
+                <h2 class="variation-title">2. Cover (Cropped Edges)</h2>
+                <p class="variation-description">Video fills screen, edges cropped to fit</p>
+
+                <div class="phone-container">
+                    <div class="phone-screen cover">
+                        <video
+                            src="C:/Users/smyth/Downloads/BR_Zoom_and_D_Reveal_Animation.mp4"
+                            style="width: 100%; height: 100%; object-fit: cover;"
+                            autoplay
+                            loop
+                            muted
+                            playsinline>
+                        </video>
+                    </div>
+                </div>
+
+                <div class="specs">
+                    <div class="specs-title">Specifications:</div>
+                    <div class="spec-item">• Video Size: 1422x800px (scaled)</div>
+                    <div class="spec-item">• Horizontal crop: ~531px each side</div>
+                    <div class="spec-item">• No black bars</div>
+                    <div class="spec-item">• Immersive experience</div>
+                </div>
+
+                <div class="flutter-code">
+                    FittedBox(<br>
+                    &nbsp;&nbsp;fit: BoxFit.cover,<br>
+                    &nbsp;&nbsp;child: SizedBox(<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;width: _controller.value.size.width,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;height: _controller.value.size.height,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;child: VideoPlayer(_controller),<br>
+                    &nbsp;&nbsp;),<br>
+                    )
+                </div>
+            </div>
+
+            <!-- Variation 3: Stretch (Distorted) -->
+            <div class="variation">
+                <h2 class="variation-title">3. Stretch to Fill</h2>
+                <p class="variation-description">Video stretched to fill, causes distortion</p>
+
+                <div class="phone-container">
+                    <div class="phone-screen stretch">
+                        <div class="video-placeholder">
+                            <div style="text-align: center; transform: scaleY(1.8);">
+                                <div style="font-size: 60px;">BR</div>
+                                <div style="font-size: 16px;">STRETCHED</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="specs">
+                    <div class="specs-title">Specifications:</div>
+                    <div class="spec-item">• Video Size: 360x800px</div>
+                    <div class="spec-item">• Vertical stretch: 396%</div>
+                    <div class="spec-item">• Aspect ratio distorted</div>
+                    <div class="spec-item">• Not recommended</div>
+                </div>
+
+                <div class="flutter-code">
+                    Container(<br>
+                    &nbsp;&nbsp;width: double.infinity,<br>
+                    &nbsp;&nbsp;height: double.infinity,<br>
+                    &nbsp;&nbsp;child: VideoPlayer(_controller),<br>
+                    )
+                </div>
+            </div>
+
+            <!-- Variation 4: Zoom and Center -->
+            <div class="variation">
+                <h2 class="variation-title">4. Zoom to Fill (Centered)</h2>
+                <p class="variation-description">Video zoomed 120% and centered</p>
+
+                <div class="phone-container">
+                    <div class="phone-screen zoom-fill">
+                        <div class="video-placeholder">
+                            <div style="text-align: center;">
+                                <div style="font-size: 96px;">BR</div>
+                                <div style="font-size: 20px;">ZOOMED 120%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="specs">
+                    <div class="specs-title">Specifications:</div>
+                    <div class="spec-item">• Video Size: 432x960px (120%)</div>
+                    <div class="spec-item">• Overflow hidden</div>
+                    <div class="spec-item">• Centered focus</div>
+                    <div class="spec-item">• Slight crop all around</div>
+                </div>
+
+                <div class="flutter-code">
+                    Transform.scale(<br>
+                    &nbsp;&nbsp;scale: 1.2,<br>
+                    &nbsp;&nbsp;child: Center(<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;child: AspectRatio(<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;aspectRatio: 16/9,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;child: VideoPlayer(_controller),<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;),<br>
+                    &nbsp;&nbsp;),<br>
+                    )
+                </div>
+            </div>
+        </div>
+
+        <div class="note">
+            <h3>Recommendation: Use Option 2 (Cover)</h3>
+            <p>For the BR Zoom animation, the Cover option provides the most immersive experience.
+            The slight cropping of edges won't affect the main BR logo zoom effect, and it eliminates
+            distracting black bars. The video will fill the entire screen for maximum impact.</p>
+        </div>
+    </div>
+</body>
+</html>
