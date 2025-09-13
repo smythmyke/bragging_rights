@@ -25,7 +25,7 @@ class _SportsSelectionScreenState extends State<SportsSelectionScreen>
     SportItem('MMA', Icons.sports_mma, const Color(0xFFEF4444)),
     SportItem('MLB', Icons.sports_baseball, const Color(0xFF6366F1)),
     SportItem('Soccer', Icons.sports_soccer, const Color(0xFFA855F7)),
-    SportItem('Boxing', Icons.sports_kabaddi, const Color(0xFFFBBF24)),
+    SportItem('Boxing', Icons.sports_mma, const Color(0xFFFBBF24)),
   ];
 
   @override

@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import '../models/game_model.dart';
 import '../models/user_preferences.dart';
 import 'user_preferences_service.dart';
@@ -579,7 +581,7 @@ class OptimizedGamesService {
       // Group combat sports by event
       List<GameModel> processedGames;
       if (sport.toUpperCase() == 'MMA' || sport.toUpperCase() == 'BOXING') {
-        processedGames = _groupCombatSportsByEvent(games);
+        processedGames = await _groupCombatSportsByEvent(games, sport);
       } else {
         // Sort by game time for non-combat sports
         games.sort((a, b) => a.gameTime.compareTo(b.gameTime));
@@ -630,84 +632,115 @@ class OptimizedGamesService {
     }
   }
 
-  /// Group MMA/Boxing fights by event (e.g., UFC 311, Bellator 300)
-  List<GameModel> _groupCombatSportsByEvent(List<GameModel> fights) {
+  /// Group MMA/Boxing fights by event using ESPN event structure
+  Future<List<GameModel>> _groupCombatSportsByEvent(List<GameModel> fights, String sport) async {
     if (fights.isEmpty) return fights;
-    
-    debugPrint('🥊 Grouping ${fights.length} combat sports fights into events...');
-    
-    // Group fights by date and extract event name
-    final Map<String, List<GameModel>> eventGroups = {};
-    
-    for (final fight in fights) {
-      // Extract event name from the fight
-      String eventName = _extractEventName(fight);
-      
-      if (!eventGroups.containsKey(eventName)) {
-        eventGroups[eventName] = [];
+
+    debugPrint('🥊 Grouping ${fights.length} $sport fights into events...');
+
+    try {
+      // Fetch ESPN events for the sport
+      final espnEvents = await _fetchESPNEvents(sport);
+
+      if (espnEvents.isEmpty) {
+        debugPrint('No ESPN events found, falling back to time-based grouping');
+        return _groupByTimeWindows(fights, sport);
       }
-      eventGroups[eventName]!.add(fight);
+
+      final List<GameModel> groupedEvents = [];
+      final Set<String> usedFightIds = {};
+
+      // Match fights to ESPN events
+      for (final espnEvent in espnEvents) {
+        final matchedFights = <GameModel>[];
+
+        for (final espnFight in espnEvent['fights'] ?? []) {
+          final espnFighter1 = (espnFight['fighter1'] ?? '').toLowerCase();
+          final espnFighter2 = (espnFight['fighter2'] ?? '').toLowerCase();
+
+          // Find matching fight in Odds API data
+          for (final oddsFight in fights) {
+            if (usedFightIds.contains(oddsFight.id)) continue;
+
+            final oddsF1 = oddsFight.awayTeam.toLowerCase();
+            final oddsF2 = oddsFight.homeTeam.toLowerCase();
+
+            // Flexible name matching - check last names
+            bool isMatch = _fightersMatch(espnFighter1, espnFighter2, oddsF1, oddsF2);
+
+            if (isMatch) {
+              matchedFights.add(oddsFight);
+              usedFightIds.add(oddsFight.id);
+              break;
+            }
+          }
+        }
+
+        if (matchedFights.isNotEmpty) {
+          // Sort by time to find main event (usually last)
+          matchedFights.sort((a, b) => a.gameTime.compareTo(b.gameTime));
+
+          final mainEvent = matchedFights.last;
+          final eventName = espnEvent['name'] ?? '${mainEvent.awayTeam} vs ${mainEvent.homeTeam}';
+
+          // Create safe Firestore ID
+          final safeId = '${sport.toLowerCase()}_${eventName.toLowerCase()
+            .replaceAll(' ', '_')
+            .replaceAll('/', '_')
+            .replaceAll(':', '')
+            .replaceAll('.', '')
+            .replaceAll('vs', 'v')}';
+
+          debugPrint('🎯 Event: $eventName with ${matchedFights.length} fights');
+          debugPrint('   Main Event: ${mainEvent.awayTeam} vs ${mainEvent.homeTeam}');
+
+          final groupedEvent = GameModel(
+            id: safeId,
+            sport: sport.toUpperCase(),
+            homeTeam: mainEvent.homeTeam,
+            awayTeam: mainEvent.awayTeam,
+            gameTime: matchedFights.first.gameTime, // Event starts with first fight
+            status: mainEvent.status,
+            venue: espnEvent['venue'] ?? mainEvent.venue,
+            broadcast: mainEvent.broadcast,
+            league: eventName,
+            homeTeamLogo: mainEvent.homeTeamLogo,
+            awayTeamLogo: mainEvent.awayTeamLogo,
+            isCombatSport: true,
+            totalFights: matchedFights.length,
+            mainEventFighters: '${mainEvent.awayTeam} vs ${mainEvent.homeTeam}',
+            fights: matchedFights.map((f) => {
+              'id': f.id,
+              'fighter1': f.awayTeam,
+              'fighter2': f.homeTeam,
+              'time': f.gameTime.toIso8601String(),
+              'odds': f.odds,
+            }).toList(),
+          );
+
+          groupedEvents.add(groupedEvent);
+        }
+      }
+
+      // Handle unmatched fights with time-based grouping
+      final unmatchedFights = fights.where((f) => !usedFightIds.contains(f.id)).toList();
+      if (unmatchedFights.isNotEmpty) {
+        debugPrint('${unmatchedFights.length} unmatched fights, grouping by time windows');
+        final timeGrouped = await _groupByTimeWindows(unmatchedFights, sport);
+        groupedEvents.addAll(timeGrouped);
+      }
+
+      // Sort events by date
+      groupedEvents.sort((a, b) => a.gameTime.compareTo(b.gameTime));
+
+      debugPrint('✅ Grouped into ${groupedEvents.length} events');
+      return groupedEvents;
+
+    } catch (e) {
+      debugPrint('Error grouping with ESPN data: $e');
+      debugPrint('Falling back to time-based grouping');
+      return _groupByTimeWindows(fights, sport);
     }
-    
-    debugPrint('📦 Created ${eventGroups.length} event groups from ${fights.length} fights');
-    
-    // Create a single GameModel for each event
-    final List<GameModel> groupedEvents = [];
-    
-    for (final entry in eventGroups.entries) {
-      final eventName = entry.key;
-      final eventFights = entry.value;
-      
-      if (eventFights.isEmpty) continue;
-      
-      // Sort fights by importance (main event first)
-      eventFights.sort((a, b) {
-        // Main events typically have championship or bigger names
-        final aImportance = _getFightImportance(a);
-        final bImportance = _getFightImportance(b);
-        return bImportance.compareTo(aImportance);
-      });
-      
-      // Use the first fight (main event) as the base
-      final mainEvent = eventFights.first;
-      final totalFights = eventFights.length;
-      
-      debugPrint('🎯 Event: $eventName with $totalFights fights');
-      debugPrint('   Main Event: ${mainEvent.awayTeam} vs ${mainEvent.homeTeam}');
-      
-      // Create a grouped event model
-      final groupedEvent = GameModel(
-        id: '${mainEvent.sport.toLowerCase()}_${eventName.toLowerCase().replaceAll(' ', '_')}',
-        sport: mainEvent.sport,
-        homeTeam: mainEvent.homeTeam, // Main event fighter 2
-        awayTeam: mainEvent.awayTeam, // Main event fighter 1
-        gameTime: mainEvent.gameTime,
-        status: mainEvent.status,
-        venue: mainEvent.venue,
-        broadcast: mainEvent.broadcast,
-        league: eventName,
-        homeTeamLogo: mainEvent.homeTeamLogo,
-        awayTeamLogo: mainEvent.awayTeamLogo,
-        isCombatSport: true,
-        totalFights: totalFights,
-        mainEventFighters: '${mainEvent.awayTeam} vs ${mainEvent.homeTeam}',
-        fights: eventFights.map((f) => {
-          'id': f.id,
-          'fighter1': f.awayTeam,
-          'fighter2': f.homeTeam,
-          'time': f.gameTime.toIso8601String(),
-        }).toList(),
-      );
-      
-      groupedEvents.add(groupedEvent);
-    }
-    
-    // Sort events by date
-    groupedEvents.sort((a, b) => a.gameTime.compareTo(b.gameTime));
-    
-    debugPrint('✅ Grouped into ${groupedEvents.length} events');
-    
-    return groupedEvents;
   }
   
   /// Extract event name from fight data
@@ -918,6 +951,172 @@ class OptimizedGamesService {
     return [];
   }
   
+  /// Fetch ESPN events for combat sports
+  Future<List<Map<String, dynamic>>> _fetchESPNEvents(String sport) async {
+    try {
+      final sportLower = sport.toLowerCase();
+      String url;
+
+      if (sportLower == 'mma') {
+        url = 'https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard';
+      } else if (sportLower == 'boxing') {
+        url = 'https://site.api.espn.com/apis/site/v2/sports/boxing/scoreboard';
+      } else {
+        return [];
+      }
+
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode != 200) {
+        debugPrint('ESPN API error: ${response.statusCode}');
+        return [];
+      }
+
+      final data = json.decode(response.body);
+      final events = data['events'] ?? [];
+
+      final List<Map<String, dynamic>> processedEvents = [];
+
+      for (final event in events) {
+        final competitions = event['competitions'] ?? [];
+        final fights = <Map<String, dynamic>>[];
+
+        for (final comp in competitions) {
+          final competitors = comp['competitors'] ?? [];
+          if (competitors.length >= 2) {
+            fights.add({
+              'fighter1': competitors[0]['athlete']?['displayName'] ?? '',
+              'fighter2': competitors[1]['athlete']?['displayName'] ?? '',
+            });
+          }
+        }
+
+        if (fights.isNotEmpty) {
+          processedEvents.add({
+            'id': event['id'],
+            'name': event['name'] ?? '',
+            'date': event['date'],
+            'venue': event['venue']?['fullName'],
+            'fights': fights,
+          });
+        }
+      }
+
+      debugPrint('📡 Fetched ${processedEvents.length} ESPN events for $sport');
+      return processedEvents;
+
+    } catch (e) {
+      debugPrint('Error fetching ESPN events: $e');
+      return [];
+    }
+  }
+
+  /// Check if fighter names match between ESPN and Odds API
+  bool _fightersMatch(String espnF1, String espnF2, String oddsF1, String oddsF2) {
+    // Split names to get last names
+    final espn1Parts = espnF1.split(' ');
+    final espn2Parts = espnF2.split(' ');
+
+    // Get last names (most reliable for matching)
+    final espn1Last = espn1Parts.isNotEmpty ? espn1Parts.last : '';
+    final espn2Last = espn2Parts.isNotEmpty ? espn2Parts.last : '';
+
+    // Check both orientations
+    if ((espn1Last.isNotEmpty && oddsF1.contains(espn1Last)) &&
+        (espn2Last.isNotEmpty && oddsF2.contains(espn2Last))) {
+      return true;
+    }
+
+    if ((espn1Last.isNotEmpty && oddsF2.contains(espn1Last)) &&
+        (espn2Last.isNotEmpty && oddsF1.contains(espn2Last))) {
+      return true;
+    }
+
+    // Try full name matching for shorter names
+    if (espnF1.length <= 10 || espnF2.length <= 10) {
+      if ((oddsF1.contains(espnF1) || espnF1.contains(oddsF1)) &&
+          (oddsF2.contains(espnF2) || espnF2.contains(oddsF2))) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /// Group fights by time windows as fallback
+  List<GameModel> _groupByTimeWindows(List<GameModel> fights, String sport) {
+    const windowHours = 6; // 6-hour window for same event
+    final Map<String, List<GameModel>> groups = {};
+
+    for (final fight in fights) {
+      bool addedToGroup = false;
+
+      for (final entry in groups.entries) {
+        final groupTime = DateTime.parse(entry.key);
+        final timeDiff = fight.gameTime.difference(groupTime).inHours.abs();
+
+        if (timeDiff <= windowHours) {
+          entry.value.add(fight);
+          addedToGroup = true;
+          break;
+        }
+      }
+
+      if (!addedToGroup) {
+        groups[fight.gameTime.toIso8601String()] = [fight];
+      }
+    }
+
+    // Convert groups to events
+    final List<GameModel> groupedEvents = [];
+
+    for (final entry in groups.entries) {
+      final eventFights = entry.value;
+      if (eventFights.isEmpty) continue;
+
+      // Sort by time - latest is usually main event
+      eventFights.sort((a, b) => a.gameTime.compareTo(b.gameTime));
+
+      final mainEvent = eventFights.last;
+      final eventName = '${mainEvent.awayTeam} vs ${mainEvent.homeTeam}';
+
+      // Create safe Firestore ID
+      final safeId = '${sport.toLowerCase()}_${eventName.toLowerCase()
+        .replaceAll(' ', '_')
+        .replaceAll('/', '_')
+        .replaceAll(':', '')
+        .replaceAll('.', '')
+        .replaceAll('vs', 'v')}';
+
+      final groupedEvent = GameModel(
+        id: safeId,
+        sport: sport.toUpperCase(),
+        homeTeam: mainEvent.homeTeam,
+        awayTeam: mainEvent.awayTeam,
+        gameTime: eventFights.first.gameTime,
+        status: mainEvent.status,
+        venue: mainEvent.venue,
+        broadcast: mainEvent.broadcast,
+        league: eventName,
+        homeTeamLogo: mainEvent.homeTeamLogo,
+        awayTeamLogo: mainEvent.awayTeamLogo,
+        isCombatSport: true,
+        totalFights: eventFights.length,
+        mainEventFighters: eventName,
+        fights: eventFights.map((f) => {
+          'id': f.id,
+          'fighter1': f.awayTeam,
+          'fighter2': f.homeTeam,
+          'time': f.gameTime.toIso8601String(),
+          'odds': f.odds,
+        }).toList(),
+      );
+
+      groupedEvents.add(groupedEvent);
+    }
+
+    return groupedEvents;
+  }
+
   /// Clean up resources
   void dispose() {
     debugPrint('OptimizedGamesService: Disposing resources');

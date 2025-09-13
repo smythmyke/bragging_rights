@@ -12,6 +12,7 @@ import 'screens/home/home_screen.dart' as home;
 import 'screens/settings/preferences_settings_screen.dart';
 import 'screens/pools/pool_selection_screen.dart';
 import 'screens/game/game_detail_screen.dart';
+import 'screens/game/game_details_screen.dart';
 import 'screens/betting/bet_selection_screen.dart';
 import 'screens/betting/fight_card_grid_screen.dart';
 import 'screens/betting/quick_pick_screen.dart';
@@ -127,6 +128,15 @@ class BraggingRightsApp extends StatelessWidget {
           return MaterialPageRoute(
             builder: (context) => const ActiveWagersScreen(),
           );
+        } else if (settings.name == '/game-details') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => GameDetailsScreen(
+              gameId: args['gameId']?.toString() ?? '',
+              sport: args['sport']?.toString() ?? '',
+              gameData: args['gameData'],
+            ),
+          );
         } else if (settings.name == '/fight-card-grid') {
           final args = settings.arguments as Map<String, dynamic>;
           // For combat sports, we need to fetch the full fight card event
@@ -221,9 +231,19 @@ class BraggingRightsApp extends StatelessWidget {
         mainEventTitle = '${mainFight.fighter1Name} vs ${mainFight.fighter2Name}';
       }
       
+      // Handle both Timestamp and int types for gameTime
+      DateTime gameTime;
+      if (data['gameTime'] is Timestamp) {
+        gameTime = (data['gameTime'] as Timestamp).toDate();
+      } else if (data['gameTime'] is int) {
+        gameTime = DateTime.fromMillisecondsSinceEpoch(data['gameTime'] as int);
+      } else {
+        gameTime = DateTime.now(); // Fallback
+      }
+
       return FightCardEventModel(
         id: eventId,
-        gameTime: (data['gameTime'] as Timestamp).toDate(),
+        gameTime: gameTime,
         status: data['status'] ?? 'scheduled',
         eventName: data['awayTeam'] ?? 'Event',  // Event name is stored in awayTeam
         promotion: data['league'] ?? 'UFC',

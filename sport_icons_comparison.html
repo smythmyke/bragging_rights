@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sport Icons Comparison - Bragging Rights App</title>
+    <!-- PhosphorIcons Web Font -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .sport-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .sport-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .sport-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .sport-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .baseball { color: #ef4444; border-bottom-color: #ef4444; }
+        .football { color: #8b4513; border-bottom-color: #8b4513; }
+        .basketball { color: #f97316; border-bottom-color: #f97316; }
+        .soccer { color: #10b981; border-bottom-color: #10b981; }
+        .hockey { color: #3b82f6; border-bottom-color: #3b82f6; }
+        .mma { color: #a855f7; border-bottom-color: #a855f7; }
+        .boxing { color: #fbbf24; border-bottom-color: #fbbf24; }
+        .tennis { color: #22c55e; border-bottom-color: #22c55e; }
+
+        .icon-section {
+            margin-bottom: 20px;
+        }
+
+        .icon-library {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .icon-row {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            transition: background 0.2s;
+        }
+
+        .icon-row:hover {
+            background: #e8e8e8;
+        }
+
+        .icon-row.selected {
+            background: #d1fae5;
+            border: 2px solid #10b981;
+        }
+
+        .icon-wrapper {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border-radius: 8px;
+            margin-right: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .icon-wrapper i,
+        .icon-wrapper .material-icons {
+            font-size: 36px;
+        }
+
+        .icon-info {
+            flex: 1;
+        }
+
+        .icon-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .icon-usage {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .no-icon {
+            color: #999;
+            font-style: italic;
+        }
+
+        .legend {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .legend h2 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .legend-item {
+            display: inline-block;
+            margin-right: 20px;
+            margin-bottom: 10px;
+        }
+
+        .legend-color {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        .current-usage {
+            background: #fee2e2;
+            border-left: 4px solid #ef4444;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+
+        .current-usage-title {
+            font-weight: 600;
+            color: #dc2626;
+            margin-bottom: 5px;
+        }
+
+        .recommendation {
+            background: #dbeafe;
+            border: 2px solid #3b82f6;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .recommendation-title {
+            font-weight: 600;
+            color: #2563eb;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏆 Sport Icons Comparison - Bragging Rights App</h1>
+
+        <div class="legend">
+            <h2>📋 Current Icon Libraries</h2>
+            <div class="legend-item">
+                <span class="legend-color" style="background: #10b981;"></span>
+                <strong>PhosphorIcons:</strong> Used in Games/Optimized Games screens
+            </div>
+            <div class="legend-item">
+                <span class="legend-color" style="background: #3b82f6;"></span>
+                <strong>Material Icons:</strong> Used in most other screens
+            </div>
+        </div>
+
+        <div class="sport-grid">
+            <!-- Baseball -->
+            <div class="sport-card">
+                <h3 class="sport-title baseball">⚾ Baseball (MLB)</h3>
+
+                <div class="icon-section">
+                    <div class="icon-library">PhosphorIcons</div>
+                    <div class="icon-row">
+                        <div class="icon-wrapper">
+                            <i class="ph ph-baseball" style="font-size: 36px;"></i>
+                        </div>
+                        <div class="icon-info">
+                            <div class="icon-name">PhosphorIconsRegular.baseball</div>
+                            <div class="icon-usage">Used in: Games page</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="icon-section">
+                    <div class="icon-library">Material Icons</div>
+                    <div class="icon-row">
+                        <div class="icon-wrapper">
+                            <span class="material-icons">sports_baseball</span>
+                        </div>
+                        <div class="icon-info">
+                            <div class="icon-name">Icons.sports_baseball</div>
+                            <div class="icon-usage">Used in: Bet selection, Home, Team cards, Onboarding</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="current-usage">
+                    <div class="current-usage-title">⚠️ Inconsistency Found</div>
+                    Games page uses PhosphorIcons while all other screens use Material Icons
+                </div>
+            </div>
+
+            <!-- Football -->
+            <div class="sport-card">
+                <h3 class="sport-title football">🏈 Football (NFL)</h3>
+
+                <div class="icon-section">
+                    <div class="icon-library">PhosphorIcons</div>
+                    <div class="icon-row">
+                        <div class="icon-wrapper">
+                            <i class="ph ph-football" style="font-size: 36px;"></i>
+                        </div>
+                        <div class="icon-info">
+                            <div class="icon-name">PhosphorIconsRegular.football</div>
+                            <div class="icon-usage">Used in: Games page</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="icon-section">
+                    <div class="icon-library">Material Icons</div>
+                    <div class="icon-row">
+                        <div class="icon-wrapper">
+                            <span class="material-icons">sports_football</span>
+                        </div>
+                        <div class="icon-info">
+                            <div class="icon-name">Icons.sports_football</div>
+                            <div class="icon-usage">Used in: Bet selection, Home, Team cards, Onboarding</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="current-usage">
+                    <div class="current-usage-title">⚠️ Inconsistency Found</div>
+                    Games page uses PhosphorIcons while all other screens use Material Icons
+                </div>
+            </div>
+
+            <!-- Basketball -->
+            <div class="sport-card">
+                <h3 class="sport-title basketball">🏀 Basketball (NBA)</h3>
+
+                <div class="icon-section">
+                    <div class="icon-library">PhosphorIcons</div>
+                    <div class="icon-row">
+                        <div class="icon-wrapper">
+                            <i class="ph ph-basketball" style="font-size: 36px;"></i>
+                        </div>
+                        <div class="icon-info">
+                            <div class="icon-name">PhosphorIconsRegular.basketball</div>
+                            <div class="icon-usage">Used in: Games page</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="icon-section">
+                    <div class="icon-library">Material Icons</div>
+                    <div class="icon-row">
+                        <div class="icon-wrapper">
+                            <span class="material-icons">sports_basketball</span>
+                        </div>
+                        <div class="icon-info">
+                            <div class="icon-name">Icons.sports_basketball</div>
+                            <div class="icon-usage">Used in: Home, Team cards, Onboarding</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="current-usage">
+                    <div class="current-usage-title">⚠️ Inconsistency Found</div>
+                    Games page uses PhosphorIcons while all other screens use Material Icons
+                </div>
+            </div>
+
+            <!-- Soccer -->
+            <div class="sport-card">
+                <h3 class="sport-title soccer">⚽ Soccer</h3>
+
+                <div class="icon-section">
+                    <div class="icon-library">PhosphorIcons</div>
+                    <div class="icon-row">
+                        <div class="icon-wrapper">
+                            <i class="ph ph-soccer-ball" style="font-size: 36px;"></i>
+                        </div>
+                        <div class="icon-info">
+                            <div class="icon-name">PhosphorIconsRegular.soccerBall</div>
+                            <div class="icon-usage">Used in: Games page</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="icon-section">
+                    <div class="icon-library">Material Icons</div>
+                    <div class="icon-row">
+                        <div class="icon-wrapper">
+                            <span class="material-icons">sports_soccer</span>
+                        </div>
+                        <div class="icon-info">
+                            <div class="icon-name">Icons.sports_soccer</div>
+                            <div class="icon-usage">Used in: Home, Team cards, Onboarding</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="current-usage">
+                    <div class="current-usage-title">⚠️ Inconsistency Found</div>
+                    Games page uses PhosphorIcons while all other screens use Material Icons
+                </div>
+            </div>
+
+            <!-- Hockey -->
+            <div class="sport-card">
+                <h3 class="sport-title hockey">🏒 Hockey (NHL)</h3>
+
+                <div class="icon-section">
+                    <div class="icon-library">PhosphorIcons</div>
+                    <div class="icon-row">
+                        <div class="icon-wrapper">
+                            <i class="ph ph-hockey" style="font-size: 36px;"></i>
+                        </div>
+                        <div class="icon-info">
+                            <div class="icon-name">PhosphorIconsRegular.hockey</div>
+                            <div class="icon-usage">Not currently used (would be in Games page)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="icon-section">
+                    <div class="icon-library">Material Icons</div>
+                    <div class="icon-row">
+                        <div class="icon-wrapper">
+                            <span class="material-icons">sports_hockey</span>
+                        </div>
+                        <div class="icon-info">
+                            <div class="icon-name">Icons.sports_hockey</div>
+                            <div class="icon-usage">Used in: Home, Team cards, Onboarding</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="recommendation">
+                    <div class="recommendation-title">💡 Recommendation</div>
+                    Add hockey icon to Games page for consistency
+                </div>
+            </div>
+
+            <!-- MMA/UFC -->
+            <div class="sport-card">
+                <h3 class="sport-title mma">🥋 MMA/UFC</h3>
+
+                <div class="icon-section">
+                    <div class="icon-library">PhosphorIcons</div>
+                    <div class="icon-row">
+                        <div class="icon-wrapper">
+                            <i class="ph ph-hand-fist" style="font-size: 36px;"></i>
+                        </div>
+                        <div class="icon-info">
+                            <div class="icon-name">PhosphorIconsRegular.handFist</div>
+                            <div class="icon-usage">Used in: Games page</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="icon-section">
+                    <div class="icon-library">Material Icons</div>
+                    <div class="icon-row">
+                        <div class="icon-wrapper">
+                            <span class="material-icons">sports_mma</span>
+                        </div>
+                        <div class="icon-info">
+                            <div class="icon-name">Icons.sports_mma</div>
+                            <div class="icon-usage">Used in: Bet selection, Home, Team cards, Onboarding</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="current-usage">
+                    <div class="current-usage-title">⚠️ Inconsistency Found</div>
+                    Games page uses handFist while other screens use sports_mma
+                </div>
+            </div>
+
+            <!-- Boxing -->
+            <div class="sport-card">
+                <h3 class="sport-title boxing">🥊 Boxing</h3>
+
+                <div class="icon-section">
+                    <div class="icon-library">PhosphorIcons</div>
+                    <div class="icon-row">
+                        <div class="icon-wrapper">
+                            <i class="ph ph-boxing-glove" style="font-size: 36px;"></i>
+                        </div>
+                        <div class="icon-info">
+                            <div class="icon-name">PhosphorIconsRegular.boxingGlove</div>
+                            <div class="icon-usage">Used in: Games page</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="icon-section">
+                    <div class="icon-library">Material Icons</div>
+                    <div class="icon-row">
+                        <div class="icon-wrapper">
+                            <span class="material-icons">sports_mma</span>
+                        </div>
+                        <div class="icon-info">
+                            <div class="icon-name">Icons.sports_mma</div>
+                            <div class="icon-usage">Used in: Home, Team cards (shared with MMA)</div>
+                        </div>
+                    </div>
+                    <div class="icon-row">
+                        <div class="icon-wrapper">
+                            <span class="material-icons">sports_kabaddi</span>
+                        </div>
+                        <div class="icon-info">
+                            <div class="icon-name">Icons.sports_kabaddi</div>
+                            <div class="icon-usage">Used in: Onboarding only</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="current-usage">
+                    <div class="current-usage-title">⚠️ Major Inconsistency</div>
+                    Three different icons used: boxingGlove, sports_mma, and sports_kabaddi
+                </div>
+            </div>
+
+            <!-- Tennis -->
+            <div class="sport-card">
+                <h3 class="sport-title tennis">🎾 Tennis</h3>
+
+                <div class="icon-section">
+                    <div class="icon-library">PhosphorIcons</div>
+                    <div class="icon-row">
+                        <div class="icon-wrapper">
+                            <i class="ph ph-tennis-ball" style="font-size: 36px;"></i>
+                        </div>
+                        <div class="icon-info">
+                            <div class="icon-name">PhosphorIconsRegular.tennisBall</div>
+                            <div class="icon-usage">Not currently used</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="icon-section">
+                    <div class="icon-library">Material Icons</div>
+                    <div class="icon-row">
+                        <div class="icon-wrapper">
+                            <span class="material-icons">sports_tennis</span>
+                        </div>
+                        <div class="icon-info">
+                            <div class="icon-name">Icons.sports_tennis</div>
+                            <div class="icon-usage">Used in: Games page, Bet selection, Home, Team cards, Onboarding</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="recommendation">
+                    <div class="recommendation-title">✅ Consistent</div>
+                    Tennis uses Material Icons consistently across all screens
+                </div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <h2>🎯 Summary of Issues</h2>
+            <ol style="margin-left: 20px; margin-top: 15px; line-height: 1.8;">
+                <li><strong>Primary Issue:</strong> Games page uses PhosphorIcons while all other screens use Material Icons</li>
+                <li><strong>Boxing Confusion:</strong> Three different icons used (boxingGlove, sports_mma, sports_kabaddi)</li>
+                <li><strong>MMA/Boxing Overlap:</strong> Both sports share sports_mma icon in some screens</li>
+                <li><strong>Missing Hockey:</strong> No hockey icon defined in Games page</li>
+                <li><strong>Tennis Exception:</strong> Only sport using Material Icons in Games page</li>
+            </ol>
+
+            <h2 style="margin-top: 30px;">💡 Recommendation</h2>
+            <p style="margin-top: 15px; line-height: 1.6;">
+                <strong>Option 1:</strong> Standardize on Material Icons (Icons.sports_*) across all screens for consistency<br>
+                <strong>Option 2:</strong> Standardize on PhosphorIcons for their unique design, but ensure all screens use them<br>
+                <strong>Option 3:</strong> Use PhosphorIcons for main navigation and Material Icons for detail screens
+            </p>
+        </div>
+    </div>
+</body>
+</html>

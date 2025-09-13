@@ -112,31 +112,36 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   @override
   void initState() {
     super.initState();
-    print('=== BET SELECTION SCREEN INIT ===');
-    print('Game Title: ${widget.gameTitle}');
-    print('Sport: ${widget.sport}');
-    print('Pool Name: ${widget.poolName}');
-    print('Pool ID: ${widget.poolId}');
-    print('Game ID: ${widget.gameId}');
-    print('================================');
-    
-    _betTypeController = _getSportSpecificTabController();
-    _initializeTabPicks();
-    _betTypeController.addListener(_onTabChanged);
-    _pulseController = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    )..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _pulseController,
-      curve: Curves.easeInOut,
-    ));
-    _startCountdownTimer();
-    _loadExistingBets();
-    _loadGameAndOddsData();
+    try {
+      print('=== BET SELECTION SCREEN INIT ===');
+      print('Game Title: ${widget.gameTitle}');
+      print('Sport: ${widget.sport}');
+      print('Pool Name: ${widget.poolName}');
+      print('Pool ID: ${widget.poolId}');
+      print('Game ID: ${widget.gameId}');
+      print('================================');
+
+      _betTypeController = _getSportSpecificTabController();
+      _initializeTabPicks();
+      _betTypeController.addListener(_onTabChanged);
+      _pulseController = AnimationController(
+        duration: const Duration(seconds: 2),
+        vsync: this,
+      )..repeat(reverse: true);
+      _pulseAnimation = Tween<double>(
+        begin: 0.8,
+        end: 1.2,
+      ).animate(CurvedAnimation(
+        parent: _pulseController,
+        curve: Curves.easeInOut,
+      ));
+      _startCountdownTimer();
+      _loadExistingBets();
+      _loadGameAndOddsData();
+    } catch (e, stackTrace) {
+      print('[BOXING ERROR] Failed to initialize bet selection screen: $e');
+      print('[BOXING ERROR] Stack trace: $stackTrace');
+    }
   }
   
   Future<void> _loadGameAndOddsData() async {
@@ -807,6 +812,12 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[BOXING DEBUG] ===== BUILD METHOD CALLED =====');
+    debugPrint('[BOXING DEBUG] Sport: ${widget.sport}');
+    debugPrint('[BOXING DEBUG] Game Title: ${widget.gameTitle}');
+    debugPrint('[BOXING DEBUG] _isLoadingData: $_isLoadingData');
+    debugPrint('[BOXING DEBUG] _betTypeController tabs: ${_betTypeController.length}');
+
     return Scaffold(
       appBar: AppBar(
         title: Column(
@@ -1012,7 +1023,12 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   }
   
   Widget _buildTeamSelection() {
+    debugPrint('[BOXING DEBUG] _buildTeamSelection called');
+    debugPrint('[BOXING DEBUG] Sport check: ${widget.sport}');
+    debugPrint('[BOXING DEBUG] Is combat sport: ${widget.sport.toUpperCase().contains("MMA") || widget.sport.toUpperCase().contains("UFC") || widget.sport.toUpperCase().contains("BOXING")}');
+
     if (_isLoadingData) {
+      debugPrint('[BOXING DEBUG] Still loading data...');
       return Container(
         padding: const EdgeInsets.all(32),
         child: const Center(
@@ -1020,7 +1036,25 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         ),
       );
     }
-    
+
+    // Check for MMA/Boxing/Combat sports
+    final isCombatSport = widget.sport.toUpperCase().contains('MMA') ||
+                          widget.sport.toUpperCase().contains('UFC') ||
+                          widget.sport.toUpperCase().contains('BOXING');
+
+    debugPrint('[BOXING DEBUG] After loading check - isCombatSport: $isCombatSport');
+    debugPrint('[BOXING DEBUG] _homeTeam: $_homeTeam');
+    debugPrint('[BOXING DEBUG] _awayTeam: $_awayTeam');
+    debugPrint('[BOXING DEBUG] _gameData: ${_gameData != null ? "EXISTS" : "NULL"}');
+
+    // For combat sports, show fighter selection UI
+    if (isCombatSport) {
+      debugPrint('[BOXING DEBUG] Combat sport detected - showing fighter selection');
+      return _buildFighterSelection();
+    }
+
+    debugPrint('[BOXING DEBUG] Regular sport - showing team selection');
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1192,6 +1226,12 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   }
   
   Widget _buildFighterSelection() {
+    debugPrint('[BOXING DEBUG] _buildFighterSelection called');
+    debugPrint('[BOXING DEBUG] Sport: ${widget.sport}');
+    debugPrint('[BOXING DEBUG] _homeTeam: $_homeTeam');
+    debugPrint('[BOXING DEBUG] _awayTeam: $_awayTeam');
+    debugPrint('[BOXING DEBUG] _oddsData: ${_oddsData != null ? "EXISTS" : "NULL"}');
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

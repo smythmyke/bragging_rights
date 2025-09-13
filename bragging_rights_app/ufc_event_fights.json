@@ -1,0 +1,6 @@
+{
+    "error": {
+        "message": "application error",
+        "code": 404
+    }
+}

@@ -63,10 +63,20 @@ class FightCardEventModel extends GameModel {
     final fightsList = (data['fights'] as List?)
         ?.map((f) => Fight.fromMap(f))
         .toList() ?? [];
-    
+
+    // Handle both Timestamp and int types for gameTime
+    DateTime gameTime;
+    if (data['gameTime'] is Timestamp) {
+      gameTime = (data['gameTime'] as Timestamp).toDate();
+    } else if (data['gameTime'] is int) {
+      gameTime = DateTime.fromMillisecondsSinceEpoch(data['gameTime'] as int);
+    } else {
+      gameTime = DateTime.now(); // Fallback
+    }
+
     return FightCardEventModel(
       id: doc.id,
-      gameTime: (data['gameTime'] as Timestamp).toDate(),
+      gameTime: gameTime,
       status: data['status'] ?? 'scheduled',
       eventName: data['eventName'] ?? '',
       promotion: data['promotion'] ?? 'UFC',
@@ -214,8 +224,10 @@ class Fight {
       cardPosition: map['cardPosition'] ?? 'prelim',
       isTitle: map['isTitle'] ?? false,
       isInterim: map['isInterim'] ?? false,
-      scheduledTime: map['scheduledTime'] != null 
-          ? (map['scheduledTime'] as Timestamp).toDate()
+      scheduledTime: map['scheduledTime'] != null
+          ? (map['scheduledTime'] is Timestamp
+              ? (map['scheduledTime'] as Timestamp).toDate()
+              : DateTime.fromMillisecondsSinceEpoch(map['scheduledTime'] as int))
           : null,
       winnerId: map['winnerId'],
       method: map['method'],
@@ -393,9 +405,13 @@ class FightPick {
       knockdown: data['knockdown'],
       pointDeduction: data['pointDeduction'],
       confidence: data['confidence'] ?? 3,
-      pickedAt: (data['pickedAt'] as Timestamp).toDate(),
-      modifiedAt: data['modifiedAt'] != null 
-          ? (data['modifiedAt'] as Timestamp).toDate()
+      pickedAt: data['pickedAt'] is Timestamp
+          ? (data['pickedAt'] as Timestamp).toDate()
+          : DateTime.fromMillisecondsSinceEpoch(data['pickedAt'] as int),
+      modifiedAt: data['modifiedAt'] != null
+          ? (data['modifiedAt'] is Timestamp
+              ? (data['modifiedAt'] as Timestamp).toDate()
+              : DateTime.fromMillisecondsSinceEpoch(data['modifiedAt'] as int))
           : null,
     );
   }

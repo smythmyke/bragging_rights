@@ -201,6 +201,30 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
   }
   
   Future<void> _onGameTap(GameModel game) async {
+    debugPrint('🎮 Game card tapped:');
+    debugPrint('  - Sport: ${game.sport}');
+    debugPrint('  - Game: ${game.awayTeam} vs ${game.homeTeam}');
+    debugPrint('  - Game ID: ${game.id}');
+    debugPrint('  - Navigating to /game-details');
+
+    // Navigate to game details page
+    Navigator.pushNamed(
+      context,
+      '/game-details',
+      arguments: {
+        'gameId': game.id,
+        'sport': game.sport,
+        'gameData': game,
+      },
+    );
+  }
+
+  Future<void> _onViewPoolsTap(GameModel game) async {
+    debugPrint('🎯 View Pools button tapped:');
+    debugPrint('  - Sport: ${game.sport}');
+    debugPrint('  - Game: ${game.awayTeam} vs ${game.homeTeam}');
+    debugPrint('  - Navigating to /pool-selection');
+
     // Show loading indicator
     showDialog(
       context: context,
@@ -209,14 +233,14 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
         child: CircularProgressIndicator(),
       ),
     );
-    
+
     try {
       // Enrich this specific game with odds on-demand
       await _gamesService.enrichGameOnDemand(game.id);
-      
+
       // Close loading dialog
       if (mounted) Navigator.pop(context);
-      
+
       // Navigate to pool selection
       if (mounted) {
         Navigator.push(
@@ -233,7 +257,7 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
     } catch (e) {
       // Close loading dialog
       if (mounted) Navigator.pop(context);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error loading game details: $e')),
@@ -246,27 +270,27 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
     debugPrint('Getting icon for sport: "$sport"');
     switch (sport.toUpperCase()) {
       case 'NFL':
-        return PhosphorIconsRegular.football;
+        return Icons.sports_football;
       case 'NBA':
-        return PhosphorIconsRegular.basketball;
+        return Icons.sports_basketball;
       case 'MLB':
-        return PhosphorIconsRegular.baseball;
+        return Icons.sports_baseball;
       case 'NHL':
-        return PhosphorIconsRegular.hockey;
+        return Icons.sports_hockey;
       case 'MMA':
       case 'UFC':
-        debugPrint('  -> MMA/UFC detected, using hand fist icon');
-        return PhosphorIconsRegular.handFist; // Different icon for MMA
+        debugPrint('  -> MMA/UFC detected, using sports_mma icon');
+        return Icons.sports_mma;
       case 'BOXING':
-        debugPrint('  -> Boxing detected, using boxing glove icon');
-        return PhosphorIconsRegular.boxingGlove;
+        debugPrint('  -> Boxing detected, using sports_mma icon');
+        return Icons.sports_mma;
       case 'TENNIS':
         return Icons.sports_tennis;
       case 'SOCCER':
-        return PhosphorIconsRegular.soccerBall;
+        return Icons.sports_soccer;
       default:
-        debugPrint('  -> Unknown sport, using trophy icon');
-        return PhosphorIconsRegular.trophy;
+        debugPrint('  -> Unknown sport, using sports icon');
+        return Icons.sports;
     }
   }
   
@@ -308,10 +332,16 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
             ? BorderSide(color: Colors.red.shade400, width: 2)
             : BorderSide.none,
       ),
-      child: InkWell(
-        onTap: () => _onGameTap(game),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            debugPrint('===== INKWELL TAP DETECTED =====');
+            debugPrint('Game: ${game.awayTeam} vs ${game.homeTeam}');
+            _onGameTap(game);
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
@@ -475,8 +505,34 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
+              // Add View Pools button
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    // Stop propagation by handling the tap here
+                    _onViewPoolsTap(game);
+                  },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).primaryColor,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'View Pools',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                  ),
+                ),
+              ),
             ],
           ),
+        ),
         ),
       ),
     );

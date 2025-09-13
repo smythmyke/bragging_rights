@@ -555,7 +555,9 @@ class FightCardService {
             'poolName': poolData['name'],
             'eventName': poolData['gameTitle'],
             'entryFee': poolData['buyIn'],
-            'submittedAt': (data['submittedAt'] as Timestamp).toDate(),
+            'submittedAt': data['submittedAt'] is Timestamp
+                ? (data['submittedAt'] as Timestamp).toDate()
+                : DateTime.fromMillisecondsSinceEpoch(data['submittedAt'] as int),
             'result': result,
           });
         }

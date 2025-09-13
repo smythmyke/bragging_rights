@@ -105,22 +105,24 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
   IconData _getSportIcon(String sport) {
     switch (sport.toUpperCase()) {
       case 'NFL':
-        return PhosphorIconsRegular.football;
+        return Icons.sports_football;
       case 'NBA':
-        return PhosphorIconsRegular.basketball;
+        return Icons.sports_basketball;
       case 'MLB':
-        return PhosphorIconsRegular.baseball;
+        return Icons.sports_baseball;
       case 'NHL':
-        return PhosphorIconsRegular.hockey;
+        return Icons.sports_hockey;
       case 'MMA':
       case 'UFC':
-        return PhosphorIconsRegular.handFist; // Different icon for MMA
+        return Icons.sports_mma;
       case 'BOXING':
-        return PhosphorIconsRegular.boxingGlove;
+        return Icons.sports_mma;
       case 'TENNIS':
         return Icons.sports_tennis;
+      case 'SOCCER':
+        return Icons.sports_soccer;
       default:
-        return PhosphorIconsRegular.trophy;
+        return Icons.sports;
     }
   }
   
@@ -157,15 +159,19 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
       ),
       child: InkWell(
         onTap: () {
+          debugPrint('🎮 Game card tapped in AllGamesScreen:');
+          debugPrint('  - Sport: ${game.sport}');
+          debugPrint('  - Game: ${game.awayTeam} vs ${game.homeTeam}');
+          debugPrint('  - Game ID: ${game.id}');
+          debugPrint('  - Navigating to /game-details');
+
           Navigator.pushNamed(
             context,
-            '/pool-selection',
+            '/game-details',
             arguments: {
               'gameId': game.id,
-              'gameTitle': game.gameTitle,
               'sport': game.sport,
-              'homeTeam': game.homeTeam,
-              'awayTeam': game.awayTeam,
+              'gameData': game,
             },
           );
         },
@@ -312,9 +318,13 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
               Column(
                 children: [
                   if (!hasStarted)
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.pushNamed(
+                    GestureDetector(
+                      onTap: () {}, // This blocks the tap from propagating to parent InkWell
+                      child: ElevatedButton(
+                        onPressed: () {
+                          debugPrint('🎯 View Pools button tapped in AllGamesScreen');
+                          debugPrint('  - Navigating to /pool-selection');
+                          Navigator.pushNamed(
                           context,
                           '/pool-selection',
                           arguments: {
@@ -333,6 +343,7 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
                         ),
                       ),
                       child: const Text('View Pools'),
+                      ),
                     )
                   else if (isLive)
                     Container(
