@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'dart:math' as math;
 import 'package:lottie/lottie.dart';
 import '../../services/auth_service.dart';
+import '../../theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,6 +15,12 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen>
     with TickerProviderStateMixin {
+  // Gold Rush Theme Colors
+  static const Color goldPrimary = Color(0xFFFFD700);
+  static const Color goldSecondary = Color(0xFFFFC107);
+  static const Color darkBackground = Color(0xFF0F0C29);
+  static const Color darkPurple = Color(0xFF302B63);
+  static const Color darkAccent = Color(0xFF24243e);
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -37,6 +45,9 @@ class _LoginScreenState extends State<LoginScreen>
   late Animation<Offset> _braggingAnimation;
   late Animation<Offset> _rightsAnimation;
   late Animation<double> _fadeAnimation;
+  late AnimationController _gridAnimationController;
+  late AnimationController _glowAnimationController;
+  late Animation<double> _glowAnimation;
 
   @override
   void initState() {
@@ -53,6 +64,26 @@ class _LoginScreenState extends State<LoginScreen>
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
+    
+    // Initialize grid animation controller for background
+    _gridAnimationController = AnimationController(
+      duration: const Duration(seconds: 10),
+      vsync: this,
+    )..repeat();
+    
+    // Initialize glow animation controller
+    _glowAnimationController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    )..repeat(reverse: true);
+    
+    _glowAnimation = Tween<double>(
+      begin: 0.3,
+      end: 0.7,
+    ).animate(CurvedAnimation(
+      parent: _glowAnimationController,
+      curve: Curves.easeInOut,
+    ));
     
     // Set up animations for "Bragging" sliding from left
     _braggingAnimation = Tween<Offset>(
@@ -186,7 +217,7 @@ class _LoginScreenState extends State<LoginScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.errorPink,
             duration: const Duration(seconds: 5),
           ),
         );
@@ -233,7 +264,7 @@ class _LoginScreenState extends State<LoginScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.errorPink,
           ),
         );
       }
@@ -247,26 +278,44 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.primary.withOpacity(0.8),
-            ],
+      body: Stack(
+        children: [
+          // Gold Rush Background Gradient
+          Container(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment.center,
+                radius: 1.2,
+                colors: [
+                  const Color(0xFF1a1a2e),
+                  darkBackground,
+                ],
+              ),
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
+          // Animated Neon Grid
+          AnimatedBuilder(
+            animation: _gridAnimationController,
+            builder: (context, child) {
+              return CustomPaint(
+                size: Size.infinite,
+                painter: NeonGridPainter(
+                  animation: _gridAnimationController.value,
+                  glowIntensity: _glowAnimation.value,
+                ),
+              );
+            },
+          ),
+          // Main Content
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Animated Logo with high school lettering font
-                  _buildAnimatedLogo(),
+                  // Gold Rush Logo with Glow Effect
+                  _buildGoldRushLogo(),
                   // Animation closer to logo with minimal spacing
                   const SizedBox(height: 8),  // Very small gap between logo and animation
                   // Lottie Animation (same as splash screen)
@@ -296,104 +345,240 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                   const SizedBox(height: 12),  // Further reduced spacing
                   
-                  // Auth Form
-                  Card(
-                    elevation: 8,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                  // Neon Gold Auth Form
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          darkBackground.withOpacity(0.9),
+                          darkAccent.withOpacity(0.9),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: goldPrimary.withOpacity(0.3),
+                          blurRadius: 50,
+                          spreadRadius: 0,
+                        ),
+                        BoxShadow(
+                          color: goldPrimary.withOpacity(0.1),
+                          blurRadius: 100,
+                          spreadRadius: 0,
+                        ),
+                      ],
+                      border: Border.all(
+                        color: goldPrimary.withOpacity(0.3),
+                        width: 1,
+                      ),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(20),
                       child: Column(
                         children: [
-                          // Email Field
-                          TextField(
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            decoration: InputDecoration(
-                              labelText: 'Email',
-                              prefixIcon: const Icon(Icons.email),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
+                          // Email Field with Neon Gold Style
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: goldPrimary.withOpacity(0.3),
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                            child: TextField(
+                              controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: InputDecoration(
+                                labelText: 'Email Address',
+                                labelStyle: TextStyle(
+                                  color: goldPrimary.withOpacity(0.7),
+                                ),
+                                prefixIcon: Icon(
+                                  Icons.email_outlined,
+                                  color: goldPrimary.withOpacity(0.7),
+                                ),
+                                border: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                enabledBorder: InputBorder.none,
                               ),
                             ),
                           ),
                           const SizedBox(height: 16),
                           
-                          // Password Field
-                          TextField(
-                            controller: _passwordController,
-                            obscureText: _obscurePassword,
-                            decoration: InputDecoration(
-                              labelText: 'Password',
-                              prefixIcon: const Icon(Icons.lock),
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                          // Password Field with Neon Gold Style
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: goldPrimary.withOpacity(0.3),
+                                  width: 2,
                                 ),
-                                onPressed: () {
-                                  setState(() {
-                                    _obscurePassword = !_obscurePassword;
-                                  });
-                                },
                               ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: TextField(
+                              controller: _passwordController,
+                              obscureText: _obscurePassword,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: InputDecoration(
+                                labelText: 'Password',
+                                labelStyle: TextStyle(
+                                  color: goldPrimary.withOpacity(0.7),
+                                ),
+                                prefixIcon: Icon(
+                                  Icons.lock_outline,
+                                  color: goldPrimary.withOpacity(0.7),
+                                ),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                    color: goldPrimary.withOpacity(0.7),
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
+                                ),
+                                border: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                enabledBorder: InputBorder.none,
                               ),
                             ),
                           ),
                           
                           // Additional fields for Registration
-                          if (!_isLogin) ...[
-                            const SizedBox(height: 16),
-                            TextField(
-                              controller: _displayNameController,
-                              decoration: InputDecoration(
-                                labelText: 'Display Name',
-                                prefixIcon: const Icon(Icons.person),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            height: !_isLogin ? null : 0,
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 300),
+                              opacity: !_isLogin ? 1.0 : 0.0,
+                              child: Column(
+                                children: [
+                                  const SizedBox(height: 16),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      border: Border(
+                                        bottom: BorderSide(
+                                          color: goldPrimary.withOpacity(0.3),
+                                          width: 2,
+                                        ),
+                                      ),
+                                    ),
+                                    child: TextField(
+                                      controller: _displayNameController,
+                                      style: const TextStyle(color: Colors.white),
+                                      decoration: InputDecoration(
+                                        labelText: 'Display Name',
+                                        labelStyle: TextStyle(
+                                          color: goldPrimary.withOpacity(0.7),
+                                        ),
+                                        prefixIcon: Icon(
+                                          Icons.person_outline,
+                                          color: goldPrimary.withOpacity(0.7),
+                                        ),
+                                        border: InputBorder.none,
+                                        focusedBorder: InputBorder.none,
+                                        enabledBorder: InputBorder.none,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      border: Border(
+                                        bottom: BorderSide(
+                                          color: goldPrimary.withOpacity(0.3),
+                                          width: 2,
+                                        ),
+                                      ),
+                                    ),
+                                    child: TextField(
+                                      controller: _confirmPasswordController,
+                                      obscureText: _obscurePassword,
+                                      style: const TextStyle(color: Colors.white),
+                                      decoration: InputDecoration(
+                                        labelText: 'Confirm Password',
+                                        labelStyle: TextStyle(
+                                          color: goldPrimary.withOpacity(0.7),
+                                        ),
+                                        prefixIcon: Icon(
+                                          Icons.lock_outline,
+                                          color: goldPrimary.withOpacity(0.7),
+                                        ),
+                                        border: InputBorder.none,
+                                        focusedBorder: InputBorder.none,
+                                        enabledBorder: InputBorder.none,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 16),
-                            TextField(
-                              controller: _confirmPasswordController,
-                              obscureText: _obscurePassword,
-                              decoration: InputDecoration(
-                                labelText: 'Confirm Password',
-                                prefixIcon: const Icon(Icons.lock_outline),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                           
                           const SizedBox(height: 24),
                           
-                          // Submit Button
-                          SizedBox(
+                          // Neon Gold Submit Button
+                          Container(
                             width: double.infinity,
-                            height: 48,
-                            child: ElevatedButton(
-                              onPressed: _isLoading ? null : _handleAuth,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Theme.of(context).colorScheme.primary,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                            height: 50,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(50),
+                              border: Border.all(
+                                color: goldPrimary,
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: goldPrimary.withOpacity(0.6),
+                                  blurRadius: 30,
+                                  spreadRadius: 0,
+                                ),
+                              ],
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: _isLoading ? null : _handleAuth,
+                                borderRadius: BorderRadius.circular(50),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 300),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(50),
+                                    gradient: _isLoading
+                                        ? null
+                                        : LinearGradient(
+                                            colors: [goldPrimary, goldSecondary],
+                                            begin: Alignment.centerLeft,
+                                            end: Alignment.centerRight,
+                                          ),
+                                  ),
+                                  child: Center(
+                                    child: _isLoading
+                                        ? SizedBox(
+                                            width: 24,
+                                            height: 24,
+                                            child: CircularProgressIndicator(
+                                              color: goldPrimary,
+                                              strokeWidth: 2,
+                                            ),
+                                          )
+                                        : Text(
+                                            _isLogin ? 'SIGN IN' : 'CREATE ACCOUNT',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: Theme.of(context).colorScheme.onPrimary,
+                                            ),
+                                          ),
+                                  ),
                                 ),
                               ),
-                              child: _isLoading 
-                                  ? const CircularProgressIndicator(color: Colors.white)
-                                  : Text(
-                                      _isLogin ? 'Login' : 'Create Account',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Theme.of(context).colorScheme.onPrimary,
-                                      ),
-                                    ),
                             ),
                           ),
                           
@@ -402,18 +587,18 @@ class _LoginScreenState extends State<LoginScreen>
                           // OR Divider
                           Row(
                             children: [
-                              Expanded(child: Divider(color: Colors.grey.shade400)),
+                              Expanded(child: Divider(color: AppTheme.surfaceBlue.withOpacity(0.3))),
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 16),
                                 child: Text(
                                   'OR',
                                   style: TextStyle(
-                                    color: Colors.grey.shade600,
+                                    color: AppTheme.primaryCyan.withOpacity(0.7),
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ),
-                              Expanded(child: Divider(color: Colors.grey.shade400)),
+                              Expanded(child: Divider(color: AppTheme.surfaceBlue.withOpacity(0.3))),
                             ],
                           ),
                           
@@ -429,7 +614,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                side: BorderSide(color: Colors.grey.shade400),
+                                side: BorderSide(color: AppTheme.surfaceBlue.withOpacity(0.3)),
                               ),
                               icon: Image.network(
                                 'https://www.google.com/favicon.ico',
@@ -479,7 +664,7 @@ class _LoginScreenState extends State<LoginScreen>
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
+                        color: AppTheme.surfaceBlue.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -505,10 +690,92 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
         ),
-      ),
+      ],
+    ),
     );
   }
   
+  Widget _buildGoldRushLogo() {
+    return Container(
+      height: 120,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Gold glow effect behind logo
+          AnimatedBuilder(
+            animation: _glowAnimation,
+            builder: (context, child) {
+              return Container(
+                width: 200,
+                height: 120,
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: goldPrimary.withOpacity(0.3 * _glowAnimation.value),
+                      blurRadius: 50,
+                      spreadRadius: 20,
+                    ),
+                    BoxShadow(
+                      color: goldSecondary.withOpacity(0.2 * _glowAnimation.value),
+                      blurRadius: 100,
+                      spreadRadius: 40,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          // Main logo text with shimmer effect
+          ShaderMask(
+            shaderCallback: (Rect bounds) {
+              return LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  goldSecondary,
+                  goldPrimary,
+                  Colors.white,
+                  goldPrimary,
+                  goldSecondary,
+                ],
+                stops: [0.0, 0.3, 0.5, 0.7, 1.0],
+                transform: GradientRotation(_glowAnimation.value * 2 * math.pi),
+              ).createShader(bounds);
+            },
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'BRAGGING',
+                  style: TextStyle(
+                    fontFamily: 'Arial Black',
+                    fontSize: 42,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 4,
+                    color: Colors.white,
+                    height: 1,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'RIGHTS',
+                  style: TextStyle(
+                    fontFamily: 'Arial Black',
+                    fontSize: 42,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 4,
+                    color: Colors.white,
+                    height: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAnimatedLogo() {
     return ClipRect(
       child: SizedBox(
@@ -538,7 +805,7 @@ class _LoginScreenState extends State<LoginScreen>
                         // Outer black shadow for depth
                         Shadow(
                           blurRadius: 0,
-                          color: Colors.black,
+                          color: AppTheme.deepBlue,
                           offset: const Offset(4.0, 4.0),
                         ),
                         // Inner glow
@@ -573,26 +840,26 @@ class _LoginScreenState extends State<LoginScreen>
                       fontFamily: 'Arial Black', 
                       fontSize: 48,
                       fontWeight: FontWeight.w900,
-                      color: Colors.white,
+                      color: AppTheme.primaryCyan,
                       letterSpacing: 4,
                       height: 1,
                       shadows: [
                         // Outer black shadow for depth
                         Shadow(
                           blurRadius: 0,
-                          color: Colors.black,
+                          color: AppTheme.deepBlue,
                           offset: const Offset(4.0, 4.0),
                         ),
                         // Inner glow
                         Shadow(
                           blurRadius: 12.0,
-                          color: Colors.blue.withOpacity(0.5),
+                          color: AppTheme.primaryCyan.withOpacity(0.5),
                           offset: const Offset(0, 0),
                         ),
                         // Extra depth
                         Shadow(
                           blurRadius: 3.0,
-                          color: Colors.blue[900]!,
+                          color: AppTheme.secondaryCyan,
                           offset: const Offset(2.0, 2.0),
                         ),
                       ],
@@ -671,5 +938,92 @@ class SparklePainter extends CustomPainter {
   @override
   bool shouldRepaint(SparklePainter oldDelegate) {
     return oldDelegate.progress != progress;
+  }
+}
+
+// Custom painter for neon grid background
+class NeonGridPainter extends CustomPainter {
+  final double animation;
+  final double glowIntensity;
+  
+  NeonGridPainter({
+    required this.animation,
+    required this.glowIntensity,
+  });
+  
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+      
+    // Animated gold color with glow
+    final goldColor = Color(0xFFFFD700).withOpacity(0.3 + (glowIntensity * 0.2));
+    paint.color = goldColor;
+    
+    // Draw horizontal lines
+    final horizontalSpacing = 40.0;
+    final verticalOffset = (animation * horizontalSpacing) % horizontalSpacing;
+    
+    for (double y = -horizontalSpacing + verticalOffset; y < size.height + horizontalSpacing; y += horizontalSpacing) {
+      // Add perspective effect - lines get closer together towards the top
+      final perspectiveFactor = (y / size.height);
+      final adjustedY = y * (0.5 + perspectiveFactor * 0.5);
+      
+      // Vary opacity based on position
+      final lineOpacity = 0.2 + (math.sin(y / 100 + animation * 2) * 0.1);
+      paint.color = goldColor.withOpacity(lineOpacity);
+      
+      canvas.drawLine(
+        Offset(0, adjustedY),
+        Offset(size.width, adjustedY),
+        paint,
+      );
+    }
+    
+    // Draw vertical lines
+    final verticalSpacing = 40.0;
+    final horizontalOffset = (animation * verticalSpacing) % verticalSpacing;
+    
+    for (double x = -verticalSpacing + horizontalOffset; x < size.width + verticalSpacing; x += verticalSpacing) {
+      // Add perspective effect - lines converge towards center
+      final centerDistance = (x - size.width / 2).abs() / (size.width / 2);
+      final adjustedX = size.width / 2 + (x - size.width / 2) * (0.7 + centerDistance * 0.3);
+      
+      // Vary opacity based on position
+      final lineOpacity = 0.2 + (math.cos(x / 100 + animation * 2) * 0.1);
+      paint.color = goldColor.withOpacity(lineOpacity);
+      
+      canvas.drawLine(
+        Offset(adjustedX, 0),
+        Offset(adjustedX, size.height),
+        paint,
+      );
+    }
+    
+    // Add scanning line effect
+    final scanLineY = (animation * size.height * 2) % (size.height + 100) - 50;
+    final scanPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..shader = LinearGradient(
+        colors: [
+          Colors.transparent,
+          Color(0xFFFFD700).withOpacity(0.8),
+          Colors.transparent,
+        ],
+        stops: [0.0, 0.5, 1.0],
+      ).createShader(Rect.fromLTWH(0, scanLineY - 20, size.width, 40));
+      
+    canvas.drawLine(
+      Offset(0, scanLineY),
+      Offset(size.width, scanLineY),
+      scanPaint,
+    );
+  }
+  
+  @override
+  bool shouldRepaint(NeonGridPainter oldDelegate) {
+    return oldDelegate.animation != animation || oldDelegate.glowIntensity != glowIntensity;
   }
 }

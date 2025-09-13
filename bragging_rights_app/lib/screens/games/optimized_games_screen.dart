@@ -33,7 +33,7 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
   bool _loadingMore = false;
   String? _selectedSport;
   TabController? _tabController;
-  List<String> _userSports = [];
+  List<String> _availableSports = [];
   
   @override
   void initState() {
@@ -62,26 +62,13 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
     setState(() => _loading = true);
     
     try {
-      // Load user preferences
-      debugPrint('OptimizedGamesScreen: Loading user preferences');
-      final prefs = await _prefsService.getUserPreferences();
-      if (!mounted) return;
-      
-      _userSports = prefs.sportsToLoad;
-      debugPrint('OptimizedGamesScreen: User sports: $_userSports');
-      
-      // Initialize tab controller
-      if (_userSports.isNotEmpty && mounted) {
-        _tabController = TabController(
-          length: _userSports.length + 1, // +1 for "All" tab
-          vsync: this,
-        );
-      }
-      
-      // Load featured games
+      // Load featured games first
       debugPrint('OptimizedGamesScreen: Loading featured games');
-      final games = await _gamesService.loadFeaturedGames();
+      final result = await _gamesService.loadFeaturedGames();
       if (!mounted) return;
+      
+      final games = result['games'] as List<GameModel>;
+      final allSports = result['allSports'] as List<String>;
       
       // Organize games by sport
       _gamesBySport.clear();
@@ -89,6 +76,18 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
         final sport = game.sport.toLowerCase();
         _gamesBySport[sport] ??= [];
         _gamesBySport[sport]!.add(game);
+      }
+      
+      // Use all sports that have games available (not just featured)
+      _availableSports = allSports.map((s) => s.toLowerCase()).toList()..sort();
+      debugPrint('OptimizedGamesScreen: Available sports: $_availableSports');
+      
+      // Initialize tab controller with actual sports found
+      if (_availableSports.isNotEmpty && mounted) {
+        _tabController = TabController(
+          length: _availableSports.length + 1, // +1 for "All" tab
+          vsync: this,
+        );
       }
       
       if (mounted) {
@@ -117,7 +116,7 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
   }
   
   Future<void> _onRefresh() async {
-    await _gamesService.loadFeaturedGames(forceRefresh: true);
+    final result = await _gamesService.loadFeaturedGames(forceRefresh: true);
     await _loadInitialData();
   }
   
@@ -151,6 +150,42 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
       debugPrint('Error loading more games: $e');
     } finally {
       setState(() => _loadingMore = false);
+    }
+  }
+  
+  Future<void> _loadAllGamesForSport(String sport) async {
+    try {
+      debugPrint('Loading ALL games for $sport...');
+      
+      // Load ALL games for this sport without date limit
+      final allGames = await _gamesService.loadAllGamesForSport(sport);
+      
+      if (mounted) {
+        setState(() {
+          _gamesBySport[sport] = allGames;
+          _loadingMore = false;
+        });
+        
+        debugPrint('Loaded ${allGames.length} $sport games');
+        
+        // Check if Canelo vs Crawford is in the list
+        if (sport.toLowerCase() == 'boxing') {
+          for (final game in allGames) {
+            if (game.homeTeam.toLowerCase().contains('canelo') || 
+                game.awayTeam.toLowerCase().contains('crawford')) {
+              debugPrint('✅ FOUND CANELO VS CRAWFORD IN UI: ${game.awayTeam} vs ${game.homeTeam}');
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading all games for $sport: $e');
+      if (mounted) {
+        setState(() => _loadingMore = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading $sport games')),
+        );
+      }
     }
   }
   
@@ -219,6 +254,8 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
         return PhosphorIconsRegular.boxingGlove;
       case 'TENNIS':
         return Icons.sports_tennis;
+      case 'SOCCER':
+        return PhosphorIconsRegular.soccerBall;
       default:
         return PhosphorIconsRegular.trophy;
     }
@@ -236,11 +273,13 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
         return Colors.red;
       case 'MMA':
       case 'UFC':
-        return Colors.purple;
+        return Colors.red[400]!;  // Changed from purple to a brighter red
       case 'BOXING':
         return Colors.amber;
       case 'TENNIS':
         return Colors.green;
+      case 'SOCCER':
+        return Colors.teal;
       default:
         return Colors.grey;
     }
@@ -508,22 +547,33 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
               },
             ),
           ],
-          bottom: _tabController != null && _userSports.isNotEmpty
+          bottom: _tabController != null && _availableSports.isNotEmpty
             ? TabBar(
                 controller: _tabController,
                 isScrollable: true,
                 tabs: [
                   const Tab(text: 'All'),
-                  ..._userSports.map((sport) => Tab(
+                  ..._availableSports.map((sport) => Tab(
                     text: sport.toUpperCase(),
                   )),
                 ],
-                onTap: (index) {
-                  setState(() {
-                    _selectedSport = index == 0 
-                        ? null 
-                        : _userSports[index - 1];
-                  });
+                onTap: (index) async {
+                  if (index == 0) {
+                    // "All" tab - use featured games
+                    setState(() {
+                      _selectedSport = null;
+                    });
+                  } else {
+                    // Specific sport tab - load ALL games for that sport
+                    final sport = _availableSports[index - 1];
+                    setState(() {
+                      _selectedSport = sport;
+                      _loadingMore = true;
+                    });
+                    
+                    // Load ALL games for this sport (not just 14 days)
+                    await _loadAllGamesForSport(sport);
+                  }
                 },
               )
             : null,

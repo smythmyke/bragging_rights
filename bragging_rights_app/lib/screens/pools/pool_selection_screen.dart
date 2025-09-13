@@ -8,6 +8,7 @@ import '../../models/pool_model.dart';
 import '../../models/game_model.dart';
 import '../../utils/sport_utils.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../theme/app_theme.dart';
 
 class PoolSelectionScreen extends StatefulWidget {
   final String? gameId;  // Real game ID from ESPN/Firestore
@@ -270,7 +271,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
               Text(widget.gameTitle, style: const TextStyle(fontSize: 16)),
               Text(
                 widget.sport,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 12, color: AppTheme.surfaceBlue.withOpacity(0.6)),
               ),
             ],
           ),
@@ -280,7 +281,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               margin: const EdgeInsets.only(right: 8),
               decoration: BoxDecoration(
-                color: isUrgent ? Colors.red : Colors.orange,
+                color: isUrgent ? AppTheme.errorPink : AppTheme.warningAmber,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
@@ -321,7 +322,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                 const SizedBox(height: 16),
                 Text(
                   'Loading latest odds...',
-                  style: TextStyle(color: Colors.grey[600]),
+                  style: TextStyle(color: AppTheme.surfaceBlue.withOpacity(0.6)),
                 ),
               ],
             ),
@@ -343,10 +344,10 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
       children: [
         Container(
           padding: const EdgeInsets.all(16),
-          color: Colors.green.withOpacity(0.1),
+          color: AppTheme.neonGreen.withOpacity(0.1),
           child: Row(
             children: [
-              Icon(Icons.flash_on, color: Colors.green, size: 28),
+              Icon(Icons.flash_on, color: AppTheme.neonGreen, size: 28),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -358,7 +359,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                     ),
                     Text(
                       'Auto-matched with players at your BR level',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      style: TextStyle(color: AppTheme.surfaceBlue.withOpacity(0.6), fontSize: 12),
                     ),
                   ],
                 ),
@@ -381,16 +382,16 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.pool, size: 64, color: Colors.grey[400]),
+                      Icon(Icons.pool, size: 64, color: AppTheme.surfaceBlue),
                       const SizedBox(height: 16),
                       Text(
                         'No quick play pools available',
-                        style: TextStyle(color: Colors.grey[600]),
+                        style: TextStyle(color: AppTheme.surfaceBlue.withOpacity(0.6)),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Check back soon or create your own!',
-                        style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                        style: TextStyle(color: AppTheme.surfaceBlue, fontSize: 12),
                       ),
                       const SizedBox(height: 24),
                       ElevatedButton.icon(
@@ -398,7 +399,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                         icon: const Icon(Icons.add_circle_outline),
                         label: const Text('Create Pool'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
+                          backgroundColor: AppTheme.neonGreen,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         ),
@@ -443,11 +444,11 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
   Color _getPoolColor(PoolTier tier) {
     switch (tier) {
       case PoolTier.beginner:
-        return Colors.blue;
+        return AppTheme.primaryCyan;
       case PoolTier.standard:
-        return Colors.green;
+        return AppTheme.neonGreen;
       case PoolTier.high:
-        return Colors.orange;
+        return AppTheme.warningAmber;
       case PoolTier.vip:
         return Colors.purple;
     }
@@ -491,20 +492,20 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
     if (isFull && !isJoined) {
       buttonText = 'Full';
       isEnabled = false;
-      buttonColor = Colors.grey;
+      buttonColor = AppTheme.surfaceBlue;
     } else if (isJoined && !hasSubmitted) {
       buttonText = 'Complete';
       isEnabled = true;
-      buttonColor = Colors.orange;
+      buttonColor = AppTheme.warningAmber;
       onPressed = () => _completeSelections(poolId!);
     } else if (isJoined && hasSubmitted) {
       buttonText = 'Joined';
       isEnabled = false;
-      buttonColor = Colors.green;
+      buttonColor = AppTheme.neonGreen;
     } else if (!canAfford) {
       buttonText = 'Need BR';
       isEnabled = false;
-      buttonColor = Colors.grey;
+      buttonColor = AppTheme.surfaceBlue;
     } else {
       onPressed = () => _joinPool(title, brRequired, poolId!);
     }
@@ -516,15 +517,15 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
     
     if (isJoined && hasSubmitted) {
       // Completed state - grayed out
-      cardColor = Colors.grey[100];
+      cardColor = AppTheme.surfaceBlue;
     } else if (isJoined && !hasSubmitted) {
       // Joined but not completed - highlighted
-      cardColor = Colors.orange.withOpacity(0.05);
-      borderColor = Colors.orange;
+      cardColor = AppTheme.warningAmber.withOpacity(0.05);
+      borderColor = AppTheme.warningAmber;
       borderWidth = 2.0;
     } else if (isFull && !isJoined) {
       // Full pool - grayed out
-      cardColor = Colors.grey[100];
+      cardColor = AppTheme.surfaceBlue;
     }
     
     return Card(
@@ -540,14 +541,14 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
         enabled: !(isJoined && hasSubmitted), // Disable if completed
         leading: CircleAvatar(
           backgroundColor: isJoined && !hasSubmitted 
-            ? Colors.orange.withOpacity(0.2)
-            : (isFull && !isJoined ? Colors.grey : color).withOpacity(0.2),
+            ? AppTheme.warningAmber.withOpacity(0.2)
+            : (isFull && !isJoined ? AppTheme.surfaceBlue : color).withOpacity(0.2),
           child: Text(
             '${brRequired}',
             style: TextStyle(
               color: isJoined && !hasSubmitted 
-                ? Colors.orange
-                : (isFull && !isJoined || (isJoined && hasSubmitted) ? Colors.grey : color),
+                ? AppTheme.warningAmber
+                : (isFull && !isJoined || (isJoined && hasSubmitted) ? AppTheme.surfaceBlue : color),
               fontWeight: FontWeight.bold,
               fontSize: 12,
             ),
@@ -557,7 +558,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
           title,
           style: TextStyle(
             color: (isFull && !isJoined) || (isJoined && hasSubmitted) 
-              ? Colors.grey[600] 
+              ? AppTheme.surfaceBlue.withOpacity(0.6) 
               : null,
             fontWeight: isJoined && !hasSubmitted ? FontWeight.bold : null,
           ),
@@ -574,7 +575,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                     'Buy-in: $buyIn • $players',
                     style: TextStyle(
                       color: (isFull && !isJoined) || (isJoined && hasSubmitted) 
-                        ? Colors.grey[500] 
+                        ? AppTheme.surfaceBlue 
                         : null,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -586,14 +587,14 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: AppTheme.errorPink.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: const Text(
                       'FULL',
                       style: TextStyle(
                         fontSize: 9,
-                        color: Colors.red,
+                        color: AppTheme.errorPink,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -604,14 +605,14 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.1),
+                      color: AppTheme.warningAmber.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: const Text(
                       'INCOMPLETE',
                       style: TextStyle(
                         fontSize: 9,
-                        color: Colors.orange,
+                        color: AppTheme.warningAmber,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -622,7 +623,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                   Icon(
                     Icons.check_circle,
                     size: 14,
-                    color: Colors.green,
+                    color: AppTheme.neonGreen,
                   ),
                 ],
               ],
@@ -630,24 +631,24 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
             const SizedBox(height: 4),
             LinearProgressIndicator(
               value: progress.clamp(0.0, 1.0),
-              backgroundColor: Colors.grey[300],
+              backgroundColor: AppTheme.surfaceBlue,
               valueColor: AlwaysStoppedAnimation(
-                isJoined && hasSubmitted ? Colors.grey :
-                isJoined && !hasSubmitted ? Colors.orange :
-                isFull ? Colors.red : color
+                isJoined && hasSubmitted ? AppTheme.surfaceBlue :
+                isJoined && !hasSubmitted ? AppTheme.warningAmber :
+                isFull ? AppTheme.errorPink : color
               ),
             ),
             const SizedBox(height: 2),
             Text(
               isFull ? 'Pool 100% full' : 'Pool $percentage% full',
-              style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 10, color: AppTheme.surfaceBlue.withOpacity(0.6)),
             ),
           ],
         ),
         trailing: ElevatedButton(
           onPressed: isEnabled ? onPressed : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: isEnabled ? buttonColor : Colors.grey[400],
+            backgroundColor: isEnabled ? buttonColor : AppTheme.surfaceBlue,
           ),
           child: Text(
             buttonText,
@@ -753,11 +754,11 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
       case RegionalLevel.neighborhood:
         return Colors.teal;
       case RegionalLevel.city:
-        return Colors.blue;
+        return AppTheme.primaryCyan;
       case RegionalLevel.state:
         return Colors.purple;
       case RegionalLevel.national:
-        return Colors.green;
+        return AppTheme.neonGreen;
     }
   }
 
@@ -824,7 +825,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                         padding: const EdgeInsets.all(32),
                         child: Text(
                           'No friend pools available',
-                          style: TextStyle(color: Colors.grey[600]),
+                          style: TextStyle(color: AppTheme.surfaceBlue.withOpacity(0.6)),
                         ),
                       ),
                     );
@@ -857,7 +858,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: const CircleAvatar(
-          backgroundColor: Colors.blue,
+          backgroundColor: AppTheme.primaryCyan,
           child: Icon(Icons.people, color: Colors.white),
         ),
         title: Text(
@@ -878,7 +879,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                 'Code: $code',
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.grey[600],
+                  color: AppTheme.surfaceBlue.withOpacity(0.6),
                   fontWeight: FontWeight.bold,
                 ),
                 overflow: TextOverflow.ellipsis,
@@ -912,7 +913,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.amber, Colors.orange],
+                    colors: [AppTheme.warningAmber, AppTheme.warningAmber],
                   ),
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -942,7 +943,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
-                        foregroundColor: Colors.orange,
+                        foregroundColor: AppTheme.warningAmber,
                       ),
                       child: Text('Enter Tournament (${championship.buyIn} BR)'),
                     ),
@@ -964,11 +965,11 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                   padding: const EdgeInsets.all(32),
                   child: Column(
                     children: [
-                      Icon(Icons.emoji_events, size: 64, color: Colors.grey[400]),
+                      Icon(Icons.emoji_events, size: 64, color: AppTheme.surfaceBlue),
                       const SizedBox(height: 16),
                       Text(
                         'No tournaments available',
-                        style: TextStyle(color: Colors.grey[600]),
+                        style: TextStyle(color: AppTheme.surfaceBlue.withOpacity(0.6)),
                       ),
                     ],
                   ),
@@ -996,7 +997,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: const CircleAvatar(
-          backgroundColor: Colors.amber,
+          backgroundColor: AppTheme.warningAmber,
           child: Icon(Icons.emoji_events, color: Colors.white),
         ),
         title: Text(title),
@@ -1009,7 +1010,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
               '🏆 $prize',
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.amber,
+                color: AppTheme.warningAmber,
               ),
             ),
           ],
@@ -1067,13 +1068,13 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
             const SizedBox(height: 4),
             LinearProgressIndicator(
               value: progress,
-              backgroundColor: Colors.grey[300],
+              backgroundColor: AppTheme.surfaceBlue,
               valueColor: AlwaysStoppedAnimation(color),
             ),
             const SizedBox(height: 2),
             Text(
               'Pool $percentage% full',
-              style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 10, color: AppTheme.surfaceBlue.withOpacity(0.6)),
               overflow: TextOverflow.ellipsis,
             ),
           ],
@@ -1173,7 +1174,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.errorPink,
           ),
         );
       }
@@ -1190,7 +1191,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.check_circle, color: Colors.green, size: 64),
+            const Icon(Icons.check_circle, color: AppTheme.neonGreen, size: 64),
             const SizedBox(height: 16),
             Text(
               'Join $poolName?',
@@ -1199,7 +1200,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
             const SizedBox(height: 8),
             Text(
               'Entry: $buyIn BR',
-              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 16, color: AppTheme.surfaceBlue.withOpacity(0.6)),
             ),
             const SizedBox(height: 4),
             Text(
@@ -1304,7 +1305,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                                       Expanded(child: Text(errorMessage)),
                                     ],
                                   ),
-                                  backgroundColor: Colors.orange,
+                                  backgroundColor: AppTheme.warningAmber,
                                   action: SnackBarAction(
                                     label: 'Go to My Bets',
                                     textColor: Colors.white,
@@ -1326,7 +1327,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                                       Expanded(child: Text('This pool is full. Try another one!')),
                                     ],
                                   ),
-                                  backgroundColor: Colors.orange,
+                                  backgroundColor: AppTheme.warningAmber,
                                 ),
                               );
                             } else if (errorCode == 'INSUFFICIENT_BALANCE') {
@@ -1339,14 +1340,14 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                                       Expanded(child: Text('Not enough BR balance')),
                                     ],
                                   ),
-                                  backgroundColor: Colors.red,
+                                  backgroundColor: AppTheme.errorPink,
                                 ),
                               );
                             } else if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(errorMessage),
-                                  backgroundColor: Colors.red,
+                                  backgroundColor: AppTheme.errorPink,
                                 ),
                               );
                             }
@@ -1370,7 +1371,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text('Error joining pool: ${e.toString()}'),
-                                    backgroundColor: Colors.red,
+                                    backgroundColor: AppTheme.errorPink,
                                   ),
                                 );
                               }
@@ -1408,7 +1409,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter a pool code'),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppTheme.warningAmber,
         ),
       );
       return;
@@ -1420,14 +1421,14 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Successfully joined pool!'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppTheme.neonGreen,
         ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Invalid pool code'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppTheme.errorPink,
         ),
       );
     }
@@ -1464,7 +1465,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Regional pool created successfully!'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppTheme.neonGreen,
           ),
         );
         
@@ -1474,7 +1475,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Failed to create regional pool. Please try again.'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.errorPink,
           ),
         );
       }
@@ -1486,7 +1487,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppTheme.errorPink,
         ),
       );
     }
@@ -1522,7 +1523,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Pool created successfully!'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppTheme.neonGreen,
           ),
         );
         
@@ -1532,7 +1533,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Failed to create pool. Please try again.'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.errorPink,
           ),
         );
       }
@@ -1543,7 +1544,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error creating pool: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppTheme.errorPink,
         ),
       );
     }

@@ -55,9 +55,31 @@ dependencies:
   path_provider: ^2.1.5
   audioplayers: ^6.1.0  # For card sound effects
   permission_handler: ^11.3.1  # For contact permissions
-  contacts_service: ^0.6.3  # For accessing contacts
+  # contacts_service: ^0.6.3  # For accessing contacts - temporarily disabled due to namespace issue
   url_launcher: ^6.3.1  # For opening SMS app
   crypto: ^3.0.6  # For hashing phone numbers
+  
+  # UI Modernization Libraries
+  flutter_animate: ^4.5.0  # Advanced animations and effects
+  neon_widgets: ^2.0.0  # Neon glowing effects
+  animated_background: ^2.0.0  # Particle and electrical effects
+  glassmorphism_ui: ^0.3.0  # Glass morphism effects
+  flutter_glow: ^0.3.2  # Glowing borders and text
+  
+  # Theme Management
+  flex_color_scheme: ^7.3.1  # Advanced theming system
+  
+  # Modern UI Components
+  flutter_neumorphic_plus: ^3.3.0  # Soft UI design
+  shimmer: ^3.0.0  # Shimmer loading effects
+  liquid_swipe: ^3.1.0  # Liquid page transitions
+  confetti: ^0.7.0  # Victory celebrations
+  
+  # Enhanced Graphics
+  flutter_svg: ^2.0.10  # SVG support
+  mesh_gradient: ^1.2.1  # Complex gradients
+  cached_network_image: ^3.3.1  # Better image caching
+  auto_size_text: ^3.0.0  # Responsive text
 
 dev_dependencies:
   flutter_test:

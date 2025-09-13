@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/enhanced_game_model.dart';
 import '../models/participant_model.dart';
 import 'package:intl/intl.dart';
+import '../theme/app_theme.dart';
 
 /// Enhanced Game Card widget that properly displays teams vs individuals
 class GameCardEnhanced extends StatelessWidget {
@@ -483,26 +484,26 @@ class GameCardEnhanced extends StatelessWidget {
   Color _getSportColor(String sport) {
     switch (sport.toLowerCase()) {
       case 'nba':
-        return Colors.orange;
+        return AppTheme.warningAmber;
       case 'nfl':
         return Colors.brown;
       case 'nhl':
-        return Colors.blue;
+        return AppTheme.primaryCyan;
       case 'mlb':
         return Colors.indigo;
       case 'tennis':
-        return Colors.green;
+        return AppTheme.neonGreen;
       case 'mma':
       case 'ufc':
-        return Colors.red;
+        return AppTheme.errorPink;
       case 'boxing':
-        return Colors.amber;
+        return AppTheme.warningAmber;
       case 'soccer':
         return Colors.purple;
       case 'golf':
         return Colors.teal;
       default:
-        return Colors.grey;
+        return AppTheme.surfaceBlue;
     }
   }
 

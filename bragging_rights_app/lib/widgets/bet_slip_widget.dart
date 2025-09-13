@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../models/betting_models.dart';
 import '../utils/glassmorphism_container.dart';
+import '../theme/app_theme.dart';
 
 class BetSlipWidget extends StatefulWidget {
   final List<BetSlipItem> items;
@@ -84,10 +86,10 @@ class _BetSlipWidgetState extends State<BetSlipWidget>
         return GlassmorphismContainer(
           blur: 15,
           opacity: 0.95,
-          color: Colors.black,
+          color: AppTheme.deepBlue,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           border: Border.all(
-            color: Colors.greenAccent.withOpacity(0.3),
+            color: AppTheme.primaryCyan.withOpacity(0.3),
             width: 2,
           ),
           child: Column(
@@ -124,14 +126,14 @@ class _BetSlipWidgetState extends State<BetSlipWidget>
         opacity: 0.1,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withOpacity(0.1),
+          color: AppTheme.primaryCyan.withOpacity(0.1),
           width: 1,
         ),
         child: const Center(
           child: Text(
             'Your bet slip is empty',
             style: TextStyle(
-              color: Colors.white54,
+              color: AppTheme.primaryCyan.withOpacity(0.7),
               fontSize: 14,
             ),
           ),
@@ -146,7 +148,7 @@ class _BetSlipWidgetState extends State<BetSlipWidget>
       width: 40,
       height: 4,
       decoration: BoxDecoration(
-        color: Colors.white30,
+        color: AppTheme.primaryCyan.withOpacity(0.2),
         borderRadius: BorderRadius.circular(2),
       ),
     );
@@ -158,7 +160,7 @@ class _BetSlipWidgetState extends State<BetSlipWidget>
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: Colors.white.withOpacity(0.1),
+            color: AppTheme.primaryCyan.withOpacity(0.1),
             width: 1,
           ),
         ),
@@ -170,7 +172,7 @@ class _BetSlipWidgetState extends State<BetSlipWidget>
             children: [
               Icon(
                 _isParlay ? Icons.layers : Icons.receipt_long,
-                color: Colors.greenAccent,
+                color: AppTheme.neonGreen,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -187,7 +189,7 @@ class _BetSlipWidgetState extends State<BetSlipWidget>
             ],
           ),
           IconButton(
-            icon: const Icon(Icons.clear_all, color: Colors.white54),
+            icon: Icon(Icons.clear_all, color: AppTheme.primaryCyan.withOpacity(0.7)),
             onPressed: () {
               HapticFeedback.mediumImpact();
               widget.onClear();
@@ -207,8 +209,8 @@ class _BetSlipWidgetState extends State<BetSlipWidget>
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: _isParlay 
-            ? Colors.greenAccent.withOpacity(0.5)
-            : Colors.white.withOpacity(0.1),
+            ? AppTheme.neonGreen.withOpacity(0.5)
+            : AppTheme.surfaceBlue.withOpacity(0.3),
           width: 1,
         ),
         child: SwitchListTile(
@@ -220,10 +222,10 @@ class _BetSlipWidgetState extends State<BetSlipWidget>
             _isParlay 
               ? 'Higher risk, higher reward'
               : 'Individual bets',
-            style: const TextStyle(color: Colors.white54, fontSize: 12),
+            style: TextStyle(color: AppTheme.primaryCyan.withOpacity(0.7), fontSize: 12),
           ),
           value: _isParlay,
-          activeColor: Colors.greenAccent,
+          activeColor: AppTheme.neonGreen,
           onChanged: (value) {
             setState(() {
               _isParlay = value;
@@ -243,7 +245,7 @@ class _BetSlipWidgetState extends State<BetSlipWidget>
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
-          color: Colors.red.withOpacity(0.3),
+          color: AppTheme.errorPink.withOpacity(0.3),
           borderRadius: BorderRadius.circular(12),
         ),
         child: const Icon(Icons.delete, color: Colors.white),
@@ -261,7 +263,7 @@ class _BetSlipWidgetState extends State<BetSlipWidget>
           opacity: 0.1,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: Colors.white.withOpacity(0.1),
+            color: AppTheme.primaryCyan.withOpacity(0.1),
             width: 1,
           ),
           padding: const EdgeInsets.all(12),
@@ -284,7 +286,7 @@ class _BetSlipWidgetState extends State<BetSlipWidget>
                     item.odds.displayValue,
                     style: TextStyle(
                       color: item.odds.value > 0 
-                        ? Colors.greenAccent 
+                        ? AppTheme.neonGreen 
                         : Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
@@ -307,14 +309,14 @@ class _BetSlipWidgetState extends State<BetSlipWidget>
                     Text(
                       'Wager: ${item.wager.toStringAsFixed(0)} BR',
                       style: const TextStyle(
-                        color: Colors.white54,
+                        color: AppTheme.primaryCyan.withOpacity(0.7),
                         fontSize: 12,
                       ),
                     ),
                     Text(
                       'To Win: ${item.potentialProfit.toStringAsFixed(0)} BR',
                       style: const TextStyle(
-                        color: Colors.greenAccent,
+                        color: AppTheme.neonGreen,
                         fontSize: 12,
                       ),
                     ),
@@ -352,7 +354,7 @@ class _BetSlipWidgetState extends State<BetSlipWidget>
               Text(
                 '${widget.userBalance.toStringAsFixed(0)} BR',
                 style: TextStyle(
-                  color: hasEnoughBalance ? Colors.white : Colors.redAccent,
+                  color: hasEnoughBalance ? Colors.white : AppTheme.errorPink,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -386,7 +388,7 @@ class _BetSlipWidgetState extends State<BetSlipWidget>
               Text(
                 '${_potentialPayout.toStringAsFixed(0)} BR',
                 style: const TextStyle(
-                  color: Colors.greenAccent,
+                  color: AppTheme.neonGreen,
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
                 ),
@@ -394,7 +396,7 @@ class _BetSlipWidgetState extends State<BetSlipWidget>
             ],
           ),
           if (_isParlay) ...[
-            const Divider(color: Colors.white30),
+            Divider(color: AppTheme.primaryCyan.withOpacity(0.2)),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -405,7 +407,7 @@ class _BetSlipWidgetState extends State<BetSlipWidget>
                 Text(
                   '${(_potentialPayout / (_totalWager > 0 ? _totalWager : 1)).toStringAsFixed(2)}x',
                   style: const TextStyle(
-                    color: Colors.amberAccent,
+                    color: AppTheme.warningAmber,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -417,17 +419,17 @@ class _BetSlipWidgetState extends State<BetSlipWidget>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.redAccent.withOpacity(0.2),
+                color: AppTheme.errorPink.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.warning, color: Colors.redAccent, size: 16),
+                  Icon(Icons.warning, color: AppTheme.errorPink, size: 16),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Insufficient BR balance',
-                      style: TextStyle(color: Colors.redAccent, fontSize: 12),
+                      style: TextStyle(color: AppTheme.errorPink, fontSize: 12),
                     ),
                   ),
                 ],
@@ -448,7 +450,7 @@ class _BetSlipWidgetState extends State<BetSlipWidget>
           child: GlassmorphicButton(
             text: 'Clear All',
             onPressed: widget.onClear,
-            color: Colors.red,
+            color: AppTheme.errorPink,
             opacity: 0.2,
             icon: const Icon(Icons.clear, color: Colors.white, size: 18),
           ),
@@ -461,7 +463,7 @@ class _BetSlipWidgetState extends State<BetSlipWidget>
             child: GlassmorphicButton(
               text: 'Place Bet',
               onPressed: hasEnoughBalance ? _placeBet : () {},
-              color: hasEnoughBalance ? Colors.greenAccent : Colors.grey,
+              color: hasEnoughBalance ? AppTheme.neonGreen : Colors.grey,
               opacity: hasEnoughBalance ? 0.3 : 0.1,
               icon: Icon(
                 Icons.check_circle,

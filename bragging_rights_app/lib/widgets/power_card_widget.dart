@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../data/card_definitions.dart';
+import '../theme/app_theme.dart';
 
 class PowerCardWidget extends StatefulWidget {
   final PowerCard card;
@@ -67,13 +68,13 @@ class _PowerCardWidgetState extends State<PowerCardWidget>
   Color _getRarityColor() {
     switch (widget.card.rarity) {
       case CardRarity.common:
-        return Colors.grey;
+        return AppTheme.surfaceBlue;
       case CardRarity.uncommon:
-        return Colors.green;
+        return AppTheme.neonGreen;
       case CardRarity.rare:
-        return Colors.blue;
+        return AppTheme.primaryCyan;
       case CardRarity.legendary:
-        return Colors.orange;
+        return AppTheme.warningAmber;
     }
   }
 
@@ -96,12 +97,12 @@ class _PowerCardWidgetState extends State<PowerCardWidget>
                 boxShadow: [
                   if (widget.isOwned)
                     BoxShadow(
-                      color: Colors.amber.withOpacity(_glowAnimation.value * 0.6),
+                      color: AppTheme.warningAmber.withOpacity(_glowAnimation.value * 0.6),
                       blurRadius: 20,
                       spreadRadius: 2,
                     ),
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
+                    color: AppTheme.deepBlue.withOpacity(0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 5),
                   ),
@@ -135,7 +136,7 @@ class _PowerCardWidgetState extends State<PowerCardWidget>
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withOpacity(0.8),
+                          AppTheme.deepBlue.withOpacity(0.8),
                         ],
                         stops: const [0.6, 1.0],
                       ),
@@ -148,7 +149,7 @@ class _PowerCardWidgetState extends State<PowerCardWidget>
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: widget.isOwned 
-                            ? Colors.amber 
+                            ? AppTheme.warningAmber 
                             : rarityColor.withOpacity(0.5),
                         width: widget.isOwned ? 3 : 2,
                       ),
@@ -175,7 +176,7 @@ class _PowerCardWidgetState extends State<PowerCardWidget>
                               fontWeight: FontWeight.bold,
                               shadows: [
                                 Shadow(
-                                  color: Colors.black,
+                                  color: AppTheme.deepBlue,
                                   blurRadius: 8,
                                   offset: Offset(2, 2),
                                 ),
@@ -198,8 +199,8 @@ class _PowerCardWidgetState extends State<PowerCardWidget>
                             ),
                             decoration: BoxDecoration(
                               color: widget.canAfford
-                                  ? Colors.green.withOpacity(0.9)
-                                  : Colors.grey.withOpacity(0.9),
+                                  ? AppTheme.neonGreen.withOpacity(0.9)
+                                  : AppTheme.surfaceBlue.withOpacity(0.9),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Row(
@@ -231,7 +232,7 @@ class _PowerCardWidgetState extends State<PowerCardWidget>
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.amber.withOpacity(0.8),
+                              color: AppTheme.warningAmber.withOpacity(0.8),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -252,12 +253,12 @@ class _PowerCardWidgetState extends State<PowerCardWidget>
                     Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),
-                        color: Colors.black.withOpacity(0.6),
+                        color: AppTheme.deepBlue.withOpacity(0.6),
                       ),
                       child: const Center(
                         child: Icon(
                           Icons.lock_outline,
-                          color: Colors.grey,
+                          color: AppTheme.surfaceBlue,
                           size: 40,
                         ),
                       ),
@@ -280,7 +281,7 @@ class _PowerCardWidgetState extends State<PowerCardWidget>
           colors: [
             rarityColor.withOpacity(0.8),
             rarityColor.withOpacity(0.3),
-            Colors.black,
+            AppTheme.deepBlue,
           ],
         ),
       ),

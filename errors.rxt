@@ -1,0 +1,1508 @@
+[{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "expected_token",
+	"severity": 8,
+	"message": "Expected to find ')'.",
+	"source": "dart",
+	"startLineNumber": 712,
+	"startColumn": 5,
+	"endLineNumber": 712,
+	"endColumn": 6,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "expected_token",
+	"severity": 8,
+	"message": "Expected to find ';'.",
+	"source": "dart",
+	"startLineNumber": 714,
+	"startColumn": 1,
+	"endLineNumber": 714,
+	"endColumn": 2,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "missing_identifier",
+	"severity": 8,
+	"message": "Expected an identifier.",
+	"source": "dart",
+	"startLineNumber": 714,
+	"startColumn": 2,
+	"endLineNumber": 714,
+	"endColumn": 3,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "unexpected_token",
+	"severity": 8,
+	"message": "Unexpected text ';'.\nTry removing the text.",
+	"source": "dart",
+	"startLineNumber": 714,
+	"startColumn": 2,
+	"endLineNumber": 714,
+	"endColumn": 3,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "expected_token",
+	"severity": 8,
+	"message": "Expected to find ';'.",
+	"source": "dart",
+	"startLineNumber": 714,
+	"startColumn": 2,
+	"endLineNumber": 714,
+	"endColumn": 3,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "missing_identifier",
+	"severity": 8,
+	"message": "Expected an identifier.",
+	"source": "dart",
+	"startLineNumber": 715,
+	"startColumn": 15,
+	"endLineNumber": 715,
+	"endColumn": 16,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "unexpected_token",
+	"severity": 8,
+	"message": "Unexpected text ';'.\nTry removing the text.",
+	"source": "dart",
+	"startLineNumber": 715,
+	"startColumn": 15,
+	"endLineNumber": 715,
+	"endColumn": 16,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "expected_token",
+	"severity": 8,
+	"message": "Expected to find ';'.",
+	"source": "dart",
+	"startLineNumber": 715,
+	"startColumn": 15,
+	"endLineNumber": 715,
+	"endColumn": 16,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "missing_identifier",
+	"severity": 8,
+	"message": "Expected an identifier.",
+	"source": "dart",
+	"startLineNumber": 715,
+	"startColumn": 16,
+	"endLineNumber": 715,
+	"endColumn": 17,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "unexpected_token",
+	"severity": 8,
+	"message": "Unexpected text ';'.\nTry removing the text.",
+	"source": "dart",
+	"startLineNumber": 715,
+	"startColumn": 16,
+	"endLineNumber": 715,
+	"endColumn": 17,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "expected_token",
+	"severity": 8,
+	"message": "Expected to find ';'.",
+	"source": "dart",
+	"startLineNumber": 715,
+	"startColumn": 16,
+	"endLineNumber": 715,
+	"endColumn": 17,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "missing_identifier",
+	"severity": 8,
+	"message": "Expected an identifier.",
+	"source": "dart",
+	"startLineNumber": 716,
+	"startColumn": 13,
+	"endLineNumber": 716,
+	"endColumn": 14,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "unexpected_token",
+	"severity": 8,
+	"message": "Unexpected text ';'.\nTry removing the text.",
+	"source": "dart",
+	"startLineNumber": 716,
+	"startColumn": 13,
+	"endLineNumber": 716,
+	"endColumn": 14,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "expected_token",
+	"severity": 8,
+	"message": "Expected to find ';'.",
+	"source": "dart",
+	"startLineNumber": 716,
+	"startColumn": 13,
+	"endLineNumber": 716,
+	"endColumn": 14,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "missing_identifier",
+	"severity": 8,
+	"message": "Expected an identifier.",
+	"source": "dart",
+	"startLineNumber": 716,
+	"startColumn": 14,
+	"endLineNumber": 716,
+	"endColumn": 15,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "unexpected_token",
+	"severity": 8,
+	"message": "Unexpected text ';'.\nTry removing the text.",
+	"source": "dart",
+	"startLineNumber": 716,
+	"startColumn": 14,
+	"endLineNumber": 716,
+	"endColumn": 15,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "expected_token",
+	"severity": 8,
+	"message": "Expected to find ';'.",
+	"source": "dart",
+	"startLineNumber": 716,
+	"startColumn": 14,
+	"endLineNumber": 716,
+	"endColumn": 15,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "missing_identifier",
+	"severity": 8,
+	"message": "Expected an identifier.",
+	"source": "dart",
+	"startLineNumber": 717,
+	"startColumn": 11,
+	"endLineNumber": 717,
+	"endColumn": 12,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "unexpected_token",
+	"severity": 8,
+	"message": "Unexpected text ';'.\nTry removing the text.",
+	"source": "dart",
+	"startLineNumber": 717,
+	"startColumn": 11,
+	"endLineNumber": 717,
+	"endColumn": 12,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "expected_token",
+	"severity": 8,
+	"message": "Expected to find ';'.",
+	"source": "dart",
+	"startLineNumber": 717,
+	"startColumn": 11,
+	"endLineNumber": 717,
+	"endColumn": 12,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "missing_identifier",
+	"severity": 8,
+	"message": "Expected an identifier.",
+	"source": "dart",
+	"startLineNumber": 717,
+	"startColumn": 12,
+	"endLineNumber": 717,
+	"endColumn": 13,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "unexpected_token",
+	"severity": 8,
+	"message": "Unexpected text ';'.\nTry removing the text.",
+	"source": "dart",
+	"startLineNumber": 717,
+	"startColumn": 12,
+	"endLineNumber": 717,
+	"endColumn": 13,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "expected_token",
+	"severity": 8,
+	"message": "Expected to find ';'.",
+	"source": "dart",
+	"startLineNumber": 717,
+	"startColumn": 12,
+	"endLineNumber": 717,
+	"endColumn": 13,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "missing_identifier",
+	"severity": 8,
+	"message": "Expected an identifier.",
+	"source": "dart",
+	"startLineNumber": 718,
+	"startColumn": 9,
+	"endLineNumber": 718,
+	"endColumn": 10,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "unexpected_token",
+	"severity": 8,
+	"message": "Unexpected text ';'.\nTry removing the text.",
+	"source": "dart",
+	"startLineNumber": 718,
+	"startColumn": 9,
+	"endLineNumber": 718,
+	"endColumn": 10,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "expected_token",
+	"severity": 8,
+	"message": "Expected to find ';'.",
+	"source": "dart",
+	"startLineNumber": 718,
+	"startColumn": 9,
+	"endLineNumber": 718,
+	"endColumn": 10,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "missing_identifier",
+	"severity": 8,
+	"message": "Expected an identifier.",
+	"source": "dart",
+	"startLineNumber": 718,
+	"startColumn": 10,
+	"endLineNumber": 718,
+	"endColumn": 11,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "unexpected_token",
+	"severity": 8,
+	"message": "Unexpected text ';'.\nTry removing the text.",
+	"source": "dart",
+	"startLineNumber": 718,
+	"startColumn": 10,
+	"endLineNumber": 718,
+	"endColumn": 11,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "expected_token",
+	"severity": 8,
+	"message": "Expected to find ';'.",
+	"source": "dart",
+	"startLineNumber": 718,
+	"startColumn": 10,
+	"endLineNumber": 718,
+	"endColumn": 11,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "missing_identifier",
+	"severity": 8,
+	"message": "Expected an identifier.",
+	"source": "dart",
+	"startLineNumber": 719,
+	"startColumn": 7,
+	"endLineNumber": 719,
+	"endColumn": 8,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "unexpected_token",
+	"severity": 8,
+	"message": "Unexpected text ';'.\nTry removing the text.",
+	"source": "dart",
+	"startLineNumber": 719,
+	"startColumn": 7,
+	"endLineNumber": 719,
+	"endColumn": 8,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "expected_token",
+	"severity": 8,
+	"message": "Expected to find ';'.",
+	"source": "dart",
+	"startLineNumber": 719,
+	"startColumn": 7,
+	"endLineNumber": 719,
+	"endColumn": 8,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "missing_identifier",
+	"severity": 8,
+	"message": "Expected an identifier.",
+	"source": "dart",
+	"startLineNumber": 719,
+	"startColumn": 8,
+	"endLineNumber": 719,
+	"endColumn": 9,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "unexpected_token",
+	"severity": 8,
+	"message": "Unexpected text ';'.\nTry removing the text.",
+	"source": "dart",
+	"startLineNumber": 719,
+	"startColumn": 8,
+	"endLineNumber": 719,
+	"endColumn": 9,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "expected_token",
+	"severity": 8,
+	"message": "Expected to find ';'.",
+	"source": "dart",
+	"startLineNumber": 719,
+	"startColumn": 8,
+	"endLineNumber": 719,
+	"endColumn": 9,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "missing_identifier",
+	"severity": 8,
+	"message": "Expected an identifier.",
+	"source": "dart",
+	"startLineNumber": 720,
+	"startColumn": 5,
+	"endLineNumber": 720,
+	"endColumn": 6,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": "unexpected_token",
+	"severity": 8,
+	"message": "Unexpected text ';'.\nTry removing the text.",
+	"source": "dart",
+	"startLineNumber": 720,
+	"startColumn": 5,
+	"endLineNumber": 720,
+	"endColumn": 6,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "unused_import",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/unused_import",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 4,
+	"message": "Unused import: 'package:flutter_animate/flutter_animate.dart'.\nTry removing the import directive.",
+	"source": "dart",
+	"startLineNumber": 3,
+	"startColumn": 8,
+	"endLineNumber": 3,
+	"endColumn": 54,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "unused_field",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/unused_field",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 4,
+	"message": "The value of the field 'darkPurple' isn't used.\nTry removing the field, or using it.",
+	"source": "dart",
+	"startLineNumber": 22,
+	"startColumn": 22,
+	"endLineNumber": 22,
+	"endColumn": 32,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "dead_code",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/dead_code",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 4,
+	"message": "Dead code.\nTry removing the code, or fixing the code before it so that it can be reached.",
+	"source": "dart",
+	"startLineNumber": 714,
+	"startColumn": 2,
+	"endLineNumber": 720,
+	"endColumn": 7,
+	"tags": [
+		1
+	],
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "unused_local_variable",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/unused_local_variable",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 4,
+	"message": "The value of the local variable 'random' isn't used.\nTry removing the variable or using it.",
+	"source": "dart",
+	"startLineNumber": 922,
+	"startColumn": 11,
+	"endLineNumber": 922,
+	"endColumn": 17,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "avoid_print",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/avoid_print",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Don't invoke 'print' in production code.\nTry using a logging framework.",
+	"source": "dart",
+	"startLineNumber": 160,
+	"startColumn": 9,
+	"endLineNumber": 160,
+	"endColumn": 14,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "avoid_print",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/avoid_print",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Don't invoke 'print' in production code.\nTry using a logging framework.",
+	"source": "dart",
+	"startLineNumber": 165,
+	"startColumn": 9,
+	"endLineNumber": 165,
+	"endColumn": 14,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "avoid_print",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/avoid_print",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Don't invoke 'print' in production code.\nTry using a logging framework.",
+	"source": "dart",
+	"startLineNumber": 168,
+	"startColumn": 9,
+	"endLineNumber": 168,
+	"endColumn": 14,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "avoid_print",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/avoid_print",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Don't invoke 'print' in production code.\nTry using a logging framework.",
+	"source": "dart",
+	"startLineNumber": 172,
+	"startColumn": 9,
+	"endLineNumber": 172,
+	"endColumn": 14,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "avoid_print",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/avoid_print",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Don't invoke 'print' in production code.\nTry using a logging framework.",
+	"source": "dart",
+	"startLineNumber": 180,
+	"startColumn": 9,
+	"endLineNumber": 180,
+	"endColumn": 14,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "avoid_print",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/avoid_print",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Don't invoke 'print' in production code.\nTry using a logging framework.",
+	"source": "dart",
+	"startLineNumber": 184,
+	"startColumn": 9,
+	"endLineNumber": 184,
+	"endColumn": 14,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "avoid_print",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/avoid_print",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Don't invoke 'print' in production code.\nTry using a logging framework.",
+	"source": "dart",
+	"startLineNumber": 198,
+	"startColumn": 15,
+	"endLineNumber": 198,
+	"endColumn": 20,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "use_build_context_synchronously",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/use_build_context_synchronously",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Don't use 'BuildContext's across async gaps.\nTry rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check.",
+	"source": "dart",
+	"startLineNumber": 199,
+	"startColumn": 46,
+	"endLineNumber": 199,
+	"endColumn": 53,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "avoid_print",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/avoid_print",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Don't invoke 'print' in production code.\nTry using a logging framework.",
+	"source": "dart",
+	"startLineNumber": 201,
+	"startColumn": 15,
+	"endLineNumber": 201,
+	"endColumn": 20,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "use_build_context_synchronously",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/use_build_context_synchronously",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Don't use 'BuildContext's across async gaps.\nTry rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check.",
+	"source": "dart",
+	"startLineNumber": 202,
+	"startColumn": 46,
+	"endLineNumber": 202,
+	"endColumn": 53,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "avoid_print",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/avoid_print",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Don't invoke 'print' in production code.\nTry using a logging framework.",
+	"source": "dart",
+	"startLineNumber": 205,
+	"startColumn": 13,
+	"endLineNumber": 205,
+	"endColumn": 18,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "use_build_context_synchronously",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/use_build_context_synchronously",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Don't use 'BuildContext's across async gaps.\nTry rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check.",
+	"source": "dart",
+	"startLineNumber": 207,
+	"startColumn": 44,
+	"endLineNumber": 207,
+	"endColumn": 51,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "avoid_print",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/avoid_print",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Don't invoke 'print' in production code.\nTry using a logging framework.",
+	"source": "dart",
+	"startLineNumber": 214,
+	"startColumn": 7,
+	"endLineNumber": 214,
+	"endColumn": 12,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "avoid_print",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/avoid_print",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Don't invoke 'print' in production code.\nTry using a logging framework.",
+	"source": "dart",
+	"startLineNumber": 215,
+	"startColumn": 7,
+	"endLineNumber": 215,
+	"endColumn": 12,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "avoid_print",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/avoid_print",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Don't invoke 'print' in production code.\nTry using a logging framework.",
+	"source": "dart",
+	"startLineNumber": 250,
+	"startColumn": 13,
+	"endLineNumber": 250,
+	"endColumn": 18,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "use_build_context_synchronously",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/use_build_context_synchronously",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Don't use 'BuildContext's across async gaps.\nTry rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check.",
+	"source": "dart",
+	"startLineNumber": 251,
+	"startColumn": 44,
+	"endLineNumber": 251,
+	"endColumn": 51,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "avoid_print",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/avoid_print",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Don't invoke 'print' in production code.\nTry using a logging framework.",
+	"source": "dart",
+	"startLineNumber": 253,
+	"startColumn": 13,
+	"endLineNumber": 253,
+	"endColumn": 18,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "use_build_context_synchronously",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/use_build_context_synchronously",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Don't use 'BuildContext's across async gaps.\nTry rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check.",
+	"source": "dart",
+	"startLineNumber": 254,
+	"startColumn": 44,
+	"endLineNumber": 254,
+	"endColumn": 51,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "avoid_print",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/avoid_print",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Don't invoke 'print' in production code.\nTry using a logging framework.",
+	"source": "dart",
+	"startLineNumber": 257,
+	"startColumn": 11,
+	"endLineNumber": 257,
+	"endColumn": 16,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "use_build_context_synchronously",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/use_build_context_synchronously",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Don't use 'BuildContext's across async gaps.\nTry rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check.",
+	"source": "dart",
+	"startLineNumber": 259,
+	"startColumn": 42,
+	"endLineNumber": 259,
+	"endColumn": 49,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_constructors",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_constructors",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' with the constructor to improve performance.\nTry adding the 'const' keyword to the constructor invocation.",
+	"source": "dart",
+	"startLineNumber": 285,
+	"startColumn": 25,
+	"endLineNumber": 294,
+	"endColumn": 14,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_constructors",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_constructors",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' with the constructor to improve performance.\nTry adding the 'const' keyword to the constructor invocation.",
+	"source": "dart",
+	"startLineNumber": 286,
+	"startColumn": 25,
+	"endLineNumber": 293,
+	"endColumn": 16,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_literals_to_create_immutables",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_literals_to_create_immutables",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' literals as arguments to constructors of '@immutable' classes.\nTry adding 'const' before the literal.",
+	"source": "dart",
+	"startLineNumber": 289,
+	"startColumn": 25,
+	"endLineNumber": 292,
+	"endColumn": 18,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_constructors",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_constructors",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' with the constructor to improve performance.\nTry adding the 'const' keyword to the constructor invocation.",
+	"source": "dart",
+	"startLineNumber": 331,
+	"startColumn": 32,
+	"endLineNumber": 335,
+	"endColumn": 26,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_constructors",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_constructors",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' with the constructor to improve performance.\nTry adding the 'const' keyword to the constructor invocation.",
+	"source": "dart",
+	"startLineNumber": 555,
+	"startColumn": 43,
+	"endLineNumber": 559,
+	"endColumn": 44,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_literals_to_create_immutables",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_literals_to_create_immutables",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' literals as arguments to constructors of '@immutable' classes.\nTry adding 'const' before the literal.",
+	"source": "dart",
+	"startLineNumber": 556,
+	"startColumn": 53,
+	"endLineNumber": 556,
+	"endColumn": 81,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_constructors",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_constructors",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' with the constructor to improve performance.\nTry adding the 'const' keyword to the constructor invocation.",
+	"source": "dart",
+	"startLineNumber": 563,
+	"startColumn": 43,
+	"endLineNumber": 570,
+	"endColumn": 44,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_constructors",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_constructors",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' with the constructor to improve performance.\nTry adding the 'const' keyword to the constructor invocation.",
+	"source": "dart",
+	"startLineNumber": 566,
+	"startColumn": 52,
+	"endLineNumber": 569,
+	"endColumn": 46,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_constructors",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_constructors",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' with the constructor to improve performance.\nTry adding the 'const' keyword to the constructor invocation.",
+	"source": "dart",
+	"startLineNumber": 702,
+	"startColumn": 26,
+	"endLineNumber": 705,
+	"endColumn": 20,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "empty_statements",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/empty_statements",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Unnecessary empty statement.\nTry removing the empty statement or restructuring the code.",
+	"source": "dart",
+	"startLineNumber": 720,
+	"startColumn": 6,
+	"endLineNumber": 720,
+	"endColumn": 7,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "sized_box_for_whitespace",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/sized_box_for_whitespace",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use a 'SizedBox' to add whitespace to a layout.\nTry using a 'SizedBox' rather than a 'Container'.",
+	"source": "dart",
+	"startLineNumber": 724,
+	"startColumn": 12,
+	"endLineNumber": 724,
+	"endColumn": 21,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_literals_to_create_immutables",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_literals_to_create_immutables",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' literals as arguments to constructors of '@immutable' classes.\nTry adding 'const' before the literal.",
+	"source": "dart",
+	"startLineNumber": 759,
+	"startColumn": 25,
+	"endLineNumber": 765,
+	"endColumn": 18,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_literals_to_create_immutables",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_literals_to_create_immutables",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' literals as arguments to constructors of '@immutable' classes.\nTry adding 'const' before the literal.",
+	"source": "dart",
+	"startLineNumber": 766,
+	"startColumn": 24,
+	"endLineNumber": 766,
+	"endColumn": 49,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_constructors",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_constructors",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' with the constructor to improve performance.\nTry adding the 'const' keyword to the constructor invocation.",
+	"source": "dart",
+	"startLineNumber": 770,
+	"startColumn": 20,
+	"endLineNumber": 797,
+	"endColumn": 14,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_literals_to_create_immutables",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_literals_to_create_immutables",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' literals as arguments to constructors of '@immutable' classes.\nTry adding 'const' before the literal.",
+	"source": "dart",
+	"startLineNumber": 772,
+	"startColumn": 25,
+	"endLineNumber": 796,
+	"endColumn": 16,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_constructors",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_constructors",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' with the constructor to improve performance.\nTry adding the 'const' keyword to the constructor invocation.",
+	"source": "dart",
+	"startLineNumber": 773,
+	"startColumn": 17,
+	"endLineNumber": 783,
+	"endColumn": 18,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_constructors",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_constructors",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' with the constructor to improve performance.\nTry adding the 'const' keyword to the constructor invocation.",
+	"source": "dart",
+	"startLineNumber": 775,
+	"startColumn": 26,
+	"endLineNumber": 782,
+	"endColumn": 20,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_constructors",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_constructors",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' with the constructor to improve performance.\nTry adding the 'const' keyword to the constructor invocation.",
+	"source": "dart",
+	"startLineNumber": 784,
+	"startColumn": 17,
+	"endLineNumber": 784,
+	"endColumn": 36,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_constructors",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_constructors",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' with the constructor to improve performance.\nTry adding the 'const' keyword to the constructor invocation.",
+	"source": "dart",
+	"startLineNumber": 785,
+	"startColumn": 17,
+	"endLineNumber": 795,
+	"endColumn": 18,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_constructors",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_constructors",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' with the constructor to improve performance.\nTry adding the 'const' keyword to the constructor invocation.",
+	"source": "dart",
+	"startLineNumber": 787,
+	"startColumn": 26,
+	"endLineNumber": 794,
+	"endColumn": 20,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "unused_element",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/unused_element",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "The declaration '_buildAnimatedLogo' isn't referenced.\nTry removing the declaration of '_buildAnimatedLogo'.",
+	"source": "dart",
+	"startLineNumber": 804,
+	"startColumn": 10,
+	"endLineNumber": 804,
+	"endColumn": 28,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_constructors",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_constructors",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' with the constructor to improve performance.\nTry adding the 'const' keyword to the constructor invocation.",
+	"source": "dart",
+	"startLineNumber": 831,
+	"startColumn": 25,
+	"endLineNumber": 835,
+	"endColumn": 26,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_constructors",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_constructors",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' with the constructor to improve performance.\nTry adding the 'const' keyword to the constructor invocation.",
+	"source": "dart",
+	"startLineNumber": 873,
+	"startColumn": 25,
+	"endLineNumber": 877,
+	"endColumn": 26,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_constructors",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_constructors",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' with the constructor to improve performance.\nTry adding the 'const' keyword to the constructor invocation.",
+	"source": "dart",
+	"startLineNumber": 885,
+	"startColumn": 25,
+	"endLineNumber": 889,
+	"endColumn": 26,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_constructors",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_constructors",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' with the constructor to improve performance.\nTry adding the 'const' keyword to the constructor invocation.",
+	"source": "dart",
+	"startLineNumber": 986,
+	"startColumn": 23,
+	"endLineNumber": 986,
+	"endColumn": 40,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_declarations",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_declarations",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' for final variables initialized to a constant value.\nTry replacing 'final' with 'const'.",
+	"source": "dart",
+	"startLineNumber": 990,
+	"startColumn": 5,
+	"endLineNumber": 990,
+	"endColumn": 35,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_declarations",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_declarations",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' for final variables initialized to a constant value.\nTry replacing 'final' with 'const'.",
+	"source": "dart",
+	"startLineNumber": 1010,
+	"startColumn": 5,
+	"endLineNumber": 1010,
+	"endColumn": 33,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_constructors",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_constructors",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' with the constructor to improve performance.\nTry adding the 'const' keyword to the constructor invocation.",
+	"source": "dart",
+	"startLineNumber": 1037,
+	"startColumn": 11,
+	"endLineNumber": 1037,
+	"endColumn": 28,
+	"origin": "extHost1"
+},{
+	"resource": "/C:/Users/smyth/OneDrive/Desktop/Projects/Bragging_Rights/bragging_rights_app/lib/screens/auth/login_screen.dart",
+	"owner": "_generated_diagnostic_collection_name_#2",
+	"code": {
+		"value": "prefer_const_literals_to_create_immutables",
+		"target": {
+			"$mid": 1,
+			"path": "/diagnostics/prefer_const_literals_to_create_immutables",
+			"scheme": "https",
+			"authority": "dart.dev"
+		}
+	},
+	"severity": 2,
+	"message": "Use 'const' literals as arguments to constructors of '@immutable' classes.\nTry adding 'const' before the literal.",
+	"source": "dart",
+	"startLineNumber": 1040,
+	"startColumn": 16,
+	"endLineNumber": 1040,
+	"endColumn": 31,
+	"origin": "extHost1"
+}]

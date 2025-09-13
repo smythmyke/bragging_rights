@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'edge_card_types.dart';
 import '../../screens/premium/edge_detail_screen.dart';
+import '../../theme/app_theme.dart';
 
 /// Main Edge Card Widget
 class EdgeCardWidget extends StatefulWidget {
@@ -152,7 +153,7 @@ class _EdgeCardWidgetState extends State<EdgeCardWidget>
           BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 0, sigmaY: 0),
             child: Container(
-              color: Colors.black.withOpacity(0.2),
+              color: AppTheme.deepBlue.withOpacity(0.2),
             ),
           ),
           
@@ -486,17 +487,17 @@ class _EdgeCardWidgetState extends State<EdgeCardWidget>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
+          Icon(
             Icons.lock_open,
-            color: Colors.black87,
+            color: AppTheme.deepBlue.withOpacity(0.87),
             size: 14,
           ),
           const SizedBox(width: 4),
           Flexible(
             child: Text(
               'Unlock $cost BR',
-              style: const TextStyle(
-                color: Colors.black87,
+              style: TextStyle(
+                color: AppTheme.deepBlue.withOpacity(0.87),
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),

@@ -7,6 +7,7 @@ import '../../services/fight_card_service.dart';
 import '../../services/fight_odds_service.dart';
 // Removed custom app bar import - using standard AppBar
 import 'fight_pick_detail_screen.dart';
+import '../../theme/app_theme.dart';
 
 /// Screen showing all fights in a card for picking
 class FightCardScreen extends StatefulWidget {
@@ -92,9 +93,9 @@ class _FightCardScreenState extends State<FightCardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppTheme.deepBlue,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: AppTheme.deepBlue,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -130,9 +131,9 @@ class _FightCardScreenState extends State<FightCardScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[900],
+        color: AppTheme.surfaceBlue,
         border: Border(
-          bottom: BorderSide(color: Colors.grey[800]!),
+          bottom: BorderSide(color: AppTheme.surfaceBlue!),
         ),
       ),
       child: Column(
@@ -144,7 +145,7 @@ class _FightCardScreenState extends State<FightCardScreen> {
               Text(
                 'Picks Progress',
                 style: TextStyle(
-                  color: Colors.grey[400],
+                  color: AppTheme.surfaceBlue,
                   fontSize: 14,
                 ),
               ),
@@ -160,9 +161,9 @@ class _FightCardScreenState extends State<FightCardScreen> {
           const SizedBox(height: 8),
           LinearProgressIndicator(
             value: progress,
-            backgroundColor: Colors.grey[800],
+            backgroundColor: AppTheme.surfaceBlue,
             valueColor: AlwaysStoppedAnimation<Color>(
-              progress == 1.0 ? Colors.green : Colors.blue,
+              progress == 1.0 ? AppTheme.neonGreen : AppTheme.primaryCyan,
             ),
             minHeight: 6,
           ),
@@ -172,7 +173,7 @@ class _FightCardScreenState extends State<FightCardScreen> {
               child: Text(
                 'Pick ${totalRequired - pickedCount} more fight${totalRequired - pickedCount > 1 ? 's' : ''} to submit',
                 style: TextStyle(
-                  color: Colors.orange[400],
+                  color: AppTheme.warningAmber[400],
                   fontSize: 12,
                 ),
               ),
@@ -210,10 +211,10 @@ class _FightCardScreenState extends State<FightCardScreen> {
         onSelected: (selected) {
           // TODO: Implement filtering
         },
-        backgroundColor: Colors.grey[900],
-        selectedColor: Colors.blue[900],
+        backgroundColor: AppTheme.surfaceBlue,
+        selectedColor: AppTheme.primaryCyan[900],
         labelStyle: TextStyle(
-          color: isSelected ? Colors.white : Colors.grey[400],
+          color: isSelected ? Colors.white : AppTheme.surfaceBlue,
           fontSize: 12,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -247,14 +248,14 @@ class _FightCardScreenState extends State<FightCardScreen> {
       onTap: () => _openFightDetail(fight),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.grey[900],
+          color: AppTheme.surfaceBlue,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: userPick != null
-                ? Colors.green
+                ? AppTheme.neonGreen
                 : isRequired
-                    ? Colors.orange[800]!
-                    : Colors.grey[800]!,
+                    ? AppTheme.warningAmber[800]!
+                    : AppTheme.surfaceBlue!,
             width: userPick != null ? 2 : 1,
           ),
         ),
@@ -304,7 +305,7 @@ class _FightCardScreenState extends State<FightCardScreen> {
                       child: Text(
                         'VS',
                         style: TextStyle(
-                          color: Colors.grey,
+                          color: AppTheme.surfaceBlue,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
@@ -329,7 +330,7 @@ class _FightCardScreenState extends State<FightCardScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.green[900],
+                  color: AppTheme.neonGreen[900],
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(11),
                     bottomRight: Radius.circular(11),
@@ -338,12 +339,12 @@ class _FightCardScreenState extends State<FightCardScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.check_circle, size: 14, color: Colors.green),
+                    const Icon(Icons.check_circle, size: 14, color: AppTheme.neonGreen),
                     const SizedBox(width: 4),
                     Text(
                       'Picked',
                       style: TextStyle(
-                        color: Colors.green[300],
+                        color: AppTheme.neonGreen[300],
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                       ),
@@ -356,7 +357,7 @@ class _FightCardScreenState extends State<FightCardScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.orange[900],
+                  color: AppTheme.warningAmber[900],
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(11),
                     bottomRight: Radius.circular(11),
@@ -366,7 +367,7 @@ class _FightCardScreenState extends State<FightCardScreen> {
                   child: Text(
                     'Required',
                     style: TextStyle(
-                      color: Colors.orange[300],
+                      color: AppTheme.warningAmber[300],
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                     ),
@@ -390,7 +391,7 @@ class _FightCardScreenState extends State<FightCardScreen> {
         Text(
           name,
           style: TextStyle(
-            color: isPicked ? Colors.green : Colors.white,
+            color: isPicked ? AppTheme.neonGreen : Colors.white,
             fontSize: 13,
             fontWeight: isPicked ? FontWeight.bold : FontWeight.w500,
           ),
@@ -405,7 +406,7 @@ class _FightCardScreenState extends State<FightCardScreen> {
             Text(
               record,
               style: TextStyle(
-                color: Colors.grey[500],
+                color: AppTheme.surfaceBlue,
                 fontSize: 10,
               ),
             ),
@@ -414,7 +415,7 @@ class _FightCardScreenState extends State<FightCardScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: odds.startsWith('+') ? Colors.green[900] : Colors.red[900],
+                  color: odds.startsWith('+') ? AppTheme.neonGreen[900] : AppTheme.errorPink[900],
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -434,11 +435,11 @@ class _FightCardScreenState extends State<FightCardScreen> {
   }
   
   Color _getCategoryColor(Fight fight) {
-    if (fight.isMainEvent) return Colors.red[800]!;
-    if (fight.isCoMain) return Colors.orange[800]!;
-    if (fight.isMainCard) return Colors.blue[800]!;
+    if (fight.isMainEvent) return AppTheme.errorPink[800]!;
+    if (fight.isCoMain) return AppTheme.warningAmber[800]!;
+    if (fight.isMainCard) return AppTheme.primaryCyan[800]!;
     if (fight.isPrelim) return Colors.purple[800]!;
-    return Colors.grey[700]!;
+    return AppTheme.surfaceBlue!;
   }
   
   String _getCategoryLabel(Fight fight) {
@@ -460,9 +461,9 @@ class _FightCardScreenState extends State<FightCardScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[900],
+        color: AppTheme.surfaceBlue,
         border: Border(
-          top: BorderSide(color: Colors.grey[800]!),
+          top: BorderSide(color: AppTheme.surfaceBlue!),
         ),
       ),
       child: SafeArea(
@@ -483,7 +484,7 @@ class _FightCardScreenState extends State<FightCardScreen> {
                   Text(
                     'Prize Pool: ${widget.pool.prizePool} BR',
                     style: TextStyle(
-                      color: Colors.grey[400],
+                      color: AppTheme.surfaceBlue,
                       fontSize: 12,
                     ),
                   ),
@@ -493,7 +494,7 @@ class _FightCardScreenState extends State<FightCardScreen> {
             ElevatedButton(
               onPressed: canSubmit && !_isSubmitting ? _submitPicks : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: canSubmit ? Colors.green : Colors.grey[800],
+                backgroundColor: canSubmit ? AppTheme.neonGreen : AppTheme.surfaceBlue,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
               child: _isSubmitting
@@ -557,7 +558,7 @@ class _FightCardScreenState extends State<FightCardScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Picks submitted successfully!'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppTheme.neonGreen,
           ),
         );
         Navigator.pop(context, true);
@@ -567,7 +568,7 @@ class _FightCardScreenState extends State<FightCardScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.errorPink,
           ),
         );
       }

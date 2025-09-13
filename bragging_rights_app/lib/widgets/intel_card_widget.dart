@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/intel_product.dart';
+import '../theme/app_theme.dart';
 
 class IntelCardWidget extends StatefulWidget {
   final IntelProduct intel;
@@ -64,7 +65,7 @@ class _IntelCardWidgetState extends State<IntelCardWidget>
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
+                    color: AppTheme.deepBlue.withOpacity(0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 5),
                   ),
@@ -89,8 +90,8 @@ class _IntelCardWidgetState extends State<IntelCardWidget>
                               end: Alignment.bottomRight,
                               colors: [
                                 Colors.purple.withOpacity(0.8),
-                                Colors.blue.withOpacity(0.8),
-                                Colors.black,
+                                AppTheme.primaryCyan.withOpacity(0.8),
+                                AppTheme.deepBlue,
                               ],
                             ),
                           ),
@@ -115,7 +116,7 @@ class _IntelCardWidgetState extends State<IntelCardWidget>
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withOpacity(0.8),
+                          AppTheme.deepBlue.withOpacity(0.8),
                         ],
                         stops: const [0.4, 1.0],
                       ),
@@ -139,7 +140,7 @@ class _IntelCardWidgetState extends State<IntelCardWidget>
                             fontWeight: FontWeight.bold,
                             shadows: [
                               Shadow(
-                                color: Colors.black,
+                                color: AppTheme.deepBlue,
                                 blurRadius: 8,
                               ),
                             ],
@@ -161,7 +162,7 @@ class _IntelCardWidgetState extends State<IntelCardWidget>
                                 fontSize: 11,
                                 shadows: const [
                                   Shadow(
-                                    color: Colors.black,
+                                    color: AppTheme.deepBlue,
                                     blurRadius: 4,
                                   ),
                                 ],
@@ -174,8 +175,8 @@ class _IntelCardWidgetState extends State<IntelCardWidget>
                               ),
                               decoration: BoxDecoration(
                                 color: widget.canAfford
-                                    ? Colors.green.withOpacity(0.9)
-                                    : Colors.grey.withOpacity(0.9),
+                                    ? AppTheme.neonGreen.withOpacity(0.9)
+                                    : AppTheme.surfaceBlue.withOpacity(0.9),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Row(
@@ -209,12 +210,12 @@ class _IntelCardWidgetState extends State<IntelCardWidget>
                     Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),
-                        color: Colors.black.withOpacity(0.6),
+                        color: AppTheme.deepBlue.withOpacity(0.6),
                       ),
                       child: const Center(
                         child: Icon(
                           Icons.lock_outline,
-                          color: Colors.grey,
+                          color: AppTheme.surfaceBlue,
                           size: 32,
                         ),
                       ),

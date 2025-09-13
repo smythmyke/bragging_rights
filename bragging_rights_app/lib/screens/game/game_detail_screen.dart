@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
+import '../../theme/app_theme.dart';
 
 class GameDetailScreen extends StatefulWidget {
   const GameDetailScreen({super.key});
@@ -110,7 +111,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> with SingleTickerPr
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: _gameStartCountdown.inMinutes < 30 ? Colors.red : Colors.green,
+                    color: _gameStartCountdown.inMinutes < 30 ? AppTheme.errorPink : AppTheme.neonGreen,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -134,19 +135,19 @@ class _GameDetailScreenState extends State<GameDetailScreen> with SingleTickerPr
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: AppTheme.surfaceBlue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Column(
+                  child: Column(
                     children: [
-                      Icon(Icons.sports, size: 48, color: Colors.grey),
+                      Icon(Icons.sports, size: 48, color: AppTheme.surfaceBlue.withOpacity(0.5)),
                       SizedBox(height: 8),
                       Text(
                         'Game data loading...',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.grey,
+                          color: AppTheme.primaryCyan.withOpacity(0.5),
                         ),
                       ),
                       SizedBox(height: 4),
@@ -154,7 +155,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> with SingleTickerPr
                         'Team information will appear when connected',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey,
+                          color: AppTheme.primaryCyan.withOpacity(0.5),
                         ),
                       ),
                     ],
@@ -197,7 +198,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> with SingleTickerPr
           color: isSelected ? color.withOpacity(0.2) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? color : Colors.grey.shade300,
+            color: isSelected ? color : AppTheme.surfaceBlue.withOpacity(0.3),
             width: isSelected ? 3 : 1,
           ),
           boxShadow: [
@@ -228,14 +229,14 @@ class _GameDetailScreenState extends State<GameDetailScreen> with SingleTickerPr
               team,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: isSelected ? color : Colors.black,
+                color: isSelected ? color : AppTheme.deepBlue,
               ),
             ),
             const SizedBox(height: 4),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
+                color: AppTheme.surfaceBlue.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -247,7 +248,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> with SingleTickerPr
               ),
             ),
             if (isSelected)
-              const Icon(Icons.check_circle, color: Colors.green, size: 20),
+              Icon(Icons.check_circle, color: AppTheme.neonGreen, size: 20),
           ],
         ),
       ),
@@ -259,7 +260,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> with SingleTickerPr
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: AppTheme.surfaceBlue.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -390,7 +391,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> with SingleTickerPr
                 ? Theme.of(context).colorScheme.primary
                 : canAfford
                     ? Colors.grey.shade400
-                    : Colors.grey.shade300,
+                    : Colors.grey,
             width: 2,
           ),
         ),
@@ -667,7 +668,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> with SingleTickerPr
               ? Colors.grey.shade200
               : isMe
                   ? Theme.of(context).colorScheme.primary
-                  : Colors.grey.shade300,
+                  : Colors.grey,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(

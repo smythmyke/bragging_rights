@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../theme/app_theme.dart';
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({Key? key}) : super(key: key);
@@ -47,10 +48,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
         ),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: Colors.blue,
+          indicatorColor: AppTheme.primaryCyan,
           indicatorWeight: 3,
           labelColor: Colors.white,
-          unselectedLabelColor: Colors.grey,
+          unselectedLabelColor: AppTheme.surfaceBlue,
           tabs: const [
             Tab(text: 'Quick Play'),
             Tab(text: 'Regional'),
@@ -81,16 +82,16 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
             color: const Color(0xFF1E1E1E),
             child: Row(
               children: [
-                Icon(PhosphorIconsRegular.clock, color: Colors.blue, size: 20),
+                Icon(PhosphorIconsRegular.clock, color: AppTheme.primaryCyan, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   'Today\'s Competition',
-                  style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                  style: TextStyle(color: AppTheme.surfaceBlue, fontSize: 14),
                 ),
                 const Spacer(),
                 Text(
                   'Resets in 6h 23m',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  style: TextStyle(color: AppTheme.surfaceBlue.withOpacity(0.6), fontSize: 12),
                 ),
               ],
             ),
@@ -117,9 +118,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isCurrentUser ? Colors.blue.withOpacity(0.1) : const Color(0xFF1E1E1E),
+        color: isCurrentUser ? AppTheme.primaryCyan.withOpacity(0.1) : const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(12),
-        border: isCurrentUser ? Border.all(color: Colors.blue.withOpacity(0.3)) : null,
+        border: isCurrentUser ? Border.all(color: AppTheme.primaryCyan.withOpacity(0.3)) : null,
       ),
       child: Row(
         children: [
@@ -128,13 +129,13 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
             height: 32,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: index < 3 ? _getRankColor(index) : Colors.grey.withOpacity(0.2),
+              color: index < 3 ? _getRankColor(index) : AppTheme.surfaceBlue.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
             child: Text(
               '#${index + 1}',
               style: TextStyle(
-                color: index < 3 ? Colors.white : Colors.grey,
+                color: index < 3 ? Colors.white : AppTheme.surfaceBlue,
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
               ),
@@ -143,7 +144,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
           const SizedBox(width: 12),
           CircleAvatar(
             radius: 20,
-            backgroundColor: Colors.grey[800],
+            backgroundColor: AppTheme.surfaceBlue,
             child: Text(
               isCurrentUser ? 'You' : 'U${index + 1}',
               style: const TextStyle(fontSize: 12),
@@ -158,17 +159,17 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
                   isCurrentUser ? 'You' : 'User${index + 1}',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: isCurrentUser ? Colors.blue : Colors.white,
+                    color: isCurrentUser ? AppTheme.primaryCyan : Colors.white,
                   ),
                 ),
                 if (streak > 0)
                   Row(
                     children: [
-                      Icon(PhosphorIconsRegular.fire, size: 12, color: Colors.orange),
+                      Icon(PhosphorIconsRegular.fire, size: 12, color: AppTheme.warningAmber),
                       const SizedBox(width: 4),
                       Text(
                         '$streak streak',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                        style: TextStyle(fontSize: 12, color: AppTheme.surfaceBlue),
                       ),
                     ],
                   ),
@@ -178,7 +179,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
           Text(
             profit > 0 ? '+\$$profit' : '-\$${profit.abs()}',
             style: TextStyle(
-              color: profit > 0 ? Colors.green : Colors.red,
+              color: profit > 0 ? AppTheme.neonGreen : AppTheme.errorPink,
               fontWeight: FontWeight.bold,
               fontSize: 16,
             ),
@@ -231,16 +232,16 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blue : Colors.transparent,
+          color: isSelected ? AppTheme.primaryCyan : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? Colors.blue : Colors.grey[600]!,
+            color: isSelected ? AppTheme.primaryCyan : AppTheme.surfaceBlue.withOpacity(0.6)!,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey[400],
+            color: isSelected ? Colors.white : AppTheme.surfaceBlue,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
         ),
@@ -258,9 +259,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isCurrentUser ? Colors.blue.withOpacity(0.1) : const Color(0xFF1E1E1E),
+        color: isCurrentUser ? AppTheme.primaryCyan.withOpacity(0.1) : const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(12),
-        border: isCurrentUser ? Border.all(color: Colors.blue.withOpacity(0.3)) : null,
+        border: isCurrentUser ? Border.all(color: AppTheme.primaryCyan.withOpacity(0.3)) : null,
       ),
       child: Row(
         children: [
@@ -270,7 +271,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
             child: Text(
               '#${index + 1}',
               style: TextStyle(
-                color: index < 3 ? _getRankColor(index) : Colors.grey,
+                color: index < 3 ? _getRankColor(index) : AppTheme.surfaceBlue,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -279,20 +280,20 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
             Icon(
               rankChange > 0 ? PhosphorIconsRegular.arrowUp : PhosphorIconsRegular.arrowDown,
               size: 12,
-              color: rankChange > 0 ? Colors.green : Colors.red,
+              color: rankChange > 0 ? AppTheme.neonGreen : AppTheme.errorPink,
             ),
             Text(
               '${rankChange.abs()}',
               style: TextStyle(
                 fontSize: 10,
-                color: rankChange > 0 ? Colors.green : Colors.red,
+                color: rankChange > 0 ? AppTheme.neonGreen : AppTheme.errorPink,
               ),
             ),
           ],
           const SizedBox(width: 12),
           CircleAvatar(
             radius: 20,
-            backgroundColor: Colors.grey[800],
+            backgroundColor: AppTheme.surfaceBlue,
             child: Text(
               isCurrentUser ? 'You' : 'U${index + 1}',
               style: const TextStyle(fontSize: 12),
@@ -307,12 +308,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
                   isCurrentUser ? 'You' : 'User${index + 1}',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: isCurrentUser ? Colors.blue : Colors.white,
+                    color: isCurrentUser ? AppTheme.primaryCyan : Colors.white,
                   ),
                 ),
                 Text(
                   '${winRate.toStringAsFixed(1)}% Win Rate',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                  style: TextStyle(fontSize: 12, color: AppTheme.surfaceBlue),
                 ),
               ],
             ),
@@ -320,7 +321,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
           Text(
             totalPL > 0 ? '+\$$totalPL' : '-\$${totalPL.abs()}',
             style: TextStyle(
-              color: totalPL > 0 ? Colors.green : Colors.red,
+              color: totalPL > 0 ? AppTheme.neonGreen : AppTheme.errorPink,
               fontWeight: FontWeight.bold,
               fontSize: 16,
             ),
@@ -348,7 +349,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
                     icon: Icon(PhosphorIconsRegular.plus),
                     label: const Text('Join or Create Pool'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
+                      backgroundColor: AppTheme.primaryCyan,
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
@@ -370,7 +371,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
         decoration: BoxDecoration(
           color: const Color(0xFF1E1E1E),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.withOpacity(0.2)),
+          border: Border.all(color: AppTheme.surfaceBlue.withOpacity(0.2)),
         ),
         child: Row(
           children: [
@@ -378,12 +379,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.2),
+                color: AppTheme.primaryCyan.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 PhosphorIconsRegular.users,
-                color: Colors.blue,
+                color: AppTheme.primaryCyan,
               ),
             ),
             const SizedBox(width: 16),
@@ -403,19 +404,19 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
                     children: [
                       Text(
                         'Your Rank: ',
-                        style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                        style: TextStyle(color: AppTheme.surfaceBlue, fontSize: 12),
                       ),
                       Text(
                         '#$rank',
                         style: TextStyle(
-                          color: rank <= 3 ? Colors.amber : Colors.white,
+                          color: rank <= 3 ? AppTheme.warningAmber : Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
                         ),
                       ),
                       Text(
                         ' of $totalMembers',
-                        style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                        style: TextStyle(color: AppTheme.surfaceBlue, fontSize: 12),
                       ),
                     ],
                   ),
@@ -427,14 +428,14 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
                 width: 8,
                 height: 8,
                 decoration: const BoxDecoration(
-                  color: Colors.green,
+                  color: AppTheme.neonGreen,
                   shape: BoxShape.circle,
                 ),
               ),
             const SizedBox(width: 8),
             Icon(
               PhosphorIconsRegular.caretRight,
-              color: Colors.grey[600],
+              color: AppTheme.surfaceBlue.withOpacity(0.6),
               size: 20,
             ),
           ],
@@ -458,7 +459,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
                   128,
                   450,
                   'Advancing',
-                  Colors.green,
+                  AppTheme.neonGreen,
                 ),
                 _buildTournamentCard(
                   'NFL Playoff Challenge',
@@ -467,7 +468,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
                   64,
                   780,
                   'Leader',
-                  Colors.amber,
+                  AppTheme.warningAmber,
                 ),
                 const SizedBox(height: 24),
                 Center(
@@ -476,12 +477,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
                       Icon(
                         PhosphorIconsRegular.trophy,
                         size: 48,
-                        color: Colors.grey[600],
+                        color: AppTheme.surfaceBlue.withOpacity(0.6),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'No other active tournaments',
-                        style: TextStyle(color: Colors.grey[600]),
+                        style: TextStyle(color: AppTheme.surfaceBlue.withOpacity(0.6)),
                       ),
                       const SizedBox(height: 16),
                       TextButton(
@@ -510,7 +511,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        border: Border.all(color: AppTheme.surfaceBlue.withOpacity(0.2)),
       ),
       child: Column(
         children: [
@@ -537,7 +538,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
                       ),
                       Text(
                         phase,
-                        style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                        style: TextStyle(color: AppTheme.surfaceBlue, fontSize: 12),
                       ),
                     ],
                   ),
@@ -569,7 +570,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
                   children: [
                     Text(
                       'Rank',
-                      style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                      style: TextStyle(color: AppTheme.surfaceBlue, fontSize: 12),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -585,7 +586,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
                   children: [
                     Text(
                       'Points',
-                      style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                      style: TextStyle(color: AppTheme.surfaceBlue, fontSize: 12),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -601,7 +602,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
                   children: [
                     Text(
                       'Prize Pool',
-                      style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                      style: TextStyle(color: AppTheme.surfaceBlue, fontSize: 12),
                     ),
                     const SizedBox(height: 4),
                     const Text(
@@ -609,7 +610,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: Colors.green,
+                        color: AppTheme.neonGreen,
                       ),
                     ),
                   ],
@@ -625,13 +626,13 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
   Color _getRankColor(int index) {
     switch (index) {
       case 0:
-        return Colors.amber;
+        return AppTheme.warningAmber;
       case 1:
-        return Colors.grey;
+        return AppTheme.surfaceBlue;
       case 2:
         return Colors.brown;
       default:
-        return Colors.grey;
+        return AppTheme.surfaceBlue;
     }
   }
 }

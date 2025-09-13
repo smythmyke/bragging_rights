@@ -367,7 +367,7 @@ class _EdgeScreenState extends State<EdgeScreen> with TickerProviderStateMixin {
                   Text(
                     'Reveal costs vary by intel value',
                     style: TextStyle(
-                      color: Colors.amber.shade300,
+                      color: Colors.amber,
                       fontSize: 12,
                     ),
                   ),
@@ -878,7 +878,7 @@ class _EdgeScreenState extends State<EdgeScreen> with TickerProviderStateMixin {
               Text(
                 canAfford ? 'TAP TO REVEAL' : 'INSUFFICIENT BR',
                 style: TextStyle(
-                  color: canAfford ? Colors.white54 : Colors.red.shade300,
+                  color: canAfford ? Colors.white54 : Colors.red,
                   fontSize: 10,
                   letterSpacing: 2,
                 ),
@@ -940,7 +940,7 @@ class _EdgeScreenState extends State<EdgeScreen> with TickerProviderStateMixin {
                   const Divider(color: Colors.white24),
                   Row(
                     children: [
-                      Icon(Icons.verified, color: Colors.green.shade300, size: 14),
+                      Icon(Icons.verified, color: Colors.green, size: 14),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
@@ -1039,7 +1039,7 @@ class _EdgeScreenState extends State<EdgeScreen> with TickerProviderStateMixin {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.monetization_on, color: Colors.red.shade300, size: 48),
+            Icon(Icons.monetization_on, color: Colors.red, size: 48),
             const SizedBox(height: 16),
             Text(
               'You need $requiredBR BR to reveal this intel',

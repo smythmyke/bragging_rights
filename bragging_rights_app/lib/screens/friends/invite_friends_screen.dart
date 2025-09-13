@@ -1,12 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:contacts_service/contacts_service.dart';
+// import 'package:contacts_service/contacts_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import '../../theme/app_theme.dart';
+
+// Temporary Contact class until contacts_service package is fixed
+class Contact {
+  String? displayName;
+  List<Item>? phones;
+  Contact({this.displayName, this.phones});
+}
+
+class Item {
+  String? value;
+  Item({this.value});
+}
 
 class InviteFriendsScreen extends StatefulWidget {
   const InviteFriendsScreen({Key? key}) : super(key: key);
@@ -103,10 +116,17 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
 
   Future<void> _loadContacts() async {
     try {
-      final contacts = await ContactsService.getContacts();
+      // Temporarily disabled until contacts_service is fixed
+      // final contacts = await ContactsService.getContacts();
+      // setState(() {
+      //   _contacts = contacts.toList();
+      //   _filteredContacts = _contacts;
+      // });
+      
+      // For now, use empty list
       setState(() {
-        _contacts = contacts.toList();
-        _filteredContacts = _contacts;
+        _contacts = [];
+        _filteredContacts = [];
       });
     } catch (e) {
       print('Error loading contacts: $e');
@@ -275,14 +295,14 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Friend request sent to ${contact.displayName}'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppTheme.neonGreen,
         ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Failed to send friend request'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppTheme.errorPink,
         ),
       );
     }
@@ -319,7 +339,7 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Could not open SMS app'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppTheme.errorPink,
         ),
       );
     }
@@ -355,7 +375,7 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
             Icon(
               PhosphorIconsRegular.addressBook,
               size: 80,
-              color: Colors.grey[600],
+              color: AppTheme.surfaceBlue.withOpacity(0.6),
             ),
             const SizedBox(height: 24),
             const Text(
@@ -371,7 +391,7 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
               'Allow access to your contacts to easily find and invite friends to compete with you.',
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey[400],
+                color: AppTheme.surfaceBlue.withOpacity(0.4),
               ),
               textAlign: TextAlign.center,
             ),
@@ -381,7 +401,7 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
               icon: Icon(PhosphorIconsRegular.userPlus),
               label: const Text('Allow Contact Access'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
+                backgroundColor: AppTheme.primaryCyan,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 32,
                   vertical: 16,
@@ -467,13 +487,13 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
       case ContactStatus.alreadyFriend:
         return Icon(
           PhosphorIconsRegular.checkCircle,
-          color: Colors.green,
+          color: AppTheme.neonGreen,
         );
       case ContactStatus.onApp:
         return ElevatedButton(
           onPressed: () => _sendFriendRequest(contact),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue,
+            backgroundColor: AppTheme.primaryCyan,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
@@ -499,7 +519,7 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
       case ContactStatus.noPhone:
         return Icon(
           PhosphorIconsRegular.warning,
-          color: Colors.grey,
+          color: AppTheme.surfaceBlue,
         );
     }
   }
@@ -507,15 +527,15 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
   Color _getStatusColor(ContactStatus status) {
     switch (status) {
       case ContactStatus.alreadyFriend:
-        return Colors.green;
+        return AppTheme.neonGreen;
       case ContactStatus.onApp:
-        return Colors.blue;
+        return AppTheme.primaryCyan;
       case ContactStatus.invited:
-        return Colors.orange;
+        return AppTheme.warningAmber;
       case ContactStatus.notOnApp:
         return Colors.purple;
       case ContactStatus.noPhone:
-        return Colors.grey;
+        return AppTheme.surfaceBlue;
     }
   }
 
@@ -547,9 +567,9 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
+                color: AppTheme.primaryCyan.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue),
+                border: Border.all(color: AppTheme.primaryCyan),
               ),
               child: Text(
                 _currentUserInviteCode!,

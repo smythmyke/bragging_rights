@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/pool_model.dart';
 import '../../services/pool_service.dart';
 import '../../widgets/pool_creation_limit_indicator.dart';
+import '../../theme/app_theme.dart';
 
 class MyPoolsScreen extends StatefulWidget {
   const MyPoolsScreen({super.key});
@@ -93,7 +94,7 @@ class _MyPoolsScreenState extends State<MyPoolsScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.pool, size: 64, color: Colors.grey[400]),
+                Icon(Icons.pool, size: 64, color: AppTheme.surfaceBlue),
                 const SizedBox(height: 16),
                 const Text(
                   'No pools created yet',
@@ -102,7 +103,7 @@ class _MyPoolsScreenState extends State<MyPoolsScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Create a private pool to play with friends',
-                  style: TextStyle(color: Colors.grey[600]),
+                  style: TextStyle(color: AppTheme.surfaceBlue.withOpacity(0.6)),
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
@@ -163,7 +164,7 @@ class _MyPoolsScreenState extends State<MyPoolsScreen> {
                         'Code: ${pool.code ?? 'N/A'}',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey[600],
+                          color: AppTheme.surfaceBlue.withOpacity(0.6),
                           fontFamily: 'monospace',
                         ),
                       ),
@@ -173,14 +174,14 @@ class _MyPoolsScreenState extends State<MyPoolsScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: AppTheme.neonGreen.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.green.withOpacity(0.3)),
+                    border: Border.all(color: AppTheme.neonGreen.withOpacity(0.3)),
                   ),
                   child: Text(
                     '${pool.buyIn} BR',
                     style: const TextStyle(
-                      color: Colors.green,
+                      color: AppTheme.neonGreen,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -190,27 +191,27 @@ class _MyPoolsScreenState extends State<MyPoolsScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
-                Icon(Icons.people, size: 16, color: Colors.grey[600]),
+                Icon(Icons.people, size: 16, color: AppTheme.surfaceBlue.withOpacity(0.6)),
                 const SizedBox(width: 4),
                 Text(
                   '${pool.currentPlayers}/${pool.maxPlayers} players',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: 14, color: AppTheme.surfaceBlue.withOpacity(0.6)),
                 ),
                 const SizedBox(width: 16),
-                Icon(Icons.timer, size: 16, color: Colors.grey[600]),
+                Icon(Icons.timer, size: 16, color: AppTheme.surfaceBlue.withOpacity(0.6)),
                 const SizedBox(width: 4),
                 Text(
                   'Closes in ${_formatTimeRemaining(pool.closeTime)}',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: 14, color: AppTheme.surfaceBlue.withOpacity(0.6)),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             LinearProgressIndicator(
               value: fillPercentage,
-              backgroundColor: Colors.grey[300],
+              backgroundColor: AppTheme.surfaceBlue,
               valueColor: AlwaysStoppedAnimation(
-                fillPercentage == 1.0 ? Colors.red : Colors.blue,
+                fillPercentage == 1.0 ? AppTheme.errorPink : AppTheme.primaryCyan,
               ),
             ),
             const SizedBox(height: 4),
@@ -220,7 +221,7 @@ class _MyPoolsScreenState extends State<MyPoolsScreen> {
                 : 'Pool is full',
               style: TextStyle(
                 fontSize: 12,
-                color: spotsLeft > 0 ? Colors.grey[600] : Colors.red,
+                color: spotsLeft > 0 ? AppTheme.surfaceBlue.withOpacity(0.6) : AppTheme.errorPink,
               ),
             ),
             const SizedBox(height: 12),
@@ -244,7 +245,7 @@ class _MyPoolsScreenState extends State<MyPoolsScreen> {
                     icon: const Icon(Icons.delete, size: 18),
                     label: const Text('Delete'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
+                      foregroundColor: AppTheme.errorPink,
                     ),
                   ),
                 ),
@@ -257,7 +258,7 @@ class _MyPoolsScreenState extends State<MyPoolsScreen> {
                   'Cannot delete - other players have joined',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.orange[700],
+                    color: AppTheme.warningAmber,
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -284,7 +285,7 @@ class _MyPoolsScreenState extends State<MyPoolsScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.sports_basketball, size: 64, color: Colors.grey[400]),
+                Icon(Icons.sports_basketball, size: 64, color: AppTheme.surfaceBlue),
                 const SizedBox(height: 16),
                 const Text(
                   'No pools joined yet',
@@ -293,7 +294,7 @@ class _MyPoolsScreenState extends State<MyPoolsScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Join pools to start playing',
-                  style: TextStyle(color: Colors.grey[600]),
+                  style: TextStyle(color: AppTheme.surfaceBlue.withOpacity(0.6)),
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
@@ -325,7 +326,7 @@ class _MyPoolsScreenState extends State<MyPoolsScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: Colors.blue.withOpacity(0.1),
+          backgroundColor: AppTheme.primaryCyan.withOpacity(0.1),
           child: Text(
             '${poolData['buyIn']}',
             style: const TextStyle(
@@ -339,14 +340,14 @@ class _MyPoolsScreenState extends State<MyPoolsScreen> {
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
+            color: AppTheme.neonGreen.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             poolData['poolType'] ?? 'active',
             style: const TextStyle(
               fontSize: 12,
-              color: Colors.green,
+              color: AppTheme.neonGreen,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -399,7 +400,7 @@ class _MyPoolsScreenState extends State<MyPoolsScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.share, size: 48, color: Colors.blue),
+            const Icon(Icons.share, size: 48, color: AppTheme.primaryCyan),
             const SizedBox(height: 16),
             Text(
               'Pool Code: ${pool.code ?? 'N/A'}',
@@ -412,7 +413,7 @@ class _MyPoolsScreenState extends State<MyPoolsScreen> {
             const SizedBox(height: 8),
             Text(
               'Share this code with friends to join',
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(color: AppTheme.surfaceBlue.withOpacity(0.6)),
             ),
           ],
         ),
@@ -445,13 +446,13 @@ class _MyPoolsScreenState extends State<MyPoolsScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.warning, size: 48, color: Colors.orange),
+            const Icon(Icons.warning, size: 48, color: AppTheme.warningAmber),
             const SizedBox(height: 16),
             Text('Are you sure you want to delete "${pool.name}"?'),
             const SizedBox(height: 8),
             Text(
               'Your ${pool.buyIn} BR buy-in will be refunded.',
-              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+              style: TextStyle(color: AppTheme.surfaceBlue.withOpacity(0.6), fontSize: 14),
             ),
           ],
         ),
@@ -473,12 +474,12 @@ class _MyPoolsScreenState extends State<MyPoolsScreen> {
                         ? 'Pool deleted and ${pool.buyIn} BR refunded'
                         : 'Failed to delete pool',
                     ),
-                    backgroundColor: success ? Colors.green : Colors.red,
+                    backgroundColor: success ? AppTheme.neonGreen : AppTheme.errorPink,
                   ),
                 );
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.errorPink),
             child: const Text('Delete'),
           ),
         ],

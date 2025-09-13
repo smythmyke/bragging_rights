@@ -675,6 +675,21 @@ class OddsApiService {
           ? now.add(Duration(days: daysAhead))
           : null;
       
+      // Debug: Log boxing events specifically
+      if (sport.toLowerCase() == 'boxing') {
+        debugPrint('🥊 Boxing events received: ${events.length}');
+        for (final event in events) {
+          final homeTeam = event['home_team'] ?? '';
+          final awayTeam = event['away_team'] ?? '';
+          if (homeTeam.toLowerCase().contains('canelo') || 
+              awayTeam.toLowerCase().contains('crawford')) {
+            debugPrint('🎯 FOUND CANELO/CRAWFORD: $awayTeam vs $homeTeam');
+            debugPrint('   Event ID: ${event['id']}');
+            debugPrint('   Time: ${event['commence_time']}');
+          }
+        }
+      }
+      
       for (final event in events) {
         try {
           final gameTime = DateTime.parse(event['commence_time']);

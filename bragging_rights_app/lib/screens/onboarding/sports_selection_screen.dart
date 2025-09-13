@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../theme/app_theme.dart';
 
 class SportsSelectionScreen extends StatefulWidget {
   const SportsSelectionScreen({super.key});
@@ -91,7 +92,7 @@ class _SportsSelectionScreenState extends State<SportsSelectionScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please select at least one sport'),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppTheme.warningAmber,
         ),
       );
       return;
@@ -113,7 +114,7 @@ class _SportsSelectionScreenState extends State<SportsSelectionScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Sports preferences saved!'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppTheme.neonGreen,
             duration: Duration(seconds: 1),
           ),
         );
@@ -202,14 +203,14 @@ class _SportsSelectionScreenState extends State<SportsSelectionScreen>
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              Colors.greenAccent.withOpacity(0.8),
-                              Colors.tealAccent.withOpacity(0.8),
+                              AppTheme.neonGreen.withOpacity(0.8),
+                              AppTheme.primaryCyan.withOpacity(0.8),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.greenAccent.withOpacity(0.3),
+                              color: AppTheme.neonGreen.withOpacity(0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -217,8 +218,8 @@ class _SportsSelectionScreenState extends State<SportsSelectionScreen>
                         ),
                         child: Text(
                           '${_selectedSports.length} sport${_selectedSports.length > 1 ? 's' : ''} selected',
-                          style: const TextStyle(
-                            color: Colors.black87,
+                          style: TextStyle(
+                            color: AppTheme.deepBlue.withOpacity(0.87),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -338,7 +339,7 @@ class _SportsSelectionScreenState extends State<SportsSelectionScreen>
                                       shadows: isSelected
                                           ? [
                                               Shadow(
-                                                color: Colors.black26,
+                                                color: AppTheme.deepBlue.withOpacity(0.26),
                                                 blurRadius: 2,
                                                 offset: const Offset(0, 1),
                                               ),
@@ -355,11 +356,11 @@ class _SportsSelectionScreenState extends State<SportsSelectionScreen>
                                   child: Container(
                                     padding: const EdgeInsets.all(4),
                                     decoration: BoxDecoration(
-                                      color: Colors.greenAccent,
+                                      color: AppTheme.neonGreen,
                                       shape: BoxShape.circle,
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.greenAccent.withOpacity(0.5),
+                                          color: AppTheme.neonGreen.withOpacity(0.5),
                                           blurRadius: 8,
                                           spreadRadius: 1,
                                         ),
@@ -367,7 +368,7 @@ class _SportsSelectionScreenState extends State<SportsSelectionScreen>
                                     ),
                                     child: const Icon(
                                       Icons.check,
-                                      color: Colors.black,
+                                      color: AppTheme.deepBlue,
                                       size: 16,
                                     ),
                                   ),
@@ -389,13 +390,13 @@ class _SportsSelectionScreenState extends State<SportsSelectionScreen>
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withOpacity(0.7),
-                      Colors.black.withOpacity(0.9),
+                      AppTheme.deepBlue.withOpacity(0.7),
+                      AppTheme.deepBlue.withOpacity(0.9),
                     ],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
+                      color: AppTheme.deepBlue.withOpacity(0.3),
                       blurRadius: 20,
                       offset: const Offset(0, -10),
                     ),
@@ -410,14 +411,14 @@ class _SportsSelectionScreenState extends State<SportsSelectionScreen>
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              Colors.greenAccent,
-                              Colors.tealAccent,
+                              AppTheme.neonGreen,
+                              AppTheme.primaryCyan,
                             ],
                           ),
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.greenAccent.withOpacity(0.4),
+                              color: AppTheme.neonGreen.withOpacity(0.4),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -432,12 +433,12 @@ class _SportsSelectionScreenState extends State<SportsSelectionScreen>
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text(
+                          child: Text(
                             'Continue to App',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.black87,
+                              color: AppTheme.deepBlue.withOpacity(0.87),
                             ),
                           ),
                         ),

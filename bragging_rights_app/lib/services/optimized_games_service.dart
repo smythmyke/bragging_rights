@@ -45,7 +45,7 @@ class OptimizedGamesService {
   static const int MAX_GAMES_PER_TIMEFRAME = 4;
 
   /// Load featured games based on user preferences with timeframe categorization
-  Future<List<GameModel>> loadFeaturedGames({
+  Future<Map<String, dynamic>> loadFeaturedGames({
     bool forceRefresh = false,
   }) async {
     // Use cache if recent (5 minutes)
@@ -55,13 +55,27 @@ class OptimizedGamesService {
       final cached = _getAllCachedGames();
       if (cached.isNotEmpty) {
         debugPrint('📱 Returning ${cached.length} cached featured games');
-        return cached;
+        // Get all sports from cache
+        final allSports = _featuredGamesCache.keys.where((sport) => 
+          _featuredGamesCache[sport]!.isNotEmpty).toList();
+        return {
+          'games': cached,
+          'allSports': allSports,
+        };
       }
     }
 
     if (!USE_OPTIMIZED_LOADING) {
       // Fallback to original method
-      return _loadAllGames();
+      final games = await _loadAllGames();
+      final sports = <String>{};
+      for (final game in games) {
+        sports.add(game.sport.toUpperCase());
+      }
+      return {
+        'games': games,
+        'allSports': sports.toList()..sort(),
+      };
     }
 
     debugPrint('🎯 Loading featured games with optimization and timeframe categorization...');
@@ -114,10 +128,22 @@ class OptimizedGamesService {
     
     debugPrint('🏆 Loaded ${categorizedGames.length} total featured games across all timeframes');
     
-    // Save to Firestore for offline access
-    await _saveGamesToFirestore(categorizedGames);
+    // Save to Firestore for offline access (save all games, not just categorized)
+    for (final entry in allGamesMap.entries) {
+      await _saveGamesToFirestore(entry.value, sport: entry.key);
+    }
     
-    return categorizedGames;
+    // Get list of all sports that have games (not just featured)
+    final allAvailableSports = allGamesMap.keys
+        .where((sport) => allGamesMap[sport]!.isNotEmpty)
+        .toList()..sort();
+    
+    debugPrint('📊 All sports with games: $allAvailableSports');
+    
+    return {
+      'games': categorizedGames,
+      'allSports': allAvailableSports,
+    };
   }
   
   /// Categorize games by timeframe with user preferences prioritized
@@ -134,6 +160,21 @@ class OptimizedGamesService {
     final todayGames = <GameModel>[];
     final thisWeekGames = <GameModel>[];
     final upcomingGames = <GameModel>[]; // Next 60 days
+    
+    // Debug: Check boxing games specifically
+    if (allGamesMap.containsKey('BOXING')) {
+      final boxingGames = allGamesMap['BOXING'] ?? [];
+      debugPrint('🥊 Processing ${boxingGames.length} BOXING games for categorization');
+      for (final game in boxingGames) {
+        if (game.homeTeam.toLowerCase().contains('canelo') || 
+            game.awayTeam.toLowerCase().contains('crawford')) {
+          debugPrint('🎯 CATEGORIZING: ${game.awayTeam} vs ${game.homeTeam}');
+          debugPrint('   Game Time: ${game.gameTime}');
+          debugPrint('   Days until: ${game.gameTime.difference(now).inDays}');
+          debugPrint('   Hours until: ${game.gameTime.difference(now).inHours}');
+        }
+      }
+    }
     
     // Categorize all games
     allGamesMap.forEach((sport, games) {
@@ -200,13 +241,29 @@ class OptimizedGamesService {
   }
 
   /// Load games for a specific sport with date range
-  /// Try Odds API first (primary), fall back to ESPN if needed
+  /// Check Firestore cache first, then try Odds API, fall back to ESPN if needed
   Future<List<GameModel>> _loadSportGamesWithRange({
     required String sport,
     int daysAhead = INITIAL_DAYS_AHEAD,
   }) async {
     try {
-      // TRY ODDS API FIRST (Primary source)
+      // CHECK FIRESTORE CACHE FIRST
+      final cachedGames = await _getGamesFromFirestore(sport, maxAge: const Duration(hours: 2));
+      if (cachedGames != null && cachedGames.isNotEmpty) {
+        // Filter by date range if we have cached data
+        final now = DateTime.now();
+        final cutoffDate = now.add(Duration(days: daysAhead));
+        final filteredGames = cachedGames.where((game) => 
+          game.gameTime.isBefore(cutoffDate)
+        ).toList();
+        
+        if (filteredGames.isNotEmpty) {
+          debugPrint('✅ Using ${filteredGames.length} cached $sport games from Firestore');
+          return filteredGames;
+        }
+      }
+      
+      // TRY ODDS API IF NO CACHE (Primary source)
       debugPrint('🎯 Attempting to load $sport games from Odds API...');
       final oddsApiGames = await _oddsApiService.getSportGames(
         sport, 
@@ -242,6 +299,9 @@ class OptimizedGamesService {
             updatedGames.add(game);
           }
         }
+        
+        // Save to Firestore cache
+        await _saveGamesToFirestore(updatedGames, sport: sport);
         
         return updatedGames;
       }
@@ -422,6 +482,118 @@ class OptimizedGamesService {
     return cachedSportGames.sublist(offset, endIndex);
   }
 
+  /// Load ALL games for a specific sport (no date limit)
+  Future<List<GameModel>> loadAllGamesForSport(String sport) async {
+    debugPrint('🎯 Loading ALL games for $sport (no date limit)...');
+    
+    try {
+      // CHECK FIRESTORE CACHE FIRST (30 min cache for full sport listings)
+      final cachedGames = await _getGamesFromFirestore(sport, maxAge: const Duration(minutes: 30));
+      if (cachedGames != null && cachedGames.isNotEmpty) {
+        debugPrint('✅ Using ${cachedGames.length} cached $sport games from Firestore');
+        
+        // Check if Canelo vs Crawford is in cached data
+        if (sport.toLowerCase() == 'boxing') {
+          for (final game in cachedGames) {
+            if (game.homeTeam.toLowerCase().contains('canelo') || 
+                game.awayTeam.toLowerCase().contains('crawford')) {
+              debugPrint('🥊 FOUND IN CACHE: ${game.awayTeam} vs ${game.homeTeam}');
+            }
+          }
+        }
+        return cachedGames;
+      }
+      
+      // Load from Odds API without date limit if no cache
+      debugPrint('📡 No valid cache, fetching from API...');
+      final events = await _oddsApiService.getSportEvents(sport);
+      if (events == null || events.isEmpty) {
+        debugPrint('❌ No events returned from Odds API for $sport');
+        return [];
+      }
+      
+      debugPrint('✅ Got ${events.length} $sport events from API');
+      
+      // Convert to GameModel
+      final games = <GameModel>[];
+      for (final event in events) {
+        try {
+          final gameTime = DateTime.parse(event['commence_time']);
+          
+          final game = GameModel(
+            id: event['id'],
+            sport: sport.toUpperCase(),
+            homeTeam: event['home_team'] ?? '',
+            awayTeam: event['away_team'] ?? '',
+            gameTime: gameTime,
+            status: 'scheduled',
+            league: event['sport_title'] ?? sport.toUpperCase(),
+            venue: null,
+            broadcast: null,
+            homeTeamLogo: null,
+            awayTeamLogo: null,
+          );
+          
+          games.add(game);
+          
+          // Debug Canelo vs Crawford
+          if (sport.toLowerCase() == 'boxing' && 
+              (game.homeTeam.toLowerCase().contains('canelo') || 
+               game.awayTeam.toLowerCase().contains('crawford'))) {
+            debugPrint('🥊 FOUND IN SERVICE: ${game.awayTeam} vs ${game.homeTeam} at ${game.gameTime}');
+          }
+        } catch (e) {
+          debugPrint('Error parsing event: $e');
+        }
+      }
+      
+      // Sort by game time
+      games.sort((a, b) => a.gameTime.compareTo(b.gameTime));
+      
+      debugPrint('📊 Converted ${games.length} $sport events to GameModel');
+      
+      // Update scores if available
+      try {
+        final scores = await _oddsApiService.getSportScores(sport);
+        final updatedGames = <GameModel>[];
+        for (final game in games) {
+          final scoreData = scores[game.id];
+          if (scoreData != null && scoreData['scores'] != null) {
+            // Create new game with updated scores
+            updatedGames.add(GameModel(
+              id: game.id,
+              sport: game.sport,
+              homeTeam: game.homeTeam,
+              awayTeam: game.awayTeam,
+              gameTime: game.gameTime,
+              status: scoreData['completed'] == true ? 'final' : 'live',
+              homeScore: scoreData['scores']?['home_team'],
+              awayScore: scoreData['scores']?['away_team'],
+              league: game.league,
+              venue: game.venue,
+              broadcast: game.broadcast,
+              homeTeamLogo: game.homeTeamLogo,
+              awayTeamLogo: game.awayTeamLogo,
+            ));
+          } else {
+            updatedGames.add(game);
+          }
+        }
+        // Save to Firestore cache before returning
+        await _saveGamesToFirestore(updatedGames, sport: sport);
+        return updatedGames;
+      } catch (e) {
+        debugPrint('Could not update scores: $e');
+        // Save to Firestore cache even without scores
+        await _saveGamesToFirestore(games, sport: sport);
+        return games;
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading all games for $sport: $e');
+      return [];
+    }
+  }
+
   /// Enrich a specific game with odds on-demand
   Future<void> enrichGameOnDemand(String gameId) async {
     debugPrint('💰 Enriching game $gameId with odds on-demand');
@@ -459,18 +631,68 @@ class OptimizedGamesService {
     }
   }
 
-  /// Save games to Firestore
-  Future<void> _saveGamesToFirestore(List<GameModel> games) async {
+  /// Check Firestore cache for games by sport
+  Future<List<GameModel>?> _getGamesFromFirestore(String sport, {Duration maxAge = const Duration(hours: 1)}) async {
+    try {
+      debugPrint('🔍 Checking Firestore cache for $sport games...');
+      
+      // Query games by sport with cache timestamp check
+      final now = DateTime.now();
+      final cutoffTime = now.subtract(maxAge);
+      
+      final querySnapshot = await _firestore
+          .collection('games')
+          .where('sport', isEqualTo: sport.toUpperCase())
+          .where('cacheTimestamp', isGreaterThan: cutoffTime.toIso8601String())
+          .get();
+      
+      if (querySnapshot.docs.isEmpty) {
+        debugPrint('❌ No cached $sport games found or cache expired');
+        return null;
+      }
+      
+      final games = querySnapshot.docs
+          .map((doc) => GameModel.fromFirestore(doc))
+          .toList();
+      
+      debugPrint('✅ Found ${games.length} cached $sport games in Firestore');
+      return games;
+    } catch (e) {
+      debugPrint('Error reading from Firestore cache: $e');
+      return null;
+    }
+  }
+  
+  /// Save games to Firestore with cache timestamp
+  Future<void> _saveGamesToFirestore(List<GameModel> games, {String? sport}) async {
+    if (games.isEmpty) return;
+    
     final batch = _firestore.batch();
+    final timestamp = DateTime.now().toIso8601String();
     
     for (final game in games) {
       final docRef = _firestore.collection('games').doc(game.id);
-      batch.set(docRef, game.toMap(), SetOptions(merge: true));
+      final data = game.toMap();
+      data['cacheTimestamp'] = timestamp;
+      if (sport != null) {
+        data['sport'] = sport.toUpperCase();
+      }
+      batch.set(docRef, data, SetOptions(merge: true));
+    }
+    
+    // Also save a sport cache metadata document
+    if (sport != null) {
+      final metaRef = _firestore.collection('game_cache_meta').doc(sport.toLowerCase());
+      batch.set(metaRef, {
+        'sport': sport.toUpperCase(),
+        'lastUpdated': timestamp,
+        'gameCount': games.length,
+      }, SetOptions(merge: true));
     }
     
     try {
       await batch.commit();
-      debugPrint('💾 Saved ${games.length} games to Firestore');
+      debugPrint('💾 Saved ${games.length} games to Firestore for $sport');
     } catch (e) {
       debugPrint('Error saving games to Firestore: $e');
     }

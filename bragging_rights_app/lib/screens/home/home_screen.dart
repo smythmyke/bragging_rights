@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'dart:async';
 import 'dart:math' as math;
+import '../../theme/app_theme.dart';
 import '../../services/bet_service.dart';
 import '../../services/wallet_service.dart';
 import '../../services/sports_api_service.dart';
@@ -132,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       PoolManagementService().startPoolManagement();
-      print('Pool management service started for user: ${user.uid}');
+      debugPrint('Pool management service started for user: ${user.uid}');
     }
   }
   
@@ -153,7 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // Refresh games data every 2 minutes
     _backgroundRefreshTimer = Timer.periodic(const Duration(minutes: 2), (timer) {
       if (mounted) {
-        print('⏰ Background refresh triggered');
+        debugPrint('⏰ Background refresh triggered');
         _loadGamesData(forceRefresh: false); // This will use cache if valid
       }
     });
@@ -256,7 +258,8 @@ class _HomeScreenState extends State<HomeScreen> {
       print('📱 Loading games data...');
       
       // Use optimized service for featured games with user preferences
-      final allGames = await _optimizedGamesService.loadFeaturedGames(forceRefresh: forceRefresh);
+      final result = await _optimizedGamesService.loadFeaturedGames(forceRefresh: forceRefresh);
+      final allGames = result['games'] as List<GameModel>;
       
       if (allGames.isNotEmpty) {
         // Update UI immediately with whatever games we have (cached or fresh)
@@ -586,26 +589,30 @@ class _HomeScreenState extends State<HomeScreen> {
   Color _getSportColor(String sport) {
     switch (sport.toUpperCase()) {
       case 'NFL':
-        return Colors.blue;
+        return AppTheme.primaryCyan;
       case 'NBA':
-        return Colors.orange;
+        return AppTheme.warningAmber;
       case 'NHL':
-        return Colors.cyan;
+        return AppTheme.secondaryCyan;
       case 'MLB':
-        return Colors.red;
+        return AppTheme.errorPink;
       case 'UFC':
-        return Colors.purple;
+        return AppTheme.secondaryCyan;
+      case 'SOCCER':
+        return AppTheme.neonGreen;  // Bright green for soccer visibility
+      case 'BOXING':
+        return AppTheme.warningAmber;  // Bright amber for boxing visibility
       default:
-        return Colors.grey;
+        return AppTheme.surfaceBlue;
     }
   }
   
   Color _getPoolCategoryColor(String category) {
-    if (category.contains('Beginner')) return Colors.green[400]!;
-    if (category.contains('Standard')) return Colors.blue[400]!;
-    if (category.contains('High')) return Colors.purple[400]!;
-    if (category.contains('Whale')) return Colors.red[400]!;
-    return Colors.grey[400]!;
+    if (category.contains('Beginner')) return AppTheme.neonGreen;
+    if (category.contains('Standard')) return AppTheme.primaryCyan;
+    if (category.contains('High')) return AppTheme.secondaryCyan;
+    if (category.contains('Whale')) return AppTheme.errorPink;
+    return AppTheme.surfaceBlue;
   }
   
   Widget _buildEmptyPoolsCard(String message) {

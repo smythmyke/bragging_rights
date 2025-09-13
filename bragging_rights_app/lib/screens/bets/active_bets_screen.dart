@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../services/bet_storage_service.dart';
+import '../../theme/app_theme.dart';
 
 class ActiveBetsScreen extends StatefulWidget {
   const ActiveBetsScreen({super.key});
@@ -30,19 +31,19 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
   }
   
   Future<void> _loadBets() async {
-    print('[ActiveBetsScreen] Loading bets...');
+    debugPrint('[ActiveBetsScreen] Loading bets...');
     setState(() => _isLoading = true);
     
     _betStorage = await BetStorageService.create();
     _activeBets = await _betStorage!.getActiveBets();
     _pastBets = await _betStorage!.getPastBets();
     
-    print('[ActiveBetsScreen] Loaded ${_activeBets.length} active bets');
-    print('[ActiveBetsScreen] Loaded ${_pastBets.length} past bets');
+    debugPrint('[ActiveBetsScreen] Loaded ${_activeBets.length} active bets');
+    debugPrint('[ActiveBetsScreen] Loaded ${_pastBets.length} past bets');
     
     // Debug: Print details of active bets
     for (final bet in _activeBets) {
-      print('[ActiveBetsScreen] Active bet: ${bet.selection} in pool ${bet.poolName} (${bet.poolId})');
+      debugPrint('[ActiveBetsScreen] Active bet: ${bet.selection} in pool ${bet.poolName} (${bet.poolId})');
     }
     
     // Calculate stats from past bets
@@ -170,17 +171,17 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildStatItem('Wins', _totalWins.toString(), Colors.green),
-              _buildStatItem('Losses', _totalLosses.toString(), Colors.red),
+              _buildStatItem('Wins', _totalWins.toString(), AppTheme.neonGreen),
+              _buildStatItem('Losses', _totalLosses.toString(), AppTheme.errorPink),
               _buildStatItem(
                 'Profit', 
                 '${_totalProfit >= 0 ? '+' : ''}${_totalProfit.toStringAsFixed(0)} BR',
-                _totalProfit >= 0 ? Colors.green : Colors.red,
+                _totalProfit >= 0 ? AppTheme.neonGreen : AppTheme.errorPink,
               ),
               _buildStatItem(
                 'Streak',
                 '${_currentStreak.abs()}${_currentStreak > 0 ? 'W' : _currentStreak < 0 ? 'L' : ''}',
-                _currentStreak > 0 ? Colors.green : _currentStreak < 0 ? Colors.red : Colors.white,
+                _currentStreak > 0 ? AppTheme.neonGreen : _currentStreak < 0 ? AppTheme.errorPink : Colors.white,
               ),
             ],
           ),
@@ -203,8 +204,8 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
         const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white70,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.7),
             fontSize: 12,
           ),
         ),
@@ -221,7 +222,7 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
             Icon(
               PhosphorIconsRegular.empty,
               size: 64,
-              color: Colors.grey[400],
+              color: AppTheme.surfaceBlue.withOpacity(0.5),
             ),
             const SizedBox(height: 16),
             const Text(
@@ -235,7 +236,7 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
             Text(
               'Place some bets to see them here',
               style: TextStyle(
-                color: Colors.grey[600],
+                color: AppTheme.primaryCyan.withOpacity(0.7),
               ),
             ),
             const SizedBox(height: 24),
@@ -299,7 +300,7 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
             Icon(
               PhosphorIconsRegular.clock,
               size: 64,
-              color: Colors.grey[400],
+              color: AppTheme.surfaceBlue.withOpacity(0.5),
             ),
             const SizedBox(height: 16),
             const Text(
@@ -313,7 +314,7 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
             Text(
               'Your completed bets will appear here',
               style: TextStyle(
-                color: Colors.grey[600],
+                color: AppTheme.primaryCyan.withOpacity(0.7),
               ),
             ),
           ],
@@ -333,8 +334,8 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
   
   Widget _buildBetTile(UserBet bet, {bool isPast = false}) {
     final statusColor = isPast
-        ? (bet.won == true ? Colors.green : bet.won == false ? Colors.red : Colors.orange)
-        : Colors.orange;
+        ? (bet.won == true ? AppTheme.neonGreen : bet.won == false ? AppTheme.errorPink : AppTheme.warningAmber)
+        : AppTheme.warningAmber;
     
     return ListTile(
       leading: CircleAvatar(
@@ -354,12 +355,12 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
         children: [
           Text(
             '${bet.gameTitle} • ${bet.sport}',
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            style: TextStyle(fontSize: 12, color: AppTheme.primaryCyan.withOpacity(0.7)),
           ),
           if (bet.description != null)
             Text(
               bet.description!,
-              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+              style: TextStyle(fontSize: 11, color: AppTheme.primaryCyan.withOpacity(0.5)),
             ),
         ],
       ),
@@ -383,13 +384,13 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
           else
             Text(
               '${bet.amount.toStringAsFixed(0)} BR',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 12, color: AppTheme.primaryCyan.withOpacity(0.7)),
             ),
           if (bet.payout != null && bet.won == true)
             Text(
               bet.formattedPayout,
-              style: const TextStyle(
-                color: Colors.green,
+              style: TextStyle(
+                color: AppTheme.neonGreen,
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
               ),
