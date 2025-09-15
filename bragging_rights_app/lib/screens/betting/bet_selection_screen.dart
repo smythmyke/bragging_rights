@@ -18,6 +18,7 @@ import '../../widgets/baseball_props_widget.dart';
 import '../../services/props_cache_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/team_bet_card.dart' as team_card;
+import '../../services/bet_tracking_service.dart';
 
 class BetSelectionScreen extends StatefulWidget {
   final String gameTitle;
@@ -50,6 +51,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   final BetService _betService = BetService();
   final WalletService _walletService = WalletService();
   final SportsApiService _sportsApiService = SportsApiService();
+  final BetTrackingService _betTrackingService = BetTrackingService();
   final OddsApiService _oddsApiService = OddsApiService();
   final TeamLogoService _logoService = TeamLogoService();
   
@@ -3609,7 +3611,17 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       
       await _betStorage.saveBets(userBets);
       debugPrint('Saved ${userBets.length} bets to storage with poolId: $actualPoolId and gameId: $actualGameId');
-      
+
+      // Track the bet placement for the indicator ribbon
+      await _betTrackingService.createBetStatusFromPool(
+        gameId: actualGameId,
+        poolId: actualPoolId,
+        amount: totalWager.toDouble(),
+        sport: widget.sport,
+        gameDate: DateTime.now().add(const Duration(hours: 3)), // You might want to get actual game date
+      );
+      debugPrint('Updated bet tracking status for game: $actualGameId');
+
       debugPrint('Bets locked in successfully! Potential payout: $potentialPayout BR');
       
       // Show success message

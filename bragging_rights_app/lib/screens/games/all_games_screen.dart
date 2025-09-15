@@ -3,6 +3,8 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../models/game_model.dart';
 import '../../services/espn_direct_service.dart';
 import '../../services/optimized_games_service.dart';
+import '../../services/bet_tracking_service.dart';
+import '../../widgets/bet_placed_ribbon.dart';
 import 'package:intl/intl.dart';
 
 class AllGamesScreen extends StatefulWidget {
@@ -23,7 +25,9 @@ class AllGamesScreen extends StatefulWidget {
 
 class _AllGamesScreenState extends State<AllGamesScreen> {
   final ESPNDirectService _espnService = ESPNDirectService();
+  final BetTrackingService _betTrackingService = BetTrackingService();
   List<GameModel> _games = [];
+  Map<String, bool> _betStatuses = {};
   bool _loading = true;
   String? _selectedSport;
 
@@ -33,11 +37,32 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
   @override
   void initState() {
     super.initState();
+    _loadBetStatuses();
     if (widget.initialGames != null) {
       _games = widget.initialGames!;
       _loading = false;
     } else {
       _loadGames();
+    }
+  }
+
+  Future<void> _loadBetStatuses() async {
+    try {
+      // Load all bet statuses
+      await _betTrackingService.loadAllBetStatuses();
+      final allStatuses = await _betTrackingService.getAllBetStatuses();
+
+      // Update the bet statuses map
+      setState(() {
+        _betStatuses = {};
+        allStatuses.forEach((gameId, status) {
+          if (status.isActive) {
+            _betStatuses[gameId] = true;
+          }
+        });
+      });
+    } catch (e) {
+      debugPrint('Error loading bet statuses: $e');
     }
   }
   
@@ -93,6 +118,9 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
         _games = games;
         _loading = false;
       });
+
+      // Reload bet statuses after loading games
+      _loadBetStatuses();
     } catch (e) {
       setState(() => _loading = false);
       if (mounted) {
@@ -160,8 +188,11 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
   Widget _buildGameCard(GameModel game) {
     final bool isLive = game.isLive;
     final bool hasStarted = game.isFinal || isLive;
-    
-    return Card(
+    final bool hasBet = _betStatuses[game.id] ?? false;
+
+    return Stack(
+      children: [
+        Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
@@ -394,6 +425,12 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
           ),
         ),
       ),
+        ),
+        // Add the bet placed ribbon
+        BetPlacedRibbon(
+          isVisible: hasBet,
+        ),
+      ],
     );
   }
   

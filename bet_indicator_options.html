@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bet Indicator Options - Bragging Rights</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #0A0E27 0%, #1A1F3A 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            background: linear-gradient(90deg, #00D9FF, #0099FF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(0, 217, 255, 0.5);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #00D9FF;
+            opacity: 0.7;
+            margin-bottom: 40px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .option-card {
+            background: linear-gradient(135deg, #1A1F3A, #141829);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 217, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .option-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 217, 255, 0.2);
+            border-color: rgba(0, 217, 255, 0.5);
+        }
+
+        .option-number {
+            color: #00D9FF;
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .game-card-mock {
+            background: linear-gradient(135deg, #141829, #0D1017);
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .sport-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 217, 255, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #00D9FF;
+            font-size: 24px;
+        }
+
+        .game-info {
+            flex: 1;
+        }
+
+        .teams {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .game-time {
+            font-size: 12px;
+            color: rgba(0, 217, 255, 0.6);
+        }
+
+        /* Button Styles */
+        .view-pools-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #00D9FF, #0099FF);
+            border: none;
+            border-radius: 8px;
+            color: #0A0E27;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+        }
+
+        .wager-made-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #00FF88, #00D9FF);
+            border: none;
+            border-radius: 8px;
+            color: #0A0E27;
+            font-weight: bold;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        .bet-placed-btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: 2px solid #00FF88;
+            border-radius: 8px;
+            color: #00FF88;
+            font-weight: bold;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.2);
+        }
+
+        /* Badge/Indicator Styles */
+        .badge-indicator {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: linear-gradient(135deg, #00FF88, #00D9FF);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #0A0E27;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+            font-weight: bold;
+        }
+
+        .corner-ribbon {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: linear-gradient(135deg, #00FF88, #00D9FF);
+            color: #0A0E27;
+            padding: 2px 20px;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 0 12px 0 12px;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
+        }
+
+        .side-stripe {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(180deg, #00FF88, #00D9FF);
+            border-radius: 12px 0 0 12px;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
+        }
+
+        .description {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .pros-cons {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(0, 217, 255, 0.2);
+        }
+
+        .pros, .cons {
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .pros {
+            color: #00FF88;
+        }
+
+        .cons {
+            color: #FFB700;
+        }
+
+        .checkmark {
+            color: #00FF88;
+        }
+
+        @media (max-width: 768px) {
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Bet Indicator Design Options</h1>
+        <p class="subtitle">Choose how to indicate when a user has already placed bets on a game</p>
+
+        <div class="options-grid">
+            <!-- Option 1: Change Button Text -->
+            <div class="option-card">
+                <div class="option-number">OPTION 1: Button Text Change</div>
+                <div class="game-card-mock">
+                    <div class="sport-icon">🏈</div>
+                    <div class="game-info">
+                        <div class="teams">Lakers vs Warriors</div>
+                        <div class="game-time">Today • 7:30 PM</div>
+                    </div>
+                    <button class="wager-made-btn">
+                        ✓ Wager Made
+                    </button>
+                </div>
+                <div class="description">
+                    Replace "View Pools" with "Wager Made" or "Bet Placed" when user has active bets.
+                </div>
+                <div class="pros-cons">
+                    <div class="pros">✓ Clear and direct messaging</div>
+                    <div class="cons">✗ Takes up same button space</div>
+                </div>
+            </div>
+
+            <!-- Option 2: Badge on Card -->
+            <div class="option-card">
+                <div class="option-number">OPTION 2: Badge Indicator</div>
+                <div class="game-card-mock">
+                    <div class="badge-indicator">✓</div>
+                    <div class="sport-icon">🏀</div>
+                    <div class="game-info">
+                        <div class="teams">Rangers vs Devils</div>
+                        <div class="game-time">Tomorrow • 8:00 PM</div>
+                    </div>
+                    <button class="view-pools-btn">View Pools</button>
+                </div>
+                <div class="description">
+                    Add a small badge/checkmark in the corner of cards with active bets.
+                </div>
+                <div class="pros-cons">
+                    <div class="pros">✓ Subtle and non-intrusive</div>
+                    <div class="cons">✗ Might be overlooked</div>
+                </div>
+            </div>
+
+            <!-- Option 3: Corner Ribbon -->
+            <div class="option-card">
+                <div class="option-number">OPTION 3: Corner Ribbon</div>
+                <div class="game-card-mock">
+                    <div class="corner-ribbon">BET PLACED</div>
+                    <div class="sport-icon">⚾</div>
+                    <div class="game-info">
+                        <div class="teams">Yankees vs Red Sox</div>
+                        <div class="game-time">Friday • 7:05 PM</div>
+                    </div>
+                    <button class="view-pools-btn">View Pools</button>
+                </div>
+                <div class="description">
+                    Display a corner ribbon saying "BET PLACED" or "WAGERED" on the card.
+                </div>
+                <div class="pros-cons">
+                    <div class="pros">✓ Very visible and clear</div>
+                    <div class="cons">✗ May feel cluttered</div>
+                </div>
+            </div>
+
+            <!-- Option 4: Side Stripe -->
+            <div class="option-card">
+                <div class="option-number">OPTION 4: Colored Side Stripe</div>
+                <div class="game-card-mock">
+                    <div class="side-stripe"></div>
+                    <div class="sport-icon">🏒</div>
+                    <div class="game-info">
+                        <div class="teams">Maple Leafs vs Bruins</div>
+                        <div class="game-time">Saturday • 7:00 PM</div>
+                    </div>
+                    <button class="view-pools-btn">View Pools</button>
+                </div>
+                <div class="description">
+                    Add a colored stripe on the left side of cards with active bets.
+                </div>
+                <div class="pros-cons">
+                    <div class="pros">✓ Clean and modern look</div>
+                    <div class="cons">✗ Meaning not immediately clear</div>
+                </div>
+            </div>
+
+            <!-- Option 5: Button Style Change -->
+            <div class="option-card">
+                <div class="option-number">OPTION 5: Button Style Change</div>
+                <div class="game-card-mock">
+                    <div class="sport-icon">🥊</div>
+                    <div class="game-info">
+                        <div class="teams">UFC 311: Main Card</div>
+                        <div class="game-time">Saturday • 10:00 PM</div>
+                    </div>
+                    <button class="bet-placed-btn">
+                        <span class="checkmark">✓</span> Bet Placed
+                    </button>
+                </div>
+                <div class="description">
+                    Change button to outlined style with green checkmark when bet is placed.
+                </div>
+                <div class="pros-cons">
+                    <div class="pros">✓ Clear status with maintained functionality</div>
+                    <div class="cons">✗ Still clickable which might confuse</div>
+                </div>
+            </div>
+
+            <!-- Option 6: Combined Approach -->
+            <div class="option-card">
+                <div class="option-number">OPTION 6: Combined Indicators</div>
+                <div class="game-card-mock">
+                    <div class="side-stripe"></div>
+                    <div class="badge-indicator">$</div>
+                    <div class="sport-icon">⚽</div>
+                    <div class="game-info">
+                        <div class="teams">Man City vs Arsenal</div>
+                        <div class="game-time">Sunday • 4:30 PM</div>
+                    </div>
+                    <button class="wager-made-btn">
+                        <span style="color: #0A0E27;">💰</span> Wagered
+                    </button>
+                </div>
+                <div class="description">
+                    Combine multiple indicators: side stripe + badge + button change for maximum clarity.
+                </div>
+                <div class="pros-cons">
+                    <div class="pros">✓ Very clear indication</div>
+                    <div class="cons">✗ Might be visually overwhelming</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 40px; padding: 20px; background: rgba(0, 217, 255, 0.1); border-radius: 12px; border: 1px solid rgba(0, 217, 255, 0.3);">
+            <h3 style="color: #00D9FF; margin-bottom: 10px;">Recommendation:</h3>
+            <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6;">
+                <strong>Option 2 (Badge) + Option 5 (Button Style)</strong> provides the best balance:<br>
+                • The badge gives a quick visual scan capability<br>
+                • The button change confirms the status when users focus on action<br>
+                • Not too cluttered but clear enough to avoid confusion<br>
+                • Maintains the cyber blue theme with green success indicators
+            </p>
+        </div>
+    </div>
+</body>
+</html>
