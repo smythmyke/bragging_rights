@@ -972,9 +972,23 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   Widget _buildBetTypeTabs() {
     final sportUpper = widget.sport.toUpperCase().trim();
     
+    if (sportUpper.contains('NHL') || sportUpper.contains('HOCKEY')) {
+      // NHL uses simple tabs like soccer for better visibility
+      return TabBar(
+        controller: _betTypeController,
+        isScrollable: true,
+        tabs: const [
+          Tab(text: 'Winner'),
+          Tab(text: 'Spread'),
+          Tab(text: 'Totals'),
+          Tab(text: 'Props'),
+          Tab(text: 'Live'),
+        ],
+      );
+    }
+
     if (sportUpper.contains('NBA') || sportUpper.contains('BASKETBALL') ||
         sportUpper.contains('NFL') || sportUpper.contains('FOOTBALL') ||
-        sportUpper.contains('NHL') || sportUpper.contains('HOCKEY') ||
         sportUpper.contains('MLB') || sportUpper.contains('BASEBALL')) {
       return TabBar(
         controller: _betTypeController,
@@ -1135,20 +1149,32 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Theme.of(context).colorScheme.primary.withOpacity(0.1),
-            Colors.white,
+            const Color(0xFF1A1F2E),
+            const Color(0xFF0D1017),
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.primaryCyan.withOpacity(0.3),
+          width: 1,
         ),
       ),
       child: Column(
         children: [
           Text(
             widget.gameTitle,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
+              color: AppTheme.primaryCyan,
+              shadows: [
+                Shadow(
+                  blurRadius: 10,
+                  color: AppTheme.primaryCyan.withOpacity(0.5),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 8),
@@ -1156,37 +1182,55 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildTeamInfo(
+                Expanded(
+                  child: _buildTeamInfo(
                   _awayTeam ?? 'Away',
                   _getTeamAbbr(_awayTeam ?? 'AWAY'),
                   Theme.of(context).colorScheme.secondary,
                   _oddsData?.formatMoneyline(_oddsData?.awayMoneyline) ?? '--',
                   _awayTeamLogo,
+                  ),
                 ),
-                Column(
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Column(
                   children: [
-                    const Text('VS', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      'VS',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[400],
+                        fontSize: 16,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     if (_oddsData?.totalPoints != null)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppTheme.surfaceBlue,
+                          color: AppTheme.primaryCyan.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           'O/U ${_oddsData!.formatTotal(_oddsData!.totalPoints)}',
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryCyan,
+                          ),
                         ),
                       ),
                   ],
+                  ),
                 ),
-                _buildTeamInfo(
+                Expanded(
+                  child: _buildTeamInfo(
                   _homeTeam ?? 'Home',
                   _getTeamAbbr(_homeTeam ?? 'HOME'),
                   Theme.of(context).colorScheme.primary,
                   _oddsData?.formatMoneyline(_oddsData?.homeMoneyline) ?? '--',
                   _homeTeamLogo,
+                  ),
                 ),
               ],
             ),
@@ -1352,15 +1396,29 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   
   Widget _buildTeamInfo(String team, String abbreviation, Color color, String odds, TeamLogoData? logoData) {
     return Container(
-      width: 120,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF141829),
+            const Color(0xFF1A1F3A).withOpacity(0.8),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppTheme.surfaceBlue,
+          color: AppTheme.primaryCyan.withOpacity(0.3),
           width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryCyan.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -1415,17 +1473,41 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                   ),
                 ),
           const SizedBox(height: 4),
-          Text(team, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          Text(
+            team,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.white.withOpacity(0.95),
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           const SizedBox(height: 2),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: AppTheme.surfaceBlue,
+              gradient: LinearGradient(
+                colors: [AppTheme.primaryCyan, AppTheme.primaryCyan.withOpacity(0.7)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(6),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryCyan.withOpacity(0.3),
+                  blurRadius: 4,
+                ),
+              ],
             ),
             child: Text(
               odds,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ),
         ],
@@ -2765,11 +2847,24 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF1A1F2E),
+              const Color(0xFF0D1017),
+            ],
+          ),
+          border: Border(
+            top: BorderSide(
+              color: AppTheme.primaryCyan.withOpacity(0.5),
+              width: 2,
+            ),
+          ),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.surfaceBlue.withOpacity(0.3),
-              blurRadius: 8,
+              color: AppTheme.primaryCyan.withOpacity(0.3),
+              blurRadius: 20,
               offset: const Offset(0, -4),
             ),
           ],
@@ -2786,8 +2881,14 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 8),
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceBlue,
+                  color: AppTheme.primaryCyan.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryCyan.withOpacity(0.3),
+                      blurRadius: 4,
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -2799,13 +2900,23 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                   children: [
                     Text(
                       isParlay ? 'Parlay (${_selectedBets.length} legs)' : 'Single Bet',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: AppTheme.primaryCyan,
+                        shadows: [
+                          Shadow(
+                            blurRadius: 10,
+                            color: AppTheme.primaryCyan.withOpacity(0.5),
+                          ),
+                        ],
+                      ),
                     ),
                     Text(
                       'Current Tab: $_currentTabName',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppTheme.surfaceBlue.withOpacity(0.6),
+                        color: Colors.grey[400],
                       ),
                     ),
                   ],
@@ -2830,7 +2941,10 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                       ),
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: const Icon(Icons.keyboard_arrow_down),
+                      icon: Icon(
+                        Icons.keyboard_arrow_down,
+                        color: AppTheme.primaryCyan.withOpacity(0.7),
+                      ),
                       onPressed: () {
                         setState(() {
                           _isBetSlipMinimized = true;
@@ -2851,13 +2965,20 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                   Expanded(
                     child: Text(
                       bet.title,
-                      style: const TextStyle(fontSize: 12),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[300],
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Text(
                     bet.odds,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.neonGreen,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   GestureDetector(
@@ -2871,28 +2992,59 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                 ],
               ),
             )),
-            const Divider(),
+            Divider(
+              color: AppTheme.primaryCyan.withOpacity(0.3),
+            ),
             Row(
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Wager Amount', style: TextStyle(fontSize: 12)),
+                      Text(
+                        'Wager Amount',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[400],
+                        ),
+                      ),
                       const SizedBox(height: 4),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
-                          border: Border.all(color: AppTheme.surfaceBlue!),
+                          color: const Color(0xFF0D1017).withOpacity(0.5),
+                          border: Border.all(
+                            color: AppTheme.primaryCyan.withOpacity(0.5),
+                            width: 1,
+                          ),
                           borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.primaryCyan.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: TextField(
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
+                          style: TextStyle(
+                            color: AppTheme.primaryCyan,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          decoration: InputDecoration(
                             border: InputBorder.none,
                             hintText: '50',
+                            hintStyle: TextStyle(
+                              color: Colors.grey[600],
+                            ),
                             isDense: true,
-                            contentPadding: EdgeInsets.symmetric(vertical: 8),
+                            contentPadding: EdgeInsets.symmetric(vertical: 10),
+                            suffixText: 'BR',
+                            suffixStyle: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 12,
+                            ),
                           ),
                           onChanged: (value) {
                             setState(() {
@@ -2909,7 +3061,13 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Potential Payout', style: TextStyle(fontSize: 12)),
+                      Text(
+                        'Potential Payout',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[400],
+                        ),
+                      ),
                       const SizedBox(height: 4),
                       FittedBox(
                         fit: BoxFit.scaleDown,
@@ -2930,18 +3088,52 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _placeBet,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.primaryCyan,
+                      AppTheme.primaryCyan.withOpacity(0.7),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryCyan.withOpacity(0.5),
+                      blurRadius: 15,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: Text(
-                  'Place Bet ($_wagerAmount BR)',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                child: ElevatedButton(
+                  onPressed: _placeBet,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.rocket_launch,
+                        color: const Color(0xFF0D1017),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Place Bet ($_wagerAmount BR)',
+                        style: TextStyle(
+                          color: const Color(0xFF0D1017),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -3036,7 +3228,6 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     final totalOdds = _calculateTotalOdds(allBets);
     final potentialPayout = (totalWager * totalOdds).round();
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final sportColor = _getSportColor();
 
     showModalBottomSheet(
       context: context,
@@ -3047,21 +3238,18 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.6,
         decoration: BoxDecoration(
-          gradient: isDarkMode
-            ? LinearGradient(
-                colors: [AppTheme.surfaceBlue, AppTheme.deepBlue],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              )
-            : null,
-          color: isDarkMode ? null : Theme.of(context).scaffoldBackgroundColor,
+          gradient: LinearGradient(
+            colors: [Color(0xFF1A1F3A), Color(0xFF0A0E27)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           border: Border.all(
-            color: sportColor.withOpacity(0.3),
+            color: AppTheme.primaryCyan.withOpacity(0.3),
             width: 1.5,
           ),
           boxShadow: [
-            ...AppTheme.neonGlow(color: sportColor, intensity: 0.5),
+            ...AppTheme.neonGlow(color: AppTheme.primaryCyan, intensity: 0.5),
             BoxShadow(
               color: AppTheme.deepBlue.withOpacity(0.3),
               blurRadius: 20,
@@ -3078,12 +3266,12 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
               height: 5,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [sportColor, sportColor.withOpacity(0.8)],
+                  colors: [AppTheme.primaryCyan, Color(0xFF0099FF)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(3),
-                boxShadow: AppTheme.neonGlow(color: sportColor, intensity: 0.8),
+                boxShadow: AppTheme.neonGlow(color: AppTheme.primaryCyan, intensity: 0.8),
               ),
             ),
             // Header with close button
@@ -3097,21 +3285,21 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                     style: AppTheme.neonText(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: isDarkMode ? sportColor : AppTheme.deepBlue,
+                      color: AppTheme.primaryCyan,
                     ),
                   ),
                   Container(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: sportColor.withOpacity(0.5),
+                        color: AppTheme.primaryCyan.withOpacity(0.5),
                         width: 1.5,
                       ),
                     ),
                     child: IconButton(
                       icon: Icon(
                         Icons.close,
-                        color: isDarkMode ? sportColor : AppTheme.deepBlue,
+                        color: AppTheme.primaryCyan,
                       ),
                       onPressed: () => Navigator.pop(context),
                     ),
@@ -3128,20 +3316,18 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                     margin: const EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: isDarkMode
-                          ? [AppTheme.cardBlue, AppTheme.surfaceBlue.withOpacity(0.8)]
-                          : [Colors.white, Colors.grey.shade50],
+                        colors: [Color(0xFF141829), Color(0xFF1A1F3A).withOpacity(0.8)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: sportColor.withOpacity(0.2),
+                        color: AppTheme.primaryCyan.withOpacity(0.2),
                         width: 1,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: sportColor.withOpacity(0.1),
+                          color: AppTheme.primaryCyan.withOpacity(0.1),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -3153,13 +3339,13 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                         bet.title,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: isDarkMode ? Colors.white : AppTheme.deepBlue,
+                          color: Colors.white.withOpacity(0.95),
                         ),
                       ),
                       subtitle: Text(
                         'Odds: ${bet.odds}',
                         style: TextStyle(
-                          color: sportColor,
+                          color: AppTheme.primaryCyan,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -3167,12 +3353,12 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [sportColor, sportColor.withOpacity(0.8)],
+                            colors: [AppTheme.primaryCyan, Color(0xFF0099FF)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(20),
-                          boxShadow: AppTheme.neonGlow(color: sportColor, intensity: 0.5),
+                          boxShadow: AppTheme.neonGlow(color: AppTheme.primaryCyan, intensity: 0.5),
                         ),
                         child: Text(
                           '$_wagerAmount BR',
@@ -3213,7 +3399,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                               Text(
                                 'Total Selections:',
                                 style: TextStyle(
-                                  color: isDarkMode ? Colors.white70 : AppTheme.deepBlue.withOpacity(0.7),
+                                  color: Colors.white.withOpacity(0.7),
                                   fontSize: 15,
                                 ),
                               ),
@@ -3222,7 +3408,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
-                                  color: isDarkMode ? Colors.white : AppTheme.deepBlue,
+                                  color: Colors.white.withOpacity(0.95),
                                 ),
                               ),
                             ],
@@ -3234,7 +3420,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                               Text(
                                 'Total Wager:',
                                 style: TextStyle(
-                                  color: isDarkMode ? Colors.white70 : AppTheme.deepBlue.withOpacity(0.7),
+                                  color: Colors.white.withOpacity(0.7),
                                   fontSize: 15,
                                 ),
                               ),
@@ -3243,7 +3429,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
-                                  color: isDarkMode ? Colors.white : AppTheme.deepBlue,
+                                  color: Colors.white.withOpacity(0.95),
                                 ),
                               ),
                             ],
@@ -3265,7 +3451,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                                 Text(
                                   'Potential Payout:',
                                   style: TextStyle(
-                                    color: isDarkMode ? Colors.white : AppTheme.deepBlue,
+                                    color: Colors.white.withOpacity(0.9),
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -3293,9 +3479,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: isDarkMode
-                    ? [AppTheme.surfaceBlue.withOpacity(0.9), AppTheme.deepBlue]
-                    : [Colors.white.withOpacity(0.9), Colors.grey.shade100],
+                  colors: [Color(0xFF1A1F3A).withOpacity(0.9), Color(0xFF0A0E27)],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
@@ -3312,12 +3496,12 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [sportColor, sportColor.withOpacity(0.8)],
+                      colors: [AppTheme.neonGreen, AppTheme.neonGreen.withOpacity(0.8)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: AppTheme.neonGlow(color: sportColor, intensity: 0.8),
+                    boxShadow: AppTheme.neonGlow(color: AppTheme.neonGreen, intensity: 0.8),
                   ),
                   child: ElevatedButton(
                     onPressed: _isLockingBets ? null : () {
@@ -3873,7 +4057,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
               child: ElevatedButton(
                 onPressed: _isLockingBets ? null : _showBetConfirmationSheet,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _getSportColor(),
+                  backgroundColor: AppTheme.neonGreen,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
