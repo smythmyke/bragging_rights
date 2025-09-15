@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Device Control - Bragging Rights</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .device-status {
+            background: #f7f9fc;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 30px;
+            border: 2px solid #e1e4e8;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .status-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .status-value {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-indicator.connected {
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.disconnected {
+            background: #ef4444;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 15px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            grid-column: span 2;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-info {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .console-output {
+            background: #1e293b;
+            color: #10b981;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            padding: 15px;
+            border-radius: 10px;
+            height: 150px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        .console-line {
+            margin-bottom: 5px;
+            opacity: 0;
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .divider {
+            height: 1px;
+            background: #e1e4e8;
+            margin: 20px 0;
+        }
+
+        .app-actions {
+            margin-top: 20px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        /* Toast notifications */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #333;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            display: none;
+            animation: slideIn 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.success {
+            background: #10b981;
+        }
+
+        .toast.error {
+            background: #ef4444;
+        }
+
+        .toast.show {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+            }
+            to {
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Pixel Device Control</h1>
+        <p class="subtitle">Bragging Rights App Development</p>
+
+        <div class="device-status">
+            <div class="status-row">
+                <span class="status-label">Device Status:</span>
+                <span class="status-value">
+                    <span class="status-indicator connected" id="statusIndicator"></span>
+                    <span id="deviceStatus">Connected</span>
+                </span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">Device Name:</span>
+                <span class="status-value" id="deviceName">Pixel Device</span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">App Status:</span>
+                <span class="status-value" id="appStatus">Running</span>
+            </div>
+        </div>
+
+        <div class="section-title">Device Controls</div>
+        <div class="button-grid">
+            <button class="btn btn-success" onclick="startDevice()">
+                ▶️ Start/Wake
+            </button>
+            <button class="btn btn-danger" onclick="stopDevice()">
+                ⏹️ Stop/Sleep
+            </button>
+            <button class="btn btn-warning" onclick="restartDevice()">
+                🔄 Restart
+            </button>
+            <button class="btn btn-info" onclick="checkStatus()">
+                📊 Check Status
+            </button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section-title">Bragging Rights App</div>
+        <div class="button-grid">
+            <button class="btn btn-success" onclick="launchApp()">
+                🚀 Launch App
+            </button>
+            <button class="btn btn-danger" onclick="closeApp()">
+                ❌ Close App
+            </button>
+            <button class="btn btn-warning" onclick="restartApp()">
+                ♻️ Restart App
+            </button>
+            <button class="btn btn-info" onclick="clearAppData()">
+                🗑️ Clear Data
+            </button>
+            <button class="btn btn-secondary" onclick="installApp()">
+                📦 Install APK
+            </button>
+            <button class="btn btn-secondary" onclick="uninstallApp()">
+                🗑️ Uninstall
+            </button>
+        </div>
+
+        <button class="btn btn-primary" onclick="runFlutterApp()">
+            🎯 Flutter Run (Debug Mode)
+        </button>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: #666;">Executing command...</p>
+        </div>
+
+        <div class="console-output" id="console">
+            <div class="console-line">$ Ready for commands...</div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Configuration
+        const APP_PACKAGE = 'com.braggingrights.bragging_rights_app'; // Updated with correct package name
+        const ACTIVITY_NAME = 'com.braggingrights.bragging_rights_app.MainActivity';
+
+        // Console logging
+        function log(message, isError = false) {
+            const console = document.getElementById('console');
+            const line = document.createElement('div');
+            line.className = 'console-line';
+            line.style.color = isError ? '#ef4444' : '#10b981';
+            line.textContent = `$ ${new Date().toLocaleTimeString()} - ${message}`;
+            console.appendChild(line);
+            console.scrollTop = console.scrollHeight;
+
+            // Keep only last 50 lines
+            while (console.children.length > 50) {
+                console.removeChild(console.firstChild);
+            }
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Loading state
+        function setLoading(isLoading) {
+            document.getElementById('loading').className = isLoading ? 'loading active' : 'loading';
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.disabled = isLoading;
+                btn.style.opacity = isLoading ? '0.5' : '1';
+            });
+        }
+
+        // Execute ADB command (requires local server)
+        async function executeADB(command) {
+            setLoading(true);
+            log(`Executing: adb ${command}`);
+
+            try {
+                // This would connect to your local server
+                // For now, we'll simulate the response
+                const response = await fetch(`http://localhost:5000/adb`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ command })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    log(result.output || 'Command executed successfully');
+                    showToast('Command executed successfully', 'success');
+                } else {
+                    log(result.error || 'Command failed', true);
+                    showToast('Command failed', 'error');
+                }
+
+                return result;
+            } catch (error) {
+                // Fallback for demo without server
+                log(`Demo mode: Would execute 'adb ${command}'`);
+                showToast('Demo mode - Install local server for full functionality', 'error');
+                return { success: false, demo: true };
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Device control functions
+        async function startDevice() {
+            setLoading(true);
+            log('Waking device...');
+            try {
+                const response = await fetch('http://localhost:5000/device/wake', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    log('Device awakened');
+                    updateStatus('Device awakened');
+                    showToast('Device awakened', 'success');
+                } else {
+                    log('Failed to wake device: ' + result.error, true);
+                    showToast('Failed to wake device', 'error');
+                }
+            } catch (error) {
+                log('Error waking device: ' + error.message, true);
+                showToast('Error waking device', 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function stopDevice() {
+            setLoading(true);
+            log('Putting device to sleep...');
+            try {
+                const response = await fetch('http://localhost:5000/device/sleep', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    log('Device sleeping');
+                    updateStatus('Device sleeping');
+                    showToast('Device put to sleep', 'success');
+                } else {
+                    log('Failed to sleep device: ' + result.error, true);
+                    showToast('Failed to sleep device', 'error');
+                }
+            } catch (error) {
+                log('Error sleeping device: ' + error.message, true);
+                showToast('Error sleeping device', 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function restartDevice() {
+            if (confirm('This will restart the device. Continue?')) {
+                await executeADB('reboot');
+                updateStatus('Device restarting...');
+            }
+        }
+
+        async function checkStatus() {
+            const result = await executeADB('devices');
+            await executeADB('shell dumpsys battery');
+            updateStatus('Status checked');
+        }
+
+        // App control functions
+        async function launchApp() {
+            setLoading(true);
+            log('Launching app...');
+            try {
+                const response = await fetch('http://localhost:5000/app/launch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    log('App launched successfully');
+                    updateAppStatus('Running');
+                    showToast('App launched', 'success');
+                } else {
+                    log('Failed to launch app: ' + result.error, true);
+                    showToast('Failed to launch app', 'error');
+                }
+            } catch (error) {
+                log('Error launching app: ' + error.message, true);
+                showToast('Error launching app', 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function closeApp() {
+            setLoading(true);
+            log('Closing app...');
+            try {
+                const response = await fetch('http://localhost:5000/app/close', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    log('App closed successfully');
+                    updateAppStatus('Stopped');
+                    showToast('App closed', 'success');
+                } else {
+                    log('Failed to close app: ' + result.error, true);
+                    showToast('Failed to close app', 'error');
+                }
+            } catch (error) {
+                log('Error closing app: ' + error.message, true);
+                showToast('Error closing app', 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function restartApp() {
+            setLoading(true);
+            log('Restarting app...');
+            try {
+                const response = await fetch('http://localhost:5000/app/restart', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    log('App restarted successfully');
+                    updateAppStatus('Running');
+                    showToast('App restarted', 'success');
+                } else {
+                    log('Failed to restart app: ' + result.error, true);
+                    showToast('Failed to restart app', 'error');
+                }
+            } catch (error) {
+                log('Error restarting app: ' + error.message, true);
+                showToast('Error restarting app', 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function clearAppData() {
+            if (confirm('This will clear all app data. Continue?')) {
+                setLoading(true);
+                log('Clearing app data...');
+                try {
+                    const response = await fetch('http://localhost:5000/app/clear', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        log('App data cleared successfully');
+                        updateAppStatus('Data cleared');
+                        showToast('App data cleared', 'success');
+                    } else {
+                        log('Failed to clear app data: ' + result.error, true);
+                        showToast('Failed to clear app data', 'error');
+                    }
+                } catch (error) {
+                    log('Error clearing app data: ' + error.message, true);
+                    showToast('Error clearing app data', 'error');
+                } finally {
+                    setLoading(false);
+                }
+            }
+        }
+
+        async function installApp() {
+            log('Please ensure the APK is in the current directory');
+            await executeADB('install -r bragging_rights.apk');
+        }
+
+        async function uninstallApp() {
+            if (confirm('This will uninstall the app. Continue?')) {
+                await executeADB(`uninstall ${APP_PACKAGE}`);
+                updateAppStatus('Uninstalled');
+            }
+        }
+
+        async function runFlutterApp() {
+            log('Starting Flutter in debug mode...');
+            // This would typically run flutter run command
+            window.open('http://localhost:5000/flutter-run', '_blank');
+            updateAppStatus('Flutter Debug Mode');
+        }
+
+        // Status updates
+        function updateStatus(status) {
+            document.getElementById('deviceStatus').textContent = status;
+        }
+
+        function updateAppStatus(status) {
+            document.getElementById('appStatus').textContent = status;
+        }
+
+        // Check connection on load
+        window.onload = async function() {
+            log('Device control panel initialized');
+            await checkStatus();
+        };
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'r':
+                        e.preventDefault();
+                        restartApp();
+                        break;
+                    case 'l':
+                        e.preventDefault();
+                        launchApp();
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        checkStatus();
+                        break;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

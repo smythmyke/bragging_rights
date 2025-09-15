@@ -257,14 +257,16 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
                         ),
                         if (game.venue != null) ...[
                           const SizedBox(width: 8),
-                          Text(
-                            '• ${game.venue}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
+                          Expanded(
+                            child: Text(
+                              '• ${game.venue}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ],

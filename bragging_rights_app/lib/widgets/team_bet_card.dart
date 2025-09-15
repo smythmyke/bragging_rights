@@ -65,29 +65,46 @@ class _TeamBetCardState extends State<TeamBetCard> {
   }
 
   Future<void> _loadTeamLogo() async {
-    // Only load logos for soccer initially
-    if (!widget.sport.toLowerCase().contains('soccer')) {
-      setState(() {
-        _isLoadingLogo = false;
-      });
-      return;
+    // Determine league based on sport
+    String? league;
+    final sportLower = widget.sport.toLowerCase();
+
+    if (sportLower.contains('soccer') || sportLower.contains('premier') || sportLower.contains('epl')) {
+      league = 'EPL';
+    } else if (sportLower.contains('nfl') || sportLower.contains('football')) {
+      league = 'NFL';
+    } else if (sportLower.contains('nba') || sportLower.contains('basketball')) {
+      league = 'NBA';
+    } else if (sportLower.contains('mlb') || sportLower.contains('baseball')) {
+      league = 'MLB';
+    } else if (sportLower.contains('nhl') || sportLower.contains('hockey')) {
+      league = 'NHL';
+    } else if (sportLower.contains('mls')) {
+      league = 'MLS';
     }
+
+    debugPrint('TeamBetCard: Loading logo for ${widget.teamName} in ${widget.sport} (league: $league)');
 
     try {
       final logoData = await _logoService.getTeamLogo(
         teamName: widget.teamName,
         sport: widget.sport,
-        league: 'EPL', // Default to EPL for now
+        league: league,
       );
 
       if (mounted) {
+        if (logoData != null) {
+          debugPrint('TeamBetCard: Logo found for ${widget.teamName}: ${logoData.logoUrl}');
+        } else {
+          debugPrint('TeamBetCard: No logo found for ${widget.teamName}');
+        }
         setState(() {
           _logoData = logoData;
           _isLoadingLogo = false;
         });
       }
     } catch (e) {
-      debugPrint('Error loading team logo: $e');
+      debugPrint('TeamBetCard: Error loading team logo for ${widget.teamName}: $e');
       if (mounted) {
         setState(() {
           _isLoadingLogo = false;

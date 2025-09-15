@@ -128,6 +128,37 @@ class BetService {
             .toList());
   }
 
+  // Get active bets (pending status)
+  Stream<List<BetModel>> getActiveBets() {
+    if (_userId == null) return Stream.value([]);
+
+    return _firestore
+        .collection('bets')
+        .where('userId', isEqualTo: _userId)
+        .where('status', isEqualTo: 'pending')
+        .orderBy('placedAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => BetModel.fromFirestore(doc))
+            .toList());
+  }
+
+  // Get past bets (settled, won, lost, cancelled)
+  Stream<List<BetModel>> getPastBets({int limit = 50}) {
+    if (_userId == null) return Stream.value([]);
+
+    return _firestore
+        .collection('bets')
+        .where('userId', isEqualTo: _userId)
+        .where('status', whereIn: ['settled', 'won', 'lost', 'cancelled'])
+        .orderBy('placedAt', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => BetModel.fromFirestore(doc))
+            .toList());
+  }
+
   // Cancel a pending bet (if allowed)
   Future<void> cancelBet(String betId) async {
     if (_userId == null) throw Exception('User not logged in');

@@ -44,6 +44,7 @@ dependencies:
   firebase_storage: ^12.3.7
   firebase_messaging: ^15.1.5
   firebase_analytics: ^11.3.6
+  firebase_app_check: ^0.3.2+10
   shared_preferences: ^2.5.3
   intl: ^0.20.2
   google_sign_in: ^6.2.2  # Re-enabled with newer version that fixes JLink issues

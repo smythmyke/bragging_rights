@@ -271,7 +271,13 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
               Text(widget.gameTitle, style: const TextStyle(fontSize: 16)),
               Text(
                 widget.sport,
-                style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.8)),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white70
+                    : Colors.black54,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),

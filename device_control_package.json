@@ -1,0 +1,14 @@
+{
+  "name": "pixel-device-control",
+  "version": "1.0.0",
+  "description": "Control panel for Pixel device and Bragging Rights app development",
+  "main": "device_control_server.js",
+  "scripts": {
+    "start": "node device_control_server.js",
+    "install-deps": "npm install express cors"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}

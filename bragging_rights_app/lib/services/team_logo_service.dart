@@ -16,6 +16,7 @@ class TeamLogoService {
 
   // ESPN API endpoints by sport
   static const Map<String, String> _espnEndpoints = {
+    // Soccer leagues
     'soccer': 'https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/teams',
     'soccer_epl': 'https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/teams',
     'soccer_laliga': 'https://site.api.espn.com/apis/site/v2/sports/soccer/esp.1/teams',
@@ -23,10 +24,17 @@ class TeamLogoService {
     'soccer_bundesliga': 'https://site.api.espn.com/apis/site/v2/sports/soccer/ger.1/teams',
     'soccer_ligue1': 'https://site.api.espn.com/apis/site/v2/sports/soccer/fra.1/teams',
     'soccer_mls': 'https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/teams',
+
+    // American sports leagues
+    'nfl': 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams',
+    'mlb': 'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/teams',
+    'nba': 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams',
+    'nhl': 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams',
   };
 
   // Team name variations for matching
   static const Map<String, List<String>> _teamNameVariations = {
+    // Soccer teams
     'Manchester United': ['Man United', 'Man Utd', 'MUFC', 'Manchester Utd'],
     'Manchester City': ['Man City', 'MCFC', 'City'],
     'Tottenham Hotspur': ['Tottenham', 'Spurs', 'THFC'],
@@ -36,6 +44,138 @@ class TeamLogoService {
     'West Ham United': ['West Ham', 'WHU'],
     'Leicester City': ['Leicester', 'LCFC'],
     'Nottingham Forest': ['Nott\'m Forest', 'Forest'],
+
+    // NFL teams
+    'New England Patriots': ['Patriots', 'NE', 'New England'],
+    'Kansas City Chiefs': ['Chiefs', 'KC', 'Kansas City'],
+    'Green Bay Packers': ['Packers', 'GB', 'Green Bay'],
+    'San Francisco 49ers': ['49ers', 'SF', 'San Francisco', 'Niners'],
+    'Dallas Cowboys': ['Cowboys', 'DAL', 'Dallas'],
+    'Buffalo Bills': ['Bills', 'BUF', 'Buffalo'],
+    'Philadelphia Eagles': ['Eagles', 'PHI', 'Philadelphia', 'Philly'],
+    'Miami Dolphins': ['Dolphins', 'MIA', 'Miami'],
+    'Los Angeles Rams': ['Rams', 'LAR', 'LA Rams'],
+    'Los Angeles Chargers': ['Chargers', 'LAC', 'LA Chargers'],
+    'Pittsburgh Steelers': ['Steelers', 'PIT', 'Pittsburgh'],
+    'Baltimore Ravens': ['Ravens', 'BAL', 'Baltimore'],
+    'Cleveland Browns': ['Browns', 'CLE', 'Cleveland'],
+    'Cincinnati Bengals': ['Bengals', 'CIN', 'Cincinnati'],
+    'New York Giants': ['Giants', 'NYG', 'NY Giants'],
+    'New York Jets': ['Jets', 'NYJ', 'NY Jets'],
+    'Las Vegas Raiders': ['Raiders', 'LV', 'Las Vegas', 'Vegas'],
+    'Denver Broncos': ['Broncos', 'DEN', 'Denver'],
+    'Seattle Seahawks': ['Seahawks', 'SEA', 'Seattle'],
+    'Tampa Bay Buccaneers': ['Buccaneers', 'TB', 'Tampa Bay', 'Bucs'],
+    'Tennessee Titans': ['Titans', 'TEN', 'Tennessee'],
+    'Indianapolis Colts': ['Colts', 'IND', 'Indianapolis', 'Indy'],
+    'Houston Texans': ['Texans', 'HOU', 'Houston'],
+    'Jacksonville Jaguars': ['Jaguars', 'JAX', 'Jacksonville', 'Jags'],
+    'Arizona Cardinals': ['Cardinals', 'ARI', 'Arizona'],
+    'Atlanta Falcons': ['Falcons', 'ATL', 'Atlanta'],
+    'Carolina Panthers': ['Panthers', 'CAR', 'Carolina'],
+    'Chicago Bears': ['Bears', 'CHI', 'Chicago'],
+    'Detroit Lions': ['Lions', 'DET', 'Detroit'],
+    'Minnesota Vikings': ['Vikings', 'MIN', 'Minnesota'],
+    'New Orleans Saints': ['Saints', 'NO', 'New Orleans'],
+    'Washington Commanders': ['Commanders', 'WAS', 'Washington'],
+
+    // MLB teams
+    'New York Yankees': ['Yankees', 'NYY', 'NY Yankees'],
+    'Los Angeles Dodgers': ['Dodgers', 'LAD', 'LA Dodgers'],
+    'Boston Red Sox': ['Red Sox', 'BOS', 'Boston'],
+    'Chicago Cubs': ['Cubs', 'CHC', 'Chicago'],
+    'Chicago White Sox': ['White Sox', 'CWS', 'ChiSox'],
+    'Houston Astros': ['Astros', 'HOU', 'Houston'],
+    'Atlanta Braves': ['Braves', 'ATL', 'Atlanta'],
+    'New York Mets': ['Mets', 'NYM', 'NY Mets'],
+    'Philadelphia Phillies': ['Phillies', 'PHI', 'Philadelphia'],
+    'San Francisco Giants': ['Giants', 'SF', 'San Francisco'],
+    'San Diego Padres': ['Padres', 'SD', 'San Diego'],
+    'St. Louis Cardinals': ['Cardinals', 'STL', 'St. Louis', 'St Louis'],
+    'Tampa Bay Rays': ['Rays', 'TB', 'Tampa Bay'],
+    'Toronto Blue Jays': ['Blue Jays', 'TOR', 'Toronto', 'Jays'],
+    'Los Angeles Angels': ['Angels', 'LAA', 'LA Angels', 'Anaheim'],
+    'Seattle Mariners': ['Mariners', 'SEA', 'Seattle'],
+    'Texas Rangers': ['Rangers', 'TEX', 'Texas'],
+    'Baltimore Orioles': ['Orioles', 'BAL', 'Baltimore', 'O\'s'],
+    'Milwaukee Brewers': ['Brewers', 'MIL', 'Milwaukee'],
+    'Minnesota Twins': ['Twins', 'MIN', 'Minnesota'],
+    'Detroit Tigers': ['Tigers', 'DET', 'Detroit'],
+    'Cleveland Guardians': ['Guardians', 'CLE', 'Cleveland'],
+    'Kansas City Royals': ['Royals', 'KC', 'Kansas City'],
+    'Cincinnati Reds': ['Reds', 'CIN', 'Cincinnati'],
+    'Pittsburgh Pirates': ['Pirates', 'PIT', 'Pittsburgh'],
+    'Oakland Athletics': ['Athletics', 'OAK', 'Oakland', 'A\'s'],
+    'Arizona Diamondbacks': ['Diamondbacks', 'ARI', 'Arizona', 'D-backs'],
+    'Colorado Rockies': ['Rockies', 'COL', 'Colorado'],
+    'Miami Marlins': ['Marlins', 'MIA', 'Miami'],
+    'Washington Nationals': ['Nationals', 'WAS', 'Washington', 'Nats'],
+
+    // NBA teams
+    'Los Angeles Lakers': ['Lakers', 'LAL', 'LA Lakers'],
+    'Golden State Warriors': ['Warriors', 'GSW', 'Golden State', 'Dubs'],
+    'Boston Celtics': ['Celtics', 'BOS', 'Boston'],
+    'Miami Heat': ['Heat', 'MIA', 'Miami'],
+    'Milwaukee Bucks': ['Bucks', 'MIL', 'Milwaukee'],
+    'Phoenix Suns': ['Suns', 'PHX', 'Phoenix'],
+    'Philadelphia 76ers': ['76ers', 'PHI', 'Philadelphia', 'Sixers'],
+    'Brooklyn Nets': ['Nets', 'BKN', 'Brooklyn'],
+    'Denver Nuggets': ['Nuggets', 'DEN', 'Denver'],
+    'Los Angeles Clippers': ['Clippers', 'LAC', 'LA Clippers'],
+    'Toronto Raptors': ['Raptors', 'TOR', 'Toronto'],
+    'Dallas Mavericks': ['Mavericks', 'DAL', 'Dallas', 'Mavs'],
+    'Utah Jazz': ['Jazz', 'UTA', 'Utah'],
+    'Portland Trail Blazers': ['Trail Blazers', 'POR', 'Portland', 'Blazers'],
+    'New York Knicks': ['Knicks', 'NYK', 'NY Knicks'],
+    'Chicago Bulls': ['Bulls', 'CHI', 'Chicago'],
+    'San Antonio Spurs': ['Spurs', 'SA', 'San Antonio'],
+    'Atlanta Hawks': ['Hawks', 'ATL', 'Atlanta'],
+    'Memphis Grizzlies': ['Grizzlies', 'MEM', 'Memphis'],
+    'New Orleans Pelicans': ['Pelicans', 'NO', 'New Orleans'],
+    'Sacramento Kings': ['Kings', 'SAC', 'Sacramento'],
+    'Indiana Pacers': ['Pacers', 'IND', 'Indiana'],
+    'Minnesota Timberwolves': ['Timberwolves', 'MIN', 'Minnesota', 'Wolves'],
+    'Cleveland Cavaliers': ['Cavaliers', 'CLE', 'Cleveland', 'Cavs'],
+    'Oklahoma City Thunder': ['Thunder', 'OKC', 'Oklahoma City'],
+    'Charlotte Hornets': ['Hornets', 'CHA', 'Charlotte'],
+    'Washington Wizards': ['Wizards', 'WAS', 'Washington'],
+    'Detroit Pistons': ['Pistons', 'DET', 'Detroit'],
+    'Orlando Magic': ['Magic', 'ORL', 'Orlando'],
+    'Houston Rockets': ['Rockets', 'HOU', 'Houston'],
+
+    // NHL teams
+    'New York Rangers': ['Rangers', 'NYR', 'NY Rangers'],
+    'Toronto Maple Leafs': ['Maple Leafs', 'TOR', 'Toronto', 'Leafs'],
+    'Montreal Canadiens': ['Canadiens', 'MTL', 'Montreal', 'Habs'],
+    'Vegas Golden Knights': ['Golden Knights', 'VGK', 'Vegas', 'Knights'],
+    'Colorado Avalanche': ['Avalanche', 'COL', 'Colorado', 'Avs'],
+    'Tampa Bay Lightning': ['Lightning', 'TB', 'Tampa Bay', 'Bolts'],
+    'Boston Bruins': ['Bruins', 'BOS', 'Boston'],
+    'Pittsburgh Penguins': ['Penguins', 'PIT', 'Pittsburgh', 'Pens'],
+    'Washington Capitals': ['Capitals', 'WAS', 'Washington', 'Caps'],
+    'Edmonton Oilers': ['Oilers', 'EDM', 'Edmonton'],
+    'Calgary Flames': ['Flames', 'CGY', 'Calgary'],
+    'Vancouver Canucks': ['Canucks', 'VAN', 'Vancouver'],
+    'Winnipeg Jets': ['Jets', 'WPG', 'Winnipeg'],
+    'Ottawa Senators': ['Senators', 'OTT', 'Ottawa', 'Sens'],
+    'Florida Panthers': ['Panthers', 'FLA', 'Florida'],
+    'Carolina Hurricanes': ['Hurricanes', 'CAR', 'Carolina', 'Canes'],
+    'New Jersey Devils': ['Devils', 'NJ', 'New Jersey'],
+    'New York Islanders': ['Islanders', 'NYI', 'NY Islanders', 'Isles'],
+    'Philadelphia Flyers': ['Flyers', 'PHI', 'Philadelphia'],
+    'Detroit Red Wings': ['Red Wings', 'DET', 'Detroit', 'Wings'],
+    'Chicago Blackhawks': ['Blackhawks', 'CHI', 'Chicago', 'Hawks'],
+    'Minnesota Wild': ['Wild', 'MIN', 'Minnesota'],
+    'St. Louis Blues': ['Blues', 'STL', 'St. Louis', 'St Louis'],
+    'Nashville Predators': ['Predators', 'NSH', 'Nashville', 'Preds'],
+    'Dallas Stars': ['Stars', 'DAL', 'Dallas'],
+    'Los Angeles Kings': ['Kings', 'LA', 'Los Angeles'],
+    'San Jose Sharks': ['Sharks', 'SJ', 'San Jose'],
+    'Anaheim Ducks': ['Ducks', 'ANA', 'Anaheim'],
+    'Seattle Kraken': ['Kraken', 'SEA', 'Seattle'],
+    'Arizona Coyotes': ['Coyotes', 'ARI', 'Arizona', 'Yotes'],
+    'Columbus Blue Jackets': ['Blue Jackets', 'CBJ', 'Columbus', 'Jackets'],
+    'Buffalo Sabres': ['Sabres', 'BUF', 'Buffalo'],
   };
 
   /// Get team logo data with intelligent caching
@@ -64,8 +204,9 @@ class TeamLogoService {
         return firestoreData;
       }
 
-      // Fetch from ESPN API
-      if (sport.toLowerCase().contains('soccer')) {
+      // Fetch from ESPN API for all supported sports
+      final normalizedSport = _normalizeSportName(sport);
+      if (_espnEndpoints.containsKey(normalizedSport)) {
         final espnData = await _fetchFromEspn(teamName, sport, league);
         if (espnData != null) {
           debugPrint('✅ Fetched from ESPN API');
@@ -85,7 +226,33 @@ class TeamLogoService {
 
   /// Create a unique cache key for a team
   String _createCacheKey(String teamName, String sport) {
-    return '${sport.toLowerCase()}_${teamName.toLowerCase().replaceAll(' ', '_')}';
+    final normalizedSport = _normalizeSportName(sport);
+    return '${normalizedSport}_${teamName.toLowerCase().replaceAll(' ', '_')}';
+  }
+
+  /// Normalize sport name to match our endpoint keys
+  String _normalizeSportName(String sport) {
+    final sportLower = sport.toLowerCase();
+
+    // Check for specific sports
+    if (sportLower.contains('nfl') || sportLower.contains('football') && !sportLower.contains('soccer')) {
+      return 'nfl';
+    }
+    if (sportLower.contains('mlb') || sportLower.contains('baseball')) {
+      return 'mlb';
+    }
+    if (sportLower.contains('nba') || sportLower.contains('basketball')) {
+      return 'nba';
+    }
+    if (sportLower.contains('nhl') || sportLower.contains('hockey')) {
+      return 'nhl';
+    }
+    if (sportLower.contains('soccer') || sportLower.contains('premier') || sportLower.contains('mls')) {
+      return 'soccer';
+    }
+
+    // Return the original sport if no match
+    return sportLower;
   }
 
   /// Get team logo data from Firestore
@@ -126,12 +293,25 @@ class TeamLogoService {
     String? league,
   ) async {
     try {
+      debugPrint('🔍 [ESPN] Fetching logo for: $teamName');
+      debugPrint('🔍 [ESPN] Sport: $sport, League: $league');
+
+      // Normalize sport name
+      final normalizedSport = _normalizeSportName(sport);
+      debugPrint('🔍 [ESPN] Normalized sport: $normalizedSport');
+
       // Determine the correct ESPN endpoint
       String endpoint;
-      if (league != null && _espnEndpoints.containsKey('soccer_${league.toLowerCase()}')) {
-        endpoint = _espnEndpoints['soccer_${league.toLowerCase()}']!;
+      if (league != null && _espnEndpoints.containsKey('${normalizedSport}_${league.toLowerCase()}')) {
+        endpoint = _espnEndpoints['${normalizedSport}_${league.toLowerCase()}']!;
+        debugPrint('🔍 [ESPN] Using league-specific endpoint');
+      } else if (_espnEndpoints.containsKey(normalizedSport)) {
+        endpoint = _espnEndpoints[normalizedSport]!;
+        debugPrint('🔍 [ESPN] Using sport endpoint: $endpoint');
       } else {
-        endpoint = _espnEndpoints['soccer']!; // Default to EPL
+        debugPrint('❌ [ESPN] No ESPN endpoint for sport: $normalizedSport');
+        debugPrint('❌ [ESPN] Available endpoints: ${_espnEndpoints.keys.toList()}');
+        return null;
       }
 
       debugPrint('📡 Fetching from ESPN: $endpoint');
@@ -147,6 +327,7 @@ class TeamLogoService {
       final teams = data['sports']?[0]?['leagues']?[0]?['teams'] ?? [];
 
       // Find matching team
+      debugPrint('🔍 [ESPN] Searching through ${teams.length} teams for: $teamName');
       for (final teamData in teams) {
         final team = teamData['team'];
         if (team == null) continue;
@@ -159,6 +340,7 @@ class TeamLogoService {
         if (_teamsMatch(teamName, espnName) ||
             _teamsMatch(teamName, espnShortName) ||
             _teamsMatch(teamName, espnAbbr)) {
+          debugPrint('✅ [ESPN] Match found! $teamName matches $espnName');
 
           // Extract logo URL
           final logos = team['logos'];
@@ -179,8 +361,8 @@ class TeamLogoService {
             cacheKey: _createCacheKey(teamName, sport),
             teamName: teamName,
             displayName: espnName,
-            sport: sport,
-            league: league ?? 'EPL',
+            sport: normalizedSport,
+            league: league ?? normalizedSport.toUpperCase(),
             logoUrl: logoUrl,
             espnId: team['id']?.toString(),
             abbreviation: espnAbbr,

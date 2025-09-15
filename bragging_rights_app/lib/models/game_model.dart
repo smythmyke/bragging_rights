@@ -47,12 +47,28 @@ class GameModel {
 
   factory GameModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+
+    // Handle different gameTime formats
+    DateTime gameTime;
+    if (data['gameTime'] is Timestamp) {
+      gameTime = (data['gameTime'] as Timestamp).toDate();
+    } else if (data['gameTime'] is int) {
+      // Handle milliseconds since epoch
+      gameTime = DateTime.fromMillisecondsSinceEpoch(data['gameTime'] as int);
+    } else if (data['gameTime'] is String) {
+      // Handle ISO 8601 string
+      gameTime = DateTime.parse(data['gameTime'] as String);
+    } else {
+      // Default to current time if format is unknown
+      gameTime = DateTime.now();
+    }
+
     return GameModel(
       id: doc.id,
       sport: data['sport'] ?? '',
       homeTeam: data['homeTeam'] ?? '',
       awayTeam: data['awayTeam'] ?? '',
-      gameTime: (data['gameTime'] as Timestamp).toDate(),
+      gameTime: gameTime,
       status: data['status'] ?? 'scheduled',
       homeScore: data['homeScore'],
       awayScore: data['awayScore'],

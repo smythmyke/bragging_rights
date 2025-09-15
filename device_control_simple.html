@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Device Control - Quick Commands</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .warning {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 30px;
+            color: #92400e;
+        }
+
+        .command-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .command-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .command-card {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .command-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .command-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .command-code {
+            background: #1e293b;
+            color: #10b981;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            word-break: break-all;
+            cursor: pointer;
+            position: relative;
+            margin-bottom: 8px;
+        }
+
+        .command-code:hover {
+            background: #334155;
+        }
+
+        .command-desc {
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.4;
+        }
+
+        .copy-btn {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .command-code:hover .copy-btn {
+            opacity: 1;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            color: #6b7280;
+            cursor: pointer;
+            font-weight: 500;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            color: #667eea;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .quick-setup {
+            background: #f0f9ff;
+            border: 1px solid #0284c7;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .setup-step {
+            margin-bottom: 15px;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .setup-step::before {
+            content: attr(data-step);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #0284c7;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification.show {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Pixel Device Control - ADB Commands</h1>
+
+        <div class="warning">
+            ⚠️ <strong>Note:</strong> These commands need to be run in a terminal/command prompt with ADB installed and your Pixel connected via USB or WiFi with USB debugging enabled.
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('setup')">Setup</button>
+            <button class="tab" onclick="showTab('device')">Device Control</button>
+            <button class="tab" onclick="showTab('app')">App Control</button>
+            <button class="tab" onclick="showTab('flutter')">Flutter Commands</button>
+            <button class="tab" onclick="showTab('advanced')">Advanced</button>
+        </div>
+
+        <!-- Setup Tab -->
+        <div id="setup" class="tab-content active">
+            <div class="quick-setup">
+                <h3>🚀 Quick Setup Guide</h3>
+                <div class="setup-step" data-step="1">
+                    <strong>Enable Developer Options:</strong> Settings → About → Tap "Build number" 7 times
+                </div>
+                <div class="setup-step" data-step="2">
+                    <strong>Enable USB Debugging:</strong> Settings → Developer Options → USB Debugging
+                </div>
+                <div class="setup-step" data-step="3">
+                    <strong>Connect Device:</strong> Use USB cable and accept the debugging prompt
+                </div>
+                <div class="setup-step" data-step="4">
+                    <strong>Verify Connection:</strong> Run <code>adb devices</code> in terminal
+                </div>
+            </div>
+
+            <div class="command-section">
+                <div class="section-title">Connection Commands</div>
+                <div class="command-grid">
+                    <div class="command-card">
+                        <div class="command-title">📡 Check Connected Devices</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            adb devices
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Lists all connected Android devices</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-title">📶 Connect via WiFi</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            adb tcpip 5555 && adb connect [DEVICE_IP]:5555
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Replace [DEVICE_IP] with your device's IP address</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Device Control Tab -->
+        <div id="device" class="tab-content">
+            <div class="command-section">
+                <div class="section-title">Power & Display</div>
+                <div class="command-grid">
+                    <div class="command-card">
+                        <div class="command-title">🔆 Wake Device</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            adb shell input keyevent KEYCODE_WAKEUP
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Wakes up the device screen</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-title">😴 Sleep Device</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            adb shell input keyevent KEYCODE_SLEEP
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Puts device to sleep</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-title">🔄 Restart Device</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            adb reboot
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Restarts the device (requires confirmation)</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-title">🔋 Check Battery</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            adb shell dumpsys battery
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Shows battery status and level</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command-section">
+                <div class="section-title">Navigation</div>
+                <div class="command-grid">
+                    <div class="command-card">
+                        <div class="command-title">🏠 Home Button</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            adb shell input keyevent KEYCODE_HOME
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Simulates home button press</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-title">⬅️ Back Button</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            adb shell input keyevent KEYCODE_BACK
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Simulates back button press</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-title">📱 Recent Apps</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            adb shell input keyevent KEYCODE_APP_SWITCH
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Opens recent apps</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-title">📸 Screenshot</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            adb shell screencap -p /sdcard/screenshot.png && adb pull /sdcard/screenshot.png
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Takes screenshot and saves to current directory</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- App Control Tab -->
+        <div id="app" class="tab-content">
+            <div class="command-section">
+                <div class="section-title">Bragging Rights App Control</div>
+                <div class="command-grid">
+                    <div class="command-card">
+                        <div class="command-title">🚀 Launch App</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            adb shell monkey -p com.braggingrights.app 1
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Launches the Bragging Rights app</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-title">❌ Force Stop App</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            adb shell am force-stop com.braggingrights.app
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Forcefully closes the app</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-title">🗑️ Clear App Data</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            adb shell pm clear com.braggingrights.app
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Clears all app data and cache</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-title">📦 Install APK</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            adb install -r app-release.apk
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Installs or updates the app from APK</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-title">🗑️ Uninstall App</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            adb uninstall com.braggingrights.app
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Completely uninstalls the app</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-title">📊 App Info</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            adb shell dumpsys package com.braggingrights.app
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Shows detailed app information</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flutter Commands Tab -->
+        <div id="flutter" class="tab-content">
+            <div class="command-section">
+                <div class="section-title">Flutter Development</div>
+                <div class="command-grid">
+                    <div class="command-card">
+                        <div class="command-title">🏃 Run Debug Mode</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            cd bragging_rights_app && flutter run
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Runs app in debug mode with hot reload</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-title">🚀 Run Release Mode</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            cd bragging_rights_app && flutter run --release
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Runs app in release mode (optimized)</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-title">🔨 Build APK</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            cd bragging_rights_app && flutter build apk --release
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Builds release APK for distribution</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-title">🧹 Clean Build</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            cd bragging_rights_app && flutter clean && flutter pub get
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Cleans build and reinstalls dependencies</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-title">📱 List Devices</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            flutter devices
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Shows all available Flutter devices</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-title">🔍 Analyze Code</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            cd bragging_rights_app && flutter analyze
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Runs static analysis on code</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Tab -->
+        <div id="advanced" class="tab-content">
+            <div class="command-section">
+                <div class="section-title">Advanced Commands</div>
+                <div class="command-grid">
+                    <div class="command-card">
+                        <div class="command-title">📝 View Logs</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            adb logcat | grep "com.braggingrights"
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Shows filtered app logs</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-title">📹 Screen Record</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            adb shell screenrecord /sdcard/demo.mp4
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Records screen (press Ctrl+C to stop)</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-title">📁 Pull Files</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            adb pull /sdcard/Download/ ./
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Copies files from device to computer</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-title">📤 Push Files</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            adb push local_file.txt /sdcard/
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Copies files from computer to device</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-title">🔍 System Info</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            adb shell getprop ro.product.model
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Shows device model information</div>
+                    </div>
+                    <div class="command-card">
+                        <div class="command-title">⚙️ Developer Settings</div>
+                        <div class="command-code" onclick="copyCommand(this)">
+                            adb shell am start -n com.android.settings/.DevelopmentSettings
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <div class="command-desc">Opens developer settings directly</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification">Command copied to clipboard!</div>
+
+    <script>
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function copyCommand(element) {
+            // Get the command text (excluding the copy button)
+            const commandText = element.childNodes[0].textContent.trim();
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(commandText).then(() => {
+                // Show notification
+                const notification = document.getElementById('notification');
+                notification.classList.add('show');
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = commandText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+
+                // Show notification
+                const notification = document.getElementById('notification');
+                notification.classList.add('show');
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

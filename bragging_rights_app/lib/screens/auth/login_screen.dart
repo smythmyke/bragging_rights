@@ -778,26 +778,38 @@ class _LoginScreenState extends State<LoginScreen>
           Positioned.fill(
             child: Container(
               color: Colors.black,
-              child: _videoController != null && _videoController!.value.isInitialized
-                  ? Transform.translate(
-                      offset: const Offset(20, 0), // Shift 20 pixels to the right
-                      child: Transform.scale(
-                        scale: 0.95, // Slightly zoom out (95% of original)
-                        child: FittedBox(
-                          fit: BoxFit.cover,
-                          child: SizedBox(
-                            width: _videoController!.value.size.width,
-                            height: _videoController!.value.size.height,
-                            child: VideoPlayer(_videoController!),
-                          ),
+              child: Stack(
+                children: [
+                  // Add the animated grid background behind the video
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: NeonGridPainter(
+                        animation: _gridAnimationController.value,
+                        glowIntensity: _glowAnimation.value * 0.5, // Dimmer for video overlay
+                      ),
+                    ),
+                  ),
+                  // Video player on top of the grid
+                  if (_videoController != null && _videoController!.value.isInitialized)
+                    Positioned.fill(
+                      child: FittedBox(
+                        fit: BoxFit.cover, // Use cover to fill the entire screen
+                        alignment: Alignment.center,
+                        child: SizedBox(
+                          width: _videoController!.value.size.width,
+                          height: _videoController!.value.size.height,
+                          child: VideoPlayer(_videoController!),
                         ),
                       ),
                     )
-                  : const Center(
+                  else
+                    const Center(
                       child: CircularProgressIndicator(
                         color: goldPrimary,
                       ),
                     ),
+                ],
+              ),
             ),
           ),
       ],

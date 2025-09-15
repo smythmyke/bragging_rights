@@ -329,7 +329,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
               _propsData = propsData;
               _isLoadingData = false;
 
-              // Load team logos for soccer
+              // Load team logos for all sports
               _loadTeamLogos();
 
               // Update tab availability based on data
@@ -362,6 +362,10 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
             );
           }
           _isLoadingData = false;
+
+          // Load team logos even for basic game data
+          debugPrint('🔍 [BetSelection] Loading logos from basic game data path');
+          _loadTeamLogos();
         });
       }
     } catch (e, stackTrace) {
@@ -384,6 +388,10 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
             );
           }
           _isLoadingData = false;
+
+          // Load team logos even in error case
+          debugPrint('🔍 [BetSelection] Loading logos from error path');
+          _loadTeamLogos();
         });
       }
     }
@@ -430,41 +438,73 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   }
   
   Future<void> _loadTeamLogos() async {
-    // Only load logos for soccer
-    if (!widget.sport.toLowerCase().contains('soccer')) {
-      return;
-    }
+    debugPrint('🔍 [BetSelection] _loadTeamLogos called');
+    debugPrint('🔍 [BetSelection] Sport: ${widget.sport}');
+    debugPrint('🔍 [BetSelection] Home Team: $_homeTeam');
+    debugPrint('🔍 [BetSelection] Away Team: $_awayTeam');
 
     try {
+      // Determine the league based on sport
+      String? league;
+      final sportLower = widget.sport.toLowerCase();
+      debugPrint('🔍 [BetSelection] Sport (lowercase): $sportLower');
+
+      if (sportLower.contains('soccer')) {
+        league = 'EPL'; // Default to EPL for soccer
+      } else if (sportLower.contains('nfl')) {
+        league = 'NFL';
+      } else if (sportLower.contains('nba')) {
+        league = 'NBA';
+      } else if (sportLower.contains('mlb')) {
+        league = 'MLB';
+      } else if (sportLower.contains('nhl')) {
+        league = 'NHL';
+      }
+
+      debugPrint('🔍 [BetSelection] Determined league: $league');
+
       // Fetch home team logo
       if (_homeTeam != null) {
+        debugPrint('🔍 [BetSelection] Fetching home team logo for: $_homeTeam');
         final homeLogo = await _logoService.getTeamLogo(
           teamName: _homeTeam!,
           sport: widget.sport,
-          league: 'EPL', // Default to EPL for now
+          league: league,
         );
+        debugPrint('🔍 [BetSelection] Home logo result: ${homeLogo != null ? 'Found - ${homeLogo.logoUrl}' : 'Not found'}');
+
         if (mounted && homeLogo != null) {
           setState(() {
             _homeTeamLogo = homeLogo;
           });
+          debugPrint('✅ [BetSelection] Home team logo set successfully');
         }
+      } else {
+        debugPrint('⚠️ [BetSelection] Home team is null, skipping logo fetch');
       }
 
       // Fetch away team logo
       if (_awayTeam != null) {
+        debugPrint('🔍 [BetSelection] Fetching away team logo for: $_awayTeam');
         final awayLogo = await _logoService.getTeamLogo(
           teamName: _awayTeam!,
           sport: widget.sport,
-          league: 'EPL', // Default to EPL for now
+          league: league,
         );
+        debugPrint('🔍 [BetSelection] Away logo result: ${awayLogo != null ? 'Found - ${awayLogo.logoUrl}' : 'Not found'}');
+
         if (mounted && awayLogo != null) {
           setState(() {
             _awayTeamLogo = awayLogo;
           });
+          debugPrint('✅ [BetSelection] Away team logo set successfully');
         }
+      } else {
+        debugPrint('⚠️ [BetSelection] Away team is null, skipping logo fetch');
       }
-    } catch (e) {
-      debugPrint('Error loading team logos: $e');
+    } catch (e, stackTrace) {
+      debugPrint('❌ [BetSelection] Error loading team logos: $e');
+      debugPrint('❌ [BetSelection] Stack trace: $stackTrace');
     }
   }
 
@@ -483,6 +523,10 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       );
       _isLoadingData = false;
     });
+
+    // Load team logos for NFL
+    debugPrint('🔍 [BetSelection] Loading logos from mock football data path');
+    _loadTeamLogos();
   }
   
   void _initializeTabPicks() {
@@ -810,6 +854,31 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     return '$hours:$minutes:$seconds';
   }
 
+  // Get sport-specific color theme
+  Color _getSportColor() {
+    final sportLower = widget.sport.toLowerCase();
+    if (sportLower.contains('soccer') || sportLower.contains('premier') || sportLower.contains('epl')) {
+      return Colors.purple;
+    } else if (sportLower.contains('nfl') || sportLower.contains('football')) {
+      return Colors.brown;
+    } else if (sportLower.contains('nba') || sportLower.contains('basketball')) {
+      return AppTheme.warningAmber;
+    } else if (sportLower.contains('nhl') || sportLower.contains('hockey')) {
+      return AppTheme.primaryCyan;
+    } else if (sportLower.contains('mlb') || sportLower.contains('baseball')) {
+      return Colors.indigo;
+    } else if (sportLower.contains('tennis')) {
+      return AppTheme.neonGreen;
+    } else if (sportLower.contains('mma') || sportLower.contains('ufc')) {
+      return AppTheme.errorPink;
+    } else if (sportLower.contains('boxing')) {
+      return AppTheme.warningAmber;
+    } else if (sportLower.contains('golf')) {
+      return Colors.teal;
+    }
+    return AppTheme.primaryCyan; // Default color
+  }
+
   @override
   Widget build(BuildContext context) {
     debugPrint('[BOXING DEBUG] ===== BUILD METHOD CALLED =====');
@@ -826,7 +895,13 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
             Text(widget.gameTitle, style: const TextStyle(fontSize: 14)),
             Text(
               '${widget.sport} • ${widget.poolName}',
-              style: TextStyle(fontSize: 11, color: AppTheme.surfaceBlue.withOpacity(0.6)),
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white70
+                  : Colors.black54,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
@@ -2956,11 +3031,13 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   void _showBetConfirmationSheet() {
     final allBets = _getAllBets();
     if (allBets.isEmpty) return;
-    
+
     final totalWager = _wagerAmount * allBets.length;
     final totalOdds = _calculateTotalOdds(allBets);
     final potentialPayout = (totalWager * totalOdds).round();
-    
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final sportColor = _getSportColor();
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -2970,26 +3047,43 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.6,
         decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          gradient: isDarkMode
+            ? LinearGradient(
+                colors: [AppTheme.surfaceBlue, AppTheme.deepBlue],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              )
+            : null,
+          color: isDarkMode ? null : Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(
+            color: sportColor.withOpacity(0.3),
+            width: 1.5,
+          ),
           boxShadow: [
+            ...AppTheme.neonGlow(color: sportColor, intensity: 0.5),
             BoxShadow(
-              color: AppTheme.deepBlue.withOpacity(0.1),
-              blurRadius: 10,
+              color: AppTheme.deepBlue.withOpacity(0.3),
+              blurRadius: 20,
               offset: const Offset(0, -5),
             ),
           ],
         ),
         child: Column(
           children: [
-            // Drag handle
+            // Drag handle with glow
             Container(
               margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
+              width: 50,
+              height: 5,
               decoration: BoxDecoration(
-                color: AppTheme.surfaceBlue,
-                borderRadius: BorderRadius.circular(2),
+                gradient: LinearGradient(
+                  colors: [sportColor, sportColor.withOpacity(0.8)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(3),
+                boxShadow: AppTheme.neonGlow(color: sportColor, intensity: 0.8),
               ),
             ),
             // Header with close button
@@ -2998,16 +3092,29 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Confirm Your Bets',
-                    style: TextStyle(
-                      fontSize: 20,
+                    style: AppTheme.neonText(
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
+                      color: isDarkMode ? sportColor : AppTheme.deepBlue,
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: sportColor.withOpacity(0.5),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.close,
+                        color: isDarkMode ? sportColor : AppTheme.deepBlue,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
                   ),
                 ],
               ),
@@ -3017,60 +3124,162 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 children: [
-                  ...allBets.map((bet) => Card(
-                    margin: const EdgeInsets.only(bottom: 8),
+                  ...allBets.map((bet) => Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isDarkMode
+                          ? [AppTheme.cardBlue, AppTheme.surfaceBlue.withOpacity(0.8)]
+                          : [Colors.white, Colors.grey.shade50],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: sportColor.withOpacity(0.2),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: sportColor.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
                     child: ListTile(
-                      title: Text(bet.title),
-                      subtitle: Text('Odds: ${bet.odds}'),
-                      trailing: Text(
-                        '$_wagerAmount BR',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      title: Text(
+                        bet.title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: isDarkMode ? Colors.white : AppTheme.deepBlue,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Odds: ${bet.odds}',
+                        style: TextStyle(
+                          color: sportColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [sportColor, sportColor.withOpacity(0.8)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: AppTheme.neonGlow(color: sportColor, intensity: 0.5),
+                        ),
+                        child: Text(
+                          '$_wagerAmount BR',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
                   )),
                   const SizedBox(height: 16),
-                  // Summary card
-                  Card(
-                    color: AppTheme.neonGreen.withOpacity(0.1),
+                  // Summary card with enhanced styling
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppTheme.neonGreen.withOpacity(0.15),
+                          AppTheme.neonGreen.withOpacity(0.05),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppTheme.neonGreen.withOpacity(0.5),
+                        width: 2,
+                      ),
+                      boxShadow: AppTheme.neonGlow(color: AppTheme.neonGreen, intensity: 0.3),
+                    ),
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(20),
                       child: Column(
                         children: [
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Total Selections:'),
+                              Text(
+                                'Total Selections:',
+                                style: TextStyle(
+                                  color: isDarkMode ? Colors.white70 : AppTheme.deepBlue.withOpacity(0.7),
+                                  fontSize: 15,
+                                ),
+                              ),
                               Text(
                                 '${allBets.length}',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('Total Wager:'),
-                              Text(
-                                '$totalWager BR',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('Potential Payout:'),
-                              Text(
-                                '$potentialPayout BR',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: AppTheme.neonGreen,
-                                  fontSize: 18,
+                                  fontSize: 16,
+                                  color: isDarkMode ? Colors.white : AppTheme.deepBlue,
                                 ),
                               ),
                             ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Total Wager:',
+                                style: TextStyle(
+                                  color: isDarkMode ? Colors.white70 : AppTheme.deepBlue.withOpacity(0.7),
+                                  fontSize: 15,
+                                ),
+                              ),
+                              Text(
+                                '$totalWager BR',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: isDarkMode ? Colors.white : AppTheme.deepBlue,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                top: BorderSide(
+                                  color: AppTheme.neonGreen.withOpacity(0.3),
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Potential Payout:',
+                                  style: TextStyle(
+                                    color: isDarkMode ? Colors.white : AppTheme.deepBlue,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  '$potentialPayout BR',
+                                  style: AppTheme.neonText(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.neonGreen,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -3079,29 +3288,69 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                 ],
               ),
             ),
-            // Confirm button
-            Padding(
+            // Confirm button with enhanced styling
+            Container(
               padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isDarkMode
+                    ? [AppTheme.surfaceBlue.withOpacity(0.9), AppTheme.deepBlue]
+                    : [Colors.white.withOpacity(0.9), Colors.grey.shade100],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.deepBlue.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
+              ),
               child: SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLockingBets ? null : () {
-                    Navigator.pop(context);
-                    _lockInBets();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.neonGreen,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [sportColor, sportColor.withOpacity(0.8)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: AppTheme.neonGlow(color: sportColor, intensity: 0.8),
                   ),
-                  child: const Text(
-                    'Confirm & Place Bets',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  child: ElevatedButton(
+                    onPressed: _isLockingBets ? null : () {
+                      Navigator.pop(context);
+                      _lockInBets();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.lock_outline,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 10),
+                        const Text(
+                          'Confirm & Place Bets',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -3624,7 +3873,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
               child: ElevatedButton(
                 onPressed: _isLockingBets ? null : _showBetConfirmationSheet,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.neonGreen,
+                  backgroundColor: _getSportColor(),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import '../../services/bet_storage_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/bet_service.dart';
 import '../../theme/app_theme.dart';
 
 class ActiveBetsScreen extends StatefulWidget {
@@ -12,9 +13,10 @@ class ActiveBetsScreen extends StatefulWidget {
 
 class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  BetStorageService? _betStorage;
-  List<UserBet> _activeBets = [];
-  List<UserBet> _pastBets = [];
+  late BetService _betService;
+  Stream<List<BetModel>>? _activeBetsStream;
+  Stream<List<BetModel>>? _pastBetsStream;
+  List<BetModel> _activeBets = [];
   bool _isLoading = true;
   
   // Stats
@@ -27,61 +29,59 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _loadBets();
+    _initializeBetService();
   }
   
-  Future<void> _loadBets() async {
-    debugPrint('[ActiveBetsScreen] Loading bets...');
-    setState(() => _isLoading = true);
-    
-    _betStorage = await BetStorageService.create();
-    _activeBets = await _betStorage!.getActiveBets();
-    _pastBets = await _betStorage!.getPastBets();
-    
-    debugPrint('[ActiveBetsScreen] Loaded ${_activeBets.length} active bets');
-    debugPrint('[ActiveBetsScreen] Loaded ${_pastBets.length} past bets');
-    
-    // Debug: Print details of active bets
-    for (final bet in _activeBets) {
-      debugPrint('[ActiveBetsScreen] Active bet: ${bet.selection} in pool ${bet.poolName} (${bet.poolId})');
+  void _initializeBetService() {
+    debugPrint('[ActiveBetsScreen] Initializing Firestore bet service...');
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _betService = BetService();
+
+      setState(() {
+        _activeBetsStream = _betService.getActiveBets();
+        _pastBetsStream = _betService.getPastBets();
+        _isLoading = false;
+      });
+
+      debugPrint('[ActiveBetsScreen] Firestore streams initialized for user: ${user.uid}');
+    } else {
+      debugPrint('[ActiveBetsScreen] No user logged in');
+      setState(() => _isLoading = false);
     }
-    
-    // Calculate stats from past bets
-    _calculateStats();
-    
-    setState(() => _isLoading = false);
   }
   
-  void _calculateStats() {
+  void _calculateStats(List<BetModel> pastBets) {
     _totalWins = 0;
     _totalLosses = 0;
     _totalProfit = 0;
     _currentStreak = 0;
-    
-    for (final bet in _pastBets) {
-      if (bet.won == true) {
+
+    for (final bet in pastBets) {
+      if (bet.status == 'won') {
         _totalWins++;
-        _totalProfit += (bet.payout ?? 0) - bet.amount;
-      } else if (bet.won == false) {
+        _totalProfit += bet.potentialPayout - bet.wagerAmount;
+      } else if (bet.status == 'lost') {
         _totalLosses++;
-        _totalProfit -= bet.amount;
+        _totalProfit -= bet.wagerAmount;
       }
     }
-    
+
     // Calculate current streak
-    if (_pastBets.isNotEmpty) {
-      final sortedBets = List<UserBet>.from(_pastBets)
-        ..sort((a, b) => b.completedAt!.compareTo(a.completedAt!));
-      
-      bool? streakType = sortedBets.first.won;
+    if (pastBets.isNotEmpty) {
+      final sortedBets = List<BetModel>.from(pastBets)
+        ..sort((a, b) => b.placedAt.compareTo(a.placedAt));
+
+      final streakType = sortedBets.first.status == 'won';
       for (final bet in sortedBets) {
-        if (bet.won == streakType) {
+        if ((bet.status == 'won') == streakType) {
           _currentStreak++;
         } else {
           break;
         }
       }
-      if (streakType == false) _currentStreak = -_currentStreak;
+      if (!streakType) _currentStreak = -_currentStreak;
     }
   }
   
@@ -102,12 +102,7 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
           tabs: [
             Tab(
               text: 'Active',
-              icon: _activeBets.isNotEmpty 
-                ? Badge(
-                    label: Text(_activeBets.length.toString()),
-                    child: const Icon(PhosphorIconsRegular.clock),
-                  )
-                : const Icon(PhosphorIconsRegular.clock),
+              icon: const Icon(PhosphorIconsRegular.clock),
             ),
             Tab(
               text: 'Past',
@@ -214,211 +209,294 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
   }
   
   Widget _buildActiveBetsTab() {
-    if (_activeBets.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              PhosphorIconsRegular.empty,
-              size: 64,
-              color: AppTheme.surfaceBlue.withOpacity(0.5),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'No Active Bets',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Place some bets to see them here',
-              style: TextStyle(
-                color: AppTheme.primaryCyan.withOpacity(0.7),
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pushNamed(context, '/pools');
-              },
-              icon: const Icon(PhosphorIconsRegular.plus),
-              label: const Text('Browse Pools'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
-            ),
-          ],
-        ),
+    if (_activeBetsStream == null) {
+      return const Center(
+        child: Text('Please log in to view your bets'),
       );
     }
-    
-    // Group bets by pool
-    final betsByPool = <String, List<UserBet>>{};
-    for (final bet in _activeBets) {
-      betsByPool.putIfAbsent(bet.poolId, () => []).add(bet);
-    }
-    
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: betsByPool.length,
-      itemBuilder: (context, index) {
-        final poolId = betsByPool.keys.elementAt(index);
-        final poolBets = betsByPool[poolId]!;
-        final poolName = poolBets.first.poolName;
-        
-        return Card(
-          margin: const EdgeInsets.only(bottom: 16),
-          child: ExpansionTile(
-            title: Text(
-              poolName,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+
+    return StreamBuilder<List<BetModel>>(
+      stream: _activeBetsStream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Text('Error loading bets: ${snapshot.error}'),
+          );
+        }
+
+        final activeBets = snapshot.data ?? [];
+
+        if (activeBets.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  PhosphorIconsRegular.empty,
+                  size: 64,
+                  color: AppTheme.surfaceBlue.withOpacity(0.5),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'No Active Bets',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Place some bets to see them here',
+                  style: TextStyle(
+                    color: AppTheme.primaryCyan.withOpacity(0.7),
+                  ),
+                ),
+              ],
             ),
-            subtitle: Text('${poolBets.length} active bets'),
-            leading: CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-              child: Icon(
-                PhosphorIconsRegular.trophy,
-                color: Theme.of(context).colorScheme.primary,
+          );
+        }
+
+        // Display active bets
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: activeBets.length,
+          itemBuilder: (context, index) {
+            final bet = activeBets[index];
+            return Card(
+              margin: const EdgeInsets.only(bottom: 16),
+              child: ListTile(
+                title: Text(
+                  bet.gameTitle,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${bet.sport} • ${bet.poolName}'),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Wager: ${bet.wagerAmount} BR • Potential: ${bet.potentialPayout} BR',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (bet.bets.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Selection: ${bet.bets.first.selection}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ],
+                ),
+                leading: CircleAvatar(
+                  backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  child: Icon(
+                    _getSportIcon(bet.sport),
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.warningAmber.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'PENDING',
+                    style: TextStyle(
+                      color: AppTheme.warningAmber,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ),
-            ),
-            children: poolBets.map((bet) => _buildBetTile(bet)).toList(),
-          ),
+            );
+          },
         );
       },
     );
   }
+
+  IconData _getSportIcon(String sport) {
+    switch (sport.toLowerCase()) {
+      case 'nba':
+      case 'basketball':
+        return PhosphorIconsRegular.basketball;
+      case 'nfl':
+      case 'football':
+        return PhosphorIconsRegular.football;
+      case 'mlb':
+      case 'baseball':
+        return PhosphorIconsRegular.baseball;
+      case 'nhl':
+      case 'hockey':
+        return Icons.sports_hockey;
+      case 'mma':
+      case 'boxing':
+        return PhosphorIconsRegular.boxingGlove;
+      case 'soccer':
+        return PhosphorIconsRegular.soccerBall;
+      default:
+        return PhosphorIconsRegular.trophy;
+    }
+  }
   
   Widget _buildPastBetsTab() {
-    if (_pastBets.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              PhosphorIconsRegular.clock,
-              size: 64,
-              color: AppTheme.surfaceBlue.withOpacity(0.5),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'No Past Bets',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Your completed bets will appear here',
-              style: TextStyle(
-                color: AppTheme.primaryCyan.withOpacity(0.7),
-              ),
-            ),
-          ],
-        ),
+    if (_pastBetsStream == null) {
+      return const Center(
+        child: Text('Please log in to view your bet history'),
       );
     }
-    
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _pastBets.length,
-      itemBuilder: (context, index) {
-        final bet = _pastBets[index];
-        return _buildBetTile(bet, isPast: true);
+
+    return StreamBuilder<List<BetModel>>(
+      stream: _pastBetsStream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Text('Error loading bet history: ${snapshot.error}'),
+          );
+        }
+
+        final pastBets = snapshot.data ?? [];
+
+        // Calculate stats whenever past bets are loaded
+        _calculateStats(pastBets);
+
+        if (pastBets.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  PhosphorIconsRegular.clock,
+                  size: 64,
+                  color: AppTheme.surfaceBlue.withOpacity(0.5),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'No Past Bets',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Your completed bets will appear here',
+                  style: TextStyle(
+                    color: AppTheme.primaryCyan.withOpacity(0.7),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: pastBets.length,
+          itemBuilder: (context, index) {
+            final bet = pastBets[index];
+            final statusColor = _getStatusColor(bet.status);
+            final statusText = _getStatusText(bet.status);
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 16),
+              child: ListTile(
+                title: Text(
+                  bet.gameTitle,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${bet.sport} • ${bet.poolName}'),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Wager: ${bet.wagerAmount} BR • ${bet.status == 'won' ? 'Won: ${bet.potentialPayout} BR' : bet.status == 'lost' ? 'Lost' : 'Cancelled'}',
+                      style: TextStyle(
+                        color: statusColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (bet.bets.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Selection: ${bet.bets.first.selection}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ],
+                ),
+                leading: CircleAvatar(
+                  backgroundColor: statusColor.withOpacity(0.1),
+                  child: Icon(
+                    _getSportIcon(bet.sport),
+                    color: statusColor,
+                  ),
+                ),
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    statusText,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
       },
     );
   }
-  
-  Widget _buildBetTile(UserBet bet, {bool isPast = false}) {
-    final statusColor = isPast
-        ? (bet.won == true ? AppTheme.neonGreen : bet.won == false ? AppTheme.errorPink : AppTheme.warningAmber)
-        : AppTheme.warningAmber;
-    
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: statusColor.withOpacity(0.1),
-        child: Icon(
-          _getBetTypeIcon(bet.betType),
-          color: statusColor,
-          size: 20,
-        ),
-      ),
-      title: Text(
-        bet.selection,
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '${bet.gameTitle} • ${bet.sport}',
-            style: TextStyle(fontSize: 12, color: AppTheme.primaryCyan.withOpacity(0.7)),
-          ),
-          if (bet.description != null)
-            Text(
-              bet.description!,
-              style: TextStyle(fontSize: 11, color: AppTheme.primaryCyan.withOpacity(0.5)),
-            ),
-        ],
-      ),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(
-            bet.odds,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          if (isPast)
-            Text(
-              bet.statusText,
-              style: TextStyle(
-                color: statusColor,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            )
-          else
-            Text(
-              '${bet.amount.toStringAsFixed(0)} BR',
-              style: TextStyle(fontSize: 12, color: AppTheme.primaryCyan.withOpacity(0.7)),
-            ),
-          if (bet.payout != null && bet.won == true)
-            Text(
-              bet.formattedPayout,
-              style: TextStyle(
-                color: AppTheme.neonGreen,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-  
-  IconData _getBetTypeIcon(String betType) {
-    switch (betType.toLowerCase()) {
-      case 'moneyline':
-        return PhosphorIconsRegular.trophy;
-      case 'spread':
-        return PhosphorIconsRegular.arrowsLeftRight;
-      case 'total':
-      case 'totals':
-        return PhosphorIconsRegular.plusMinus;
-      case 'prop':
-        return PhosphorIconsRegular.star;
-      case 'method':
-        return PhosphorIconsRegular.target;
-      case 'rounds':
-        return PhosphorIconsRegular.timer;
-      case 'live':
-        return PhosphorIconsRegular.broadcast;
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'won':
+        return AppTheme.neonGreen;
+      case 'lost':
+        return AppTheme.errorPink;
+      case 'cancelled':
+        return Colors.grey;
+      case 'pending':
+        return AppTheme.warningAmber;
       default:
-        return PhosphorIconsRegular.circlesFour;
+        return AppTheme.warningAmber;
     }
   }
+
+  String _getStatusText(String status) {
+    switch (status.toLowerCase()) {
+      case 'won':
+        return 'WON';
+      case 'lost':
+        return 'LOST';
+      case 'cancelled':
+        return 'CANCELLED';
+      case 'pending':
+        return 'PENDING';
+      default:
+        return status.toUpperCase();
+    }
+  }
+
 }
