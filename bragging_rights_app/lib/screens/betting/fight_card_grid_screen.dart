@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/fight_card_model.dart';
 import '../../models/fight_card_scoring.dart';
 import '../../services/fight_odds_service.dart';
+import '../../theme/app_theme.dart';
 // Removed custom app bar import - using standard AppBar
 
 /// Quick Pick Grid for entire fight card
@@ -78,31 +79,35 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppTheme.deepBlue,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: AppTheme.deepBlue,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               widget.event.eventName,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: AppTheme.neonText(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.primaryCyan,
+              ),
             ),
             Text(
               widget.poolName,
-              style: const TextStyle(fontSize: 12, color: Colors.white70),
+              style: TextStyle(fontSize: 12, color: AppTheme.primaryCyan.withOpacity(0.7)),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.info_outline),
+            icon: Icon(Icons.info_outline, color: AppTheme.primaryCyan),
             onPressed: _showInstructions,
           ),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator(color: AppTheme.primaryCyan))
           : Column(
               children: [
                 _buildProgressBar(),
@@ -141,7 +146,13 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
     
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.grey[900],
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppTheme.surfaceBlue.withOpacity(0.8), AppTheme.cardBlue],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
       child: Column(
         children: [
           Row(
@@ -149,20 +160,20 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
             children: [
               Text(
                 '$pickedFights of $totalFights picks made',
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                style: TextStyle(color: AppTheme.primaryCyan.withOpacity(0.7), fontSize: 12),
               ),
               Text(
                 '${(progress * 100).toInt()}%',
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                style: TextStyle(color: AppTheme.primaryCyan.withOpacity(0.7), fontSize: 12),
               ),
             ],
           ),
           const SizedBox(height: 4),
           LinearProgressIndicator(
             value: progress,
-            backgroundColor: Colors.grey[800],
+            backgroundColor: AppTheme.deepBlue.withOpacity(0.5),
             valueColor: AlwaysStoppedAnimation<Color>(
-              progress == 1.0 ? Colors.green : Colors.orange,
+              progress == 1.0 ? AppTheme.neonGreen : AppTheme.primaryCyan,
             ),
           ),
         ],
@@ -183,12 +194,11 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
           const SizedBox(width: 8),
           Text(
             title,
-            style: TextStyle(
-              color: Colors.white,
+            style: AppTheme.neonText(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
-            ),
+              color: AppTheme.primaryCyan,
+            ).copyWith(letterSpacing: 1.2),
           ),
         ],
       ),
@@ -211,10 +221,19 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
             decoration: BoxDecoration(
-              color: Colors.grey[850],
+              gradient: LinearGradient(
+                colors: [AppTheme.surfaceBlue.withOpacity(0.9), AppTheme.cardBlue],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(8),
                 topRight: Radius.circular(8),
+              ),
+              border: Border(
+                top: BorderSide(color: AppTheme.borderCyan.withOpacity(0.3), width: 1),
+                left: BorderSide(color: AppTheme.borderCyan.withOpacity(0.3), width: 1),
+                right: BorderSide(color: AppTheme.borderCyan.withOpacity(0.3), width: 1),
               ),
             ),
             child: Row(
@@ -222,8 +241,8 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
               children: [
                 Text(
                   fight.weightClass.toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white60,
+                  style: TextStyle(
+                    color: AppTheme.primaryCyan.withOpacity(0.7),
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.5,
@@ -234,8 +253,16 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.amber,
+                      gradient: LinearGradient(
+                        colors: [AppTheme.warningAmber, AppTheme.warningAmber.withOpacity(0.8)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                       borderRadius: BorderRadius.circular(4),
+                      boxShadow: AppTheme.neonGlow(
+                        color: AppTheme.warningAmber,
+                        intensity: 0.3,
+                      ),
                     ),
                     child: const Text(
                       'TITLE',
@@ -250,8 +277,8 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
                 const SizedBox(width: 8),
                 Text(
                   '${fight.rounds} ROUNDS',
-                  style: const TextStyle(
-                    color: Colors.white60,
+                  style: TextStyle(
+                    color: AppTheme.primaryCyan.withOpacity(0.5),
                     fontSize: 11,
                   ),
                 ),
@@ -275,12 +302,12 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: const Text(
+                child: Text(
                   'VS',
-                  style: TextStyle(
-                    color: Colors.white54,
+                  style: AppTheme.neonText(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryCyan,
                   ),
                 ),
               ),
@@ -315,8 +342,8 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
   }) {
     final isSelected = pick?.winnerId == fighterId;
     final isTie = pick?.method == 'TIE';
-    final isOpponentSelected = pick?.winnerId != null && 
-                               pick?.winnerId != fighterId && 
+    final isOpponentSelected = pick?.winnerId != null &&
+                               pick?.winnerId != fighterId &&
                                !isTie;
     
     return GestureDetector(
@@ -324,17 +351,31 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
-          color: isSelected || isTie
-              ? Colors.green.withOpacity(0.15)
-              : Colors.grey[900],
+          gradient: LinearGradient(
+            colors: isSelected
+                ? [AppTheme.neonGreen.withOpacity(0.2), AppTheme.neonGreen.withOpacity(0.1)]
+                : isTie
+                    ? [AppTheme.primaryCyan.withOpacity(0.2), AppTheme.primaryCyan.withOpacity(0.1)]
+                    : [AppTheme.surfaceBlue.withOpacity(0.6), AppTheme.cardBlue.withOpacity(0.8)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           border: Border.all(
-            color: isSelected || isTie
-                ? Colors.green
-                : isOpponentSelected
-                    ? Colors.grey[700]!
-                    : Colors.grey[800]!,
+            color: isSelected
+                ? AppTheme.neonGreen
+                : isTie
+                    ? AppTheme.primaryCyan
+                    : isOpponentSelected
+                        ? AppTheme.borderCyan.withOpacity(0.2)
+                        : AppTheme.borderCyan.withOpacity(0.3),
             width: isSelected || isTie ? 2 : 1,
           ),
+          boxShadow: isSelected || isTie
+              ? AppTheme.neonGlow(
+                  color: isSelected ? AppTheme.neonGreen : AppTheme.primaryCyan,
+                  intensity: 0.5,
+                )
+              : null,
           borderRadius: BorderRadius.only(
             bottomLeft: isLeft ? const Radius.circular(8) : Radius.zero,
             bottomRight: !isLeft ? const Radius.circular(8) : Radius.zero,
@@ -344,15 +385,33 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
         child: Column(
           children: [
             // Fighter avatar placeholder
-            CircleAvatar(
-              radius: 30,
-              backgroundColor: Colors.grey[800],
-              child: Text(
-                fighterName.split(' ').map((n) => n[0]).join(),
-                style: TextStyle(
-                  color: isSelected || isTie ? Colors.green : Colors.white70,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: isSelected
+                      ? [AppTheme.neonGreen.withOpacity(0.3), AppTheme.neonGreen.withOpacity(0.1)]
+                      : isTie
+                          ? [AppTheme.primaryCyan.withOpacity(0.3), AppTheme.primaryCyan.withOpacity(0.1)]
+                          : [AppTheme.surfaceBlue, AppTheme.cardBlue],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                border: Border.all(
+                  color: isSelected ? AppTheme.neonGreen : isTie ? AppTheme.primaryCyan : AppTheme.borderCyan.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  fighterName.split(' ').map((n) => n[0]).join(),
+                  style: TextStyle(
+                    color: isSelected ? AppTheme.neonGreen : isTie ? AppTheme.primaryCyan : AppTheme.primaryCyan.withOpacity(0.7),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -362,9 +421,17 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
               fighterName.toUpperCase(),
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: isSelected || isTie ? Colors.green : Colors.white,
+                color: isSelected ? AppTheme.neonGreen : isTie ? AppTheme.primaryCyan : Colors.white,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
+                shadows: isSelected || isTie
+                    ? [
+                        Shadow(
+                          color: (isSelected ? AppTheme.neonGreen : AppTheme.primaryCyan).withOpacity(0.5),
+                          blurRadius: 4,
+                        ),
+                      ]
+                    : null,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -374,7 +441,9 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
             Text(
               record,
               style: TextStyle(
-                color: isSelected || isTie ? Colors.green[300] : Colors.white60,
+                color: isSelected || isTie
+                    ? (isSelected ? AppTheme.neonGreen : AppTheme.primaryCyan).withOpacity(0.8)
+                    : AppTheme.primaryCyan.withOpacity(0.5),
                 fontSize: 11,
               ),
             ),
@@ -383,15 +452,21 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: odds.startsWith('+') 
-                      ? Colors.blue.withOpacity(0.2)
-                      : Colors.orange.withOpacity(0.2),
+                  color: odds.startsWith('+')
+                      ? AppTheme.primaryCyan.withOpacity(0.2)
+                      : AppTheme.warningAmber.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: odds.startsWith('+')
+                        ? AppTheme.primaryCyan.withOpacity(0.3)
+                        : AppTheme.warningAmber.withOpacity(0.3),
+                    width: 1,
+                  ),
                 ),
                 child: Text(
                   odds,
                   style: TextStyle(
-                    color: odds.startsWith('+') ? Colors.blue : Colors.orange,
+                    color: odds.startsWith('+') ? AppTheme.primaryCyan : AppTheme.warningAmber,
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),
@@ -404,13 +479,21 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: Colors.green,
+                  gradient: LinearGradient(
+                    colors: [AppTheme.neonGreen, AppTheme.neonGreen.withOpacity(0.7)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: BorderRadius.circular(12),
+                  boxShadow: AppTheme.neonGlow(
+                    color: AppTheme.neonGreen,
+                    intensity: 0.3,
+                  ),
                 ),
                 child: Text(
                   pick!.method!,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: Colors.black,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -423,8 +506,16 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: Colors.amber,
+                  gradient: LinearGradient(
+                    colors: [AppTheme.warningAmber, AppTheme.warningAmber.withOpacity(0.7)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: BorderRadius.circular(12),
+                  boxShadow: AppTheme.neonGlow(
+                    color: AppTheme.warningAmber,
+                    intensity: 0.3,
+                  ),
                 ),
                 child: const Text(
                   'TIE',
@@ -498,12 +589,19 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[900],
+        gradient: LinearGradient(
+          colors: [AppTheme.surfaceBlue, AppTheme.cardBlue],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border(
+          top: BorderSide(color: AppTheme.borderCyan.withOpacity(0.3), width: 1),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: AppTheme.primaryCyan.withOpacity(0.1),
             offset: const Offset(0, -2),
-            blurRadius: 4,
+            blurRadius: 8,
           ),
         ],
       ),
@@ -513,43 +611,67 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
             child: OutlinedButton(
               onPressed: hasAnyPicks ? _showAdvancedOptions : null,
               style: OutlinedButton.styleFrom(
-                side: BorderSide(color: Colors.green.withOpacity(0.5)),
+                side: BorderSide(color: AppTheme.primaryCyan.withOpacity(0.5)),
                 padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
-              child: const Text(
+              child: Text(
                 'ADVANCED BETS',
-                style: TextStyle(color: Colors.green),
+                style: TextStyle(
+                  color: hasAnyPicks ? AppTheme.primaryCyan : AppTheme.primaryCyan.withOpacity(0.3),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             flex: 2,
-            child: ElevatedButton(
-              onPressed: hasAnyPicks && !_isSaving ? _savePicks : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: _isSaving
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
+            child: Container(
+              decoration: hasAnyPicks && !_isSaving
+                  ? BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppTheme.primaryCyan, AppTheme.secondaryCyan],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: AppTheme.neonGlow(
+                        color: AppTheme.primaryCyan,
+                        intensity: 0.5,
                       ),
                     )
-                  : const Text(
-                      'SAVE PICKS',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                  : null,
+              child: ElevatedButton(
+                onPressed: hasAnyPicks && !_isSaving ? _savePicks : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: hasAnyPicks && !_isSaving ? Colors.transparent : AppTheme.cardBlue,
+                  shadowColor: Colors.transparent,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: _isSaving
+                    ? SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: AppTheme.primaryCyan,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(
+                        'SAVE PICKS',
+                        style: TextStyle(
+                          color: hasAnyPicks ? Colors.white : AppTheme.primaryCyan.withOpacity(0.3),
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
+              ),
             ),
           ),
         ],
@@ -672,9 +794,9 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
   }
   
   Color _getSectionColor(String section) {
-    if (section.contains('MAIN CARD')) return Colors.red;
-    if (section.contains('PRELIM')) return Colors.blue;
-    return Colors.grey;
+    if (section.contains('MAIN CARD')) return AppTheme.errorPink;
+    if (section.contains('PRELIM')) return AppTheme.primaryCyan;
+    return AppTheme.primaryCyan.withOpacity(0.5);
   }
 }
 

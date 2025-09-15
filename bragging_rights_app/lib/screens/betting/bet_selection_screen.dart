@@ -4045,49 +4045,88 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),  // Added extra bottom padding
               decoration: BoxDecoration(
-                color: Colors.white,
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF1A1F2E),
+                    const Color(0xFF0D1017),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+                border: Border(
+                  top: BorderSide(
+                    color: AppTheme.primaryCyan.withOpacity(0.5),
+                    width: 2,
+                  ),
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.deepBlue.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, -2),
+                    color: AppTheme.primaryCyan.withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, -4),
                   ),
                 ],
               ),
-              child: ElevatedButton(
-                onPressed: _isLockingBets ? null : _showBetConfirmationSheet,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.neonGreen,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.primaryCyan,
+                      AppTheme.primaryCyan.withOpacity(0.7),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  elevation: 4,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryCyan.withOpacity(0.5),
+                      blurRadius: 15,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: _isLockingBets
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.lock, size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Lock In All Bets (${_selectedBets.length} selections)',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                child: ElevatedButton(
+                  onPressed: _isLockingBets ? null : _showBetConfirmationSheet,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    foregroundColor: const Color(0xFF0D1017),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: _isLockingBets
+                      ? SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: const Color(0xFF0D1017),
+                            strokeWidth: 2,
                           ),
-                        ],
-                      ),
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.lock_outline,
+                              size: 20,
+                              color: const Color(0xFF0D1017),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Lock In All Bets (${_selectedBets.length} selections)',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF0D1017),
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
               ),
             )
           : const SizedBox.shrink(),
