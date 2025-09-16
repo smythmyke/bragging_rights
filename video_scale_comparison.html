@@ -299,17 +299,41 @@
                 </div>
             </div>
 
-            <!-- Variation 2: Cover (Cropped) -->
+            <!-- Variation 2: Cover (Cropped) - ADJUSTABLE -->
             <div class="variation recommended">
                 <span class="recommended-badge">RECOMMENDED</span>
-                <h2 class="variation-title">2. Cover (Cropped Edges)</h2>
-                <p class="variation-description">Video fills screen, edges cropped to fit</p>
+                <h2 class="variation-title">2. Cover (Adjusted Position & Scale)</h2>
+                <p class="variation-description">Video with custom positioning and scale</p>
+
+                <!-- Adjustment Controls -->
+                <div style="background: rgba(255,215,0,0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <div style="color: #FFD700; font-weight: bold; margin-bottom: 10px;">Adjust Video:</div>
+
+                    <div style="margin-bottom: 10px;">
+                        <label style="color: #aaa; display: inline-block; width: 120px;">Scale (Zoom):</label>
+                        <input type="range" id="scale-slider" min="50" max="150" value="90" step="5" style="width: 200px;">
+                        <span id="scale-value" style="color: #FFD700; margin-left: 10px;">90%</span>
+                    </div>
+
+                    <div style="margin-bottom: 10px;">
+                        <label style="color: #aaa; display: inline-block; width: 120px;">Horizontal Shift:</label>
+                        <input type="range" id="horizontal-slider" min="-50" max="50" value="15" step="5" style="width: 200px;">
+                        <span id="horizontal-value" style="color: #FFD700; margin-left: 10px;">15%</span>
+                    </div>
+
+                    <div>
+                        <label style="color: #aaa; display: inline-block; width: 120px;">Vertical Shift:</label>
+                        <input type="range" id="vertical-slider" min="-50" max="50" value="0" step="5" style="width: 200px;">
+                        <span id="vertical-value" style="color: #FFD700; margin-left: 10px;">0%</span>
+                    </div>
+                </div>
 
                 <div class="phone-container">
                     <div class="phone-screen cover">
                         <video
+                            id="adjustable-video"
                             src="C:/Users/smyth/Downloads/BR_Zoom_and_D_Reveal_Animation.mp4"
-                            style="width: 100%; height: 100%; object-fit: cover;"
+                            style="width: 100%; height: 100%; object-fit: cover; transform: scale(0.9) translateX(15%); transform-origin: center;"
                             autoplay
                             loop
                             muted
@@ -319,20 +343,26 @@
                 </div>
 
                 <div class="specs">
-                    <div class="specs-title">Specifications:</div>
-                    <div class="spec-item">• Video Size: 1422x800px (scaled)</div>
-                    <div class="spec-item">• Horizontal crop: ~531px each side</div>
+                    <div class="specs-title">Current Settings:</div>
+                    <div class="spec-item" id="scale-spec">• Scale: 90% (zoomed out)</div>
+                    <div class="spec-item" id="position-spec">• Position: 15% right, 0% down</div>
                     <div class="spec-item">• No black bars</div>
-                    <div class="spec-item">• Immersive experience</div>
+                    <div class="spec-item">• Custom centered on important content</div>
                 </div>
 
-                <div class="flutter-code">
-                    FittedBox(<br>
-                    &nbsp;&nbsp;fit: BoxFit.cover,<br>
-                    &nbsp;&nbsp;child: SizedBox(<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;width: _controller.value.size.width,<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;height: _controller.value.size.height,<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;child: VideoPlayer(_controller),<br>
+                <div class="flutter-code" id="flutter-code-2">
+                    Transform(<br>
+                    &nbsp;&nbsp;alignment: Alignment.center,<br>
+                    &nbsp;&nbsp;transform: Matrix4.identity()<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;..scale(0.9)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;..translate(54.0, 0.0), // 15% of 360px<br>
+                    &nbsp;&nbsp;child: FittedBox(<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;fit: BoxFit.cover,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;child: SizedBox(<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;width: _controller.value.size.width,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;height: _controller.value.size.height,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;child: VideoPlayer(_controller),<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;),<br>
                     &nbsp;&nbsp;),<br>
                     )
                 </div>
@@ -416,5 +446,67 @@
             distracting black bars. The video will fill the entire screen for maximum impact.</p>
         </div>
     </div>
+
+    <script>
+        // Get references to elements
+        const video = document.getElementById('adjustable-video');
+        const scaleSlider = document.getElementById('scale-slider');
+        const horizontalSlider = document.getElementById('horizontal-slider');
+        const verticalSlider = document.getElementById('vertical-slider');
+        const scaleValue = document.getElementById('scale-value');
+        const horizontalValue = document.getElementById('horizontal-value');
+        const verticalValue = document.getElementById('vertical-value');
+        const scaleSpec = document.getElementById('scale-spec');
+        const positionSpec = document.getElementById('position-spec');
+        const flutterCode = document.getElementById('flutter-code-2');
+
+        function updateVideo() {
+            const scale = scaleSlider.value / 100;
+            const hShift = horizontalSlider.value;
+            const vShift = verticalSlider.value;
+
+            // Update video transform
+            video.style.transform = `scale(${scale}) translateX(${hShift}%) translateY(${vShift}%)`;
+
+            // Update display values
+            scaleValue.textContent = scaleSlider.value + '%';
+            horizontalValue.textContent = hShift + '%';
+            verticalValue.textContent = vShift + '%';
+
+            // Update specifications
+            scaleSpec.textContent = `• Scale: ${scaleSlider.value}% (${scale < 1 ? 'zoomed out' : scale > 1 ? 'zoomed in' : 'original'})`;
+            positionSpec.textContent = `• Position: ${hShift}% ${hShift > 0 ? 'right' : hShift < 0 ? 'left' : 'center'}, ${vShift}% ${vShift > 0 ? 'down' : vShift < 0 ? 'up' : 'center'}`;
+
+            // Calculate pixel values for Flutter (360px width, 800px height)
+            const hPixels = (hShift / 100 * 360).toFixed(1);
+            const vPixels = (vShift / 100 * 800).toFixed(1);
+
+            // Update Flutter code
+            flutterCode.innerHTML = `
+                Transform(<br>
+                &nbsp;&nbsp;alignment: Alignment.center,<br>
+                &nbsp;&nbsp;transform: Matrix4.identity()<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;..scale(${scale.toFixed(2)})<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;..translate(${hPixels}, ${vPixels}), // ${hShift}% horizontal, ${vShift}% vertical<br>
+                &nbsp;&nbsp;child: FittedBox(<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;fit: BoxFit.cover,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;child: SizedBox(<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;width: _controller.value.size.width,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;height: _controller.value.size.height,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;child: VideoPlayer(_controller),<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;),<br>
+                &nbsp;&nbsp;),<br>
+                )
+            `.trim();
+        }
+
+        // Add event listeners
+        scaleSlider.addEventListener('input', updateVideo);
+        horizontalSlider.addEventListener('input', updateVideo);
+        verticalSlider.addEventListener('input', updateVideo);
+
+        // Initialize with current values
+        updateVideo();
+    </script>
 </body>
 </html>

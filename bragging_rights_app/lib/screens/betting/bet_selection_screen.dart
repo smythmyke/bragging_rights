@@ -3012,7 +3012,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                       ),
                       const SizedBox(height: 4),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
                           color: const Color(0xFF0D1017).withOpacity(0.5),
                           border: Border.all(
@@ -3033,19 +3033,24 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                           style: TextStyle(
                             color: AppTheme.primaryCyan,
                             fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
                           decoration: InputDecoration(
                             border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
                             hintText: '50',
                             hintStyle: TextStyle(
                               color: Colors.grey[600],
+                              fontSize: 16,
                             ),
                             isDense: true,
-                            contentPadding: EdgeInsets.symmetric(vertical: 10),
+                            contentPadding: EdgeInsets.zero,
                             suffixText: 'BR',
                             suffixStyle: TextStyle(
-                              color: Colors.grey[500],
-                              fontSize: 12,
+                              color: AppTheme.primaryCyan.withOpacity(0.7),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           onChanged: (value) {
@@ -3574,9 +3579,9 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         type: bet.type.toString(),
       )).toList();
       
-      // Generate a unique game ID (you might want to get this from actual game data)
-      final gameId = '${widget.sport}_${widget.gameTitle}_${DateTime.now().millisecondsSinceEpoch}';
-      
+      // Use the actual game ID if provided, otherwise create a consistent one
+      final gameId = widget.gameId ?? '${widget.gameTitle}_${widget.sport}'.replaceAll(' ', '_').toLowerCase();
+
       // Place the bet
       await _betService.placeBet(
         gameId: gameId,
@@ -3590,15 +3595,14 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       );
       
       // Save bets to local storage - always save regardless of poolId/gameId
-      // Use the generated gameId if widget.gameId is not available
-      final actualGameId = widget.gameId ?? gameId;
+      // Use the same gameId consistently
       final actualPoolId = widget.poolId ?? 'default_pool_${widget.poolName.replaceAll(' ', '_').toLowerCase()}';
-      
+
       final userBets = allBets.map((bet) => UserBet(
         id: DateTime.now().millisecondsSinceEpoch.toString() + bet.id,
         poolId: actualPoolId,
         poolName: widget.poolName,
-        gameId: actualGameId,
+        gameId: gameId,
         gameTitle: widget.gameTitle,
         sport: widget.sport,
         betType: bet.type.toString().split('.').last,
@@ -3610,17 +3614,17 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       )).toList();
       
       await _betStorage.saveBets(userBets);
-      debugPrint('Saved ${userBets.length} bets to storage with poolId: $actualPoolId and gameId: $actualGameId');
+      debugPrint('Saved ${userBets.length} bets to storage with poolId: $actualPoolId and gameId: $gameId');
 
       // Track the bet placement for the indicator ribbon
       await _betTrackingService.createBetStatusFromPool(
-        gameId: actualGameId,
+        gameId: gameId,
         poolId: actualPoolId,
         amount: totalWager.toDouble(),
         sport: widget.sport,
         gameDate: DateTime.now().add(const Duration(hours: 3)), // You might want to get actual game date
       );
-      debugPrint('Updated bet tracking status for game: $actualGameId');
+      debugPrint('Updated bet tracking status for game: $gameId');
 
       debugPrint('Bets locked in successfully! Potential payout: $potentialPayout BR');
       

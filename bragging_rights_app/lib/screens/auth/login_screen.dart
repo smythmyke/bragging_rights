@@ -789,25 +789,7 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                     ),
                   ),
-                  // Video player on top of the grid
-                  if (_videoController != null && _videoController!.value.isInitialized)
-                    Positioned.fill(
-                      child: FittedBox(
-                        fit: BoxFit.cover, // Use cover to fill the entire screen
-                        alignment: Alignment.center,
-                        child: SizedBox(
-                          width: _videoController!.value.size.width,
-                          height: _videoController!.value.size.height,
-                          child: VideoPlayer(_videoController!),
-                        ),
-                      ),
-                    )
-                  else
-                    const Center(
-                      child: CircularProgressIndicator(
-                        color: goldPrimary,
-                      ),
-                    ),
+                  // Video removed - keeping just the grid background
                 ],
               ),
             ),

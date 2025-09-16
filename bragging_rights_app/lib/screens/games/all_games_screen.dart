@@ -23,7 +23,7 @@ class AllGamesScreen extends StatefulWidget {
   State<AllGamesScreen> createState() => _AllGamesScreenState();
 }
 
-class _AllGamesScreenState extends State<AllGamesScreen> {
+class _AllGamesScreenState extends State<AllGamesScreen> with WidgetsBindingObserver {
   final ESPNDirectService _espnService = ESPNDirectService();
   final BetTrackingService _betTrackingService = BetTrackingService();
   List<GameModel> _games = [];
@@ -37,6 +37,7 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadBetStatuses();
     if (widget.initialGames != null) {
       _games = widget.initialGames!;
@@ -46,23 +47,59 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
     }
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Reload bet statuses when app comes back to foreground
+      _loadBetStatuses();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload bet statuses when returning to this screen
+    _loadBetStatuses();
+  }
+
+  // Called when the app returns to foreground after navigation
+  @override
+  Future<void> didPopNext() async {
+    // Reload bet statuses when returning from another screen
+    await _loadBetStatuses();
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   Future<void> _loadBetStatuses() async {
     try {
+      debugPrint('[AllGamesScreen] Loading bet statuses...');
       // Load all bet statuses
       await _betTrackingService.loadAllBetStatuses();
       final allStatuses = await _betTrackingService.getAllBetStatuses();
 
       // Update the bet statuses map
-      setState(() {
-        _betStatuses = {};
-        allStatuses.forEach((gameId, status) {
-          if (status.isActive) {
-            _betStatuses[gameId] = true;
-          }
+      if (mounted) {
+        setState(() {
+          _betStatuses = {};
+          allStatuses.forEach((gameId, status) {
+            if (status.isActive) {
+              _betStatuses[gameId] = true;
+              debugPrint('[AllGamesScreen] Found active bet for game: $gameId');
+            }
+          });
+          debugPrint('[AllGamesScreen] Total active bets: ${_betStatuses.length}');
         });
-      });
+      }
     } catch (e) {
-      debugPrint('Error loading bet statuses: $e');
+      debugPrint('[AllGamesScreen] Error loading bet statuses: $e');
     }
   }
   
@@ -77,6 +114,13 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
         debugPrint('Loading games for selected sport: $_selectedSport');
         // Import the optimized service for consistent data fetching
         final optimizedService = OptimizedGamesService();
+
+        // TEMPORARY: Clear MLB cache to ensure fresh data with ESPN IDs
+        if (_selectedSport == 'MLB') {
+          debugPrint('🔄 Clearing MLB cache to fetch fresh data with ESPN IDs...');
+          await optimizedService.clearSportCache('MLB');
+        }
+
         games = await optimizedService.loadAllGamesForSport(_selectedSport!);
         debugPrint('Loaded ${games.length} $_selectedSport games');
       } else {
@@ -189,6 +233,9 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
     final bool isLive = game.isLive;
     final bool hasStarted = game.isFinal || isLive;
     final bool hasBet = _betStatuses[game.id] ?? false;
+    if (hasBet) {
+      debugPrint('[AllGamesScreen] Showing bet ribbon for game: ${game.id} - ${game.gameTitle}');
+    }
 
     return Stack(
       children: [
@@ -363,10 +410,11 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
                     GestureDetector(
                       onTap: () {}, // This blocks the tap from propagating to parent InkWell
                       child: ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
                           debugPrint('🎯 View Pools button tapped in AllGamesScreen');
                           debugPrint('  - Navigating to /pool-selection');
-                          Navigator.pushNamed(
+                          debugPrint('  - Game ID: ${game.id}');
+                          await Navigator.pushNamed(
                           context,
                           '/pool-selection',
                           arguments: {
@@ -377,6 +425,9 @@ class _AllGamesScreenState extends State<AllGamesScreen> {
                             'awayTeam': game.awayTeam,
                           },
                         );
+                        // Reload bet statuses when returning
+                        debugPrint('  - Returned from pool selection, reloading bet statuses...');
+                        await _loadBetStatuses();
                       },
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

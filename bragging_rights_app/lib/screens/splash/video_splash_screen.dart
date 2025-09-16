@@ -112,7 +112,7 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
               opacity: _fadeAnimation,
               child: SizedBox.expand(
                 child: FittedBox(
-                  fit: BoxFit.contain, // Changed from cover to contain to show full video
+                  fit: BoxFit.contain, // Back to original
                   child: SizedBox(
                     width: _controller!.value.size.width,
                     height: _controller!.value.size.height,

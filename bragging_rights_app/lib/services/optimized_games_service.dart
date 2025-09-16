@@ -503,16 +503,36 @@ class OptimizedGamesService {
                      status.toLowerCase().contains('halftime');
       final isFinal = status.toLowerCase().contains('final');
       
+      // Generate a unique ID for internal use and store ESPN ID separately
+      final espnId = event['id']?.toString();
+      final internalId = espnId != null
+          ? '${sport.toLowerCase()}_${espnId}_${gameTime.millisecondsSinceEpoch}'
+          : '${sport}_${DateTime.now().millisecondsSinceEpoch}';
+
+      // Debug logging for MLB games
+      if (sport == 'MLB') {
+        debugPrint('🔍 Converting MLB game:');
+        debugPrint('   ESPN ID from event: ${event['id']}');
+        debugPrint('   ESPN ID stored: $espnId');
+        debugPrint('   Internal ID: $internalId');
+        debugPrint('   Teams: ${awayTeam['team']?['displayName']} @ ${homeTeam['team']?['displayName']}');
+      }
+
       return GameModel(
-        id: event['id'] ?? '${sport}_${DateTime.now().millisecondsSinceEpoch}',
+        id: internalId,
+        espnId: espnId, // Store the ESPN ID separately
         sport: sport,
         homeTeam: homeTeam['team']?['displayName'] ?? 'Home Team',
         awayTeam: awayTeam['team']?['displayName'] ?? 'Away Team',
+        homeTeamLogo: homeTeam['team']?['logo'],
+        awayTeamLogo: awayTeam['team']?['logo'],
         homeScore: int.tryParse(homeTeam['score']?.toString() ?? '0'),
         awayScore: int.tryParse(awayTeam['score']?.toString() ?? '0'),
         gameTime: gameTime,
         status: isLive ? 'live' : (isFinal ? 'final' : 'scheduled'),
         venue: competition['venue']?['fullName'],
+        broadcast: competition['broadcasts']?[0]?['names']?[0],
+        league: event['league']?['abbreviation'] ?? sport,
         odds: null, // Will be enriched on demand
       );
     } catch (e) {
@@ -945,8 +965,14 @@ class OptimizedGamesService {
   /// Check Firestore cache for games by sport
   Future<List<GameModel>?> _getGamesFromFirestore(String sport, {Duration maxAge = const Duration(hours: 1)}) async {
     try {
+      // TEMPORARY: Force cache refresh for MLB to get ESPN IDs
+      if (sport.toUpperCase() == 'MLB') {
+        debugPrint('⚠️ Bypassing cache for MLB to fetch fresh data with ESPN IDs');
+        return null;
+      }
+
       debugPrint('🔍 Checking Firestore cache for $sport games...');
-      
+
       // Query games by sport with cache timestamp check
       final now = DateTime.now();
       final cutoffTime = now.subtract(maxAge);
@@ -1001,6 +1027,16 @@ class OptimizedGamesService {
       if (sport != null) {
         data['sport'] = sport.toUpperCase();
       }
+
+      // Debug log for MLB
+      if (sport == 'MLB' && games.indexOf(game) < 3) { // Log first 3 MLB games
+        debugPrint('📝 Saving MLB game to Firestore:');
+        debugPrint('   Game ID: ${game.id}');
+        debugPrint('   ESPN ID: ${game.espnId}');
+        debugPrint('   Data contains espnId: ${data.containsKey('espnId')}');
+        debugPrint('   Teams: ${game.awayTeam} @ ${game.homeTeam}');
+      }
+
       batch.set(docRef, data, SetOptions(merge: true));
     }
     
@@ -1221,6 +1257,35 @@ class OptimizedGamesService {
     }
 
     return groupedEvents;
+  }
+
+  /// Clear cache for a specific sport to force refresh
+  Future<void> clearSportCache(String sport) async {
+    try {
+      debugPrint('🗑️ Clearing cache for $sport...');
+
+      // Clear in-memory cache
+      _featuredGamesCache[sport.toUpperCase()]?.clear();
+
+      // Clear Firestore cache for this sport
+      final batch = _firestore.batch();
+      final querySnapshot = await _firestore
+          .collection('games')
+          .where('sport', isEqualTo: sport.toUpperCase())
+          .get();
+
+      for (final doc in querySnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // Clear metadata
+      batch.delete(_firestore.collection('game_cache_meta').doc(sport.toLowerCase()));
+
+      await batch.commit();
+      debugPrint('✅ Cache cleared for $sport');
+    } catch (e) {
+      debugPrint('Error clearing cache for $sport: $e');
+    }
   }
 
   /// Clean up resources

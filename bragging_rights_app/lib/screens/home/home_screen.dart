@@ -84,6 +84,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Set<String> _expandedSports = {};
   List<String> _userSports = []; // User's selected sports
   List<GameModel> _allGames = []; // All games cache
+
+  // Track if MLB cache has been cleared (temporary fix)
+  bool _mlbCacheCleared = false;
   
   // Pool data
   List<Map<String, dynamic>> _userPools = [];
@@ -285,11 +288,16 @@ class _HomeScreenState extends State<HomeScreen> {
         _isLoadingGames = true;
       });
     }
-    
+
     try {
+      // TEMPORARY FIX: Always clear MLB cache to ensure ESPN IDs are present
+      // TODO: Remove this once ESPN IDs are confirmed working
+      print('🔄 Clearing MLB cache to ensure fresh data with ESPN IDs...');
+      await _optimizedGamesService.clearSportCache('MLB');
+
       // Fetch games with caching support - this will return cached data instantly if available
       print('📱 Loading games data...');
-      
+
       // Use optimized service for featured games with user preferences
       final result = await _optimizedGamesService.loadFeaturedGames(forceRefresh: forceRefresh);
       final allGames = result['games'] as List<GameModel>;
@@ -1339,31 +1347,6 @@ class _HomeScreenState extends State<HomeScreen> {
       gamesBySport.putIfAbsent(game.sport, () => []).add(game);
     }
 
-    // Log combat sports to verify grouping
-    if (gamesBySport.containsKey('BOXING')) {
-      final boxingGames = gamesBySport['BOXING']!;
-      debugPrint('🥊 HOME: Displaying ${boxingGames.length} BOXING items');
-      for (int i = 0; i < boxingGames.length && i < 3; i++) {
-        final game = boxingGames[i];
-        debugPrint('  - ${game.awayTeam} vs ${game.homeTeam}');
-        if (game.fights != null && game.fights!.isNotEmpty) {
-          debugPrint('    (Event with ${game.fights!.length} fights)');
-        }
-      }
-    }
-
-    if (gamesBySport.containsKey('MMA')) {
-      final mmaGames = gamesBySport['MMA']!;
-      debugPrint('🥊 HOME: Displaying ${mmaGames.length} MMA items');
-      for (int i = 0; i < mmaGames.length && i < 3; i++) {
-        final game = mmaGames[i];
-        debugPrint('  - ${game.awayTeam} vs ${game.homeTeam}');
-        if (game.fights != null && game.fights!.isNotEmpty) {
-          debugPrint('    (Event with ${game.fights!.length} fights)');
-        }
-      }
-    }
-    
     // Sort sports to put user's favorite sports first
     final sortedSports = gamesBySport.keys.toList()
       ..sort((a, b) {

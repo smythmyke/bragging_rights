@@ -289,6 +289,22 @@
             </div>
         </div>
 
+        <div class="section-title">Server Control</div>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+            <button class="btn btn-primary" onclick="downloadAndRunServerScript()">
+                🚀 Start Server (Download & Run)
+            </button>
+            <button class="btn btn-info" onclick="checkServerStatus()">
+                🔍 Check Status
+            </button>
+            <button class="btn btn-warning" onclick="openTerminalHere()">
+                💻 Open Terminal
+            </button>
+        </div>
+        <div id="serverInstructions" style="display: none; background: #f0f9ff; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 14px;">
+            <strong>Quick Start:</strong> A batch file was downloaded. Find it in your Downloads folder and double-click to run it!
+        </div>
+
         <div class="section-title">Device Controls</div>
         <div class="button-grid">
             <button class="btn btn-success" onclick="startDevice()">
@@ -419,6 +435,161 @@
                 return { success: false, demo: true };
             } finally {
                 setLoading(false);
+            }
+        }
+
+        // Download and provide instructions for running server script
+        function downloadAndRunServerScript() {
+            // Create batch file content
+            const batchContent = `@echo off
+echo ========================================
+echo   Bragging Rights Device Control Server
+echo ========================================
+echo.
+echo Starting server on http://localhost:5000
+echo.
+cd /d "C:\\Users\\smyth\\OneDrive\\Desktop\\Projects\\Bragging_Rights"
+node device_control_server.js
+pause`;
+
+            // Create a blob and download link
+            const blob = new Blob([batchContent], { type: 'application/x-bat' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'start_device_server.bat';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+
+            // Show instructions
+            document.getElementById('serverInstructions').style.display = 'block';
+            log('📥 Batch file downloaded! Check your Downloads folder');
+            showToast('Downloaded start_device_server.bat - Double-click it to start the server!', 'success');
+
+            // Start checking for server after delay
+            setTimeout(() => {
+                checkServerStatus();
+                // Keep checking every 2 seconds
+                const interval = setInterval(() => {
+                    checkServerStatus().then(() => {
+                        if (document.getElementById('deviceStatus').textContent === 'Server Connected') {
+                            clearInterval(interval);
+                            document.getElementById('serverInstructions').style.display = 'none';
+                        }
+                    });
+                }, 2000);
+            }, 3000);
+        }
+
+        // Open terminal in the project directory
+        function openTerminalHere() {
+            // Create a PowerShell command that opens terminal in the right directory
+            const psCommand = `Start-Process cmd -ArgumentList '/k', 'cd /d C:\\Users\\smyth\\OneDrive\\Desktop\\Projects\\Bragging_Rights && echo Ready to run: node device_control_server.js && echo.'`;
+
+            // Create a batch file that runs the PowerShell command
+            const batchContent = `@echo off
+powershell -Command "${psCommand}"
+exit`;
+
+            const blob = new Blob([batchContent], { type: 'application/x-bat' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'open_terminal.bat';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+
+            log('📁 Opening terminal in project directory...');
+            showToast('Terminal opening... Type: node device_control_server.js', 'success');
+        }
+
+        // Start the Node.js server (old function for compatibility)
+        function startServer() {
+            log('Server start instructions...');
+
+            // Show detailed instructions
+            const instructions = `
+To start the server:
+
+OPTION 1 - Double-click the batch file:
+• Navigate to project folder
+• Double-click: start_server.bat
+
+OPTION 2 - Use command line:
+• Open Terminal/Command Prompt
+• Navigate to: C:\\Users\\smyth\\OneDrive\\Desktop\\Projects\\Bragging_Rights
+• Run: node device_control_server.js
+
+The server will run on http://localhost:5000
+            `;
+
+            // Update console with instructions
+            log('📋 Server Start Instructions:');
+            log('Option 1: Double-click start_server.bat in project folder');
+            log('Option 2: Open terminal and run: node device_control_server.js');
+
+            // Copy batch file path to clipboard
+            const batchPath = 'C:\\Users\\smyth\\OneDrive\\Desktop\\Projects\\Bragging_Rights\\start_server.bat';
+            navigator.clipboard.writeText(batchPath).then(() => {
+                showToast('Batch file path copied! Navigate to folder and double-click start_server.bat', 'success');
+                log('✅ Path copied: ' + batchPath);
+            }).catch(() => {
+                showToast('Please run start_server.bat manually from project folder', 'error');
+            });
+
+            // Create a download link for the batch file as alternative
+            const batchContent = '@echo off\necho Starting Device Control Server...\necho ================================\necho.\ncd /d "C:\\Users\\smyth\\OneDrive\\Desktop\\Projects\\Bragging_Rights"\nnode device_control_server.js\npause';
+            const blob = new Blob([batchContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'start_server.bat';
+            a.style.display = 'none';
+            document.body.appendChild(a);
+
+            // Alert with instructions
+            alert(instructions);
+
+            // After a delay, check if server is running
+            setTimeout(() => {
+                checkServerStatus();
+            }, 5000);
+
+            // Keep checking every 3 seconds
+            const checkInterval = setInterval(() => {
+                checkServerStatus().then(() => {
+                    // If server is running, stop checking
+                    const status = document.getElementById('deviceStatus').textContent;
+                    if (status === 'Server Connected') {
+                        clearInterval(checkInterval);
+                    }
+                });
+            }, 3000);
+        }
+
+        // Check if server is running
+        async function checkServerStatus() {
+            try {
+                const response = await fetch('http://localhost:5000/health', {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                if (response.ok) {
+                    log('✅ Server is running on port 5000');
+                    showToast('Server is running!', 'success');
+                    document.getElementById('deviceStatus').textContent = 'Server Connected';
+                    document.getElementById('statusIndicator').className = 'status-indicator connected';
+                } else {
+                    throw new Error('Server not responding');
+                }
+            } catch (error) {
+                log('❌ Server not detected. Please start it manually.', true);
+                document.getElementById('deviceStatus').textContent = 'Server Offline';
+                document.getElementById('statusIndicator').className = 'status-indicator disconnected';
             }
         }
 
@@ -620,7 +791,12 @@
         // Check connection on load
         window.onload = async function() {
             log('Device control panel initialized');
-            await checkStatus();
+            // First check if server is running
+            await checkServerStatus();
+            // Then check device status if server is up
+            setTimeout(() => {
+                checkStatus();
+            }, 1000);
         };
 
         // Keyboard shortcuts

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Device Control Panel - Enhanced</title>
+    <HTA:APPLICATION
+        ID="DeviceControl"
+        APPLICATIONNAME="Device Control"
+        BORDER="dialog"
+        BORDERSTYLE="normal"
+        CAPTION="yes"
+        ICON=""
+        MAXIMIZEBUTTON="yes"
+        MINIMIZEBUTTON="yes"
+        SHOWINTASKBAR="yes"
+        SINGLEINSTANCE="yes"
+        SYSMENU="yes"
+        VERSION="1.0"
+        WINDOWSTATE="normal"
+        SCROLL="no"
+        NAVIGABLE="yes">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+        }
+        .console {
+            background: #1e293b;
+            color: #10b981;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            height: 200px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .status {
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Device Control Panel (Enhanced)</h1>
+        <div class="status" id="status">Status: Ready</div>
+
+        <h3>Server Control</h3>
+        <button class="btn btn-primary" onclick="startServer()">
+            🚀 Start Server (Direct Launch)
+        </button>
+        <button class="btn btn-success" onclick="checkServer()">
+            ✅ Check Server
+        </button>
+
+        <h3>Quick Actions</h3>
+        <button class="btn btn-success" onclick="launchApp()">
+            📱 Launch App
+        </button>
+        <button class="btn btn-success" onclick="runFlutter()">
+            🦋 Flutter Run
+        </button>
+
+        <div class="console" id="console">
+            Ready for commands...
+        </div>
+    </div>
+
+    <script language="VBScript">
+        Function RunCommand(command)
+            Dim WshShell, oExec
+            Set WshShell = CreateObject("WScript.Shell")
+            WshShell.CurrentDirectory = "C:\Users\smyth\OneDrive\Desktop\Projects\Bragging_Rights"
+            Set oExec = WshShell.Exec(command)
+            RunCommand = oExec.StdOut.ReadAll()
+        End Function
+
+        Function StartNodeServer()
+            Dim WshShell
+            Set WshShell = CreateObject("WScript.Shell")
+            WshShell.CurrentDirectory = "C:\Users\smyth\OneDrive\Desktop\Projects\Bragging_Rights"
+            WshShell.Run "cmd /k node device_control_server.js", 1, False
+            StartNodeServer = "Server starting..."
+        End Function
+    </script>
+
+    <script language="JavaScript">
+        function log(message) {
+            var console = document.getElementById('console');
+            console.innerHTML += '\n' + new Date().toLocaleTimeString() + ' - ' + message;
+            console.scrollTop = console.scrollHeight;
+        }
+
+        function updateStatus(message) {
+            document.getElementById('status').innerHTML = 'Status: ' + message;
+        }
+
+        function startServer() {
+            try {
+                var result = StartNodeServer();
+                log('Starting Node.js server...');
+                updateStatus('Server starting...');
+                setTimeout(checkServer, 3000);
+            } catch(e) {
+                log('Error: ' + e.message);
+            }
+        }
+
+        function checkServer() {
+            try {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', 'http://localhost:5000/health', false);
+                xhr.send();
+                if (xhr.status === 200) {
+                    log('✅ Server is running!');
+                    updateStatus('Server Connected');
+                }
+            } catch(e) {
+                log('❌ Server not detected');
+                updateStatus('Server Offline');
+            }
+        }
+
+        function launchApp() {
+            try {
+                var result = RunCommand('adb shell am start -n com.braggingrights.bragging_rights_app/.MainActivity');
+                log('App launched: ' + result);
+            } catch(e) {
+                log('Error: ' + e.message);
+            }
+        }
+
+        function runFlutter() {
+            try {
+                var WshShell = new ActiveXObject("WScript.Shell");
+                WshShell.CurrentDirectory = "C:\\Users\\smyth\\OneDrive\\Desktop\\Projects\\Bragging_Rights\\bragging_rights_app";
+                WshShell.Run("cmd /k flutter run", 1, false);
+                log('Flutter run started in new window');
+            } catch(e) {
+                log('Error: ' + e.message);
+            }
+        }
+
+        window.onload = function() {
+            log('Device Control Panel initialized');
+            checkServer();
+        }
+    </script>
+</body>
+</html>

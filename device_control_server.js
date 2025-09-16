@@ -29,6 +29,7 @@ app.use(express.static('.'));
 // Configuration
 const APP_PACKAGE = 'com.braggingrights.bragging_rights_app'; // Correct package name from device
 const FLUTTER_PROJECT_PATH = 'C:\\Users\\smyth\\OneDrive\\Desktop\\Projects\\Bragging_Rights\\bragging_rights_app';
+const FLUTTER_PATH = 'C:\\flutter\\bin\\flutter.bat'; // Full path to Flutter
 
 // ADB Path configuration
 const ADB_PATH = 'C:/Users/smyth/AppData/Local/Android/Sdk/platform-tools/adb.exe';
@@ -289,12 +290,13 @@ app.get('/flutter-run', async (req, res) => {
         </head>
         <body>
             <h2>🚀 Flutter Debug Mode - Live Output</h2>
-            <div class="command">Executing: cd ${FLUTTER_PROJECT_PATH} && flutter run</div>
+            <div class="command">Executing: cd ${FLUTTER_PROJECT_PATH} && ${FLUTTER_PATH} run</div>
             <pre id="output">
     `);
 
-    // Change directory and run Flutter
-    const flutterProcess = spawn('flutter', ['run'], {
+    // Change directory and run Flutter with full path
+    const flutterCommand = `"${FLUTTER_PATH}" run`;
+    const flutterProcess = spawn(flutterCommand, [], {
         cwd: FLUTTER_PROJECT_PATH,
         shell: true
     });
@@ -333,12 +335,13 @@ app.post('/flutter/run', async (req, res) => {
 
     try {
         // First, check if Flutter is available
-        const versionCheck = await executeCommand('flutter --version');
+        const versionCheck = await executeCommand(`"${FLUTTER_PATH}" --version`);
 
         console.log(`Starting Flutter in ${mode} mode...`);
 
-        // Use spawn for long-running Flutter process
-        const flutterProcess = spawn('flutter', ['run', `--${mode}`], {
+        // Use spawn for long-running Flutter process with full path
+        const flutterCommand = `"${FLUTTER_PATH}" run --${mode}`;
+        const flutterProcess = spawn(flutterCommand, [], {
             cwd: FLUTTER_PROJECT_PATH,
             shell: true,
             detached: false

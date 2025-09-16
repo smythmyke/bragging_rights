@@ -21,6 +21,7 @@ class GameModel {
   final bool isCombatSport;
   final int? totalFights;
   final String? mainEventFighters;
+  final String? espnId; // ESPN's game ID for API calls
 
   GameModel({
     required this.id,
@@ -43,6 +44,7 @@ class GameModel {
     this.isCombatSport = false,
     this.totalFights,
     this.mainEventFighters,
+    this.espnId,
   });
 
   factory GameModel.fromFirestore(DocumentSnapshot doc) {
@@ -124,7 +126,7 @@ class GameModel {
       'league': league,
       'homeTeamLogo': homeTeamLogo,
       'awayTeamLogo': awayTeamLogo,
-      'espnId': id,
+      'espnId': espnId ?? id, // Store ESPN ID if available
       'fights': fights,
       'isCombatSport': isCombatSport,
       'totalFights': totalFights,
@@ -150,7 +152,7 @@ class GameModel {
       'homeTeamLogo': homeTeamLogo,
       'awayTeamLogo': awayTeamLogo,
       'lastUpdated': FieldValue.serverTimestamp(),
-      'espnId': id,
+      'espnId': espnId ?? id, // Store ESPN ID if available
       'fights': fights,
       'isCombatSport': isCombatSport,
       'totalFights': totalFights,
@@ -172,7 +174,7 @@ class GameModel {
     }
     
     return GameModel(
-      id: map['id'] ?? map['espnId'] ?? '',
+      id: map['id'] ?? '',
       sport: map['sport'] ?? '',
       homeTeam: map['homeTeam'] ?? '',
       awayTeam: map['awayTeam'] ?? '',
@@ -192,6 +194,7 @@ class GameModel {
       isCombatSport: map['isCombatSport'] ?? false,
       totalFights: map['totalFights'],
       mainEventFighters: map['mainEventFighters'],
+      espnId: map['espnId'] ?? map['externalId'] ?? map['eventId'],
     );
   }
   
