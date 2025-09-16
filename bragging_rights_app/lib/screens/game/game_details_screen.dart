@@ -531,48 +531,54 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
     // Generate mock recent form if not provided
     final form = recentForm ?? _generateMockRecentForm();
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
       children: [
         Text(
-          'Last 5: ',
+          'Last 5',
           style: TextStyle(
             fontSize: 10,
             color: Colors.grey[600],
           ),
         ),
-        ...form.map((result) => Container(
-          margin: const EdgeInsets.symmetric(horizontal: 2),
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: result == 'W'
-                ? Colors.green.withOpacity(0.3)
-                : result == 'L'
-                ? Colors.red.withOpacity(0.3)
-                : Colors.grey.withOpacity(0.3),
-            border: Border.all(
+        const SizedBox(height: 4),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: form.map((result) => Container(
+            margin: const EdgeInsets.symmetric(horizontal: 1),
+            width: 18,
+            height: 18,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
               color: result == 'W'
-                  ? Colors.green
+                  ? Colors.green.withOpacity(0.3)
                   : result == 'L'
-                  ? Colors.red
-                  : Colors.grey,
-              width: 1,
+                  ? Colors.red.withOpacity(0.3)
+                  : Colors.grey.withOpacity(0.3),
+              border: Border.all(
+                color: result == 'W'
+                    ? Colors.green
+                    : result == 'L'
+                    ? Colors.red
+                    : Colors.grey,
+                width: 1,
+              ),
             ),
-          ),
-          child: Text(
-            result,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: result == 'W'
-                  ? Colors.green
-                  : result == 'L'
-                  ? Colors.red
-                  : Colors.grey,
+            child: Center(
+              child: Text(
+                result,
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: result == 'W'
+                      ? Colors.green
+                      : result == 'L'
+                      ? Colors.red
+                      : Colors.grey,
+                ),
+              ),
             ),
-          ),
-        )).toList(),
+          )).toList(),
+        ),
       ],
     );
   }
@@ -638,7 +644,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
             child: Row(
               children: [
                 // Fighter 1
@@ -646,24 +652,26 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                   child: Column(
                     children: [
                       Container(
-                        width: 80,
-                        height: 80,
+                        width: 70,
+                        height: 70,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: AppTheme.primaryCyan, width: 3),
+                          border: Border.all(color: AppTheme.primaryCyan, width: 2),
                           color: AppTheme.primaryCyan.withOpacity(0.1),
                         ),
-                        child: Icon(Icons.person, size: 40, color: AppTheme.primaryCyan),
+                        child: Icon(Icons.person, size: 35, color: AppTheme.primaryCyan),
                       ),
                       const SizedBox(height: 12),
                       Text(
                         mainEvent['fighter1Name'] ?? mainEvent['fighter1'] ?? 'Fighter 1',
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
                         textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       if (mainEvent['fighter1Record'] != null)
                         Text(
@@ -725,24 +733,26 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                   child: Column(
                     children: [
                       Container(
-                        width: 80,
-                        height: 80,
+                        width: 70,
+                        height: 70,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: AppTheme.warningAmber, width: 3),
+                          border: Border.all(color: AppTheme.warningAmber, width: 2),
                           color: AppTheme.warningAmber.withOpacity(0.1),
                         ),
-                        child: Icon(Icons.person, size: 40, color: AppTheme.warningAmber),
+                        child: Icon(Icons.person, size: 35, color: AppTheme.warningAmber),
                       ),
                       const SizedBox(height: 12),
                       Text(
                         mainEvent['fighter2Name'] ?? mainEvent['fighter2'] ?? 'Fighter 2',
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
                         textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       if (mainEvent['fighter2Record'] != null)
                         Text(
@@ -1353,10 +1363,11 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                                 context,
                                 '/fighter-details',
                                 arguments: {
-                                  'fighterId': fight['fighter1Id'],
+                                  'fighterId': fight['fighter1Id'] ?? (fight['fighter1Name'] ?? fight['fighter1'] ?? '').replaceAll(' ', '_').toLowerCase(),
                                   'fighterName': fight['fighter1Name'] ?? fight['fighter1'],
                                   'record': fight['fighter1Record'],
                                   'sport': widget.sport,
+                                  'espnId': fight['fighter1EspnId'],
                                 },
                               );
                             },
@@ -1434,10 +1445,11 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                                 context,
                                 '/fighter-details',
                                 arguments: {
-                                  'fighterId': fight['fighter2Id'],
+                                  'fighterId': fight['fighter2Id'] ?? (fight['fighter2Name'] ?? fight['fighter2'] ?? '').replaceAll(' ', '_').toLowerCase(),
                                   'fighterName': fight['fighter2Name'] ?? fight['fighter2'],
                                   'record': fight['fighter2Record'],
                                   'sport': widget.sport,
+                                  'espnId': fight['fighter2EspnId'],
                                 },
                               );
                             },
