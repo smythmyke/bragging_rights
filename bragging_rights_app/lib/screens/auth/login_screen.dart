@@ -202,23 +202,11 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _playSuccessVideoAndNavigate(String route) async {
-    // Show video overlay
+    // Show grid animation overlay
     setState(() => _showVideoOverlay = true);
 
-    // Play video
-    if (_videoController != null && _videoController!.value.isInitialized) {
-      await _videoController!.play();
-
-      // Wait for 5 seconds of video
-      await Future.delayed(const Duration(seconds: 5));
-
-      // Stop video and reset
-      await _videoController!.pause();
-      await _videoController!.seekTo(Duration.zero);
-    } else {
-      // Fallback if video doesn't load
-      await Future.delayed(const Duration(seconds: 1));
-    }
+    // Wait for 2 seconds showing the grid animation
+    await Future.delayed(const Duration(seconds: 2));
 
     // Navigate to next screen
     if (mounted) {

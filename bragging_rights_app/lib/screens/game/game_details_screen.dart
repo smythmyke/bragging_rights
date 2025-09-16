@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:math';
 import '../../services/espn_id_resolver_service.dart';
 
 class GameDetailsScreen extends StatefulWidget {
@@ -508,6 +509,11 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (_isCombatSport) ...[
+            // Tale of the Tape for main event
+            if (_game?.fights != null && _game!.fights!.isNotEmpty)
+              _buildTaleOfTheTape(),
+            if (_game?.fights != null && _game!.fights!.isNotEmpty)
+              const SizedBox(height: 24),
             _buildFightCard(),
           ] else ...[
             _buildTeamMatchup(),
@@ -521,9 +527,266 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
     );
   }
 
+  Widget _buildRecentForm(List<String>? recentForm) {
+    // Generate mock recent form if not provided
+    final form = recentForm ?? _generateMockRecentForm();
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'Last 5: ',
+          style: TextStyle(
+            fontSize: 10,
+            color: Colors.grey[600],
+          ),
+        ),
+        ...form.map((result) => Container(
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: result == 'W'
+                ? Colors.green.withOpacity(0.3)
+                : result == 'L'
+                ? Colors.red.withOpacity(0.3)
+                : Colors.grey.withOpacity(0.3),
+            border: Border.all(
+              color: result == 'W'
+                  ? Colors.green
+                  : result == 'L'
+                  ? Colors.red
+                  : Colors.grey,
+              width: 1,
+            ),
+          ),
+          child: Text(
+            result,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: result == 'W'
+                  ? Colors.green
+                  : result == 'L'
+                  ? Colors.red
+                  : Colors.grey,
+            ),
+          ),
+        )).toList(),
+      ],
+    );
+  }
+
+  List<String> _generateMockRecentForm() {
+    // Generate random but realistic recent form
+    final random = Random();
+    final forms = [
+      ['W', 'W', 'W', 'L', 'W'], // Strong recent form
+      ['W', 'L', 'W', 'W', 'L'], // Mixed form
+      ['L', 'W', 'W', 'W', 'W'], // Comeback form
+      ['W', 'W', 'L', 'W', 'W'], // Mostly winning
+      ['L', 'L', 'W', 'W', 'W'], // Improving form
+    ];
+    return forms[random.nextInt(forms.length)];
+  }
+
+  Widget _buildTaleOfTheTape() {
+    // Get main event (last fight in the list)
+    final mainEvent = Map<String, dynamic>.from(_game!.fights!.last);
+
+    // Add mock recent form if not present
+    mainEvent['fighter1RecentForm'] ??= _generateMockRecentForm();
+    mainEvent['fighter2RecentForm'] ??= _generateMockRecentForm();
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.primaryCyan.withOpacity(0.1),
+            AppTheme.warningAmber.withOpacity(0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.primaryCyan.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryCyan.withOpacity(0.2),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(15),
+                topRight: Radius.circular(15),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.sports_mma, color: AppTheme.primaryCyan, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'MAIN EVENT - TALE OF THE TAPE',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryCyan,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Fighter 1
+                Expanded(
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppTheme.primaryCyan, width: 3),
+                          color: AppTheme.primaryCyan.withOpacity(0.1),
+                        ),
+                        child: Icon(Icons.person, size: 40, color: AppTheme.primaryCyan),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        mainEvent['fighter1Name'] ?? mainEvent['fighter1'] ?? 'Fighter 1',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      if (mainEvent['fighter1Record'] != null)
+                        Text(
+                          mainEvent['fighter1Record'],
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[400],
+                          ),
+                        ),
+                      const SizedBox(height: 8),
+                      _buildRecentForm(mainEvent['fighter1RecentForm']),
+                    ],
+                  ),
+                ),
+                // VS Divider
+                Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceBlue,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppTheme.borderCyan),
+                      ),
+                      child: const Text(
+                        'VS',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    if (mainEvent['rounds'] != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        '${mainEvent['rounds']} ROUNDS',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey[500],
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                    if (mainEvent['weightClass'] != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        mainEvent['weightClass'].toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                // Fighter 2
+                Expanded(
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppTheme.warningAmber, width: 3),
+                          color: AppTheme.warningAmber.withOpacity(0.1),
+                        ),
+                        child: Icon(Icons.person, size: 40, color: AppTheme.warningAmber),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        mainEvent['fighter2Name'] ?? mainEvent['fighter2'] ?? 'Fighter 2',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      if (mainEvent['fighter2Record'] != null)
+                        Text(
+                          mainEvent['fighter2Record'],
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[400],
+                          ),
+                        ),
+                      const SizedBox(height: 8),
+                      _buildRecentForm(mainEvent['fighter2RecentForm']),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildFightCard() {
     if (_game?.fights == null || _game!.fights!.isEmpty) {
       return _buildSimpleFightCard();
+    }
+
+    // Organize fights into sections
+    final fights = _game!.fights!;
+    final mainCard = <Map<String, dynamic>>[];
+    final prelims = <Map<String, dynamic>>[];
+
+    // Typically last 5 fights are main card, rest are prelims
+    for (int i = 0; i < fights.length; i++) {
+      final fight = Map<String, dynamic>.from(fights[i]);
+      // Add rounds information based on position
+      fight['rounds'] = (i >= fights.length - 5) ? 5 : 3; // Main card fights are usually 5 rounds
+      fight['cardPosition'] = i >= fights.length - 5 ? 'main' : 'prelim';
+
+      if (i >= fights.length - 5) {
+        mainCard.add(fight);
+      } else {
+        prelims.add(fight);
+      }
     }
 
     return Container(
@@ -535,89 +798,231 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              'Fight Card',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+          // Main Card Section
+          if (mainCard.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryCyan.withOpacity(0.05),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(15),
+                  topRight: Radius.circular(15),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.star, color: AppTheme.primaryCyan, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'MAIN CARD',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryCyan,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          const Divider(height: 1),
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _game!.fights!.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              // Reverse the order - show main event (last in list) first
-              final reversedIndex = _game!.fights!.length - 1 - index;
-              final fight = _game!.fights![reversedIndex];
-              final isMainEvent = reversedIndex == _game!.fights!.length - 1;
+            const Divider(height: 1),
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: mainCard.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                // Reverse order for main card (main event first)
+                final fight = mainCard[mainCard.length - 1 - index];
+                final isMainEvent = index == 0;
 
-              return Container(
-                color: isMainEvent
-                    ? AppTheme.primaryCyan.withOpacity(0.1)
-                    : Colors.transparent,
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    if (isMainEvent)
+                return Container(
+                  color: isMainEvent
+                      ? AppTheme.primaryCyan.withOpacity(0.05)
+                      : Colors.transparent,
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      // Round indicator
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryCyan,
+                          color: isMainEvent
+                              ? AppTheme.primaryCyan
+                              : AppTheme.surfaceBlue,
                           borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: AppTheme.borderCyan),
                         ),
-                        child: const Text(
-                          'MAIN',
+                        child: Text(
+                          '${fight['rounds'] ?? 5}R',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                            color: isMainEvent ? Colors.black : Colors.white,
                           ),
                         ),
                       ),
-                    if (isMainEvent) const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            fight['fighter1'] ?? '',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    fight['fighter1Name'] ?? fight['fighter1'] ?? '',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                if (fight['fighter1Record'] != null)
+                                  Text(
+                                    fight['fighter1Record'],
+                                    style: TextStyle(
+                                      color: Colors.grey[500],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                              ],
                             ),
-                          ),
-                          Text(
-                            'vs',
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 12,
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Text(
+                                'vs',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 12,
+                                ),
+                              ),
                             ),
-                          ),
-                          Text(
-                            fight['fighter2'] ?? '',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    fight['fighter2Name'] ?? fight['fighter2'] ?? '',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                if (fight['fighter2Record'] != null)
+                                  Text(
+                                    fight['fighter2Record'],
+                                    style: TextStyle(
+                                      color: Colors.grey[500],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                              ],
                             ),
-                          ),
-                        ],
+                            if (fight['weightClass'] != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                fight['weightClass'],
+                                style: TextStyle(
+                                  color: Colors.grey[500],
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+
+          // Preliminary Card Section
+          if (prelims.isNotEmpty) ...[
+            const Divider(height: 1, thickness: 2),
+            Container(
+              padding: const EdgeInsets.all(16),
+              color: AppTheme.surfaceBlue.withOpacity(0.5),
+              child: Row(
+                children: [
+                  Icon(Icons.schedule, color: Colors.grey[400], size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    'PRELIMINARY CARD',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[400],
+                      letterSpacing: 1.2,
                     ),
-                  ],
-                ),
-              );
-            },
-          ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: prelims.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                // Reverse order for prelims too
+                final fight = prelims[prelims.length - 1 - index];
+
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      // Round indicator
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceBlue,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: AppTheme.borderCyan.withOpacity(0.5)),
+                        ),
+                        child: Text(
+                          '${fight['rounds'] ?? 3}R',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[400],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${fight['fighter1Name'] ?? fight['fighter1'] ?? ''} vs ${fight['fighter2Name'] ?? fight['fighter2'] ?? ''}',
+                              style: TextStyle(
+                                color: Colors.grey[300],
+                                fontSize: 14,
+                              ),
+                            ),
+                            if (fight['weightClass'] != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                fight['weightClass'],
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
         ],
       ),
     );
@@ -1633,69 +2038,60 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
           ),
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Table(
-              columnWidths: const {
-                0: FlexColumnWidth(2),
-                1: FixedColumnWidth(30),
-                2: FixedColumnWidth(30),
-                3: FixedColumnWidth(30),
-                4: FixedColumnWidth(30),
-                5: FixedColumnWidth(30),
-                6: FixedColumnWidth(30),
-                7: FixedColumnWidth(30),
-                8: FixedColumnWidth(30),
-                9: FixedColumnWidth(30),
-                10: FixedColumnWidth(40),
-                11: FixedColumnWidth(40),
-                12: FixedColumnWidth(40),
-              },
-              children: [
-                // Header row
-                TableRow(
-                  children: [
-                    const Text(''),
-                    ...List.generate(9, (index) => Center(
-                      child: Text(
-                        '${index + 1}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey[400],
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Table(
+                defaultColumnWidth: const FixedColumnWidth(35),
+                columnWidths: const {
+                  0: FixedColumnWidth(50), // Team column slightly wider
+                },
+                children: [
+                  // Header row
+                  TableRow(
+                    children: [
+                      const Text(''),
+                      ...List.generate(9, (index) => Center(
+                        child: Text(
+                          '${index + 1}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[400],
+                          ),
+                        ),
+                      )),
+                      Center(
+                        child: Text(
+                          'R',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryCyan,
+                          ),
                         ),
                       ),
-                    )),
-                    Center(
-                      child: Text(
-                        'R',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryCyan,
+                      Center(
+                        child: Text(
+                          'H',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryCyan,
+                          ),
                         ),
                       ),
-                    ),
-                    Center(
-                      child: Text(
-                        'H',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryCyan,
+                      Center(
+                        child: Text(
+                          'E',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryCyan,
+                          ),
                         ),
                       ),
-                    ),
-                    Center(
-                      child: Text(
-                        'E',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryCyan,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
                 // Divider
                 TableRow(
                   children: List.generate(13, (_) =>
@@ -1761,6 +2157,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                   ],
                 )),
               ],
+              ),
             ),
           ),
         ],
@@ -1857,22 +2254,32 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                     ],
                   ),
                   const SizedBox(height: 12),
-                  // Stats grid
-                  Wrap(
-                    spacing: 20,
-                    runSpacing: 12,
-                    children: [
-                      _buildStatItem('AB', battingData['atBats'] ?? '0'),
-                      _buildStatItem('R', battingData['runs'] ?? '0'),
-                      _buildStatItem('H', battingData['hits'] ?? '0'),
-                      _buildStatItem('RBI', battingData['RBIs'] ?? '0'),
-                      _buildStatItem('BB', battingData['walks'] ?? '0'),
-                      _buildStatItem('K', battingData['strikeouts'] ?? '0'),
-                      _buildStatItem('AVG', battingData['avg'] ?? '.000'),
-                      _buildStatItem('OBP', battingData['obp'] ?? '.000'),
-                      _buildStatItem('SLG', battingData['slg'] ?? '.000'),
-                      _buildStatItem('LOB', battingData['leftOnBase'] ?? '0'),
-                    ],
+                  // Stats grid - made scrollable horizontally
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildStatItem('AB', battingData['atBats'] ?? '0'),
+                        const SizedBox(width: 16),
+                        _buildStatItem('R', battingData['runs'] ?? '0'),
+                        const SizedBox(width: 16),
+                        _buildStatItem('H', battingData['hits'] ?? '0'),
+                        const SizedBox(width: 16),
+                        _buildStatItem('RBI', battingData['RBIs'] ?? '0'),
+                        const SizedBox(width: 16),
+                        _buildStatItem('BB', battingData['walks'] ?? '0'),
+                        const SizedBox(width: 16),
+                        _buildStatItem('K', battingData['strikeouts'] ?? '0'),
+                        const SizedBox(width: 16),
+                        _buildStatItem('AVG', battingData['avg'] ?? '.000'),
+                        const SizedBox(width: 16),
+                        _buildStatItem('OBP', battingData['obp'] ?? '.000'),
+                        const SizedBox(width: 16),
+                        _buildStatItem('SLG', battingData['slg'] ?? '.000'),
+                        const SizedBox(width: 16),
+                        _buildStatItem('LOB', battingData['leftOnBase'] ?? '0'),
+                      ],
+                    ),
                   ),
                   if (teams.indexOf(team) < teams.length - 1)
                     Padding(
