@@ -3,6 +3,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../models/game_model.dart';
 import '../../services/espn_direct_service.dart';
 import '../../services/optimized_games_service.dart';
+import '../../services/games_service_v2.dart';
 import '../../services/bet_tracking_service.dart';
 import '../../widgets/bet_placed_ribbon.dart';
 import 'package:intl/intl.dart';
@@ -25,6 +26,7 @@ class AllGamesScreen extends StatefulWidget {
 
 class _AllGamesScreenState extends State<AllGamesScreen> with WidgetsBindingObserver {
   final ESPNDirectService _espnService = ESPNDirectService();
+  final GamesServiceV2 _gamesService = GamesServiceV2();
   final BetTrackingService _betTrackingService = BetTrackingService();
   List<GameModel> _games = [];
   Map<String, bool> _betStatuses = {};
@@ -38,13 +40,15 @@ class _AllGamesScreenState extends State<AllGamesScreen> with WidgetsBindingObse
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _initializeServices();
     _loadBetStatuses();
-    if (widget.initialGames != null) {
-      _games = widget.initialGames!;
-      _loading = false;
-    } else {
-      _loadGames();
-    }
+    // Always load fresh games based on the category
+    // This prevents stale data when navigating from home screen
+    _loadGames();
+  }
+
+  Future<void> _initializeServices() async {
+    await _gamesService.initialize();
   }
 
   @override
@@ -111,52 +115,82 @@ class _AllGamesScreenState extends State<AllGamesScreen> with WidgetsBindingObse
 
       // If a specific sport is selected, only load that sport
       if (_selectedSport != null) {
-        debugPrint('Loading games for selected sport: $_selectedSport');
-        // Import the optimized service for consistent data fetching
-        final optimizedService = OptimizedGamesService();
+        debugPrint('🎯 Loading games for selected sport: $_selectedSport');
 
-        // TEMPORARY: Clear MLB cache to ensure fresh data with ESPN IDs
-        if (_selectedSport == 'MLB') {
-          debugPrint('🔄 Clearing MLB cache to fetch fresh data with ESPN IDs...');
-          await optimizedService.clearSportCache('MLB');
-        }
-
-        games = await optimizedService.loadAllGamesForSport(_selectedSport!);
-        debugPrint('Loaded ${games.length} $_selectedSport games');
+        // Use the new service for all sports
+        games = await _gamesService.getAllGamesForSport(_selectedSport!);
+        debugPrint('✅ Loaded ${games.length} $_selectedSport games');
       } else {
-        // Load games based on category
+        // Load games based on category using the new caching service
+        // This ensures we get fresh data based on game timestamps
+        debugPrint('📱 Loading games for category: ${widget.category}');
+
+        // Map category to period for the new service
+        String period;
         switch (widget.category) {
-        case 'live':
-          games = await _espnService.getLiveGames();
-          break;
-        case 'today':
-          games = await _espnService.getTodaysGames();
-          break;
-        case 'tomorrow':
-          final tomorrow = DateTime.now().add(const Duration(days: 1));
-          final dayAfter = tomorrow.add(const Duration(days: 1));
-          final allGames = await _espnService.fetchAllGames();
-          games = allGames.where((game) => 
-            game.gameTime.isAfter(DateTime(tomorrow.year, tomorrow.month, tomorrow.day)) &&
-            game.gameTime.isBefore(DateTime(dayAfter.year, dayAfter.month, dayAfter.day))
-          ).toList();
-          break;
-        case 'thisweek':
-          games = await _espnService.getUpcomingGames(days: 7);
-          break;
-        case 'nextweek':
-          final nextWeek = DateTime.now().add(const Duration(days: 7));
-          final twoWeeks = DateTime.now().add(const Duration(days: 14));
-          final allGames = await _espnService.fetchAllGames();
-          games = allGames.where((game) => 
-            game.gameTime.isAfter(nextWeek) &&
-            game.gameTime.isBefore(twoWeeks)
-          ).toList();
-          break;
-        default:
-          games = await _espnService.fetchAllGames();
+          case 'live':
+            // Get live games across all sports
+            games = await _gamesService.getLiveGames();
+            break;
+          case 'today':
+            period = 'today';
+            // Get today's games for all sports
+            final todayGames = await _gamesService.getTodayGamesAllSports();
+            games = [];
+            todayGames.forEach((sport, sportGames) {
+              games.addAll(sportGames);
+            });
+            break;
+          case 'tomorrow':
+            period = 'tomorrow';
+            // Get tomorrow's games for all sports
+            final futures = <Future<List<GameModel>>>[];
+            for (final sport in ALL_SUPPORTED_SPORTS) {
+              futures.add(_gamesService.getGamesForPeriod(
+                period: period,
+                sport: sport,
+              ));
+            }
+            final results = await Future.wait(futures);
+            games = results.expand((list) => list).toList();
+            break;
+          case 'thisweek':
+            period = 'this week';
+            // Get this week's games for all sports
+            final futures = <Future<List<GameModel>>>[];
+            for (final sport in ALL_SUPPORTED_SPORTS) {
+              futures.add(_gamesService.getGamesForPeriod(
+                period: period,
+                sport: sport,
+              ));
+            }
+            final results = await Future.wait(futures);
+            games = results.expand((list) => list).toList();
+            break;
+          case 'nextweek':
+            period = 'next week';
+            // Get next week's games for all sports
+            final futures = <Future<List<GameModel>>>[];
+            for (final sport in ALL_SUPPORTED_SPORTS) {
+              futures.add(_gamesService.getGamesForPeriod(
+                period: period,
+                sport: sport,
+              ));
+            }
+            final results = await Future.wait(futures);
+            games = results.expand((list) => list).toList();
+            break;
+          default:
+            // Get all upcoming games
+            final featured = await _gamesService.getFeaturedGames();
+            games = featured['games'] ?? [];
         }
+
+        debugPrint('✅ Loaded ${games.length} games for ${widget.category}');
       }
+
+      // Sort games by time
+      games.sort((a, b) => a.gameTime.compareTo(b.gameTime));
 
       setState(() {
         _games = games;
@@ -166,6 +200,7 @@ class _AllGamesScreenState extends State<AllGamesScreen> with WidgetsBindingObse
       // Reload bet statuses after loading games
       _loadBetStatuses();
     } catch (e) {
+      debugPrint('❌ Error loading games: $e');
       setState(() => _loading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

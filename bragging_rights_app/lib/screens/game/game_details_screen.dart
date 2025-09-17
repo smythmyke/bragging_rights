@@ -45,8 +45,12 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
   void initState() {
     super.initState();
     // For baseball, we have 3 tabs (Matchup, Box Score, Stats)
-    // For other sports, keep the original 5 tabs
-    final tabCount = widget.sport.toUpperCase() == 'MLB' ? 3 : 5;
+    // Different sports have different numbers of tabs
+    final tabCount = widget.sport.toUpperCase() == 'MLB'
+        ? 3
+        : widget.sport.toUpperCase() == 'SOCCER'
+        ? 4
+        : 5;
     _tabController = TabController(length: tabCount, vsync: this);
     _tabController.addListener(() {
       setState(() {
@@ -75,6 +79,8 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
       // Fetch additional details based on sport
       if (widget.sport.toUpperCase() == 'MLB') {
         await _loadBaseballDetails();
+      } else if (widget.sport.toUpperCase() == 'SOCCER') {
+        await _loadSoccerDetails();
       } else {
         // TODO: Implement for other sports
       }
@@ -238,6 +244,111 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
     }
   }
 
+  Future<void> _loadSoccerDetails() async {
+    try {
+      print('=== LOADING SOCCER DETAILS ===');
+      print('Game ID: ${widget.gameId}');
+      print('Teams: ${_game?.awayTeam} vs ${_game?.homeTeam}');
+
+      // Use the ESPN ID resolver service - same as baseball
+      final resolver = EspnIdResolverService();
+
+      // Check if game already has ESPN ID
+      var espnGameId = _game?.espnId;
+
+      // If no ESPN ID, resolve it
+      if (espnGameId == null && _game != null) {
+        print('Resolving ESPN ID using resolver service...');
+        espnGameId = await resolver.resolveEspnId(_game!);
+
+        if (espnGameId != null) {
+          print('✅ ESPN ID resolved: $espnGameId');
+        } else {
+          print('❌ Could not resolve ESPN ID');
+          // Show user-friendly message
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Match details are temporarily unavailable'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+          setState(() => _isLoading = false);
+          return;
+        }
+      } else if (espnGameId == null) {
+        print('❌ No game data available to resolve ESPN ID');
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      print('Using ESPN ID: $espnGameId');
+
+      // Determine the league for soccer
+      String league = 'eng.1'; // Default to Premier League
+
+      // You could determine league from game data if available
+      if (_game?.league != null) {
+        final leagueName = _game!.league!.toLowerCase();
+        if (leagueName.contains('premier') || leagueName.contains('epl')) {
+          league = 'eng.1';
+        } else if (leagueName.contains('la liga')) {
+          league = 'esp.1';
+        } else if (leagueName.contains('bundesliga')) {
+          league = 'ger.1';
+        } else if (leagueName.contains('serie a')) {
+          league = 'ita.1';
+        } else if (leagueName.contains('ligue 1')) {
+          league = 'fra.1';
+        } else if (leagueName.contains('mls')) {
+          league = 'usa.1';
+        } else if (leagueName.contains('champions')) {
+          league = 'uefa.champions';
+        }
+      }
+
+      // Now fetch the game summary directly with the resolved ESPN ID
+      final summaryUrl = 'https://site.api.espn.com/apis/site/v2/sports/soccer/$league/summary?event=$espnGameId';
+      print('Fetching summary from: $summaryUrl');
+
+      final summaryResponse = await http.get(Uri.parse(summaryUrl));
+
+      if (summaryResponse.statusCode == 200) {
+        final summaryData = json.decode(summaryResponse.body);
+        print('✅ Soccer summary data loaded');
+
+        // Store the event details for use in tabs
+        setState(() {
+          _eventDetails = summaryData;
+          _isLoading = false;
+        });
+
+        // Log available data
+        print('Available data keys: ${summaryData.keys.toList()}');
+        if (summaryData['boxscore'] != null) {
+          print('✅ Box score data available');
+        }
+        if (summaryData['standings'] != null) {
+          print('✅ Standings data available');
+        }
+        if (summaryData['headToHeadGames'] != null) {
+          print('✅ Head-to-head data available');
+        }
+      } else {
+        print('❌ Failed to fetch soccer summary with status ${summaryResponse.statusCode}');
+        print('Response: ${summaryResponse.body.substring(0, 200)}...');
+        setState(() => _isLoading = false);
+      }
+
+      print('=== SOCCER DETAILS LOADING END ===\n');
+    } catch (e, stackTrace) {
+      print('❌ Error loading soccer details: $e');
+      print('Stack trace: $stackTrace');
+      setState(() => _isLoading = false);
+    }
+  }
+
   String _formatEventTime(DateTime? gameTime) {
     if (gameTime == null) return '';
     final now = DateTime.now();
@@ -317,6 +428,13 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                       const Tab(text: 'Box Score'),
                       const Tab(text: 'Stats'),
                     ]
+                  : widget.sport.toUpperCase() == 'SOCCER'
+                  ? [
+                      const Tab(text: 'Overview'),
+                      const Tab(text: 'Stats'),
+                      const Tab(text: 'Standings'),
+                      const Tab(text: 'H2H'),
+                    ]
                   : [
                       const Tab(text: 'Overview'),
                       if (_isCombatSport)
@@ -342,6 +460,13 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                           _buildBaseballMatchupTab(),
                           _buildBaseballBoxScoreTab(),
                           _buildBaseballStatsTab(),
+                        ]
+                      : widget.sport.toUpperCase() == 'SOCCER'
+                      ? [
+                          _buildSoccerOverviewTab(),
+                          _buildSoccerStatsTab(),
+                          _buildSoccerStandingsTab(),
+                          _buildSoccerH2HTab(),
                         ]
                       : [
                           _buildOverviewTab(),
@@ -2608,12 +2733,16 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                   ),
                 ),
                 const SizedBox(height: 16),
+                _buildRecordRow('Overall', overallRecord),
                 _buildRecordRow('Home', homeRecord),
                 _buildRecordRow('Away', awayRecord),
-                _buildRecordRow('Division', divisionRecord),
-                _buildRecordRow('Last 10', last10Record),
-                _buildRecordRow('Day Games', dayRecord),
-                _buildRecordRow('Night Games', nightRecord),
+                // Only show these for non-MLB sports since ESPN doesn't provide them for MLB
+                if (widget.sport.toUpperCase() != 'MLB') ...[
+                  _buildRecordRow('Division', divisionRecord),
+                  _buildRecordRow('Last 10', last10Record),
+                  _buildRecordRow('Day Games', dayRecord),
+                  _buildRecordRow('Night Games', nightRecord),
+                ],
               ],
             ),
           ),
@@ -2755,6 +2884,714 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
 
   void _createPool() {
     // TODO: Implement pool creation
+  }
+
+  // Soccer-specific tab builders
+  Widget _buildSoccerOverviewTab() {
+    if (_eventDetails == null) {
+      return const Center(child: Text('Loading match details...'));
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Match Info Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceBlue,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+            ),
+            child: Column(
+              children: [
+                // Teams and Score
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildTeamColumn(_game!.homeTeam, _game!.homeTeamLogo, true),
+                    Column(
+                      children: [
+                        Text(
+                          _game!.status == 'scheduled'
+                              ? DateFormat('MMM d').format(_game!.gameTime)
+                              : '${_game!.homeScore ?? 0} - ${_game!.awayScore ?? 0}',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryCyan,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _game!.status == 'scheduled'
+                              ? DateFormat('h:mm a').format(_game!.gameTime)
+                              : _game!.status.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                    _buildTeamColumn(_game!.awayTeam, _game!.awayTeamLogo, false),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Venue
+                if (_game!.venue != null) ...[
+                  const Divider(color: AppTheme.borderCyan),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.stadium, size: 16, color: Colors.grey),
+                      const SizedBox(width: 8),
+                      Text(
+                        _game!.venue!,
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Basic Odds Display (not detailed - that's for Edge Card)
+          if (_game!.odds != null && _game!.odds!.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceBlue,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'MATCH ODDS',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryCyan,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildOddsColumn('Home', _game!.odds!['home'] ?? 'N/A'),
+                      _buildOddsColumn('Draw', _game!.odds!['draw'] ?? 'N/A'),
+                      _buildOddsColumn('Away', _game!.odds!['away'] ?? 'N/A'),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Text(
+                      'For detailed odds from all bookmakers, check Edge Cards',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSoccerStatsTab() {
+    if (_eventDetails == null) {
+      return const Center(child: Text('Loading stats...'));
+    }
+
+    final boxscore = _eventDetails!['boxscore'] as Map<String, dynamic>?;
+    final teams = boxscore?['teams'] as List? ?? [];
+    final form = boxscore?['form'] as List? ?? [];
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Team Form
+          if (form.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceBlue,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'RECENT FORM',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryCyan,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ...form.map((teamForm) {
+                    final team = teamForm['team'] ?? {};
+                    final games = teamForm['games'] as List? ?? [];
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          team['displayName'] ?? 'Unknown',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: games.take(5).map((game) {
+                            final result = game['result'] ?? '';
+                            return Container(
+                              margin: const EdgeInsets.only(right: 8),
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: result == 'W'
+                                    ? Colors.green
+                                    : result == 'L'
+                                    ? Colors.red
+                                    : Colors.orange,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  result,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    );
+                  }).toList(),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Season Statistics
+          if (teams.isNotEmpty) ...[
+            ...teams.map((team) {
+              final teamInfo = team['team'] ?? {};
+              final stats = team['statistics'] as List? ?? [];
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceBlue,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      teamInfo['displayName'] ?? 'Unknown',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ...stats.map((stat) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              stat['label'] ?? stat['name'] ?? '',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                            Text(
+                              stat['displayValue'] ?? 'N/A',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                ),
+              );
+            }).toList(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSoccerStandingsTab() {
+    if (_eventDetails == null) {
+      return const Center(child: Text('Loading standings...'));
+    }
+
+    // Standings can be either a List or a Map, handle both cases
+    dynamic standingsData = _eventDetails!['standings'];
+    List standings = [];
+
+    if (standingsData is List) {
+      standings = standingsData;
+    } else if (standingsData is Map) {
+      // If it's a map, it might contain the standings in a nested structure
+      // Try to extract the actual standings list
+      if (standingsData['groups'] is List) {
+        standings = standingsData['groups'] as List;
+      } else if (standingsData['entries'] is List) {
+        standings = standingsData['entries'] as List;
+      }
+    }
+
+    if (standings.isEmpty) {
+      return const Center(child: Text('Standings not available'));
+    }
+
+    // Get the first group (usually the main league table)
+    final group = standings.isNotEmpty ? standings[0] : null;
+    List entries = [];
+
+    // The standings can be in different formats
+    if (group != null) {
+      final standingsData = group['standings'];
+      if (standingsData is List) {
+        entries = standingsData;
+      } else if (standingsData is Map) {
+        // ESPN sometimes returns standings as a map with 'entries' key
+        entries = standingsData['entries'] ?? [];
+      }
+    }
+
+    if (entries.isEmpty) {
+      return const Center(child: Text('No standings data available'));
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceBlue,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'LEAGUE STANDINGS',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.primaryCyan,
+                letterSpacing: 1.2,
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Table headers
+            Row(
+              children: [
+                const SizedBox(width: 25),
+                Expanded(flex: 3, child: Text('Team', style: TextStyle(color: Colors.grey[400], fontSize: 11, fontWeight: FontWeight.bold))),
+                SizedBox(width: 28, child: Text('P', style: TextStyle(color: Colors.grey[400], fontSize: 11, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
+                SizedBox(width: 28, child: Text('W', style: TextStyle(color: Colors.grey[400], fontSize: 11, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
+                SizedBox(width: 28, child: Text('D', style: TextStyle(color: Colors.grey[400], fontSize: 11, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
+                SizedBox(width: 28, child: Text('L', style: TextStyle(color: Colors.grey[400], fontSize: 11, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
+                SizedBox(width: 32, child: Text('GD', style: TextStyle(color: Colors.grey[400], fontSize: 11, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
+                SizedBox(width: 32, child: Text('Pts', style: TextStyle(color: Colors.grey[400], fontSize: 11, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
+              ],
+            ),
+            const Divider(color: AppTheme.borderCyan, height: 20),
+            // Table rows
+            ...entries.map((entry) {
+              // Team can be either a string or a map
+              String teamName = 'Unknown';
+              if (entry['team'] is String) {
+                teamName = entry['team'];
+              } else if (entry['team'] is Map) {
+                final teamMap = entry['team'] as Map;
+                teamName = teamMap['displayName'] ?? teamMap['name'] ?? 'Unknown';
+              }
+
+              final stats = entry['stats'] as List? ?? [];
+
+              // Extract stats including rank
+              String gamesPlayed = '0';
+              String wins = '0';
+              String draws = '0';
+              String losses = '0';
+              String goalDiff = '0';
+              String points = '0';
+              String rank = '';
+
+              for (final stat in stats) {
+                final name = stat['name']?.toString() ?? '';
+                final value = stat['displayValue']?.toString() ?? '0';
+
+                switch (name.toLowerCase()) {
+                  case 'gamesplayed':
+                  case 'games played':
+                  case 'gp':
+                    gamesPlayed = value;
+                    break;
+                  case 'wins':
+                  case 'w':
+                    wins = value;
+                    break;
+                  case 'ties':
+                  case 'draws':
+                  case 'd':
+                    draws = value;
+                    break;
+                  case 'losses':
+                  case 'l':
+                    losses = value;
+                    break;
+                  case 'point differential':
+                  case 'goal difference':
+                  case 'gd':
+                  case 'pointdifferential':
+                    goalDiff = value;
+                    break;
+                  case 'points':
+                  case 'pts':
+                  case 'p':
+                    points = value;
+                    break;
+                  case 'rank':
+                  case 'r':
+                    rank = value;
+                    break;
+                }
+              }
+
+              // If rank wasn't in stats, try to get it from entry
+              if (rank.isEmpty && entry['rank'] != null) {
+                rank = entry['rank'].toString();
+              }
+
+              final isOurTeam = teamName == widget.gameData?.homeTeam ||
+                               teamName == widget.gameData?.awayTeam;
+
+              return Container(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: isOurTeam ? AppTheme.primaryCyan.withOpacity(0.1) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 25,
+                      child: Text(
+                        rank,
+                        style: TextStyle(
+                          color: isOurTeam ? AppTheme.primaryCyan : Colors.white,
+                          fontWeight: isOurTeam ? FontWeight.bold : FontWeight.normal,
+                          fontSize: 12,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: Text(
+                        teamName,
+                        style: TextStyle(
+                          color: isOurTeam ? AppTheme.primaryCyan : Colors.white,
+                          fontWeight: isOurTeam ? FontWeight.bold : FontWeight.normal,
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 28,
+                      child: Text(
+                        gamesPlayed,
+                        style: TextStyle(
+                          color: isOurTeam ? AppTheme.primaryCyan : Colors.white70,
+                          fontWeight: isOurTeam ? FontWeight.bold : FontWeight.normal,
+                          fontSize: 12,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 28,
+                      child: Text(
+                        wins,
+                        style: TextStyle(
+                          color: isOurTeam ? AppTheme.primaryCyan : Colors.white70,
+                          fontWeight: isOurTeam ? FontWeight.bold : FontWeight.normal,
+                          fontSize: 12,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 28,
+                      child: Text(
+                        draws,
+                        style: TextStyle(
+                          color: isOurTeam ? AppTheme.primaryCyan : Colors.white70,
+                          fontWeight: isOurTeam ? FontWeight.bold : FontWeight.normal,
+                          fontSize: 12,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 28,
+                      child: Text(
+                        losses,
+                        style: TextStyle(
+                          color: isOurTeam ? AppTheme.primaryCyan : Colors.white70,
+                          fontWeight: isOurTeam ? FontWeight.bold : FontWeight.normal,
+                          fontSize: 12,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 32,
+                      child: Text(
+                        goalDiff,
+                        style: TextStyle(
+                          color: isOurTeam ? AppTheme.primaryCyan : Colors.white70,
+                          fontWeight: isOurTeam ? FontWeight.bold : FontWeight.normal,
+                          fontSize: 12,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 32,
+                      child: Text(
+                        points,
+                        style: TextStyle(
+                          color: isOurTeam ? AppTheme.primaryCyan : Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSoccerH2HTab() {
+    if (_eventDetails == null) {
+      return const Center(child: Text('Loading head-to-head...'));
+    }
+
+    // Handle both List and Map cases for head-to-head data
+    dynamic h2hData = _eventDetails!['headToHeadGames'];
+    List h2hGames = [];
+
+    if (h2hData is List) {
+      h2hGames = h2hData;
+    } else if (h2hData is Map) {
+      // If it's a map, try to extract the games list
+      if (h2hData['games'] is List) {
+        h2hGames = h2hData['games'] as List;
+      } else if (h2hData['events'] is List) {
+        h2hGames = h2hData['events'] as List;
+      }
+    }
+
+    if (h2hGames.isEmpty) {
+      return const Center(child: Text('No previous meetings found'));
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceBlue,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'HEAD TO HEAD',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.primaryCyan,
+                letterSpacing: 1.2,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...h2hGames.take(10).map((game) {
+              final date = game['date'] ?? '';
+              final homeTeam = game['homeTeam'] ?? {};
+              final awayTeam = game['awayTeam'] ?? {};
+              final homeScore = game['homeScore'] ?? 0;
+              final awayScore = game['awayScore'] ?? 0;
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.cardBlue,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppTheme.borderCyan.withOpacity(0.2)),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      date,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Text(
+                          homeTeam['displayName'] ?? '',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        Text(
+                          '$homeScore - $awayScore',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryCyan,
+                          ),
+                        ),
+                        Text(
+                          awayTeam['displayName'] ?? '',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTeamColumn(String name, String? logo, bool isHome) {
+    return Column(
+      children: [
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: AppTheme.borderCyan.withOpacity(0.2),
+            shape: BoxShape.circle,
+          ),
+          child: logo != null
+              ? CachedNetworkImage(
+                  imageUrl: logo,
+                  placeholder: (_, __) => Icon(
+                    Icons.sports_soccer,
+                    size: 30,
+                    color: Colors.grey,
+                  ),
+                  errorWidget: (_, __, ___) => Icon(
+                    Icons.sports_soccer,
+                    size: 30,
+                    color: Colors.grey,
+                  ),
+                )
+              : Icon(
+                  Icons.sports_soccer,
+                  size: 30,
+                  color: Colors.grey,
+                ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          name,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        Text(
+          isHome ? 'HOME' : 'AWAY',
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.grey,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOddsColumn(String label, String odds) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          odds,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      ],
+    );
   }
 }
 

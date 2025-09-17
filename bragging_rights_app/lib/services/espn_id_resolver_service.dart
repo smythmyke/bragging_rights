@@ -88,10 +88,37 @@ class EspnIdResolverService {
   /// Match game with ESPN API to find the ESPN ID
   Future<String?> _matchWithEspn(GameModel game) async {
     try {
-      final sportPath = _espnEndpoints[game.sport.toUpperCase()];
+      var sportPath = _espnEndpoints[game.sport.toUpperCase()];
       if (sportPath == null) {
         debugPrint('❌ No ESPN endpoint for sport: ${game.sport}');
         return null;
+      }
+
+      // Special handling for soccer - need to specify league
+      if (game.sport.toUpperCase() == 'SOCCER') {
+        String league = 'eng.1'; // Default to Premier League
+
+        // Determine league from game data if available
+        if (game.league != null) {
+          final leagueName = game.league!.toLowerCase();
+          if (leagueName.contains('premier') || leagueName.contains('epl')) {
+            league = 'eng.1';
+          } else if (leagueName.contains('la liga')) {
+            league = 'esp.1';
+          } else if (leagueName.contains('bundesliga')) {
+            league = 'ger.1';
+          } else if (leagueName.contains('serie a')) {
+            league = 'ita.1';
+          } else if (leagueName.contains('ligue 1')) {
+            league = 'fra.1';
+          } else if (leagueName.contains('mls')) {
+            league = 'usa.1';
+          } else if (leagueName.contains('champions')) {
+            league = 'uefa.champions';
+          }
+        }
+        sportPath = 'soccer/$league';
+        debugPrint('🌍 Using soccer league: $league');
       }
 
       final url = 'https://site.api.espn.com/apis/site/v2/sports/$sportPath/scoreboard';
@@ -148,6 +175,12 @@ class EspnIdResolverService {
       final homeTeam = homeCompetitor['team']?['displayName']?.toString() ?? '';
       final awayTeam = awayCompetitor['team']?['displayName']?.toString() ?? '';
 
+      // Debug output for soccer
+      if (game.sport.toUpperCase() == 'SOCCER') {
+        debugPrint('   Comparing ESPN: $awayTeam @ $homeTeam');
+        debugPrint('   With our game: ${game.awayTeam} @ ${game.homeTeam}');
+      }
+
       // Check if teams match
       final teamsMatch = _teamsMatch(homeTeam, awayTeam, game.homeTeam, game.awayTeam);
 
@@ -179,18 +212,51 @@ class EspnIdResolverService {
     final normalizedGameHome = _normalizeTeamName(gameHome);
     final normalizedGameAway = _normalizeTeamName(gameAway);
 
+    debugPrint('     ESPN normalized: [$normalizedEspnAway @ $normalizedEspnHome]');
+    debugPrint('     Game normalized: [$normalizedGameAway @ $normalizedGameHome]');
+
     // Check both normal order and reversed (in case teams are swapped)
-    return (normalizedEspnHome == normalizedGameHome && normalizedEspnAway == normalizedGameAway) ||
-           (normalizedEspnHome == normalizedGameAway && normalizedEspnAway == normalizedGameHome);
+    final normalMatch = (normalizedEspnHome == normalizedGameHome && normalizedEspnAway == normalizedGameAway);
+    final reversedMatch = (normalizedEspnHome == normalizedGameAway && normalizedEspnAway == normalizedGameHome);
+
+    if (normalMatch) {
+      debugPrint('     ✅ Teams match (normal order)');
+    } else if (reversedMatch) {
+      debugPrint('     ✅ Teams match (reversed order)');
+    } else {
+      debugPrint('     ❌ Teams do not match');
+    }
+
+    return normalMatch || reversedMatch;
   }
 
   /// Normalize team name for comparison
   String _normalizeTeamName(String team) {
-    return team
+    // First do basic normalization
+    String normalized = team
         .toLowerCase()
+        .trim();
+
+    // Handle special cases for soccer teams that cause matching issues
+    // Brighton & Hove Albion vs Brighton and Hove Albion
+    if (normalized.contains('brighton')) {
+      return 'brighton';  // Simplify to just "Brighton"
+    }
+
+    // Tottenham Hotspur vs Tottenham
+    if (normalized.contains('tottenham')) {
+      return 'tottenham';  // Simplify to just "Tottenham"
+    }
+
+    // For other teams, do standard normalization
+    normalized = normalized
+        .replaceAll(' and ', ' ')
+        .replaceAll(' & ', ' ')
         .replaceAll(RegExp(r'[^a-z0-9\s]'), '') // Remove special characters
         .replaceAll(RegExp(r'\s+'), ' ') // Normalize spaces
         .trim();
+
+    return normalized;
   }
 
   /// Save ID mapping to Firestore

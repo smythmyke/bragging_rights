@@ -11,6 +11,8 @@ import 'edge/sports/espn_nhl_service.dart';
 import 'edge/sports/espn_mlb_service.dart';
 import 'game_odds_enrichment_service.dart';
 import 'odds_api_service.dart';
+import 'firestore_cache_service.dart';
+import 'live_score_update_service.dart';
 
 /// Optimized games service with intelligent loading and timeframe categorization
 class OptimizedGamesService {
@@ -22,7 +24,9 @@ class OptimizedGamesService {
   final UserPreferencesService _prefsService = UserPreferencesService();
   final GameOddsEnrichmentService _oddsService = GameOddsEnrichmentService();
   final OddsApiService _oddsApiService = OddsApiService();
-  
+  final FirestoreCacheService _cacheService = FirestoreCacheService();
+  final LiveScoreUpdateService _liveScoreService = LiveScoreUpdateService();
+
   // Sport-specific services (ESPN as fallback)
   final EspnNflService _nflService = EspnNflService();
   final EspnNbaService _nbaService = EspnNbaService();
