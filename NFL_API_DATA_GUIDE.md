@@ -2,9 +2,13 @@
 
 ## ESPN API Endpoints
 
-### Main Endpoints
-- **Scoreboard**: `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard`
+### Main Endpoints (Verified & In Use)
+- **Scoreboard**: `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates={YYYYMMDD}`
+  - Returns games for specific date
+  - Used for: Game lists, basic scores, team records
 - **Game Summary**: `https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event={gameId}`
+  - Primary data source for game details
+  - Returns: boxscore, standings, leaders, injuries, weather, odds, winprobability, lastFiveGames
 
 ## Available Data from ESPN API
 
@@ -100,7 +104,16 @@ Based on API testing:
 - **Quarter/Half Betting**: Period-specific analysis
 - **Player Prop Performance**: Key player prop tracking
 
-#### 3. **Weather & Conditions Card** (For outdoor games)
+#### 3. **Injury Report Card** (Critical for betting & fantasy)
+- **Real-Time Status**: Out, Questionable, Doubtful, Probable
+- **Injury Details**: Type and severity of injuries
+- **Practice Participation**: Weekly practice reports
+- **Expected Return**: Timeline for return to play
+- **Depth Chart Impact**: Replacement players and adjustments
+- **Fantasy Implications**: How injuries affect player values
+- **Betting Line Movement**: How injuries affect spreads
+
+#### 4. **Weather & Conditions Card** (For outdoor games)
 - **Current Conditions**: Temp, wind, precipitation
 - **Impact Analysis**: How weather affects gameplay
 - **Historical Performance**: Teams in similar conditions
@@ -152,16 +165,7 @@ Based on API testing:
 - **Home/Away Split**: Performance at each venue
 - **Playoff History**: Postseason matchups
 - **Common Opponents**: Comparative performance
-
-#### Tab 5: **Injuries**
-- **Injury Report**:
-  - Player status (Out, Questionable, Doubtful, Probable)
-  - Injury details
-  - Practice participation
-  - Expected return
-- **Depth Chart Impact**: Replacement players
-- **Fantasy Impact**: How injuries affect fantasy value
-- **Recent Updates**: Latest injury news
+- **Last 5 Games**: Recent form for both teams
 
 ---
 

@@ -52,6 +52,8 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         ? 4
         : widget.sport.toUpperCase() == 'NBA'
         ? 5
+        : widget.sport.toUpperCase() == 'NFL'
+        ? 5
         : 5;
     _tabController = TabController(length: tabCount, vsync: this);
     _tabController.addListener(() {
@@ -85,6 +87,8 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         await _loadSoccerDetails();
       } else if (widget.sport.toUpperCase() == 'NBA') {
         await _loadNBADetails();
+      } else if (widget.sport.toUpperCase() == 'NFL') {
+        await _loadNFLDetails();
       } else {
         // TODO: Implement for other sports
       }
@@ -169,7 +173,16 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         setState(() {
           _boxScore = summaryData['boxscore'];
           _gameData = summaryData;
-          _eventDetails = summaryData; // Ensure event details is populated
+          // Use header.competitions for event details which has the team/competitor data
+          if (summaryData['header']?['competitions'] != null &&
+              (summaryData['header']['competitions'] as List).isNotEmpty) {
+            _eventDetails = {
+              ...summaryData,
+              'competitions': summaryData['header']['competitions'],
+            };
+          } else {
+            _eventDetails = summaryData;
+          }
         });
       } else {
         print('❌ Summary API failed with status ${summaryResponse.statusCode}');
@@ -177,8 +190,17 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
       }
 
       // Fetch scoreboard for additional data like weather and probables
-      // Use date-specific scoreboard to ensure we get the right game
-      final gameDate = _game?.gameTime ?? DateTime.now();
+      // Parse the game date from the header if available, otherwise use game time
+      DateTime? gameDate;
+      if (_eventDetails?['header']?['competitions']?[0]?['date'] != null) {
+        try {
+          gameDate = DateTime.parse(_eventDetails!['header']['competitions'][0]['date']);
+        } catch (e) {
+          print('Error parsing date from header: $e');
+        }
+      }
+      gameDate ??= _game?.gameTime ?? DateTime.now();
+
       final dateString = '${gameDate.year}${gameDate.month.toString().padLeft(2, '0')}${gameDate.day.toString().padLeft(2, '0')}';
       final scoreboardUrl = 'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard?dates=$dateString';
       print('\nFetching scoreboard from: $scoreboardUrl');
@@ -459,7 +481,13 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                       const Tab(text: 'Stats'),
                       const Tab(text: 'Standings'),
                       const Tab(text: 'H2H'),
-                      const Tab(text: 'Injuries'),
+                    ]
+                  : widget.sport.toUpperCase() == 'NFL'
+                  ? [
+                      const Tab(text: 'Overview'),
+                      const Tab(text: 'Stats'),
+                      const Tab(text: 'Standings'),
+                      const Tab(text: 'H2H'),
                     ]
                   : [
                       const Tab(text: 'Overview'),
@@ -501,6 +529,13 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                           _buildNBAStandingsTab(),
                           _buildNBAH2HTab(),
                           _buildNBAInjuriesTab(),
+                        ]
+                      : widget.sport.toUpperCase() == 'NFL'
+                      ? [
+                          _buildNFLOverviewTab(),
+                          _buildNFLStatsTab(),
+                          _buildNFLStandingsTab(),
+                          _buildNFLH2HTab(),
                         ]
                       : [
                           _buildOverviewTab(),
@@ -1842,13 +1877,47 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
     Map<String, dynamic>? homePitcher;
     String? awayTeamName;
     String? homeTeamName;
+    String? awayLogoUrl;
+    String? homeLogoUrl;
 
-    // Get team names for logo lookup
+    // Get team names and logos from competitors
     for (final team in competitors) {
       if (team['homeAway'] == 'away') {
         awayTeamName = team['team']?['displayName'];
+        // Try to get logo URL directly from API response
+        final logos = team['team']?['logos'] as List?;
+        if (logos != null && logos.isNotEmpty) {
+          awayLogoUrl = logos[0]['href'];
+        }
       } else {
         homeTeamName = team['team']?['displayName'];
+        // Try to get logo URL directly from API response
+        final logos = team['team']?['logos'] as List?;
+        if (logos != null && logos.isNotEmpty) {
+          homeLogoUrl = logos[0]['href'];
+        }
+      }
+    }
+
+    // Fallback to game data if team names not found
+    awayTeamName ??= _game?.awayTeam;
+    homeTeamName ??= _game?.homeTeam;
+
+    // Try to get logos from boxscore teams if not found
+    if ((awayLogoUrl == null || homeLogoUrl == null) && _boxScore != null) {
+      final teams = _boxScore!['teams'] as List?;
+      if (teams != null) {
+        for (final teamData in teams) {
+          final team = teamData['team'];
+          if (team != null) {
+            final displayName = team['displayName'];
+            if (displayName == awayTeamName && awayLogoUrl == null) {
+              awayLogoUrl = team['logo'];
+            } else if (displayName == homeTeamName && homeLogoUrl == null) {
+              homeLogoUrl = team['logo'];
+            }
+          }
+        }
       }
     }
 
@@ -1902,7 +1971,17 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                 Expanded(
                   child: Column(
                     children: [
-                      if (awayTeamName != null) ...[
+                      // Show logo if we have URL or team name
+                      if (awayLogoUrl != null) ...[
+                        Image.network(
+                          awayLogoUrl,
+                          width: 60,
+                          height: 60,
+                          errorBuilder: (context, error, stack) =>
+                            const Icon(Icons.sports_baseball, size: 60, color: Colors.grey),
+                        ),
+                        const SizedBox(height: 8),
+                      ] else if (awayTeamName != null) ...[
                         FutureBuilder<TeamLogoData?>(
                           future: TeamLogoService().getTeamLogo(
                             teamName: awayTeamName,
@@ -1921,6 +2000,9 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                             return const Icon(Icons.sports_baseball, size: 60, color: Colors.grey);
                           },
                         ),
+                        const SizedBox(height: 8),
+                      ] else ...[
+                        const Icon(Icons.sports_baseball, size: 60, color: Colors.grey),
                         const SizedBox(height: 8),
                       ],
                       _buildPitcherInfo(awayPitcher, true),
@@ -1947,7 +2029,17 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                 Expanded(
                   child: Column(
                     children: [
-                      if (homeTeamName != null) ...[
+                      // Show logo if we have URL or team name
+                      if (homeLogoUrl != null) ...[
+                        Image.network(
+                          homeLogoUrl,
+                          width: 60,
+                          height: 60,
+                          errorBuilder: (context, error, stack) =>
+                            const Icon(Icons.sports_baseball, size: 60, color: Colors.grey),
+                        ),
+                        const SizedBox(height: 8),
+                      ] else if (homeTeamName != null) ...[
                         FutureBuilder<TeamLogoData?>(
                           future: TeamLogoService().getTeamLogo(
                             teamName: homeTeamName,
@@ -1966,6 +2058,9 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                             return const Icon(Icons.sports_baseball, size: 60, color: Colors.grey);
                           },
                         ),
+                        const SizedBox(height: 8),
+                      ] else ...[
+                        const Icon(Icons.sports_baseball, size: 60, color: Colors.grey),
                         const SizedBox(height: 8),
                       ],
                       _buildPitcherInfo(homePitcher, false),
@@ -2679,8 +2774,123 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
     );
   }
 
+  Widget _buildBoxScoreStats(Map<String, dynamic> teamData) {
+    final team = teamData['team'];
+    final statistics = teamData['statistics'] as List? ?? [];
+
+    // Find batting and pitching stats
+    Map<String, dynamic>? battingStats;
+    Map<String, dynamic>? pitchingStats;
+
+    for (final statGroup in statistics) {
+      if (statGroup['name'] == 'batting') {
+        battingStats = statGroup;
+      } else if (statGroup['name'] == 'pitching') {
+        pitchingStats = statGroup;
+      }
+    }
+
+    return Column(
+      children: [
+        if (battingStats != null) ...[
+          _buildStatSection('Batting Statistics', battingStats),
+          const SizedBox(height: 16),
+        ],
+        if (pitchingStats != null) ...[
+          _buildStatSection('Pitching Statistics', pitchingStats),
+          const SizedBox(height: 16),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildStatSection(String title, Map<String, dynamic> statGroup) {
+    final stats = statGroup['stats'] as List? ?? [];
+
+    // Select key stats to display
+    final keyStats = <String, String>{};
+    for (final stat in stats) {
+      final name = stat['name'] as String;
+      final displayValue = stat['displayValue'] as String;
+      final displayName = stat['displayName'] as String;
+
+      // Pick important stats based on category
+      if (title.contains('Batting')) {
+        if (['avg', 'hits', 'runs', 'RBIs', 'homeRuns', 'strikeouts', 'walks', 'OPS'].contains(name)) {
+          keyStats[displayName] = displayValue;
+        }
+      } else if (title.contains('Pitching')) {
+        if (['ERA', 'WHIP', 'strikeouts', 'walks', 'innings', 'earnedRuns', 'hits', 'saves'].contains(name)) {
+          keyStats[displayName] = displayValue;
+        }
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceBlue,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primaryCyan,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...keyStats.entries.map((entry) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  entry.key,
+                  style: TextStyle(color: Colors.grey[400]),
+                ),
+                Text(
+                  entry.value,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTeamStatsContent() {
-    // Get the selected team's data
+    // Try to get stats from box score if available
+    if (_boxScore != null && _boxScore!['teams'] != null) {
+      final teams = _boxScore!['teams'] as List;
+
+      // Find the selected team's stats from box score
+      for (final teamData in teams) {
+        final team = teamData['team'];
+        final isHome = _selectedTeam == 'home' &&
+            (team['displayName'] == _game?.homeTeam || team['location'] == _game?.homeTeam);
+        final isAway = _selectedTeam == 'away' &&
+            (team['displayName'] == _game?.awayTeam || team['location'] == _game?.awayTeam);
+
+        if (isHome || isAway) {
+          // Use box score statistics
+          return _buildBoxScoreStats(teamData);
+        }
+      }
+    }
+
+    // Fallback to competitors data if available
     final competitors = _eventDetails?['competitions']?[0]?['competitors'] as List? ?? [];
     Map<String, dynamic>? selectedTeamData;
 
@@ -3741,6 +3951,599 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
     } catch (e) {
       print('Error loading NBA details: $e');
     }
+  }
+
+  Future<void> _loadNFLDetails() async {
+    try {
+      print('=== LOADING NFL DETAILS ===');
+      print('Game ID: ${widget.gameId}');
+      print('Teams: ${_game?.awayTeam} vs ${_game?.homeTeam}');
+
+      // Use the ESPN ID resolver service
+      final resolver = EspnIdResolverService();
+
+      // Check if game already has ESPN ID
+      var espnGameId = _game?.espnId;
+
+      // If no ESPN ID, resolve it
+      if (espnGameId == null && _game != null) {
+        print('Resolving ESPN ID using resolver service...');
+        espnGameId = await resolver.resolveEspnId(_game!);
+
+        if (espnGameId != null) {
+          print('✅ ESPN ID resolved: $espnGameId');
+        } else {
+          print('❌ Could not resolve ESPN ID');
+          // Show user-friendly message
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Game details are temporarily unavailable'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+          return;
+        }
+      } else if (espnGameId == null) {
+        print('❌ No game data available to resolve ESPN ID');
+        return;
+      }
+
+      print('Using ESPN ID: $espnGameId');
+
+      // Fetch game summary data from ESPN
+      final summaryUrl = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=$espnGameId';
+      print('Fetching summary from: $summaryUrl');
+
+      final summaryResponse = await http.get(Uri.parse(summaryUrl));
+      print('Summary response status: ${summaryResponse.statusCode}');
+
+      if (summaryResponse.statusCode == 200) {
+        final summaryData = json.decode(summaryResponse.body);
+
+        // Log available data sections
+        print('Summary data keys: ${summaryData.keys.toList()}');
+
+        setState(() {
+          _boxScore = summaryData['boxscore'];
+          _gameData = summaryData;
+          // Use header.competitions for event details
+          if (summaryData['header']?['competitions'] != null &&
+              (summaryData['header']['competitions'] as List).isNotEmpty) {
+            _eventDetails = {
+              ...summaryData,
+              'competitions': summaryData['header']['competitions'],
+            };
+          } else {
+            _eventDetails = summaryData;
+          }
+        });
+
+        // Also check for weather data in scoreboard if outdoor venue
+        if (summaryData['header']?['competitions']?[0]?['venue']?['indoor'] == false) {
+          print('Outdoor venue detected, checking for weather data...');
+          // Weather might be in the scoreboard endpoint for live/upcoming games
+          await _loadNFLWeatherData(espnGameId);
+        }
+      } else {
+        print('❌ Summary API failed with status ${summaryResponse.statusCode}');
+      }
+    } catch (e, stackTrace) {
+      print('❌ Error loading NFL details: $e');
+      print('Stack trace: $stackTrace');
+    }
+  }
+
+  Future<void> _loadNFLWeatherData(String espnGameId) async {
+    try {
+      // Get current date or game date
+      DateTime? gameDate;
+      if (_eventDetails?['header']?['competitions']?[0]?['date'] != null) {
+        try {
+          gameDate = DateTime.parse(_eventDetails!['header']['competitions'][0]['date']);
+        } catch (e) {
+          print('Error parsing date from header: $e');
+        }
+      }
+      gameDate ??= _game?.gameTime ?? DateTime.now();
+
+      final dateString = '${gameDate.year}${gameDate.month.toString().padLeft(2, '0')}${gameDate.day.toString().padLeft(2, '0')}';
+      final scoreboardUrl = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=$dateString';
+
+      print('Checking scoreboard for weather: $scoreboardUrl');
+      final response = await http.get(Uri.parse(scoreboardUrl));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final events = data['events'] as List? ?? [];
+
+        for (final event in events) {
+          if (event['id'] == espnGameId) {
+            final weather = event['competitions']?[0]?['weather'];
+            if (weather != null) {
+              print('✅ Weather data found: ${weather['displayValue']}');
+              setState(() {
+                _eventDetails!['weather'] = weather;
+              });
+            }
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      print('Error fetching weather data: $e');
+    }
+  }
+
+  Widget _buildNFLOverviewTab() {
+    if (_eventDetails == null) {
+      return const Center(child: Text('Loading game details...'));
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Score Card
+          _buildNFLScoreCard(),
+          const SizedBox(height: 16),
+
+          // Weather Card (for outdoor venues)
+          if (_eventDetails!['weather'] != null ||
+              _eventDetails!['header']?['competitions']?[0]?['venue']?['indoor'] == false)
+            ...[
+              _buildNFLWeatherCard(),
+              const SizedBox(height: 16),
+            ],
+
+          // Game Leaders
+          if (_eventDetails!['leaders'] != null) ...[
+            _buildNFLLeadersCard(),
+            const SizedBox(height: 16),
+          ],
+
+          // Last Five Games
+          if (_eventDetails!['lastFiveGames'] != null) ...[
+            _buildNFLLastFiveGamesCard(),
+            const SizedBox(height: 16),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNFLScoreCard() {
+    final boxscore = _eventDetails!['boxscore'];
+    final header = _eventDetails!['header'];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceBlue,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          // Teams and Score
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              // Away Team
+              _buildNFLTeamScore(boxscore?['teams']?[0], true),
+              // Score
+              Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        boxscore?['teams']?[0]?['score'] ?? '0',
+                        style: const TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          '-',
+                          style: TextStyle(fontSize: 24),
+                        ),
+                      ),
+                      Text(
+                        boxscore?['teams']?[1]?['score'] ?? '0',
+                        style: const TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Game Status
+                  if (header?['competitions']?[0]?['status']?['type']?['detail'] != null)
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: header!['competitions'][0]['status']['type']['completed'] == true
+                            ? AppTheme.errorPink.withOpacity(0.2)
+                            : AppTheme.successGreen.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        header['competitions'][0]['status']['type']['detail'],
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: header['competitions'][0]['status']['type']['completed'] == true
+                              ? AppTheme.errorPink
+                              : AppTheme.successGreen,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              // Home Team
+              _buildNFLTeamScore(boxscore?['teams']?[1], false),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNFLTeamScore(Map<String, dynamic>? teamData, bool isAway) {
+    if (teamData == null) return const SizedBox();
+
+    final team = teamData['team'];
+    final statistics = teamData['statistics'] as List? ?? [];
+
+    // Find key stats
+    String record = '';
+    for (final stat in statistics) {
+      if (stat['name'] == 'record') {
+        record = stat['displayValue'] ?? '';
+        break;
+      }
+    }
+
+    // Get team name and logo directly from API data
+    final teamName = team?['displayName'] ?? (isAway ? _game?.awayTeam : _game?.homeTeam) ?? (isAway ? 'Away' : 'Home');
+    final logoUrl = team?['logo'];
+
+    return Expanded(
+      child: Column(
+        children: [
+          if (logoUrl != null)
+            CachedNetworkImage(
+              imageUrl: logoUrl,
+              height: 60,
+              width: 60,
+              errorWidget: (context, url, error) => const Icon(
+                Icons.sports_football,
+                size: 60,
+                color: AppTheme.primaryCyan,
+              ),
+            )
+          else
+            const Icon(Icons.sports_football, size: 60, color: AppTheme.primaryCyan),
+          const SizedBox(height: 8),
+          Text(
+            teamName,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          if (record.isNotEmpty)
+            Text(
+              record,
+              style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNFLWeatherCard() {
+    final weather = _eventDetails!['weather'];
+    final venue = _eventDetails!['header']?['competitions']?[0]?['venue'];
+
+    if (weather == null && venue?['indoor'] == true) {
+      return const SizedBox();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceBlue,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.cloud, color: AppTheme.primaryCyan, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'WEATHER CONDITIONS',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primaryCyan,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (weather != null) ...[
+            if (weather['displayValue'] != null)
+              Text(
+                weather['displayValue'],
+                style: const TextStyle(fontSize: 16),
+              ),
+            if (weather['temperature'] != null)
+              Text(
+                'Temperature: ${weather['temperature']}°F',
+                style: TextStyle(color: Colors.grey[400]),
+              ),
+          ] else
+            Text(
+              venue?['indoor'] == false
+                ? 'Weather data will be available closer to game time'
+                : 'Indoor venue',
+              style: TextStyle(color: Colors.grey[400]),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNFLLeadersCard() {
+    final leaders = _eventDetails!['leaders'] as List? ?? [];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceBlue,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'GAME LEADERS',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primaryCyan,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...leaders.map((category) => _buildNFLLeaderCategory(category)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNFLLeaderCategory(Map<String, dynamic> category) {
+    final leaders = category['leaders'] as List? ?? [];
+    if (leaders.isEmpty) return const SizedBox();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            category['displayName'] ?? '',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[400],
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          ...leaders.take(2).map((leader) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    leader['athlete']?['displayName'] ?? '',
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+                Text(
+                  leader['displayValue'] ?? '',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNFLLastFiveGamesCard() {
+    final lastFiveGames = _eventDetails!['lastFiveGames'];
+    if (lastFiveGames == null) return const SizedBox();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceBlue,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'LAST 5 GAMES',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primaryCyan,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Implementation would show recent game results
+          Text(
+            'Recent form analysis',
+            style: TextStyle(color: Colors.grey[400]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNFLStatsTab() {
+    if (_boxScore == null) {
+      return const Center(child: Text('Stats not available'));
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          _buildNFLTeamStatsComparison(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNFLTeamStatsComparison() {
+    final teams = _boxScore!['teams'] as List? ?? [];
+    if (teams.length < 2) return const SizedBox();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceBlue,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'TEAM STATS',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primaryCyan,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Stats comparison would go here
+          // Using statistics from teams[0] and teams[1]
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNFLStandingsTab() {
+    final standings = _eventDetails?['standings'];
+
+    if (standings == null) {
+      return const Center(child: Text('Standings not available'));
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Division standings
+          // Conference standings
+          // Playoff picture
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceBlue,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+            ),
+            child: Text('Division and conference standings'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNFLH2HTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceBlue,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+            ),
+            child: Text('Head-to-head history'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNFLInjuriesTab() {
+    final injuries = _eventDetails?['injuries'];
+
+    if (injuries == null) {
+      return const Center(child: Text('Injury report not available'));
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Injury reports for both teams
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceBlue,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'INJURY REPORT',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryCyan,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Injury list would go here
+                Text('Player injury status and updates'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildNBAOverviewTab() {
