@@ -121,8 +121,12 @@ class EspnIdResolverService {
         debugPrint('🌍 Using soccer league: $league');
       }
 
-      final url = 'https://site.api.espn.com/apis/site/v2/sports/$sportPath/scoreboard';
-      debugPrint('📡 Fetching ESPN scoreboard: $url');
+      // Format date for ESPN API (yyyyMMdd format)
+      final gameDate = game.gameTime.toUtc();
+      final dateString = '${gameDate.year}${gameDate.month.toString().padLeft(2, '0')}${gameDate.day.toString().padLeft(2, '0')}';
+
+      final url = 'https://site.api.espn.com/apis/site/v2/sports/$sportPath/scoreboard?dates=$dateString';
+      debugPrint('📡 Fetching ESPN scoreboard for date $dateString: $url');
 
       final response = await http.get(Uri.parse(url));
 
@@ -246,6 +250,39 @@ class EspnIdResolverService {
     // Tottenham Hotspur vs Tottenham
     if (normalized.contains('tottenham')) {
       return 'tottenham';  // Simplify to just "Tottenham"
+    }
+
+    // Handle NBA team name variations
+    // Thunder vs Oklahoma City Thunder
+    if (normalized.contains('thunder') && !normalized.contains('oklahoma')) {
+      normalized = 'oklahoma city thunder';
+    }
+    if (normalized.contains('rockets') && !normalized.contains('houston')) {
+      normalized = 'houston rockets';
+    }
+    if (normalized.contains('lakers') && !normalized.contains('los angeles')) {
+      normalized = 'los angeles lakers';
+    }
+    if (normalized.contains('clippers') && !normalized.contains('los angeles')) {
+      normalized = 'los angeles clippers';
+    }
+    if (normalized.contains('warriors') && !normalized.contains('golden state')) {
+      normalized = 'golden state warriors';
+    }
+    if (normalized.contains('heat') && !normalized.contains('miami')) {
+      normalized = 'miami heat';
+    }
+    if (normalized.contains('celtics') && !normalized.contains('boston')) {
+      normalized = 'boston celtics';
+    }
+    if (normalized.contains('nets') && !normalized.contains('brooklyn')) {
+      normalized = 'brooklyn nets';
+    }
+    if (normalized.contains('knicks') && !normalized.contains('new york')) {
+      normalized = 'new york knicks';
+    }
+    if (normalized.contains('76ers') && !normalized.contains('philadelphia')) {
+      normalized = 'philadelphia 76ers';
     }
 
     // For other teams, do standard normalization

@@ -50,6 +50,8 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         ? 3
         : widget.sport.toUpperCase() == 'SOCCER'
         ? 4
+        : widget.sport.toUpperCase() == 'NBA'
+        ? 5
         : 5;
     _tabController = TabController(length: tabCount, vsync: this);
     _tabController.addListener(() {
@@ -81,6 +83,8 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         await _loadBaseballDetails();
       } else if (widget.sport.toUpperCase() == 'SOCCER') {
         await _loadSoccerDetails();
+      } else if (widget.sport.toUpperCase() == 'NBA') {
+        await _loadNBADetails();
       } else {
         // TODO: Implement for other sports
       }
@@ -165,6 +169,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         setState(() {
           _boxScore = summaryData['boxscore'];
           _gameData = summaryData;
+          _eventDetails = summaryData; // Ensure event details is populated
         });
       } else {
         print('❌ Summary API failed with status ${summaryResponse.statusCode}');
@@ -172,7 +177,10 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
       }
 
       // Fetch scoreboard for additional data like weather and probables
-      final scoreboardUrl = 'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard';
+      // Use date-specific scoreboard to ensure we get the right game
+      final gameDate = _game?.gameTime ?? DateTime.now();
+      final dateString = '${gameDate.year}${gameDate.month.toString().padLeft(2, '0')}${gameDate.day.toString().padLeft(2, '0')}';
+      final scoreboardUrl = 'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard?dates=$dateString';
       print('\nFetching scoreboard from: $scoreboardUrl');
 
       final scoreboardResponse = await http.get(Uri.parse(scoreboardUrl));
@@ -222,8 +230,18 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
               }
             }
 
+            // Merge scoreboard data with existing event details
             setState(() {
-              _eventDetails = event;
+              // Preserve summary data and merge with scoreboard data
+              _eventDetails = {
+                ..._eventDetails ?? {},
+                ...event,
+                'competitions': [{
+                  ...competition,
+                  'probables': competition['probables'] ?? [],
+                  'weather': competition['weather'] ?? {},
+                }],
+              };
             });
             break;
           }
@@ -435,6 +453,14 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                       const Tab(text: 'Standings'),
                       const Tab(text: 'H2H'),
                     ]
+                  : widget.sport.toUpperCase() == 'NBA'
+                  ? [
+                      const Tab(text: 'Overview'),
+                      const Tab(text: 'Stats'),
+                      const Tab(text: 'Standings'),
+                      const Tab(text: 'H2H'),
+                      const Tab(text: 'Injuries'),
+                    ]
                   : [
                       const Tab(text: 'Overview'),
                       if (_isCombatSport)
@@ -467,6 +493,14 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                           _buildSoccerStatsTab(),
                           _buildSoccerStandingsTab(),
                           _buildSoccerH2HTab(),
+                        ]
+                      : widget.sport.toUpperCase() == 'NBA'
+                      ? [
+                          _buildNBAOverviewTab(),
+                          _buildNBAStatsTab(),
+                          _buildNBAStandingsTab(),
+                          _buildNBAH2HTab(),
+                          _buildNBAInjuriesTab(),
                         ]
                       : [
                           _buildOverviewTab(),
@@ -1800,11 +1834,23 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
 
     final competition = _eventDetails?['competitions']?[0];
     final probables = competition?['probables'] as List? ?? [];
+    final competitors = competition?['competitors'] as List? ?? [];
 
     print('Probables count: ${probables.length}');
 
     Map<String, dynamic>? awayPitcher;
     Map<String, dynamic>? homePitcher;
+    String? awayTeamName;
+    String? homeTeamName;
+
+    // Get team names for logo lookup
+    for (final team in competitors) {
+      if (team['homeAway'] == 'away') {
+        awayTeamName = team['team']?['displayName'];
+      } else {
+        homeTeamName = team['team']?['displayName'];
+      }
+    }
 
     for (final probable in probables) {
       if (probable['homeAway'] == 'away') {
@@ -1852,9 +1898,34 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // Away Pitcher
+                // Away Pitcher with Team Logo
                 Expanded(
-                  child: _buildPitcherInfo(awayPitcher, true),
+                  child: Column(
+                    children: [
+                      if (awayTeamName != null) ...[
+                        FutureBuilder<TeamLogoData?>(
+                          future: TeamLogoService().getTeamLogo(
+                            teamName: awayTeamName,
+                            sport: 'MLB',
+                          ),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData && snapshot.data?.logoUrl != null) {
+                              return Image.network(
+                                snapshot.data!.logoUrl!,
+                                width: 60,
+                                height: 60,
+                                errorBuilder: (context, error, stack) =>
+                                  const Icon(Icons.sports_baseball, size: 60, color: Colors.grey),
+                              );
+                            }
+                            return const Icon(Icons.sports_baseball, size: 60, color: Colors.grey);
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                      _buildPitcherInfo(awayPitcher, true),
+                    ],
+                  ),
                 ),
                 // VS Divider
                 Container(
@@ -1872,9 +1943,34 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                     ],
                   ),
                 ),
-                // Home Pitcher
+                // Home Pitcher with Team Logo
                 Expanded(
-                  child: _buildPitcherInfo(homePitcher, false),
+                  child: Column(
+                    children: [
+                      if (homeTeamName != null) ...[
+                        FutureBuilder<TeamLogoData?>(
+                          future: TeamLogoService().getTeamLogo(
+                            teamName: homeTeamName,
+                            sport: 'MLB',
+                          ),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData && snapshot.data?.logoUrl != null) {
+                              return Image.network(
+                                snapshot.data!.logoUrl!,
+                                width: 60,
+                                height: 60,
+                                errorBuilder: (context, error, stack) =>
+                                  const Icon(Icons.sports_baseball, size: 60, color: Colors.grey),
+                              );
+                            }
+                            return const Icon(Icons.sports_baseball, size: 60, color: Colors.grey);
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                      _buildPitcherInfo(homePitcher, false),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -3591,6 +3687,982 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
           ),
         ),
       ],
+    );
+  }
+
+  // NBA Implementation Methods
+  Future<void> _loadNBADetails() async {
+    try {
+      print('=== LOADING NBA DETAILS ===');
+      print('Game ID: ${widget.gameId}');
+      print('Teams: ${_game?.awayTeam} vs ${_game?.homeTeam}');
+
+      // Use the ESPN ID resolver service - same pattern as soccer
+      final resolver = EspnIdResolverService();
+
+      // Check if game already has ESPN ID
+      var espnGameId = _game?.espnId;
+
+      // If no ESPN ID, resolve it
+      if (espnGameId == null && _game != null) {
+        print('Resolving ESPN ID using resolver service...');
+        espnGameId = await resolver.resolveEspnId(_game!);
+
+        if (espnGameId != null) {
+          print('✅ ESPN ID resolved: $espnGameId');
+        } else {
+          print('❌ Could not resolve ESPN ID');
+          return;
+        }
+      }
+
+      if (espnGameId != null) {
+        print('Fetching NBA game summary from ESPN...');
+        final espnUrl = 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=$espnGameId';
+
+        final response = await http.get(Uri.parse(espnUrl));
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          print('✅ ESPN NBA data received');
+
+          setState(() {
+            _eventDetails = data;
+
+            // Extract boxscore if available
+            if (data['boxscore'] != null) {
+              _boxScore = data['boxscore'];
+            }
+          });
+        } else {
+          print('❌ Failed to fetch ESPN NBA data: ${response.statusCode}');
+        }
+      }
+    } catch (e) {
+      print('Error loading NBA details: $e');
+    }
+  }
+
+  Widget _buildNBAOverviewTab() {
+    if (_eventDetails == null) {
+      return const Center(child: Text('Loading game details...'));
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Score Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceBlue,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+            ),
+            child: Column(
+              children: [
+                // Teams and Score
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    // Away Team
+                    Expanded(
+                      child: Column(
+                        children: [
+                          if (_eventDetails!['boxscore']?['teams']?[0]?['team']?['logo'] != null)
+                            CachedNetworkImage(
+                              imageUrl: _eventDetails!['boxscore']['teams'][0]['team']['logo'],
+                              height: 60,
+                              width: 60,
+                              errorWidget: (context, url, error) => Icon(
+                                Icons.sports_basketball,
+                                size: 60,
+                                color: AppTheme.primaryCyan,
+                              ),
+                            )
+                          else
+                            Icon(Icons.sports_basketball, size: 60, color: AppTheme.primaryCyan),
+                          const SizedBox(height: 8),
+                          Text(
+                            _game?.awayTeam ?? 'Away',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          if (_eventDetails!['boxscore']?['teams']?[0]?['statistics'] != null)
+                            Text(
+                              '${_eventDetails!['boxscore']['teams'][0]['statistics'].firstWhere((s) => s['name'] == 'rebounds', orElse: () => {'displayValue': '0'})['displayValue']} REB',
+                              style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                            ),
+                        ],
+                      ),
+                    ),
+                    // Score
+                    Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _eventDetails!['boxscore']?['teams']?[0]?['score'] ?? '0',
+                              style: const TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                '-',
+                                style: TextStyle(fontSize: 24),
+                              ),
+                            ),
+                            Text(
+                              _eventDetails!['boxscore']?['teams']?[1]?['score'] ?? '0',
+                              style: const TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Game Status
+                        if (_eventDetails!['status']?['type']?['detail'] != null)
+                          Container(
+                            margin: const EdgeInsets.only(top: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _eventDetails!['status']['type']['completed'] == true
+                                  ? AppTheme.errorPink.withOpacity(0.2)
+                                  : AppTheme.successGreen.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              _eventDetails!['status']['type']['detail'],
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _eventDetails!['status']['type']['completed'] == true
+                                    ? AppTheme.errorPink
+                                    : AppTheme.successGreen,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    // Home Team
+                    Expanded(
+                      child: Column(
+                        children: [
+                          if (_eventDetails!['boxscore']?['teams']?[1]?['team']?['logo'] != null)
+                            CachedNetworkImage(
+                              imageUrl: _eventDetails!['boxscore']['teams'][1]['team']['logo'],
+                              height: 60,
+                              width: 60,
+                              errorWidget: (context, url, error) => Icon(
+                                Icons.sports_basketball,
+                                size: 60,
+                                color: AppTheme.primaryCyan,
+                              ),
+                            )
+                          else
+                            Icon(Icons.sports_basketball, size: 60, color: AppTheme.primaryCyan),
+                          const SizedBox(height: 8),
+                          Text(
+                            _game?.homeTeam ?? 'Home',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          if (_eventDetails!['boxscore']?['teams']?[1]?['statistics'] != null)
+                            Text(
+                              '${_eventDetails!['boxscore']['teams'][1]['statistics'].firstWhere((s) => s['name'] == 'rebounds', orElse: () => {'displayValue': '0'})['displayValue']} REB',
+                              style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                // Quarter Scores
+                if (_eventDetails!['boxscore']?['teams']?[0]?['linescores'] != null) ...[
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const SizedBox(width: 80, child: Text('Quarter', style: TextStyle(fontSize: 12))),
+                      ...List.generate(
+                        _eventDetails!['boxscore']['teams'][0]['linescores'].length,
+                        (i) => Expanded(
+                          child: Center(
+                            child: Text(
+                              'Q${i + 1}',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (_eventDetails!['boxscore']['teams'][0]['linescores'].length > 4)
+                        const Expanded(child: Center(child: Text('OT', style: TextStyle(fontSize: 12)))),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  // Away team quarters
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 80,
+                        child: Text(
+                          _game?.awayTeam ?? 'Away',
+                          style: const TextStyle(fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      ...(_eventDetails!['boxscore']['teams'][0]['linescores'] as List).map((score) =>
+                        Expanded(
+                          child: Center(
+                            child: Text(
+                              score['displayValue'] ?? '0',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  // Home team quarters
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 80,
+                        child: Text(
+                          _game?.homeTeam ?? 'Home',
+                          style: const TextStyle(fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      ...(_eventDetails!['boxscore']['teams'][1]['linescores'] as List).map((score) =>
+                        Expanded(
+                          child: Center(
+                            child: Text(
+                              score['displayValue'] ?? '0',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          // Game Leaders
+          if (_eventDetails!['leaders'] != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceBlue,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'GAME LEADERS',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Builder(
+                    builder: (context) {
+                      final leaders = _eventDetails!['leaders'] as List;
+
+                      // Check if this is the team-based leaders structure (for future games)
+                      if (leaders.isNotEmpty &&
+                          leaders[0] is Map &&
+                          leaders[0].containsKey('team') &&
+                          (leaders[0]['leaders'] == null || (leaders[0]['leaders'] as List).isEmpty)) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Text(
+                              'Game leaders will be available once the game starts',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[400],
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+
+                      // Filter out categories without valid data
+                      final validCategories = leaders.where((category) {
+                        return category is Map &&
+                               category['displayName'] != null &&
+                               category['leaders'] != null &&
+                               (category['leaders'] as List).isNotEmpty;
+                      }).toList();
+
+                      if (validCategories.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Text(
+                              'No leader statistics available yet',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[400],
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+
+                      return Column(
+                        children: validCategories.map((category) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 80,
+                                  child: Text(
+                                    category['displayName'] ?? '',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[400],
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                    children: (category['leaders'] as List).map((leader) {
+                                      final athleteName = leader['athlete']?['displayName'] ?? 'Unknown';
+                                      final displayValue = leader['displayValue'] ?? '-';
+
+                                      return Column(
+                                        children: [
+                                          Text(
+                                            athleteName.split(' ').last,
+                                            style: const TextStyle(fontSize: 12),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            displayValue,
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNBAStatsTab() {
+    if (_eventDetails == null) {
+      return const Center(child: Text('Loading stats...'));
+    }
+
+    final teams = _eventDetails!['boxscore']?['teams'];
+    if (teams == null) {
+      return const Center(child: Text('Stats not available'));
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Team Stats Comparison
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceBlue,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'TEAM STATS',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Stats rows
+                ..._buildNBAStatsRows(teams),
+              ],
+            ),
+          ),
+
+          // Player Stats if available
+          if (_eventDetails!['boxscore']?['players'] != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceBlue,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'PLAYER STATS',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Player stats available during live games',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildNBAStatsRows(List teams) {
+    final stats = [
+      {'key': 'fieldGoalsPercentage', 'label': 'FG%'},
+      {'key': 'threePointFieldGoalsPercentage', 'label': '3PT%'},
+      {'key': 'freeThrowsPercentage', 'label': 'FT%'},
+      {'key': 'rebounds', 'label': 'Rebounds'},
+      {'key': 'assists', 'label': 'Assists'},
+      {'key': 'steals', 'label': 'Steals'},
+      {'key': 'blocks', 'label': 'Blocks'},
+      {'key': 'turnovers', 'label': 'Turnovers'},
+      {'key': 'points', 'label': 'Points'},
+    ];
+
+    return stats.map((stat) {
+      final awayStats = teams[0]['statistics'] ?? [];
+      final homeStats = teams[1]['statistics'] ?? [];
+
+      final awayStat = awayStats.firstWhere(
+        (s) => s['name'] == stat['key'],
+        orElse: () => {'displayValue': '-'},
+      );
+      final homeStat = homeStats.firstWhere(
+        (s) => s['name'] == stat['key'],
+        orElse: () => {'displayValue': '-'},
+      );
+
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                awayStat['displayValue'] ?? '-',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+            SizedBox(
+              width: 120,
+              child: Text(
+                stat['label']!,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[400],
+                ),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                homeStat['displayValue'] ?? '-',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+          ],
+        ),
+      );
+    }).toList();
+  }
+
+  Widget _buildNBAStandingsTab() {
+    if (_eventDetails == null) {
+      return const Center(child: Text('Loading standings...'));
+    }
+
+    final standings = _eventDetails!['standings'];
+    if (standings == null || (standings is Map && standings.isEmpty)) {
+      return const Center(child: Text('Standings not available'));
+    }
+
+    // Handle the standings structure from ESPN API
+    List standingsGroups = [];
+    if (standings is Map) {
+      // ESPN API returns standings as a Map with 'groups' key
+      standingsGroups = standings['groups'] ?? [];
+    } else if (standings is List) {
+      // In case the standings are already a list
+      standingsGroups = standings;
+    }
+
+    if (standingsGroups.isEmpty) {
+      return const Center(child: Text('No standings data available'));
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: standingsGroups.map((group) {
+          final groupName = group['name'] ?? 'Conference';
+          final entries = group['standings']?['entries'] ?? [];
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceBlue,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  groupName.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Table header
+                Row(
+                  children: [
+                    const SizedBox(width: 30, child: Text('#', style: TextStyle(fontSize: 10))),
+                    const Expanded(flex: 3, child: Text('Team', style: TextStyle(fontSize: 10))),
+                    const SizedBox(width: 35, child: Text('W', style: TextStyle(fontSize: 10), textAlign: TextAlign.center)),
+                    const SizedBox(width: 35, child: Text('L', style: TextStyle(fontSize: 10), textAlign: TextAlign.center)),
+                    const SizedBox(width: 45, child: Text('PCT', style: TextStyle(fontSize: 10), textAlign: TextAlign.center)),
+                    const SizedBox(width: 35, child: Text('GB', style: TextStyle(fontSize: 10), textAlign: TextAlign.center)),
+                    const SizedBox(width: 50, child: Text('L10', style: TextStyle(fontSize: 10), textAlign: TextAlign.center)),
+                  ],
+                ),
+                const Divider(),
+                // Table rows
+                ...(entries as List).take(15).map((entry) {
+                  final team = entry['team'];
+                  final stats = entry['stats'] ?? [];
+
+                  String getStatValue(String name) {
+                    final stat = stats.firstWhere(
+                      (s) => s['name'] == name,
+                      orElse: () => {'displayValue': '-'},
+                    );
+                    return stat['displayValue'] ?? '-';
+                  }
+
+                  final isCurrentTeam = team['displayName'] == _game?.homeTeam ||
+                                      team['displayName'] == _game?.awayTeam;
+
+                  return Container(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isCurrentTeam ? AppTheme.primaryCyan.withOpacity(0.1) : null,
+                    ),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 30,
+                          child: Text(
+                            '${entries.indexOf(entry) + 1}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: isCurrentTeam ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 3,
+                          child: Text(
+                            team['abbreviation'] ?? team['displayName'],
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: isCurrentTeam ? FontWeight.bold : FontWeight.normal,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        SizedBox(
+                          width: 35,
+                          child: Text(
+                            getStatValue('wins'),
+                            style: const TextStyle(fontSize: 11),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        SizedBox(
+                          width: 35,
+                          child: Text(
+                            getStatValue('losses'),
+                            style: const TextStyle(fontSize: 11),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        SizedBox(
+                          width: 45,
+                          child: Text(
+                            getStatValue('winPercent'),
+                            style: const TextStyle(fontSize: 11),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        SizedBox(
+                          width: 35,
+                          child: Text(
+                            getStatValue('gamesBehind'),
+                            style: const TextStyle(fontSize: 11),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        SizedBox(
+                          width: 50,
+                          child: Text(
+                            getStatValue('l10'),
+                            style: const TextStyle(fontSize: 11),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildNBAH2HTab() {
+    if (_eventDetails == null) {
+      return const Center(child: Text('Loading head to head...'));
+    }
+
+    final lastFiveGames = _eventDetails!['lastFiveGames'];
+    final seasonSeries = _eventDetails!['seasonSeries'];
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Season Series
+          if (seasonSeries != null) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceBlue,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'SEASON SERIES',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (seasonSeries['events'] != null)
+                    ...(seasonSeries['events'] as List).map((game) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: Text(
+                                game['date'] ?? '',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 3,
+                              child: Text(
+                                '${game['competitors']?[1]?['team']?['abbreviation'] ?? ''} ${game['competitors']?[1]?['score'] ?? ''} - ${game['competitors']?[0]?['score'] ?? ''} ${game['competitors']?[0]?['team']?['abbreviation'] ?? ''}',
+                                style: const TextStyle(fontSize: 12),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            SizedBox(
+                              width: 50,
+                              child: Text(
+                                game['status']?['type']?['shortDetail'] ?? '',
+                                style: TextStyle(fontSize: 10, color: Colors.grey[400]),
+                                textAlign: TextAlign.right,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Last Five Games for each team
+          if (lastFiveGames != null) ...[
+            ...(lastFiveGames as List).map((teamGames) {
+              final teamName = teamGames['team']?['displayName'] ?? 'Team';
+              final games = teamGames['events'] ?? [];
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceBlue,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$teamName - LAST 5 GAMES',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ...(games as List).map((game) {
+                      final isWin = game['winner'] == true;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 20,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: isWin
+                                  ? AppTheme.successGreen.withOpacity(0.2)
+                                  : AppTheme.errorPink.withOpacity(0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  isWin ? 'W' : 'L',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: isWin ? AppTheme.successGreen : AppTheme.errorPink,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '${game['atVs'] ?? ''} ${game['opponent']?['abbreviation'] ?? ''}',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ),
+                            Text(
+                              '${game['score'] ?? ''} - ${game['opponentScore'] ?? ''}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                ),
+              );
+            }).toList(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNBAInjuriesTab() {
+    if (_eventDetails == null) {
+      return const Center(child: Text('Loading injuries...'));
+    }
+
+    final injuries = _eventDetails!['injuries'];
+    if (injuries == null || injuries.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.check_circle, size: 64, color: AppTheme.successGreen),
+            SizedBox(height: 16),
+            Text(
+              'No injuries reported',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: (injuries as List).map((teamInjuries) {
+          final teamName = teamInjuries['team']?['displayName'] ?? 'Team';
+          final injuryList = teamInjuries['injuries'] ?? [];
+
+          if (injuryList.isEmpty) return const SizedBox.shrink();
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceBlue,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  teamName.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ...(injuryList as List).map((injury) {
+                  final status = injury['status'] ?? 'Unknown';
+                  Color statusColor = Colors.grey;
+
+                  if (status.toLowerCase().contains('out')) {
+                    statusColor = AppTheme.errorPink;
+                  } else if (status.toLowerCase().contains('questionable')) {
+                    statusColor = AppTheme.warningAmber;
+                  } else if (status.toLowerCase().contains('probable')) {
+                    statusColor = AppTheme.successGreen;
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                injury['athlete']?['displayName'] ?? 'Unknown Player',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              if (injury['athlete']?['position']?['abbreviation'] != null)
+                                Text(
+                                  injury['athlete']['position']['abbreviation'],
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[400],
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            injury['details']?['detail'] ?? injury['details']?['type'] ?? 'Unknown',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: statusColor.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            status.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: statusColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 }

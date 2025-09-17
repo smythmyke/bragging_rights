@@ -142,11 +142,18 @@ class _HomeScreenState extends State<HomeScreen> {
         final activity = results.length > 0 ? results[0] as FriendActivity? : null;
         final rankings = results.length > 1 ? results[1] as Map<String, dynamic>? : null;
 
-        // Only show if there's actual data to display
+        // Only show if there's actual data to display AND user is ranked
         final hasActivity = activity != null && activity.recentActivities.isNotEmpty;
         final hasRankings = rankings != null && rankings.isNotEmpty;
 
-        if (hasActivity || hasRankings) {
+        // Check if user is actually ranked (not null and has valid rank numbers)
+        final isUserRanked = rankings != null &&
+            rankings['nationalRank'] != null &&
+            rankings['nationalRank'] > 0 &&
+            rankings['stateRank'] != null &&
+            rankings['stateRank'] > 0;
+
+        if (isUserRanked && (hasActivity || hasRankings)) {
           Future.delayed(const Duration(seconds: 2), () {
             if (mounted) {
               setState(() {
@@ -156,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
             }
           });
         } else {
-          debugPrint('Skipping Today\'s Standings - no data to display');
+          debugPrint('Skipping Today\'s Standings - user not ranked or no data to display');
         }
       } catch (e) {
         debugPrint('Error checking standings data: $e');

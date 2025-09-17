@@ -37,6 +37,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   lottie: ^3.1.2
   phosphor_flutter: ^2.1.0
+  google_fonts: ^6.2.1
   # Firebase packages with older versions for compatibility
   firebase_core: ^3.8.0
   firebase_auth: ^5.3.3

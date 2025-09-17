@@ -287,10 +287,11 @@ class _StandingsInfoCardState extends State<StandingsInfoCard>
           if (_friendActivity!.recentActivities.isEmpty)
             Center(
               child: Text(
-                'No friend activity in last 24h',
-                style: TextStyle(
+                'NO FRIEND ACTIVITY IN LAST 24H',
+                style: GoogleFonts.orbitron(
                   color: Colors.grey[600],
-                  fontSize: 12,
+                  fontSize: 11,
+                  letterSpacing: 1,
                 ),
               ),
             ),
