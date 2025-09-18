@@ -139,11 +139,22 @@ class MMAEvent {
   }
 
   static String? _getPromotionLogo(String eventName) {
-    if (eventName.contains('UFC')) {
+    final upperName = eventName.toUpperCase();
+
+    if (upperName.contains('UFC')) {
       return 'https://a.espncdn.com/i/teamlogos/leagues/500/ufc.png';
+    } else if (upperName.contains('PFL')) {
+      return 'https://a.espncdn.com/i/teamlogos/leagues/500/pfl.png';
+    } else if (upperName.contains('BELLATOR')) {
+      // Bellator doesn't have an ESPN logo, use a placeholder or custom URL
+      return 'https://www.bellator.com/themes/custom/bellator/assets/images/bellator-mma.svg';
+    } else if (upperName.contains('ONE') && (upperName.contains('CHAMPIONSHIP') || upperName.contains('FC'))) {
+      // ONE Championship logo
+      return 'https://www.onefc.com/wp-content/themes/onefc/assets/images/logo.svg';
     }
-    // Add other promotion logos as needed
-    return null;
+
+    // Default to UFC logo for generic MMA events
+    return 'https://a.espncdn.com/i/teamlogos/leagues/500/ufc.png';
   }
 
   Map<String, dynamic> toJson() {

@@ -403,6 +403,54 @@ class MMAService {
     }
   }
 
+  /// Detect promotion from event name
+  String _detectPromotion(String eventName) {
+    final upperName = eventName.toUpperCase();
+
+    if (upperName.contains('UFC')) {
+      return 'UFC';
+    } else if (upperName.contains('PFL')) {
+      return 'PFL';
+    } else if (upperName.contains('BELLATOR')) {
+      return 'Bellator';
+    } else if (upperName.contains('ONE') && (upperName.contains('CHAMPIONSHIP') || upperName.contains('FC'))) {
+      return 'ONE Championship';
+    }
+
+    // Default to UFC
+    return 'UFC';
+  }
+
+  /// Get promotion logo URL
+  String? _getPromotionLogoUrl(String promotion) {
+    switch (promotion) {
+      case 'UFC':
+        return 'https://a.espncdn.com/i/teamlogos/leagues/500/ufc.png';
+      case 'PFL':
+        return 'https://a.espncdn.com/i/teamlogos/leagues/500/pfl.png';
+      case 'Bellator':
+        // Using Bellator's official logo
+        return 'https://www.bellator.com/themes/custom/bellator/assets/images/bellator-mma.svg';
+      case 'ONE Championship':
+        // Using ONE Championship's official logo
+        return 'https://www.onefc.com/wp-content/themes/onefc/assets/images/logo.svg';
+      default:
+        // Default to UFC logo
+        return 'https://a.espncdn.com/i/teamlogos/leagues/500/ufc.png';
+    }
+  }
+
+  /// Generate fighter image URL
+  String? _generateFighterImageUrl(String fighterId) {
+    // Skip if it's a placeholder ID
+    if (fighterId.startsWith('f1_') || fighterId.startsWith('f2_')) {
+      return null;
+    }
+
+    // ESPN MMA fighter headshot URL format
+    return 'https://a.espncdn.com/i/headshots/mma/players/full/$fighterId.png';
+  }
+
   /// Create MMA event from game data (for pseudo-ESPN IDs)
   MMAEvent _createEventFromGameData(String eventId, Map<String, dynamic> gameData) {
     print('🎯 Creating MMA event from game data');
@@ -415,27 +463,29 @@ class MMAService {
 
       // Create basic fighter objects from the fight data
       final fighterName1 = fightData['fighter1'] ?? fightData['awayTeam'] ?? 'Fighter 1';
+      final fighter1Id = fightData['fighter1Id']?.toString() ?? 'f1_$i';
       final fighter1 = MMAFighter(
-        id: fightData['id']?.toString() ?? 'f1_$i',
+        id: fighter1Id,
         name: fighterName1,
         displayName: fighterName1,
         shortName: fighterName1.split(' ').last,
-        record: '0-0-0',
+        record: fightData['fighter1Record'] ?? '0-0-0',
         nickname: null,
-        headshotUrl: null,
-        espnId: null,
+        headshotUrl: _generateFighterImageUrl(fighter1Id),
+        espnId: fighter1Id,
       );
 
       final fighterName2 = fightData['fighter2'] ?? fightData['homeTeam'] ?? 'Fighter 2';
+      final fighter2Id = fightData['fighter2Id']?.toString() ?? 'f2_$i';
       final fighter2 = MMAFighter(
-        id: fightData['id']?.toString() ?? 'f2_$i',
+        id: fighter2Id,
         name: fighterName2,
         displayName: fighterName2,
         shortName: fighterName2.split(' ').last,
-        record: '0-0-0',
+        record: fightData['fighter2Record'] ?? '0-0-0',
         nickname: null,
-        headshotUrl: null,
-        espnId: null,
+        headshotUrl: _generateFighterImageUrl(fighter2Id),
+        espnId: fighter2Id,
       );
 
       // Determine card position based on fight order
@@ -506,14 +556,19 @@ class MMAService {
       eventDate = DateTime.now();
     }
 
+    final eventName = gameData['league'] ?? gameData['eventName'] ?? 'MMA Event';
+    final promotion = _detectPromotion(eventName);
+    final promotionLogo = _getPromotionLogoUrl(promotion);
+
     return MMAEvent(
       id: eventId,
-      name: gameData['league'] ?? gameData['eventName'] ?? 'MMA Event',
+      name: eventName,
       date: eventDate,
       venueName: gameData['venue'],
       fights: fights,
       broadcasters: gameData['broadcast'] != null ? [gameData['broadcast']] : [],
-      promotion: 'UFC',  // Default to UFC for now
+      promotion: promotion,
+      promotionLogoUrl: promotionLogo,
       espnEventId: eventId,
     );
   }
