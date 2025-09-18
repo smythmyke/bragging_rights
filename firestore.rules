@@ -56,10 +56,10 @@ service cloud.firestore {
 
 
 
-    // Game cache metadata - allow authenticated users to write
+    // Game cache metadata - allow public writes for caching
     match /game_cache_meta/{document=**} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if true;  // Allow public writes for cache metadata
     }
 
     // User wallet subcollection
@@ -95,7 +95,13 @@ service cloud.firestore {
 
     match /games/{gameId} {
       allow read: if true;  // Public read for games
-      allow write: if isAdmin();
+      allow write: if true;  // Allow public writes for ESPN ID updates and cache
+    }
+
+    // ESPN ID mappings - allow public read and write for caching
+    match /id_mappings/{document=**} {
+      allow read: if true;
+      allow write: if true;  // Allow public writes for ID caching
     }
 
     match /wallets/{walletId} {

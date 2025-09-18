@@ -3198,6 +3198,39 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
       return const Center(child: Text('Loading match details...'));
     }
 
+    // Get team logos from ESPN data
+    String? homeTeamLogo;
+    String? awayTeamLogo;
+
+    try {
+      // Try to get logos from boxscore -> teams
+      final boxscore = _eventDetails!['boxscore'];
+      if (boxscore != null && boxscore['teams'] != null) {
+        final teams = boxscore['teams'] as List;
+        if (teams.length >= 2) {
+          // Away team is usually first in ESPN data
+          awayTeamLogo = teams[0]['team']?['logo'];
+          homeTeamLogo = teams[1]['team']?['logo'];
+        }
+      }
+
+      // Fallback to header competitors if boxscore doesn't have logos
+      if ((homeTeamLogo == null || awayTeamLogo == null) && _eventDetails!['header'] != null) {
+        final competitors = _eventDetails!['header']['competitions']?[0]?['competitors'];
+        if (competitors != null && competitors is List && competitors.length >= 2) {
+          for (var competitor in competitors) {
+            if (competitor['homeAway'] == 'home') {
+              homeTeamLogo = homeTeamLogo ?? competitor['team']?['logo'];
+            } else {
+              awayTeamLogo = awayTeamLogo ?? competitor['team']?['logo'];
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print('Error extracting team logos: $e');
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -3217,32 +3250,39 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildTeamColumn(_game!.homeTeam, _game!.homeTeamLogo, true),
-                    Column(
-                      children: [
-                        Text(
-                          _game!.status == 'scheduled'
-                              ? DateFormat('MMM d').format(_game!.gameTime)
-                              : '${_game!.homeScore ?? 0} - ${_game!.awayScore ?? 0}',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryCyan,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _game!.status == 'scheduled'
-                              ? DateFormat('h:mm a').format(_game!.gameTime)
-                              : _game!.status.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
+                    Expanded(
+                      child: _buildSoccerTeamColumn(_game!.homeTeam, homeTeamLogo ?? _game!.homeTeamLogo, true),
                     ),
-                    _buildTeamColumn(_game!.awayTeam, _game!.awayTeamLogo, false),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Column(
+                        children: [
+                          Text(
+                            _game!.status == 'scheduled'
+                                ? DateFormat('MMM d').format(_game!.gameTime)
+                                : '${_game!.homeScore ?? 0} - ${_game!.awayScore ?? 0}',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primaryCyan,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _game!.status == 'scheduled'
+                                ? DateFormat('h:mm a').format(_game!.gameTime)
+                                : _game!.status.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildSoccerTeamColumn(_game!.awayTeam, awayTeamLogo ?? _game!.awayTeamLogo, false),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -3864,6 +3904,65 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
             fontSize: 14,
             fontWeight: FontWeight.bold,
             color: Colors.white,
+          ),
+        ),
+        Text(
+          isHome ? 'HOME' : 'AWAY',
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.grey,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSoccerTeamColumn(String name, String? logo, bool isHome) {
+    return Column(
+      children: [
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: AppTheme.borderCyan.withOpacity(0.2),
+            shape: BoxShape.circle,
+          ),
+          child: ClipOval(
+            child: logo != null
+                ? CachedNetworkImage(
+                    imageUrl: logo,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => Icon(
+                      Icons.sports_soccer,
+                      size: 30,
+                      color: Colors.grey,
+                    ),
+                    errorWidget: (_, __, ___) => Icon(
+                      Icons.sports_soccer,
+                      size: 30,
+                      color: Colors.grey,
+                    ),
+                  )
+                : Icon(
+                    Icons.sports_soccer,
+                    size: 30,
+                    color: Colors.grey,
+                  ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            name,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
         ),
         Text(
