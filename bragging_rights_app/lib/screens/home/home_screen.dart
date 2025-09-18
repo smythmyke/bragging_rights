@@ -302,6 +302,10 @@ class _HomeScreenState extends State<HomeScreen> {
       print('🔄 Clearing MLB cache to ensure fresh data with ESPN IDs...');
       await _optimizedGamesService.clearSportCache('MLB');
 
+      // TEMPORARY FIX: Clear MMA cache to ensure ESPN IDs are used
+      print('🔄 Clearing MMA cache to ensure fresh data with ESPN IDs...');
+      await _optimizedGamesService.clearSportCache('MMA');
+
       // Fetch games with caching support - this will return cached data instantly if available
       print('📱 Loading games data...');
 

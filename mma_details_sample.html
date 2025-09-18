@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UFC 311: Makhachev vs. Moicano - MMA Details Page</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Event Header Section */
+        .event-header {
+            background: linear-gradient(135deg, rgba(0, 255, 163, 0.1) 0%, rgba(0, 174, 239, 0.1) 100%);
+            border: 2px solid rgba(0, 255, 163, 0.3);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .event-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(0, 255, 163, 0.2) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .event-logo {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 20px;
+            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj4KICAgIDxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjQ1IiBmaWxsPSIjZmZmZmZmIiBvcGFjaXR5PSIwLjEiLz4KICAgIDx0ZXh0IHg9IjUwIiB5PSI1NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIyNSIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiNmZmZmZmYiPgogICAgICAgIFVGQwogICAgPC90ZXh0Pgo8L3N2Zz4=') center/contain no-repeat;
+        }
+
+        .event-title {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00ffa3, #00aeef);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .event-info {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            font-size: 1.1em;
+            color: #b0b8c0;
+        }
+
+        .event-info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .icon {
+            width: 20px;
+            height: 20px;
+            fill: #00ffa3;
+        }
+
+        /* Main Event Tale of the Tape */
+        .main-event-section {
+            background: rgba(255, 215, 0, 0.05);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .main-event-badge {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg, #ffd700, #ffa500);
+            color: #000;
+            padding: 5px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .tale-of-tape {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 30px;
+            align-items: center;
+            margin-top: 30px;
+        }
+
+        .fighter-section {
+            text-align: center;
+        }
+
+        .fighter-image {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            border: 3px solid #00ffa3;
+            background: linear-gradient(135deg, rgba(0, 255, 163, 0.1), rgba(0, 174, 239, 0.1));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3em;
+            font-weight: bold;
+        }
+
+        .fighter-section.red .fighter-image {
+            border-color: #dc2626;
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(239, 68, 68, 0.1));
+        }
+
+        .fighter-section.blue .fighter-image {
+            border-color: #2563eb;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(59, 130, 246, 0.1));
+        }
+
+        .fighter-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .fighter-nickname {
+            color: #888;
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+
+        .fighter-record {
+            font-size: 1.3em;
+            margin-bottom: 5px;
+            color: #00ffa3;
+        }
+
+        .fighter-flag {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: #b0b8c0;
+            margin-bottom: 15px;
+        }
+
+        .fighter-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+            text-align: left;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-label {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .stat-value {
+            font-weight: bold;
+        }
+
+        .vs-divider {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .vs-badge {
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, rgba(0, 255, 163, 0.2), transparent);
+            border: 2px solid #00ffa3;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .fight-details {
+            text-align: center;
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        /* Fight Card Section */
+        .fight-card-section {
+            margin-bottom: 30px;
+        }
+
+        .card-category {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .category-header {
+            padding: 15px 20px;
+            font-weight: bold;
+            font-size: 1.2em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .category-header.main-card {
+            background: linear-gradient(90deg, rgba(0, 255, 163, 0.2), rgba(0, 174, 239, 0.2));
+            border-bottom: 2px solid #00ffa3;
+        }
+
+        .category-header.prelims {
+            background: linear-gradient(90deg, rgba(0, 174, 239, 0.2), rgba(37, 99, 235, 0.2));
+            border-bottom: 2px solid #00aeef;
+        }
+
+        .category-header.early-prelims {
+            background: rgba(255, 255, 255, 0.1);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .fight-item {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 20px;
+            align-items: center;
+            transition: background 0.3s;
+            cursor: pointer;
+        }
+
+        .fight-item:hover {
+            background: rgba(0, 255, 163, 0.05);
+        }
+
+        .fight-item:last-child {
+            border-bottom: none;
+        }
+
+        .fighter-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .fighter-info.right {
+            flex-direction: row-reverse;
+            text-align: right;
+        }
+
+        .fighter-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .fighter-details {
+            flex: 1;
+        }
+
+        .fighter-details-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+
+        .fighter-details-record {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .fight-center {
+            text-align: center;
+        }
+
+        .weight-class {
+            font-size: 0.9em;
+            color: #00ffa3;
+            margin-bottom: 5px;
+        }
+
+        .rounds {
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        /* Event Info Section */
+        .event-details-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+        }
+
+        .detail-block {
+            text-align: center;
+        }
+
+        .detail-block-title {
+            font-weight: bold;
+            color: #00ffa3;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9em;
+        }
+
+        .detail-block-content {
+            color: #b0b8c0;
+            line-height: 1.6;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .event-title {
+                font-size: 1.8em;
+            }
+
+            .tale-of-tape {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .fighter-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .fight-item {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .fighter-info.right {
+                flex-direction: row;
+                text-align: left;
+            }
+
+            .event-details-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Title Fight Badge */
+        .title-badge {
+            display: inline-block;
+            background: linear-gradient(90deg, #ffd700, #ffa500);
+            color: #000;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7em;
+            font-weight: bold;
+            margin-left: 10px;
+            text-transform: uppercase;
+        }
+
+        /* Recent Form Indicators */
+        .recent-form {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+
+        .form-indicator {
+            width: 25px;
+            height: 25px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.8em;
+        }
+
+        .form-indicator.win {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid #22c55e;
+        }
+
+        .form-indicator.loss {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+
+        .form-indicator.draw {
+            background: rgba(156, 163, 175, 0.2);
+            color: #9ca3af;
+            border: 1px solid #9ca3af;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Event Header -->
+        <div class="event-header">
+            <div class="event-logo"></div>
+            <h1 class="event-title">UFC 311: Makhachev vs. Moicano</h1>
+            <div class="event-info">
+                <div class="event-info-item">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+                    </svg>
+                    <span>Saturday, January 18, 2025</span>
+                </div>
+                <div class="event-info-item">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                    </svg>
+                    <span>Intuit Dome, Inglewood, CA</span>
+                </div>
+                <div class="event-info-item">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path d="M21 6h-7.59l3.29-3.29L16 2l-4 4-4-4-.71.71L10.59 6H3c-1.1 0-2 .89-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.11-.9-2-2-2zm0 14H3V8h18v12zM9 10v8l7-4z"/>
+                    </svg>
+                    <span>ESPN+ PPV</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Event Tale of the Tape -->
+        <div class="main-event-section">
+            <div class="main-event-badge">MAIN EVENT - LIGHTWEIGHT TITLE</div>
+
+            <div class="tale-of-tape">
+                <!-- Fighter 1 - Red Corner -->
+                <div class="fighter-section red">
+                    <div class="fighter-image">IM</div>
+                    <h2 class="fighter-name">Islam Makhachev</h2>
+                    <div class="fighter-nickname">"The Eagle's Heir"</div>
+                    <div class="fighter-record">26-1-0</div>
+                    <div class="fighter-flag">
+                        🇷🇺 Russia
+                    </div>
+
+                    <div class="recent-form">
+                        <div class="form-indicator win">W</div>
+                        <div class="form-indicator win">W</div>
+                        <div class="form-indicator win">W</div>
+                        <div class="form-indicator win">W</div>
+                        <div class="form-indicator win">W</div>
+                    </div>
+
+                    <div class="fighter-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Age</span>
+                            <span class="stat-value">33</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Height</span>
+                            <span class="stat-value">5'10"</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Weight</span>
+                            <span class="stat-value">155 lbs</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Reach</span>
+                            <span class="stat-value">70.5"</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Stance</span>
+                            <span class="stat-value">Orthodox</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Camp</span>
+                            <span class="stat-value">Eagles MMA</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">KO/TKO</span>
+                            <span class="stat-value">5</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Submissions</span>
+                            <span class="stat-value">12</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VS Divider -->
+                <div class="vs-divider">
+                    <div class="vs-badge">VS</div>
+                    <div class="fight-details">
+                        <div>Championship Bout</div>
+                        <div>5 Rounds</div>
+                        <div>155 lbs</div>
+                    </div>
+                </div>
+
+                <!-- Fighter 2 - Blue Corner -->
+                <div class="fighter-section blue">
+                    <div class="fighter-image">RM</div>
+                    <h2 class="fighter-name">Renato Moicano</h2>
+                    <div class="fighter-nickname">"Moicano"</div>
+                    <div class="fighter-record">20-5-1</div>
+                    <div class="fighter-flag">
+                        🇧🇷 Brazil
+                    </div>
+
+                    <div class="recent-form">
+                        <div class="form-indicator win">W</div>
+                        <div class="form-indicator win">W</div>
+                        <div class="form-indicator win">W</div>
+                        <div class="form-indicator loss">L</div>
+                        <div class="form-indicator win">W</div>
+                    </div>
+
+                    <div class="fighter-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Age</span>
+                            <span class="stat-value">35</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Height</span>
+                            <span class="stat-value">5'11"</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Weight</span>
+                            <span class="stat-value">155 lbs</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Reach</span>
+                            <span class="stat-value">72"</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Stance</span>
+                            <span class="stat-value">Orthodox</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Camp</span>
+                            <span class="stat-value">ATT</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">KO/TKO</span>
+                            <span class="stat-value">10</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Submissions</span>
+                            <span class="stat-value">8</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fight Card -->
+        <div class="fight-card-section">
+            <!-- Main Card -->
+            <div class="card-category">
+                <div class="category-header main-card">Main Card - ESPN+ PPV (10:00 PM ET)</div>
+
+                <div class="fight-item">
+                    <div class="fighter-info">
+                        <div class="fighter-avatar">JG</div>
+                        <div class="fighter-details">
+                            <div class="fighter-details-name">Jiri Prochazka</div>
+                            <div class="fighter-details-record">30-5-1</div>
+                        </div>
+                    </div>
+                    <div class="fight-center">
+                        <div class="weight-class">Light Heavyweight</div>
+                        <div class="rounds">3 Rounds</div>
+                    </div>
+                    <div class="fighter-info right">
+                        <div class="fighter-avatar">JH</div>
+                        <div class="fighter-details">
+                            <div class="fighter-details-name">Jamahal Hill</div>
+                            <div class="fighter-details-record">12-2-0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fight-item">
+                    <div class="fighter-info">
+                        <div class="fighter-avatar">BT</div>
+                        <div class="fighter-details">
+                            <div class="fighter-details-name">Beneil Dariush</div>
+                            <div class="fighter-details-record">22-6-1</div>
+                        </div>
+                    </div>
+                    <div class="fight-center">
+                        <div class="weight-class">Lightweight</div>
+                        <div class="rounds">3 Rounds</div>
+                    </div>
+                    <div class="fighter-info right">
+                        <div class="fighter-avatar">AT</div>
+                        <div class="fighter-details">
+                            <div class="fighter-details-name">Arman Tsarukyan</div>
+                            <div class="fighter-details-record">22-3-0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fight-item">
+                    <div class="fighter-info">
+                        <div class="fighter-avatar">MR</div>
+                        <div class="fighter-details">
+                            <div class="fighter-details-name">Merab Dvalishvili</div>
+                            <div class="fighter-details-record">18-4-0</div>
+                        </div>
+                    </div>
+                    <div class="fight-center">
+                        <div class="weight-class">Bantamweight<span class="title-badge">Title</span></div>
+                        <div class="rounds">5 Rounds</div>
+                    </div>
+                    <div class="fighter-info right">
+                        <div class="fighter-avatar">UN</div>
+                        <div class="fighter-details">
+                            <div class="fighter-details-name">Umar Nurmagomedov</div>
+                            <div class="fighter-details-record">18-0-0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fight-item">
+                    <div class="fighter-info">
+                        <div class="fighter-avatar">KH</div>
+                        <div class="fighter-details">
+                            <div class="fighter-details-name">Kevin Holland</div>
+                            <div class="fighter-details-record">26-11-0</div>
+                        </div>
+                    </div>
+                    <div class="fight-center">
+                        <div class="weight-class">Welterweight</div>
+                        <div class="rounds">3 Rounds</div>
+                    </div>
+                    <div class="fighter-info right">
+                        <div class="fighter-avatar">RP</div>
+                        <div class="fighter-details">
+                            <div class="fighter-details-name">Reinier de Ridder</div>
+                            <div class="fighter-details-record">18-2-0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preliminary Card -->
+            <div class="card-category">
+                <div class="category-header prelims">Preliminary Card - ESPN (8:00 PM ET)</div>
+
+                <div class="fight-item">
+                    <div class="fighter-info">
+                        <div class="fighter-avatar">PA</div>
+                        <div class="fighter-details">
+                            <div class="fighter-details-name">Payton Talbott</div>
+                            <div class="fighter-details-record">9-0-0</div>
+                        </div>
+                    </div>
+                    <div class="fight-center">
+                        <div class="weight-class">Bantamweight</div>
+                        <div class="rounds">3 Rounds</div>
+                    </div>
+                    <div class="fighter-info right">
+                        <div class="fighter-avatar">RB</div>
+                        <div class="fighter-details">
+                            <div class="fighter-details-name">Raoni Barcelos</div>
+                            <div class="fighter-details-record">18-5-0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fight-item">
+                    <div class="fighter-info">
+                        <div class="fighter-avatar">JA</div>
+                        <div class="fighter-details">
+                            <div class="fighter-details-name">Jailton Almeida</div>
+                            <div class="fighter-details-record">21-3-0</div>
+                        </div>
+                    </div>
+                    <div class="fight-center">
+                        <div class="weight-class">Heavyweight</div>
+                        <div class="rounds">3 Rounds</div>
+                    </div>
+                    <div class="fighter-info right">
+                        <div class="fighter-avatar">SP</div>
+                        <div class="fighter-details">
+                            <div class="fighter-details-name">Serghei Spivac</div>
+                            <div class="fighter-details-record">17-4-0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fight-item">
+                    <div class="fighter-info">
+                        <div class="fighter-avatar">BF</div>
+                        <div class="fighter-details">
+                            <div class="fighter-details-name">Bogdan Guskov</div>
+                            <div class="fighter-details-record">16-3-0</div>
+                        </div>
+                    </div>
+                    <div class="fight-center">
+                        <div class="weight-class">Light Heavyweight</div>
+                        <div class="rounds">3 Rounds</div>
+                    </div>
+                    <div class="fighter-info right">
+                        <div class="fighter-avatar">JJ</div>
+                        <div class="fighter-details">
+                            <div class="fighter-details-name">Johnny Walker</div>
+                            <div class="fighter-details-record">21-9-0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fight-item">
+                    <div class="fighter-info">
+                        <div class="fighter-avatar">ZR</div>
+                        <div class="fighter-details">
+                            <div class="fighter-details-name">Zachary Reese</div>
+                            <div class="fighter-details-record">8-1-0</div>
+                        </div>
+                    </div>
+                    <div class="fight-center">
+                        <div class="weight-class">Middleweight</div>
+                        <div class="rounds">3 Rounds</div>
+                    </div>
+                    <div class="fighter-info right">
+                        <div class="fighter-avatar">AM</div>
+                        <div class="fighter-details">
+                            <div class="fighter-details-name">Azamat Murzakanov</div>
+                            <div class="fighter-details-record">14-0-0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Early Prelims -->
+            <div class="card-category">
+                <div class="category-header early-prelims">Early Prelims - UFC Fight Pass (6:00 PM ET)</div>
+
+                <div class="fight-item">
+                    <div class="fighter-info">
+                        <div class="fighter-avatar">TU</div>
+                        <div class="fighter-details">
+                            <div class="fighter-details-name">Tagir Ulanbekov</div>
+                            <div class="fighter-details-record">15-2-0</div>
+                        </div>
+                    </div>
+                    <div class="fight-center">
+                        <div class="weight-class">Flyweight</div>
+                        <div class="rounds">3 Rounds</div>
+                    </div>
+                    <div class="fighter-info right">
+                        <div class="fighter-avatar">CJ</div>
+                        <div class="fighter-details">
+                            <div class="fighter-details-name">Clayton Carpenter</div>
+                            <div class="fighter-details-record">8-0-0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fight-item">
+                    <div class="fighter-info">
+                        <div class="fighter-avatar">RS</div>
+                        <div class="fighter-details">
+                            <div class="fighter-details-name">Rinya Nakamura</div>
+                            <div class="fighter-details-record">9-0-0</div>
+                        </div>
+                    </div>
+                    <div class="fight-center">
+                        <div class="weight-class">Bantamweight</div>
+                        <div class="rounds">3 Rounds</div>
+                    </div>
+                    <div class="fighter-info right">
+                        <div class="fighter-avatar">MV</div>
+                        <div class="fighter-details">
+                            <div class="fighter-details-name">Muin Gafurov</div>
+                            <div class="fighter-details-record">19-6-0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fight-item">
+                    <div class="fighter-info">
+                        <div class="fighter-avatar">GR</div>
+                        <div class="fighter-details">
+                            <div class="fighter-details-name">Grant Dawson</div>
+                            <div class="fighter-details-record">21-2-1</div>
+                        </div>
+                    </div>
+                    <div class="fight-center">
+                        <div class="weight-class">Lightweight</div>
+                        <div class="rounds">3 Rounds</div>
+                    </div>
+                    <div class="fighter-info right">
+                        <div class="fighter-avatar">DG</div>
+                        <div class="fighter-details">
+                            <div class="fighter-details-name">Diego Ferreira</div>
+                            <div class="fighter-details-record">18-5-0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Event Details -->
+        <div class="event-details-section">
+            <div class="detail-block">
+                <div class="detail-block-title">Venue Information</div>
+                <div class="detail-block-content">
+                    Intuit Dome<br>
+                    3930 West Century Boulevard<br>
+                    Inglewood, CA<br>
+                    Indoor Arena<br>
+                    Capacity: 18,000
+                </div>
+            </div>
+
+            <div class="detail-block">
+                <div class="detail-block-title">Broadcast Schedule</div>
+                <div class="detail-block-content">
+                    Early Prelims: 6:00 PM ET<br>
+                    UFC Fight Pass<br><br>
+                    Prelims: 8:00 PM ET<br>
+                    ESPN<br><br>
+                    Main Card: 10:00 PM ET<br>
+                    ESPN+ PPV
+                </div>
+            </div>
+
+            <div class="detail-block">
+                <div class="detail-block-title">Event Stats</div>
+                <div class="detail-block-content">
+                    Total Fights: 12<br>
+                    Title Fights: 2<br>
+                    Main Card Fights: 4<br>
+                    Preliminary Fights: 4<br>
+                    Early Prelims: 4<br>
+                    Average Fighter Age: 31
+                </div>
+            </div>
+
+            <div class="detail-block">
+                <div class="detail-block-title">Weight Classes</div>
+                <div class="detail-block-content">
+                    Lightweight (155 lbs): 3 fights<br>
+                    Bantamweight (135 lbs): 3 fights<br>
+                    Light Heavyweight (205 lbs): 2 fights<br>
+                    Flyweight (125 lbs): 1 fight<br>
+                    Welterweight (170 lbs): 1 fight<br>
+                    Middleweight (185 lbs): 1 fight<br>
+                    Heavyweight (265 lbs): 1 fight
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample JavaScript for expanding fight details on click
+        document.querySelectorAll('.fight-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // In a real app, this would expand to show more fighter details
+                console.log('Fight clicked - would show expanded details');
+            });
+        });
+
+        // Simulate real-time data updates
+        function updateTimeToEvent() {
+            const eventDate = new Date('2025-01-18T23:00:00-05:00');
+            const now = new Date();
+            const diff = eventDate - now;
+
+            if (diff > 0) {
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+                // In a real app, update a countdown timer
+                console.log(`Event starts in: ${days}d ${hours}h ${minutes}m`);
+            }
+        }
+
+        // Update every minute
+        updateTimeToEvent();
+        setInterval(updateTimeToEvent, 60000);
+    </script>
+</body>
+</html>

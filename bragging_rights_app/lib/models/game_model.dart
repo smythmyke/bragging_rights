@@ -133,6 +133,9 @@ class GameModel {
       'mainEventFighters': mainEventFighters,
     };
   }
+
+  // Alias for toMap for consistency
+  Map<String, dynamic> toJson() => toMap();
   
   Map<String, dynamic> toFirestore() {
     return {

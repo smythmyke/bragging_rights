@@ -13,6 +13,7 @@ import 'game_odds_enrichment_service.dart';
 import 'odds_api_service.dart';
 import 'firestore_cache_service.dart';
 import 'live_score_update_service.dart';
+import 'mma_id_fix.dart';
 
 /// Optimized games service with intelligent loading and timeframe categorization
 class OptimizedGamesService {
@@ -813,7 +814,7 @@ class OptimizedGamesService {
           final mainEvent = matchedFights.last;
           final eventName = espnEvent['name'] ?? '${mainEvent.awayTeam} vs ${mainEvent.homeTeam}';
 
-          // Create safe Firestore ID
+          // Create safe Firestore ID (only used for Boxing or when ESPN ID unavailable)
           final safeId = '${sport.toLowerCase()}_${eventName.toLowerCase()
             .replaceAll(' ', '_')
             .replaceAll('/', '_')
@@ -821,11 +822,19 @@ class OptimizedGamesService {
             .replaceAll('.', '')
             .replaceAll('vs', 'v')}';
 
+          // For MMA, use ESPN event ID directly; for Boxing use safe ID
+          final espnEventId = espnEvent['id']?.toString();
+          final eventId = (sport.toUpperCase() == 'MMA' && espnEventId != null)
+              ? espnEventId
+              : safeId;
+
           debugPrint('🎯 Event: $eventName with ${matchedFights.length} fights');
           debugPrint('   Main Event: ${mainEvent.awayTeam} vs ${mainEvent.homeTeam}');
+          debugPrint('   Using ID: $eventId (ESPN: $espnEventId)');
 
           final groupedEvent = GameModel(
-            id: safeId,
+            id: eventId,
+            espnId: espnEventId,  // Store ESPN ID for API calls
             sport: sport.toUpperCase(),
             homeTeam: mainEvent.homeTeam,
             awayTeam: mainEvent.awayTeam,
@@ -972,6 +981,12 @@ class OptimizedGamesService {
       // TEMPORARY: Force cache refresh for MLB to get ESPN IDs
       if (sport.toUpperCase() == 'MLB') {
         debugPrint('⚠️ Bypassing cache for MLB to fetch fresh data with ESPN IDs');
+        return null;
+      }
+
+      // TEMPORARY: Force cache refresh for MMA to get ESPN IDs
+      if (sport.toUpperCase() == 'MMA') {
+        debugPrint('⚠️ Bypassing cache for MMA to fetch fresh data with ESPN IDs');
         return null;
       }
 
@@ -1225,16 +1240,13 @@ class OptimizedGamesService {
       final mainEvent = eventFights.last;
       final eventName = '${mainEvent.awayTeam} vs ${mainEvent.homeTeam}';
 
-      // Create safe Firestore ID
-      final safeId = '${sport.toLowerCase()}_${eventName.toLowerCase()
-        .replaceAll(' ', '_')
-        .replaceAll('/', '_')
-        .replaceAll(':', '')
-        .replaceAll('.', '')
-        .replaceAll('vs', 'v')}';
+      // CRITICAL FIX: Generate appropriate IDs based on sport type
+      // For MMA: numeric pseudo-ESPN IDs, for Boxing: string IDs
+      final ids = MMAIdFix.getEventIds(sport, eventFights.first.gameTime, eventName);
 
       final groupedEvent = GameModel(
-        id: safeId,
+        id: ids['id']!,
+        espnId: ids['espnId'],  // Pseudo-ESPN ID for MMA, null for others
         sport: sport.toUpperCase(),
         homeTeam: mainEvent.homeTeam,
         awayTeam: mainEvent.awayTeam,

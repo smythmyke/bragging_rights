@@ -16,6 +16,7 @@ import 'screens/game/game_detail_screen.dart';
 import 'screens/game/game_details_screen.dart';
 import 'screens/fighter/fighter_details_screen.dart';
 import 'screens/boxing/boxing_details_screen.dart';
+import 'screens/mma/mma_details_screen.dart';
 import 'models/boxing_event_model.dart';
 import 'screens/betting/bet_selection_screen.dart';
 import 'screens/betting/fight_card_grid_screen.dart';
@@ -147,6 +148,23 @@ class BraggingRightsApp extends StatelessWidget {
           final args = settings.arguments as Map<String, dynamic>;
           final sport = args['sport']?.toString().toUpperCase() ?? '';
 
+          // Use MMADetailsScreen for MMA/UFC events
+          if (sport == 'MMA' || sport == 'UFC') {
+            final gameId = args['gameId']?.toString() ?? '';
+            final gameData = args['gameData'];
+
+            return MaterialPageRoute(
+              builder: (context) => MMADetailsScreen(
+                eventId: gameId,
+                eventName: gameData != null
+                  ? '${gameData.homeTeam} vs ${gameData.awayTeam}'
+                  : 'MMA Event',
+                eventDate: gameData?.gameTime,
+                gameData: gameData?.toJson(),
+              ),
+            );
+          }
+
           // Use BoxingDetailsScreen for boxing events
           if (sport == 'BOXING') {
             // Try to get from our cached boxing events first
@@ -187,6 +205,16 @@ class BraggingRightsApp extends StatelessWidget {
           final event = args['event'] as BoxingEvent;
           return MaterialPageRoute(
             builder: (context) => BoxingDetailsScreen(event: event),
+          );
+        } else if (settings.name == '/mma-details') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => MMADetailsScreen(
+              eventId: args['eventId']?.toString() ?? '',
+              eventName: args['eventName']?.toString() ?? 'MMA Event',
+              eventDate: args['eventDate'] as DateTime?,
+              gameData: args['gameData'] as Map<String, dynamic>?,
+            ),
           );
         } else if (settings.name == '/fighter-details') {
           final args = settings.arguments as Map<String, dynamic>;

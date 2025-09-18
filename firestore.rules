@@ -54,6 +54,27 @@ service cloud.firestore {
       allow write: if false;      // Only Cloud Functions can write
     }
 
+    // MMA collections - PUBLIC READ for cached data
+    match /mma_cache/{document=**} {
+      allow read: if true;  // Public read for cache metadata
+      allow write: if true;  // Allow public writes for caching
+    }
+
+    match /mma_events/{eventId} {
+      allow read: if true;  // Public read for cached events
+      allow write: if true;  // Allow public writes for caching
+    }
+
+    match /mma_fighters/{fighterId} {
+      allow read: if true;  // Public read for cached fighters
+      allow write: if true;  // Allow public writes for caching
+    }
+
+    match /fighter_images/{fighterId} {
+      allow read: if true;  // Public read for fighter images
+      allow write: if true;  // Allow public writes for caching
+    }
+
 
 
     // Game cache metadata - allow public writes for caching
