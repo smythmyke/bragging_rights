@@ -12,6 +12,13 @@ admin.initializeApp();
 const db = admin.firestore();
 const FieldValue = admin.firestore.FieldValue;
 
+// Import boxing functions
+const boxingFunctions = require('./updateBoxingCache');
+exports.dailyBoxingUpdate = boxingFunctions.dailyBoxingUpdate;
+exports.weeklyFighterUpdate = boxingFunctions.weeklyFighterUpdate;
+exports.resetBoxingApiCounter = boxingFunctions.resetBoxingApiCounter;
+exports.manualBoxingRefresh = boxingFunctions.manualBoxingRefresh;
+
 // ============================================
 // BET SETTLEMENT FUNCTIONS
 // ============================================

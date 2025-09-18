@@ -15,6 +15,8 @@ import 'screens/pools/pool_selection_screen.dart';
 import 'screens/game/game_detail_screen.dart';
 import 'screens/game/game_details_screen.dart';
 import 'screens/fighter/fighter_details_screen.dart';
+import 'screens/boxing/boxing_details_screen.dart';
+import 'models/boxing_event_model.dart';
 import 'screens/betting/bet_selection_screen.dart';
 import 'screens/betting/fight_card_grid_screen.dart';
 import 'screens/betting/quick_pick_screen.dart';
@@ -143,12 +145,48 @@ class BraggingRightsApp extends StatelessWidget {
           );
         } else if (settings.name == '/game-details') {
           final args = settings.arguments as Map<String, dynamic>;
+          final sport = args['sport']?.toString().toUpperCase() ?? '';
+
+          // Use BoxingDetailsScreen for boxing events
+          if (sport == 'BOXING') {
+            // Try to get from our cached boxing events first
+            final gameId = args['gameId']?.toString() ?? '';
+            final gameData = args['gameData'];
+
+            // Create a basic BoxingEvent from the game data
+            final boxingEvent = BoxingEvent(
+              id: gameId,
+              title: gameData != null
+                ? '${gameData.homeTeam} vs ${gameData.awayTeam}'
+                : 'Boxing Match',
+              date: gameData?.gameTime ?? DateTime.now(),
+              venue: gameData?.venue ?? '',
+              location: '', // Will be filled from cache or API
+              posterUrl: null,
+              promotion: 'Boxing',
+              broadcasters: [],
+              source: DataSource.espn, // Start with ESPN, will check cache
+              hasFullData: false, // Will be updated if cache has data
+            );
+
+            return MaterialPageRoute(
+              builder: (context) => BoxingDetailsScreen(event: boxingEvent),
+            );
+          }
+
+          // Use regular GameDetailsScreen for other sports
           return MaterialPageRoute(
             builder: (context) => GameDetailsScreen(
               gameId: args['gameId']?.toString() ?? '',
               sport: args['sport']?.toString() ?? '',
               gameData: args['gameData'],
             ),
+          );
+        } else if (settings.name == '/boxing-details') {
+          final args = settings.arguments as Map<String, dynamic>;
+          final event = args['event'] as BoxingEvent;
+          return MaterialPageRoute(
+            builder: (context) => BoxingDetailsScreen(event: event),
           );
         } else if (settings.name == '/fighter-details') {
           final args = settings.arguments as Map<String, dynamic>;

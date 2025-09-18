@@ -1,0 +1,367 @@
+import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../models/boxing_event_model.dart';
+import '../../../theme/app_theme.dart';
+
+class BroadcastTab extends StatelessWidget {
+  final BoxingEvent event;
+
+  const BroadcastTab({
+    Key? key,
+    required this.event,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Broadcasting networks
+          if (event.broadcasters.isNotEmpty) ...[
+            _SectionCard(
+              icon: PhosphorIcons.television(PhosphorIconsStyle.bold),
+              title: 'HOW TO WATCH',
+              child: Column(
+                children: event.broadcasters.map((broadcaster) =>
+                  _BroadcasterTile(broadcaster: broadcaster)
+                ).toList(),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Watch party suggestions
+          _SectionCard(
+            icon: PhosphorIcons.users(PhosphorIconsStyle.bold),
+            title: 'WATCH PARTY',
+            child: Column(
+              children: [
+                _WatchOption(
+                  icon: PhosphorIcons.house(PhosphorIconsStyle.fill),
+                  title: 'Host at Home',
+                  description: 'Invite friends over for the ultimate fight night experience',
+                ),
+                const SizedBox(height: 12),
+                _WatchOption(
+                  icon: PhosphorIcons.beer(PhosphorIconsStyle.fill),
+                  title: 'Sports Bar',
+                  description: 'Find a local venue showing the fight',
+                ),
+                const SizedBox(height: 12),
+                _WatchOption(
+                  icon: PhosphorIcons.videoCamera(PhosphorIconsStyle.fill),
+                  title: 'Virtual Watch Party',
+                  description: 'Stream together with friends online',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // PPV Information (if applicable)
+          _SectionCard(
+            icon: PhosphorIcons.ticket(PhosphorIconsStyle.bold),
+            title: 'VIEWING OPTIONS',
+            child: Column(
+              children: [
+                _ViewingOption(
+                  title: 'Pay-Per-View',
+                  price: '\$79.99',
+                  features: [
+                    'HD & 4K streaming available',
+                    'Unlimited replays for 7 days',
+                    'All preliminary fights included',
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _ViewingOption(
+                  title: 'Streaming Services',
+                  price: 'Subscription',
+                  features: [
+                    'DAZN, ESPN+, or platform subscription',
+                    'Monthly or annual plans available',
+                    'Access to fight library',
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final Widget child;
+
+  const _SectionCard({
+    required this.icon,
+    required this.title,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.darkGray,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.lightGray.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.codGray,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, size: 20, color: AppTheme.neonGreen),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: AppTheme.lightGray,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: child,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BroadcasterTile extends StatelessWidget {
+  final String broadcaster;
+
+  const _BroadcasterTile({required this.broadcaster});
+
+  @override
+  Widget build(BuildContext context) {
+    // Parse broadcaster string (e.g., "DAZN (United States)")
+    final parts = broadcaster.split('(');
+    final network = parts[0].trim();
+    final region = parts.length > 1
+        ? parts[1].replaceAll(')', '').trim()
+        : '';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.codGray,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: AppTheme.neonGreen.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            PhosphorIcons.play(PhosphorIconsStyle.fill),
+            size: 20,
+            color: AppTheme.neonGreen,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  network,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (region.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    region,
+                    style: TextStyle(
+                      color: AppTheme.lightGray.withOpacity(0.7),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WatchOption extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String description;
+
+  const _WatchOption({
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.codGray,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppTheme.neonGreen.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: 20,
+              color: AppTheme.neonGreen,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: TextStyle(
+                    color: AppTheme.lightGray.withOpacity(0.7),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ViewingOption extends StatelessWidget {
+  final String title;
+  final String price;
+  final List<String> features;
+
+  const _ViewingOption({
+    required this.title,
+    required this.price,
+    required this.features,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.codGray,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: AppTheme.gold.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.gold.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  price,
+                  style: const TextStyle(
+                    color: AppTheme.gold,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...features.map((feature) => Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              children: [
+                Icon(
+                  PhosphorIcons.check(PhosphorIconsStyle.bold),
+                  size: 14,
+                  color: AppTheme.neonGreen,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    feature,
+                    style: TextStyle(
+                      color: AppTheme.lightGray,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+}

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Trigger Boxing Update</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        h1 { color: #4ade80; }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            background: #333;
+            border-radius: 8px;
+            border-left: 4px solid #4ade80;
+        }
+        .warning {
+            background: #332200;
+            border-left-color: #fbbf24;
+            color: #fbbf24;
+        }
+        .error {
+            background: #330000;
+            border-left-color: #f87171;
+            color: #f87171;
+        }
+        .success {
+            background: #003300;
+            border-left-color: #4ade80;
+            color: #4ade80;
+        }
+        button {
+            background: #4ade80;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 10px 5px;
+        }
+        button:hover { background: #22c55e; }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        #output {
+            background: #000;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: pre-line;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .api-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #222;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .api-calls {
+            display: flex;
+            gap: 20px;
+        }
+        .api-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .api-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4ade80;
+        }
+        .api-label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <h1>🥊 Boxing Data Manual Update</h1>
+
+    <div class="status warning">
+        ⚠️ <strong>Manual API Call:</strong> This will use 1-5 of your 100 monthly API calls.
+        Only run when necessary!
+    </div>
+
+    <div class="api-status">
+        <div>Current API Usage</div>
+        <div class="api-calls">
+            <div class="api-stat">
+                <span class="api-number" id="callsUsed">-</span>
+                <span class="api-label">Used</span>
+            </div>
+            <div class="api-stat">
+                <span class="api-number" id="callsRemaining">-</span>
+                <span class="api-label">Remaining</span>
+            </div>
+        </div>
+    </div>
+
+    <button id="checkBtn" onclick="checkApiStatus()">Check API Status</button>
+    <button id="updateBtn" onclick="triggerUpdate()" disabled>Trigger Boxing Update</button>
+
+    <div id="output"></div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import {
+            getFirestore,
+            doc,
+            getDoc,
+            updateDoc,
+            collection,
+            addDoc,
+            serverTimestamp,
+            query,
+            where,
+            orderBy,
+            limit,
+            getDocs
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCAK38Cbn7xPxjWMhSqiWDmJ0N4oqULfQk",
+            authDomain: "bragging-rights-ea6e1.firebaseapp.com",
+            projectId: "bragging-rights-ea6e1",
+            storageBucket: "bragging-rights-ea6e1.appspot.com",
+            messagingSenderId: "685843104433",
+            appId: "1:685843104433:web:19b65f6f14c7e0f06ffb68"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.checkApiStatus = async function() {
+            const output = document.getElementById('output');
+            output.innerHTML = 'Checking API status...\n\n';
+
+            try {
+                // Get metadata
+                const metadataDoc = await getDoc(doc(db, 'boxing_cache', 'metadata'));
+
+                if (metadataDoc.exists()) {
+                    const data = metadataDoc.data();
+                    const used = data.apiCallsThisMonth || 0;
+                    const remaining = data.apiCallsRemaining || (100 - used);
+
+                    document.getElementById('callsUsed').textContent = used;
+                    document.getElementById('callsRemaining').textContent = remaining;
+
+                    output.innerHTML += `✅ API Status Retrieved\n`;
+                    output.innerHTML += `• Calls this month: ${used}/100\n`;
+                    output.innerHTML += `• Remaining: ${remaining}\n`;
+                    output.innerHTML += `• Last updated: ${data.lastUpdated ? new Date(data.lastUpdated.seconds * 1000).toLocaleString() : 'Never'}\n\n`;
+
+                    if (remaining > 5) {
+                        document.getElementById('updateBtn').disabled = false;
+                        output.innerHTML += `✅ Sufficient API calls available. You can trigger an update.\n`;
+                    } else {
+                        output.innerHTML += `⚠️ Low on API calls. Consider waiting for scheduled update.\n`;
+                    }
+
+                    // Check recent events
+                    const eventsQuery = query(
+                        collection(db, 'boxing_events'),
+                        orderBy('date', 'desc'),
+                        limit(5)
+                    );
+                    const eventsSnapshot = await getDocs(eventsQuery);
+
+                    if (!eventsSnapshot.empty) {
+                        output.innerHTML += `\n📅 Recent Events in Cache:\n`;
+                        eventsSnapshot.forEach(doc => {
+                            const event = doc.data();
+                            if (!event._sample) {
+                                output.innerHTML += `• ${event.title} - ${new Date(event.date.seconds * 1000).toLocaleDateString()}\n`;
+                            }
+                        });
+                    } else {
+                        output.innerHTML += `\nℹ️ No boxing events in cache yet.\n`;
+                    }
+
+                } else {
+                    output.innerHTML += '❌ Metadata not found. Collections may not be initialized.\n';
+                    output.innerHTML += 'Please run the initialization first.\n';
+                }
+
+            } catch (error) {
+                output.innerHTML += `❌ Error: ${error.message}\n`;
+                console.error('Error:', error);
+            }
+        }
+
+        window.triggerUpdate = async function() {
+            const output = document.getElementById('output');
+            const updateBtn = document.getElementById('updateBtn');
+            updateBtn.disabled = true;
+
+            output.innerHTML = 'Starting manual boxing data update...\n\n';
+            output.innerHTML += '⏳ Simulating Cloud Function execution...\n\n';
+
+            try {
+                // Since we can't directly trigger the Cloud Function from the browser,
+                // we'll provide instructions
+
+                output.innerHTML += '📋 MANUAL TRIGGER INSTRUCTIONS:\n\n';
+                output.innerHTML += '1. Open a new terminal/command prompt\n';
+                output.innerHTML += '2. Navigate to your project folder:\n';
+                output.innerHTML += '   cd C:\\Users\\smyth\\OneDrive\\Desktop\\Projects\\Bragging_Rights\\functions\n\n';
+                output.innerHTML += '3. Run this command to test the function locally:\n';
+                output.innerHTML += '   firebase functions:shell\n\n';
+                output.innerHTML += '4. Once the shell starts, type:\n';
+                output.innerHTML += '   dailyBoxingUpdate()\n\n';
+                output.innerHTML += '5. Press Enter to execute\n\n';
+                output.innerHTML += 'OR\n\n';
+                output.innerHTML += 'Use Google Cloud Console:\n';
+                output.innerHTML += '1. Go to https://console.cloud.google.com/functions\n';
+                output.innerHTML += '2. Select project: bragging-rights-ea6e1\n';
+                output.innerHTML += '3. Find "dailyBoxingUpdate" function\n';
+                output.innerHTML += '4. Click on it and select "TESTING" tab\n';
+                output.innerHTML += '5. Click "TEST THE FUNCTION"\n\n';
+
+                // Log the attempt
+                await addDoc(collection(db, 'boxing_activity_log'), {
+                    status: 'manual_trigger_attempted',
+                    message: 'Manual update requested via web interface',
+                    timestamp: serverTimestamp()
+                });
+
+                output.innerHTML += '✅ Activity logged. Follow the instructions above to trigger the update.\n';
+
+            } catch (error) {
+                output.innerHTML += `❌ Error: ${error.message}\n`;
+                console.error('Error:', error);
+            }
+
+            updateBtn.disabled = false;
+        }
+
+        // Check status on load
+        window.addEventListener('load', () => {
+            checkApiStatus();
+        });
+    </script>
+</body>
+</html>
