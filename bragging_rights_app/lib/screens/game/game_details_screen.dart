@@ -41,6 +41,13 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
   int _selectedTabIndex = 0;
   String _selectedTeam = 'away'; // For stats tab toggle
 
+  // NHL-specific data
+  Map<String, dynamic>? _nhlBoxScore;
+  List<dynamic>? _nhlScoringPlays;
+  Map<String, dynamic>? _nhlStandings;
+  Map<String, dynamic>? _nhlGameLeaders;
+  Map<String, dynamic>? _nhlOddsData;
+
   @override
   void initState() {
     super.initState();
@@ -53,7 +60,9 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         : widget.sport.toUpperCase() == 'NBA'
         ? 5
         : widget.sport.toUpperCase() == 'NFL'
-        ? 5
+        ? 4  // Changed from 5 to 4 to match actual tabs (Overview, Stats, Standings, H2H)
+        : widget.sport.toUpperCase() == 'NHL'
+        ? 4
         : 5;
     _tabController = TabController(length: tabCount, vsync: this);
     _tabController.addListener(() {
@@ -89,6 +98,8 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         await _loadNBADetails();
       } else if (widget.sport.toUpperCase() == 'NFL') {
         await _loadNFLDetails();
+      } else if (widget.sport.toUpperCase() == 'NHL') {
+        await _loadNHLDetails();
       } else {
         // TODO: Implement for other sports
       }
@@ -489,6 +500,13 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                       const Tab(text: 'Standings'),
                       const Tab(text: 'H2H'),
                     ]
+                  : widget.sport.toUpperCase() == 'NHL'
+                  ? [
+                      const Tab(text: 'Overview'),
+                      const Tab(text: 'Box Score'),
+                      const Tab(text: 'Scoring'),
+                      const Tab(text: 'Standings'),
+                    ]
                   : [
                       const Tab(text: 'Overview'),
                       if (_isCombatSport)
@@ -536,6 +554,13 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                           _buildNFLStatsTab(),
                           _buildNFLStandingsTab(),
                           _buildNFLH2HTab(),
+                        ]
+                      : widget.sport.toUpperCase() == 'NHL'
+                      ? [
+                          _buildNHLOverviewTab(),
+                          _buildNHLBoxScoreTab(),
+                          _buildNHLScoringTab(),
+                          _buildNHLStandingsTab(),
                         ]
                       : [
                           _buildOverviewTab(),
@@ -4104,6 +4129,12 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         // Log available data sections
         print('Summary data keys: ${summaryData.keys.toList()}');
 
+        // Debug logging for boxscore
+        print('🔍 NFL boxscore data: ${summaryData['boxscore'] != null ? 'Found' : 'Not found'}');
+        if (summaryData['boxscore'] != null) {
+          print('  Boxscore keys: ${summaryData['boxscore'].keys.toList()}');
+        }
+
         setState(() {
           _boxScore = summaryData['boxscore'];
           _gameData = summaryData;
@@ -4515,46 +4546,198 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
       return const Center(child: Text('Stats not available'));
     }
 
+    final teams = _boxScore!['teams'] as List? ?? [];
+    if (teams.isEmpty) {
+      return const Center(child: Text('No team stats available'));
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          _buildNFLTeamStatsComparison(),
-        ],
-      ),
-    );
-  }
+          // Team Stats Card
+          Card(
+            color: AppTheme.surfaceBlue,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'TEAM STATS',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryCyan,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
 
-  Widget _buildNFLTeamStatsComparison() {
-    final teams = _boxScore!['teams'] as List? ?? [];
-    if (teams.length < 2) return const SizedBox();
+                  // Stats comparison for both teams
+                  if (teams.length >= 2) ...[
+                    // Team names header
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            teams[1]['team']?['displayName'] ?? 'Away',
+                            textAlign: TextAlign.right,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const SizedBox(width: 50),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            teams[0]['team']?['displayName'] ?? 'Home',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceBlue,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'TEAM STATS',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.primaryCyan,
-              letterSpacing: 1.2,
+                    // Get all statistics categories
+                    ..._buildStatComparisons(teams),
+                  ],
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 16),
-          // Stats comparison would go here
-          // Using statistics from teams[0] and teams[1]
         ],
       ),
     );
   }
+
+  List<Widget> _buildStatComparisons(List<dynamic> teams) {
+    List<Widget> widgets = [];
+
+    // Get statistics from both teams
+    final team1Stats = teams[1]['statistics'] as List? ?? [];
+    final team2Stats = teams[0]['statistics'] as List? ?? [];
+
+    // Find common stat categories
+    for (int i = 0; i < team1Stats.length && i < team2Stats.length; i++) {
+      final stat1 = team1Stats[i];
+      final stat2 = team2Stats[i];
+
+      if (stat1['name'] == stat2['name']) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              children: [
+                // Stat name
+                Text(
+                  stat1['displayName'] ?? stat1['name'] ?? '',
+                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                ),
+                const SizedBox(height: 4),
+                // Stat values with progress bar
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        stat1['displayValue'] ?? '',
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Visual comparison bar
+                    Expanded(
+                      flex: 3,
+                      child: _buildComparisonBar(
+                        _parseStatValue(stat1['displayValue']),
+                        _parseStatValue(stat2['displayValue']),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        stat2['displayValue'] ?? '',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    }
+
+    return widgets;
+  }
+
+  double _parseStatValue(String? value) {
+    if (value == null) return 0;
+    // Remove any non-numeric characters except . and -
+    final cleanValue = value.replaceAll(RegExp(r'[^0-9.-]'), '');
+    return double.tryParse(cleanValue) ?? 0;
+  }
+
+  Widget _buildComparisonBar(double value1, double value2) {
+    final total = value1 + value2;
+    if (total == 0) {
+      return Container(
+        height: 8,
+        decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(4),
+        ),
+      );
+    }
+
+    final percentage1 = value1 / total;
+
+    return Container(
+      height: 8,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: (percentage1 * 100).round(),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppTheme.primaryCyan.withOpacity(0.6),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(4),
+                  bottomLeft: Radius.circular(4),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            flex: ((1 - percentage1) * 100).round(),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.3),
+                borderRadius: const BorderRadius.only(
+                  topRight: Radius.circular(4),
+                  bottomRight: Radius.circular(4),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   Widget _buildNFLStandingsTab() {
     final standings = _eventDetails?['standings'];
@@ -4563,25 +4746,206 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
       return const Center(child: Text('Standings not available'));
     }
 
+    // Debug log to understand data structure
+    print('Standings type: ${standings.runtimeType}');
+    print('Standings keys: ${standings.keys.toList()}');
+
+    // Parse standings data structure - handle both List and Map
+    final groups = standings['groups'] is List
+        ? standings['groups'] as List
+        : standings['groups'] != null
+            ? (standings['groups'] as Map).values.toList()
+            : [];
+
+    if (groups.isEmpty) {
+      return const Center(child: Text('No standings data available'));
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Division standings
-          // Conference standings
-          // Playoff picture
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceBlue,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+          for (final group in groups) ...[
+            // Group name (AFC/NFC)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryCyan.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                group['header'] ?? group['name'] ?? 'Conference',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primaryCyan,
+                ),
+              ),
             ),
-            child: Text('Division and conference standings'),
-          ),
+            const SizedBox(height: 12),
+
+            // Get standings/divisions - handle both List and Map
+            ..._buildDivisionStandings(group['standings']),
+
+            const SizedBox(height: 16),
+          ],
         ],
       ),
     );
+  }
+
+  List<Widget> _buildDivisionStandings(dynamic standingsData) {
+    if (standingsData == null) return [];
+
+    // Convert to list if it's a Map
+    final standingsList = standingsData is List
+        ? standingsData
+        : (standingsData as Map).values.toList();
+
+    List<Widget> widgets = [];
+
+    for (final standings in standingsList) {
+      widgets.add(
+        Card(
+          color: AppTheme.surfaceBlue,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Division name
+                Text(
+                  standings['name'] ?? 'Division',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Teams table
+                ..._buildTeamsTable(standings['entries']),
+              ],
+            ),
+          ),
+        ),
+      );
+      widgets.add(const SizedBox(height: 12));
+    }
+
+    return widgets;
+  }
+
+  List<Widget> _buildTeamsTable(dynamic entriesData) {
+    if (entriesData == null) return [];
+
+    // Convert to list if it's a Map
+    final entriesList = entriesData is List
+        ? entriesData
+        : (entriesData as Map).values.toList();
+
+    List<Widget> widgets = [];
+
+    for (int i = 0; i < entriesList.length; i++) {
+      final entry = entriesList[i];
+
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              // Rank
+              SizedBox(
+                width: 30,
+                child: Text(
+                  _getStatValue(entry['stats'], 'rank') ?? '${i + 1}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              // Team name
+              Expanded(
+                flex: 3,
+                child: Row(
+                  children: [
+                    if (entry['team']?['logo'] != null)
+                      CachedNetworkImage(
+                        imageUrl: entry['team']['logo'],
+                        width: 24,
+                        height: 24,
+                        errorWidget: (_, __, ___) => const SizedBox(width: 24),
+                      )
+                    else
+                      const SizedBox(width: 24),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        entry['team']?['displayName'] ?? entry['team']?['name'] ?? '',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // W-L
+              SizedBox(
+                width: 60,
+                child: Text(
+                  '${_getStatValue(entry['stats'], 'wins') ?? '0'}-${_getStatValue(entry['stats'], 'losses') ?? '0'}',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              // PCT
+              SizedBox(
+                width: 50,
+                child: Text(
+                  _getStatDisplayValue(entry['stats'], 'winPercent') ?? '.000',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey[400]),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (i < entriesList.length - 1) {
+        widgets.add(Divider(color: Colors.grey.withOpacity(0.2)));
+      }
+    }
+
+    return widgets;
+  }
+
+  String? _getStatValue(dynamic stats, String statName) {
+    if (stats == null) return null;
+
+    if (stats is List) {
+      try {
+        final stat = stats.firstWhere((s) => s['name'] == statName);
+        return stat['value']?.toString();
+      } catch (e) {
+        return null;
+      }
+    }
+
+    return null;
+  }
+
+  String? _getStatDisplayValue(dynamic stats, String statName) {
+    if (stats == null) return null;
+
+    if (stats is List) {
+      try {
+        final stat = stats.firstWhere((s) => s['name'] == statName);
+        return stat['displayValue']?.toString();
+      } catch (e) {
+        return null;
+      }
+    }
+
+    return null;
   }
 
   Widget _buildNFLH2HTab() {
@@ -4640,6 +5004,826 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _loadNHLDetails() async {
+    try {
+      print('=== LOADING NHL DETAILS ===');
+      print('Game ID: ${widget.gameId}');
+      print('Teams: ${_game?.awayTeam} vs ${_game?.homeTeam}');
+
+      // Use the ESPN ID resolver service
+      final resolver = EspnIdResolverService();
+
+      // Check if game already has ESPN ID
+      var espnGameId = _game?.espnId;
+
+      // If no ESPN ID, resolve it
+      if (espnGameId == null && _game != null) {
+        print('Resolving ESPN ID using resolver service...');
+        espnGameId = await resolver.resolveEspnId(_game!);
+
+        if (espnGameId != null) {
+          print('✅ ESPN ID resolved: $espnGameId');
+        } else {
+          print('❌ Could not resolve ESPN ID');
+          // Show user-friendly message
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Game details are temporarily unavailable'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+          return;
+        }
+      } else if (espnGameId == null) {
+        print('❌ No game data available to resolve ESPN ID');
+        return;
+      }
+
+      print('Using ESPN ID: $espnGameId');
+
+      // Fetch game summary data from ESPN
+      final summaryUrl = 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=$espnGameId';
+      print('Fetching summary from: $summaryUrl');
+
+      final summaryResponse = await http.get(Uri.parse(summaryUrl));
+      print('Summary response status: ${summaryResponse.statusCode}');
+
+      if (summaryResponse.statusCode == 200) {
+        final summaryData = json.decode(summaryResponse.body);
+
+        // Log available data sections
+        print('Summary data keys: ${summaryData.keys.toList()}');
+
+        // Store NHL-specific data
+        setState(() {
+          _eventDetails = summaryData;
+          _nhlBoxScore = summaryData['boxscore'];
+          _nhlScoringPlays = summaryData['scoringPlays'] as List?;
+          _nhlStandings = summaryData['standings'];
+          _nhlGameLeaders = summaryData['leaders'];
+
+          // Also store general game data
+          if (summaryData['header']?['competitions'] != null &&
+              (summaryData['header']['competitions'] as List).isNotEmpty) {
+            _gameData = {
+              ...summaryData,
+              'competitions': summaryData['header']['competitions'],
+            };
+          } else {
+            _gameData = summaryData;
+          }
+        });
+
+        // Log what data we found
+        if (_nhlBoxScore != null) {
+          print('✅ Box score data found');
+        }
+        if (_nhlScoringPlays != null) {
+          print('✅ Scoring plays found: ${_nhlScoringPlays!.length}');
+        }
+        if (_nhlStandings != null) {
+          print('✅ Standings data found');
+        }
+        if (_nhlGameLeaders != null) {
+          print('✅ Game leaders found');
+        }
+      } else {
+        print('❌ Summary API failed with status ${summaryResponse.statusCode}');
+      }
+
+      // Load odds data
+      await _loadNHLOdds();
+
+      print('=== NHL DETAILS LOADING END ===\n');
+    } catch (e, stackTrace) {
+      print('❌ Error loading NHL details: $e');
+      print('Stack trace: $stackTrace');
+    }
+  }
+
+  Future<void> _loadNHLOdds() async {
+    try {
+      if (_game == null) return;
+
+      final oddsData = await _oddsService.getMatchOdds(
+        sport: 'nhl',
+        homeTeam: _game!.homeTeam,
+        awayTeam: _game!.awayTeam,
+      );
+
+      if (oddsData != null) {
+        setState(() {
+          _nhlOddsData = oddsData;
+        });
+        print('✅ NHL odds data loaded');
+      }
+    } catch (e) {
+      print('Error loading NHL odds: $e');
+    }
+  }
+
+  Widget _buildNHLOverviewTab() {
+    if (_eventDetails == null) {
+      return const Center(child: Text('Loading game details...'));
+    }
+
+    final header = _eventDetails!['header'];
+    final competition = header?['competitions']?[0];
+    final competitors = competition?['competitors'] as List? ?? [];
+    final gameInfo = _eventDetails!['gameInfo'];
+    final venue = gameInfo?['venue'];
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Score card
+          Card(
+            color: AppTheme.surfaceBlue,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  // Teams and scores
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      for (final team in competitors) ...[
+                        Column(
+                          children: [
+                            CachedNetworkImage(
+                              imageUrl: team['team']?['logo'] ?? '',
+                              width: 60,
+                              height: 60,
+                              errorWidget: (_, __, ___) => const Icon(
+                                Icons.sports_hockey,
+                                size: 60,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              team['team']?['abbreviation'] ?? '',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                            Text(
+                              team['score'] ?? '0',
+                              style: const TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primaryCyan,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (competitors.indexOf(team) == 0)
+                          const Column(
+                            children: [
+                              SizedBox(height: 40),
+                              Text('VS', style: TextStyle(fontSize: 16)),
+                            ],
+                          ),
+                      ]
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Period and time
+                  if (competition?['status'] != null) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryCyan.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        competition['status']['type']['detail'] ?? '',
+                        style: const TextStyle(
+                          color: AppTheme.primaryCyan,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Odds section
+          if (_nhlOddsData != null) ...[
+            Text(
+              'BETTING LINES',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[400],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              color: AppTheme.surfaceBlue,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    // Moneyline
+                    if (_nhlOddsData!['moneyline'] != null) ...[
+                      const Text('Moneyline', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          for (final outcome in _nhlOddsData!['moneyline']['outcomes']) ...[
+                            Column(
+                              children: [
+                                Text(outcome['name'] ?? ''),
+                                Text(
+                                  outcome['price'] > 0 ? '+${outcome['price']}' : '${outcome['price']}',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.primaryCyan,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+
+                    // Puck Line
+                    if (_nhlOddsData!['spreads'] != null) ...[
+                      const Divider(height: 32),
+                      const Text('Puck Line', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          for (final outcome in _nhlOddsData!['spreads']['outcomes']) ...[
+                            Column(
+                              children: [
+                                Text(outcome['name'] ?? ''),
+                                Text(
+                                  '${outcome['point'] > 0 ? '+' : ''}${outcome['point']}',
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                Text(
+                                  outcome['price'] > 0 ? '+${outcome['price']}' : '${outcome['price']}',
+                                  style: const TextStyle(color: AppTheme.primaryCyan),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+
+                    // Totals
+                    if (_nhlOddsData!['totals'] != null) ...[
+                      const Divider(height: 32),
+                      const Text('Total Goals', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          for (final outcome in _nhlOddsData!['totals']['outcomes']) ...[
+                            Column(
+                              children: [
+                                Text('${outcome['name']} ${outcome['point']}'),
+                                Text(
+                                  outcome['price'] > 0 ? '+${outcome['price']}' : '${outcome['price']}',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.primaryCyan,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 16),
+
+          // Game Leaders
+          if (_nhlGameLeaders != null) ...[
+            Text(
+              'GAME LEADERS',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[400],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              color: AppTheme.surfaceBlue,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    for (final category in _nhlGameLeaders as List) ...[
+                      if (category['leaders'] != null && (category['leaders'] as List).isNotEmpty) ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              category['displayName'] ?? '',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              category['leaders'][0]['displayValue'] ?? '',
+                              style: const TextStyle(color: AppTheme.primaryCyan),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          category['leaders'][0]['athlete']?['displayName'] ?? '',
+                          style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                        ),
+                        const Divider(height: 16),
+                      ],
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+
+          // Venue info
+          if (venue != null) ...[
+            const SizedBox(height: 16),
+            Text(
+              'VENUE',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[400],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              color: AppTheme.surfaceBlue,
+              child: ListTile(
+                leading: const Icon(Icons.location_on, color: AppTheme.primaryCyan),
+                title: Text(venue['fullName'] ?? ''),
+                subtitle: Text(venue['address']?['city'] ?? ''),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNHLBoxScoreTab() {
+    if (_nhlBoxScore == null) {
+      return const Center(child: Text('Box score not available'));
+    }
+
+    final teams = _nhlBoxScore!['teams'] as List? ?? [];
+    final players = _nhlBoxScore!['players'] as List? ?? [];
+
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          const TabBar(
+            tabs: [
+              Tab(text: 'Team Stats'),
+              Tab(text: 'Player Stats'),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                // Team Stats
+                SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      for (final team in teams) ...[
+                        Card(
+                          color: AppTheme.surfaceBlue,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  team['team']?['displayName'] ?? '',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                if (team['statistics'] != null)
+                                  for (final stat in team['statistics']) ...[
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(stat['label'] ?? ''),
+                                        Text(
+                                          stat['displayValue'] ?? '',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppTheme.primaryCyan,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const Divider(),
+                                  ],
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ],
+                  ),
+                ),
+
+                // Player Stats
+                SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      for (final teamPlayers in players) ...[
+                        Card(
+                          color: AppTheme.surfaceBlue,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  teamPlayers['team']?['displayName'] ?? '',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+
+                                // Forwards
+                                if (teamPlayers['statistics']?[0] != null) ...[
+                                  const Text(
+                                    'Forwards',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppTheme.primaryCyan,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _buildNHLPlayerTable(teamPlayers['statistics'][0]),
+                                ],
+
+                                // Defense
+                                if (teamPlayers['statistics']?[1] != null) ...[
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'Defense',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppTheme.primaryCyan,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _buildNHLPlayerTable(teamPlayers['statistics'][1]),
+                                ],
+
+                                // Goalies
+                                if (teamPlayers['statistics']?[2] != null) ...[
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'Goalies',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppTheme.primaryCyan,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _buildNHLGoalieTable(teamPlayers['statistics'][2]),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNHLPlayerTable(Map<String, dynamic> playerGroup) {
+    final athletes = playerGroup['athletes'] as List? ?? [];
+    if (athletes.isEmpty) return const Text('No player data');
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        columns: const [
+          DataColumn(label: Text('Player')),
+          DataColumn(label: Text('G')),
+          DataColumn(label: Text('A')),
+          DataColumn(label: Text('P')),
+          DataColumn(label: Text('+/-')),
+          DataColumn(label: Text('SOG')),
+          DataColumn(label: Text('PIM')),
+          DataColumn(label: Text('TOI')),
+        ],
+        rows: athletes.map((player) {
+          final stats = player['stats'] as List? ?? [];
+          return DataRow(
+            cells: [
+              DataCell(Text(player['athlete']?['displayName'] ?? '')),
+              DataCell(Text(stats.length > 0 ? stats[0] : '0')),
+              DataCell(Text(stats.length > 1 ? stats[1] : '0')),
+              DataCell(Text(stats.length > 2 ? stats[2] : '0')),
+              DataCell(Text(stats.length > 3 ? stats[3] : '0')),
+              DataCell(Text(stats.length > 4 ? stats[4] : '0')),
+              DataCell(Text(stats.length > 5 ? stats[5] : '0')),
+              DataCell(Text(stats.length > 6 ? stats[6] : '0')),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildNHLGoalieTable(Map<String, dynamic> goalieGroup) {
+    final athletes = goalieGroup['athletes'] as List? ?? [];
+    if (athletes.isEmpty) return const Text('No goalie data');
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        columns: const [
+          DataColumn(label: Text('Goalie')),
+          DataColumn(label: Text('SA')),
+          DataColumn(label: Text('SV')),
+          DataColumn(label: Text('GA')),
+          DataColumn(label: Text('SV%')),
+          DataColumn(label: Text('TOI')),
+        ],
+        rows: athletes.map((player) {
+          final stats = player['stats'] as List? ?? [];
+          return DataRow(
+            cells: [
+              DataCell(Text(player['athlete']?['displayName'] ?? '')),
+              DataCell(Text(stats.length > 0 ? stats[0] : '0')),
+              DataCell(Text(stats.length > 1 ? stats[1] : '0')),
+              DataCell(Text(stats.length > 2 ? stats[2] : '0')),
+              DataCell(Text(stats.length > 3 ? stats[3] : '0')),
+              DataCell(Text(stats.length > 4 ? stats[4] : '0')),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildNHLScoringTab() {
+    if (_nhlScoringPlays == null || _nhlScoringPlays!.isEmpty) {
+      return const Center(child: Text('No scoring plays yet'));
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'GOALS (${_nhlScoringPlays!.length})',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[400],
+            ),
+          ),
+          const SizedBox(height: 8),
+          for (final play in _nhlScoringPlays!) ...[
+            Card(
+              color: AppTheme.surfaceBlue,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryCyan.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'Period ${play['period']?['number'] ?? ''}',
+                            style: const TextStyle(
+                              color: AppTheme.primaryCyan,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          play['clock']?['displayValue'] ?? '',
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        if (play['team']?['logo'] != null)
+                          CachedNetworkImage(
+                            imageUrl: play['team']['logo'],
+                            width: 30,
+                            height: 30,
+                            errorWidget: (_, __, ___) => const Icon(
+                              Icons.sports_hockey,
+                              size: 30,
+                            ),
+                          ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                play['team']?['displayName'] ?? '',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                play['text'] ?? '',
+                                style: TextStyle(
+                                  color: Colors.grey[300],
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (play['scoreValue'] != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          play['awayScore'] != null && play['homeScore'] != null
+                              ? '${play['awayScore']} - ${play['homeScore']}'
+                              : '',
+                          style: const TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNHLStandingsTab() {
+    if (_nhlStandings == null) {
+      return const Center(child: Text('Standings not available'));
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          for (final group in _nhlStandings!['groups'] ?? []) ...[
+            Card(
+              color: AppTheme.surfaceBlue,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      group['header'] ?? '',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryCyan,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: DataTable(
+                        columns: const [
+                          DataColumn(label: Text('Team')),
+                          DataColumn(label: Text('GP')),
+                          DataColumn(label: Text('W')),
+                          DataColumn(label: Text('L')),
+                          DataColumn(label: Text('OTL')),
+                          DataColumn(label: Text('PTS')),
+                          DataColumn(label: Text('DIFF')),
+                        ],
+                        rows: (group['standings']?['entries'] as List? ?? []).map((team) {
+                          final stats = team['stats'] as List? ?? [];
+                          return DataRow(
+                            selected: team['team']?['displayName'] == _game?.homeTeam ||
+                                team['team']?['displayName'] == _game?.awayTeam,
+                            cells: [
+                              DataCell(
+                                Row(
+                                  children: [
+                                    Text('${team['rank'] ?? ''}. '),
+                                    if (team['team']?['logos'] != null)
+                                      CachedNetworkImage(
+                                        imageUrl: team['team']['logos'][0]['href'] ?? '',
+                                        width: 20,
+                                        height: 20,
+                                        errorWidget: (_, __, ___) => const SizedBox(),
+                                      ),
+                                    const SizedBox(width: 4),
+                                    Text(team['team']?['abbreviation'] ?? ''),
+                                  ],
+                                ),
+                              ),
+                              DataCell(Text(stats.length > 0 ? stats[0]['displayValue'] ?? '' : '')),
+                              DataCell(Text(stats.length > 1 ? stats[1]['displayValue'] ?? '' : '')),
+                              DataCell(Text(stats.length > 2 ? stats[2]['displayValue'] ?? '' : '')),
+                              DataCell(Text(stats.length > 3 ? stats[3]['displayValue'] ?? '' : '')),
+                              DataCell(Text(
+                                stats.length > 4 ? stats[4]['displayValue'] ?? '' : '',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.primaryCyan,
+                                ),
+                              )),
+                              DataCell(Text(stats.length > 8 ? stats[8]['displayValue'] ?? '' : '')),
+                            ],
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
         ],
       ),
     );
