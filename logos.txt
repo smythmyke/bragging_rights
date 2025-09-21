@@ -1,0 +1,339 @@
+
+I/flutter (26326): Deleting pool yKmlQ5vwi0QUoh8IPqfY: Empty pool past close time
+I/flutter (26326):   ✅ Found 1 player results
+I/flutter (26326):   🎯 Found MMA fighter: Cam Rowston (ID: 4694832)
+I/flutter (26326):   🔗 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/4694832
+I/flutter (26326):     📡 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/4694832
+I/flutter (26326):     📡 Response status: 200
+I/flutter (26326):     📊 Fighter data received: Cam Rowston (ID: 4694832)
+W/Firestore(26326): (25.1.4) [WriteStream]: (389a00e) Stream closed with status: Status{code=PERMISSION_DENIED, description=Missing or insufficient permissions., cause=null}.
+W/Firestore(26326): (25.1.4) [Firestore]: Write failed at pools/05z1qivGRkRbPwbDNT0x: Status{code=PERMISSION_DENIED, description=Missing or insufficient permissions., cause=null}
+I/flutter (26326): ❌ Error cleaning up pools: [cloud_firestore/permission-denied] The caller does not have permission to execute the specified operation.
+I/flutter (26326): Cleaned up 81 expired/empty pools
+I/flutter (26326):     ❌ HTTP request error: type '(dynamic) => dynamic' is not a subtype of type '(dynamic) => bool' of 'test'
+I/flutter (26326):     Stack: #0      new MMAFighter.fromESPN (package:bragging_rights_app/models/mma_fighter_model.dart:262:31)
+I/flutter (26326): #1      MMAService._getFighterSimple (package:bragging_rights_app/services/mma_service.dart:323:38)
+I/flutter (26326): 
+I/flutter (26326):   ❌ Failed to load fighter from URL: http://sports.core.api.espn.com/v2/sports/mma/athletes/4694832
+I/flutter (26326):   ! No MMA fighters found in search results for: Cam Rowston
+I/flutter (26326): 🔍 Searching for fighter: Oban Elliott
+I/flutter (26326):   🌐 Search URL: https://site.web.api.espn.com/apis/search/v2?region=us&lang=en§ion=mma&limit=5&page=1&query=Oban%20Elliott&type=player
+I/flutter (26326):   ✅ Found 1 player results
+I/flutter (26326):   🎯 Found MMA fighter: Oban Elliott (ID: 4900808)
+I/flutter (26326):   🔗 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/4900808
+I/flutter (26326):     📡 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/4900808
+I/flutter (26326):     📡 Response status: 200
+I/flutter (26326):     📊 Fighter data received: Oban Elliott (ID: 4900808)
+I/flutter (26326):     ❌ HTTP request error: type '(dynamic) => dynamic' is not a subtype of type '(dynamic) => bool' of 'test'
+I/flutter (26326):     Stack: #0      new MMAFighter.fromESPN (package:bragging_rights_app/models/mma_fighter_model.dart:262:31)
+I/flutter (26326): #1      MMAService._getFighterSimple (package:bragging_rights_app/services/mma_service.dart:323:38)
+I/flutter (26326): 
+I/flutter (26326):   ❌ Failed to load fighter from URL: http://sports.core.api.espn.com/v2/sports/mma/athletes/4900808
+I/flutter (26326):   ! No MMA fighters found in search results for: Oban Elliott
+I/flutter (26326): 🔍 Searching for fighter: Jonathan Micallef
+I/flutter (26326):   🌐 Search URL: https://site.web.api.espn.com/apis/search/v2?region=us&lang=en§ion=mma&limit=5&page=1&query=Jonathan%20Micallef&type=player
+I/flutter (26326): 🎯 Opening fight details modal
+I/flutter (26326): 📊 Fight: Catchweight • 3 Rounds
+I/flutter (26326): 👤 Fighter 1: Dominick Reyes (ID: temp_f1_14)
+I/flutter (26326): 👤 Fighter 2: Carlos Ulberg (ID: temp_f2_14)
+I/flutter (26326): 🥊 Fighter 1 details:
+I/flutter (26326):   - Record: 
+I/flutter (26326):   - Height: N/A
+I/flutter (26326):   - Weight: null
+I/flutter (26326):   - Reach: N/A
+I/flutter (26326):   - Age: null
+I/flutter (26326):   - Stance: null
+I/flutter (26326): 🥊 Fighter 2 details:
+I/flutter (26326):   - Record: 
+I/flutter (26326):   - Height: N/A
+I/flutter (26326):   - Weight: null
+I/flutter (26326):   - Reach: N/A
+I/flutter (26326):   - Age: null
+I/flutter (26326):   - Stance: null
+I/flutter (26326):  FighterImageWidget: Loading image for fighter ID: temp_f1_14
+I/flutter (26326): 🎯 Fighter temp_f1_14 image found in memory cache
+I/flutter (26326):  FighterImageWidget: Loading image for fighter ID: temp_f2_14
+I/flutter (26326): 🎯 Fighter temp_f2_14 image found in memory cache
+I/flutter (26326):  FighterImageWidget: Got URL for temp_f1_14: Found
+I/flutter (26326):  FighterImageWidget: Got URL for temp_f2_14: Found
+I/flutter (26326):   ✅ Found 1 player results
+I/flutter (26326):   🎯 Found MMA fighter: Jonathan Micallef (ID: 5236142)
+I/flutter (26326):   🔗 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/5236142
+I/flutter (26326):     📡 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/5236142
+I/flutter (26326):     📡 Response status: 200
+I/flutter (26326):     📊 Fighter data received: Jonathan Micallef (ID: 5236142)
+I/flutter (26326):     ❌ HTTP request error: type '(dynamic) => dynamic' is not a subtype of type '(dynamic) => bool' of 'test'
+I/flutter (26326):     Stack: #0      new MMAFighter.fromESPN (package:bragging_rights_app/models/mma_fighter_model.dart:262:31)
+I/flutter (26326): #1      MMAService._getFighterSimple (package:bragging_rights_app/services/mma_service.dart:323:38)
+I/flutter (26326): 
+I/flutter (26326):   ❌ Failed to load fighter from URL: http://sports.core.api.espn.com/v2/sports/mma/athletes/5236142
+I/flutter (26326):   ! No MMA fighters found in search results for: Jonathan Micallef
+I/flutter (26326): 🔍 Searching for fighter: Alexia Thainara
+I/flutter (26326):   🌐 Search URL: https://site.web.api.espn.com/apis/search/v2?region=us&lang=en§ion=mma&limit=5&page=1&query=Alexia%20Thainara&type=player
+I/flutter (26326):   ✅ Found 1 player results
+I/flutter (26326):   🎯 Found MMA fighter: Alexia Thainara (ID: 5075992)
+I/flutter (26326):   🔗 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/5075992
+I/flutter (26326):     📡 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/5075992
+I/flutter (26326):     📡 Response status: 200
+I/flutter (26326):     📊 Fighter data received: Alexia Thainara (ID: 5075992)
+I/flutter (26326):     ❌ HTTP request error: type '(dynamic) => dynamic' is not a subtype of type '(dynamic) => bool' of 'test'
+I/flutter (26326):     Stack: #0      new MMAFighter.fromESPN (package:bragging_rights_app/models/mma_fighter_model.dart:262:31)
+I/flutter (26326): #1      MMAService._getFighterSimple (package:bragging_rights_app/services/mma_service.dart:323:38)
+I/flutter (26326): 
+I/flutter (26326):   ❌ Failed to load fighter from URL: http://sports.core.api.espn.com/v2/sports/mma/athletes/5075992
+I/flutter (26326):   ! No MMA fighters found in search results for: Alexia Thainara
+I/flutter (26326): 🔍 Searching for fighter: Loma Lookboonmee
+I/flutter (26326):   🌐 Search URL: https://site.web.api.espn.com/apis/search/v2?region=us&lang=en§ion=mma&limit=5&page=1&query=Loma%20Lookboonmee&type=player
+I/flutter (26326):   ✅ Found 2 player results
+I/flutter (26326):   🎯 Found MMA fighter: Loma Lookboonmee (ID: 4293483)
+I/flutter (26326):   🔗 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/4293483
+I/flutter (26326):     📡 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/4293483
+I/flutter (26326):     📡 Response status: 200
+I/flutter (26326):     📊 Fighter data received: Loma Lookboonmee (ID: 4293483)
+I/flutter (26326):     ❌ HTTP request error: type '(dynamic) => dynamic' is not a subtype of type '(dynamic) => bool' of 'test'
+I/flutter (26326):     Stack: #0      new MMAFighter.fromESPN (package:bragging_rights_app/models/mma_fighter_model.dart:262:31)
+I/flutter (26326): #1      MMAService._getFighterSimple (package:bragging_rights_app/services/mma_service.dart:323:38)
+I/flutter (26326): 
+I/flutter (26326):   ❌ Failed to load fighter from URL: http://sports.core.api.espn.com/v2/sports/mma/athletes/4293483
+I/flutter (26326):   🎯 Found MMA fighter: Loma Lookboonmee (ID: 4292347)
+I/flutter (26326):   🔗 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/4292347
+I/flutter (26326):     📡 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/4292347
+I/flutter (26326):     📡 Response status: 200
+I/flutter (26326):     📊 Fighter data received: Loma Lookboonmee (ID: 4292347)
+I/flutter (26326):     ❌ HTTP request error: type '(dynamic) => dynamic' is not a subtype of type '(dynamic) => bool' of 'test'
+I/flutter (26326):     Stack: #0      new MMAFighter.fromESPN (package:bragging_rights_app/models/mma_fighter_model.dart:262:31)
+I/flutter (26326): #1      MMAService._getFighterSimple (package:bragging_rights_app/services/mma_service.dart:323:38)
+I/flutter (26326): 
+I/flutter (26326):   ❌ Failed to load fighter from URL: http://sports.core.api.espn.com/v2/sports/mma/athletes/4292347
+I/flutter (26326):   ! No MMA fighters found in search results for: Loma Lookboonmee
+I/flutter (26326): 🔍 Searching for fighter: Rodolfo Bellato
+I/flutter (26326):   🌐 Search URL: https://site.web.api.espn.com/apis/search/v2?region=us&lang=en§ion=mma&limit=5&page=1&query=Rodolfo%20Bellato&type=player
+I/flutter (26326):   ✅ Found 1 player results
+I/flutter (26326):   🎯 Found MMA fighter: Rodolfo Bellato (ID: 5060489)
+I/flutter (26326):   🔗 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/5060489
+I/flutter (26326):     📡 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/5060489
+I/flutter (26326):     📡 Response status: 200
+I/flutter (26326):     📊 Fighter data received: Rodolfo Bellato (ID: 5060489)
+I/flutter (26326):     ❌ HTTP request error: type '(dynamic) => dynamic' is not a subtype of type '(dynamic) => bool' of 'test'
+I/flutter (26326):     Stack: #0      new MMAFighter.fromESPN (package:bragging_rights_app/models/mma_fighter_model.dart:262:31)
+I/flutter (26326): #1      MMAService._getFighterSimple (package:bragging_rights_app/services/mma_service.dart:323:38)
+I/flutter (26326): 
+I/flutter (26326):   ❌ Failed to load fighter from URL: http://sports.core.api.espn.com/v2/sports/mma/athletes/5060489
+I/flutter (26326):   ! No MMA fighters found in search results for: Rodolfo Bellato
+I/flutter (26326): 🔍 Searching for fighter: Navajo Stirling
+I/flutter (26326):   🌐 Search URL: https://site.web.api.espn.com/apis/search/v2?region=us&lang=en§ion=mma&limit=5&page=1&query=Navajo%20Stirling&type=player
+I/flutter (26326):   ✅ Found 1 player results
+I/flutter (26326):   🎯 Found MMA fighter: Navajo Stirling (ID: 5216713)
+I/flutter (26326):   🔗 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/5216713
+I/flutter (26326):     📡 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/5216713
+I/flutter (26326):     📡 Response status: 200
+I/flutter (26326):     📊 Fighter data received: Navajo Stirling (ID: 5216713)
+I/flutter (26326):     ❌ HTTP request error: type '(dynamic) => dynamic' is not a subtype of type '(dynamic) => bool' of 'test'
+I/flutter (26326):     Stack: #0      new MMAFighter.fromESPN (package:bragging_rights_app/models/mma_fighter_model.dart:262:31)
+I/flutter (26326): #1      MMAService._getFighterSimple (package:bragging_rights_app/services/mma_service.dart:323:38)
+I/flutter (26326): 
+I/flutter (26326):   ❌ Failed to load fighter from URL: http://sports.core.api.espn.com/v2/sports/mma/athletes/5216713
+I/flutter (26326):   ! No MMA fighters found in search results for: Navajo Stirling
+I/flutter (26326): 🔍 Searching for fighter: Louie Sutherland
+I/flutter (26326):   🌐 Search URL: https://site.web.api.espn.com/apis/search/v2?region=us&lang=en§ion=mma&limit=5&page=1&query=Louie%20Sutherland&type=player
+I/flutter (26326):   ✅ Found 1 player results
+I/flutter (26326):   🎯 Found MMA fighter: Louie Sutherland (ID: 5080572)
+I/flutter (26326):   🔗 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/5080572
+I/flutter (26326):     📡 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/5080572
+I/flutter (26326):     📡 Response status: 200
+I/flutter (26326):     📊 Fighter data received: Louie Sutherland (ID: 5080572)
+I/flutter (26326):     ❌ HTTP request error: type '(dynamic) => dynamic' is not a subtype of type '(dynamic) => bool' of 'test'
+I/flutter (26326):     Stack: #0      new MMAFighter.fromESPN (package:bragging_rights_app/models/mma_fighter_model.dart:262:31)
+I/flutter (26326): #1      MMAService._getFighterSimple (package:bragging_rights_app/services/mma_service.dart:323:38)
+I/flutter (26326): 
+I/flutter (26326):   ❌ Failed to load fighter from URL: http://sports.core.api.espn.com/v2/sports/mma/athletes/5080572
+I/flutter (26326):   ! No MMA fighters found in search results for: Louie Sutherland
+I/flutter (26326): 🔍 Searching for fighter: Justin Tafa
+I/flutter (26326):   🌐 Search URL: https://site.web.api.espn.com/apis/search/v2?region=us&lang=en§ion=mma&limit=5&page=1&query=Justin%20Tafa&type=player
+I/flutter (26326):   ✅ Found 1 player results
+I/flutter (26326):   🎯 Found MMA fighter: Justin Tafa (ID: 4566145)
+I/flutter (26326):   🔗 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/4566145
+I/flutter (26326):     📡 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/4566145
+I/flutter (26326):     📡 Response status: 200
+I/flutter (26326):     📊 Fighter data received: Justin Tafa (ID: 4566145)
+I/flutter (26326):     ❌ HTTP request error: type '(dynamic) => dynamic' is not a subtype of type '(dynamic) => bool' of 'test'
+I/flutter (26326):     Stack: #0      new MMAFighter.fromESPN (package:bragging_rights_app/models/mma_fighter_model.dart:262:31)
+I/flutter (26326): #1      MMAService._getFighterSimple (package:bragging_rights_app/services/mma_service.dart:323:38)
+I/flutter (26326): 
+I/flutter (26326):   ❌ Failed to load fighter from URL: http://sports.core.api.espn.com/v2/sports/mma/athletes/4566145
+I/flutter (26326):   ! No MMA fighters found in search results for: Justin Tafa
+I/flutter (26326): 🔍 Searching for fighter: Ibo Aslan
+I/flutter (26326):   🌐 Search URL: https://site.web.api.espn.com/apis/search/v2?region=us&lang=en§ion=mma&limit=5&page=1&query=Ibo%20Aslan&type=player
+I/flutter (26326):   ✅ Found 1 player results
+I/flutter (26326):   🎯 Found MMA fighter: Ibo Aslan (ID: 4684240)
+I/flutter (26326):   🔗 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/4684240
+I/flutter (26326):     📡 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/4684240
+I/flutter (26326):     📡 Response status: 200
+I/flutter (26326):     📊 Fighter data received: Ibo Aslan (ID: 4684240)
+I/flutter (26326):     ❌ HTTP request error: type '(dynamic) => dynamic' is not a subtype of type '(dynamic) => bool' of 'test'
+I/flutter (26326):     Stack: #0      new MMAFighter.fromESPN (package:bragging_rights_app/models/mma_fighter_model.dart:262:31)
+I/flutter (26326): #1      MMAService._getFighterSimple (package:bragging_rights_app/services/mma_service.dart:323:38)
+I/flutter (26326): 
+I/flutter (26326):   ❌ Failed to load fighter from URL: http://sports.core.api.espn.com/v2/sports/mma/athletes/4684240
+I/flutter (26326):   ! No MMA fighters found in search results for: Ibo Aslan
+I/flutter (26326): 🔍 Searching for fighter: Junior Tafa
+I/flutter (26326):   🌐 Search URL: https://site.web.api.espn.com/apis/search/v2?region=us&lang=en§ion=mma&limit=5&page=1&query=Junior%20Tafa&type=player
+I/flutter (26326):   ✅ Found 1 player results
+I/flutter (26326):   🎯 Found MMA fighter: Junior Tafa (ID: 5122234)
+I/flutter (26326):   🔗 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/5122234
+I/flutter (26326):     📡 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/5122234
+I/flutter (26326):     📡 Response status: 200
+I/flutter (26326):     📊 Fighter data received: Junior Tafa (ID: 5122234)
+I/flutter (26326):     ❌ HTTP request error: type '(dynamic) => dynamic' is not a subtype of type '(dynamic) => bool' of 'test'
+I/flutter (26326):     Stack: #0      new MMAFighter.fromESPN (package:bragging_rights_app/models/mma_fighter_model.dart:262:31)
+I/flutter (26326): #1      MMAService._getFighterSimple (package:bragging_rights_app/services/mma_service.dart:323:38)
+I/flutter (26326): 
+I/flutter (26326):   ❌ Failed to load fighter from URL: http://sports.core.api.espn.com/v2/sports/mma/athletes/5122234
+I/flutter (26326):   ! No MMA fighters found in search results for: Junior Tafa
+I/flutter (26326): 🔍 Searching for fighter: Charlie Campbell
+I/flutter (26326):   🌐 Search URL: https://site.web.api.espn.com/apis/search/v2?region=us&lang=en§ion=mma&limit=5&page=1&query=Charlie%20Campbell&type=player
+I/flutter (26326):   ✅ Found 2 player results
+I/flutter (26326):   🎯 Found MMA fighter: Charlie Campbell (ID: 4786358)
+I/flutter (26326):   🔗 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/4786358
+I/flutter (26326):     📡 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/4786358
+I/flutter (26326):     📡 Response status: 200
+I/flutter (26326):     📊 Fighter data received: Charlie Campbell (ID: 4786358)
+I/flutter (26326):     ❌ HTTP request error: type '(dynamic) => dynamic' is not a subtype of type '(dynamic) => bool' of 'test'
+I/flutter (26326):     Stack: #0      new MMAFighter.fromESPN (package:bragging_rights_app/models/mma_fighter_model.dart:262:31)
+I/flutter (26326): #1      MMAService._getFighterSimple (package:bragging_rights_app/services/mma_service.dart:323:38)
+I/flutter (26326): 
+I/flutter (26326):   ❌ Failed to load fighter from URL: http://sports.core.api.espn.com/v2/sports/mma/athletes/4786358
+I/flutter (26326):   ! No MMA fighters found in search results for: Charlie Campbell
+I/flutter (26326): 🔍 Searching for fighter: Tom Nolan
+I/flutter (26326):   🌐 Search URL: https://site.web.api.espn.com/apis/search/v2?region=us&lang=en§ion=mma&limit=5&page=1&query=Tom%20Nolan&type=player
+I/flutter (26326):   ✅ Found 1 player results
+I/flutter (26326):   🎯 Found MMA fighter: Tom Nolan (ID: 5144007)
+I/flutter (26326):   🔗 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/5144007
+I/flutter (26326):     📡 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/5144007
+I/flutter (26326):     📡 Response status: 200
+I/flutter (26326):     📊 Fighter data received: Tom Nolan (ID: 5144007)
+I/flutter (26326):     ❌ HTTP request error: type '(dynamic) => dynamic' is not a subtype of type '(dynamic) => bool' of 'test'
+I/flutter (26326):     Stack: #0      new MMAFighter.fromESPN (package:bragging_rights_app/models/mma_fighter_model.dart:262:31)
+I/flutter (26326): #1      MMAService._getFighterSimple (package:bragging_rights_app/services/mma_service.dart:323:38)
+I/flutter (26326): 
+I/flutter (26326):   ❌ Failed to load fighter from URL: http://sports.core.api.espn.com/v2/sports/mma/athletes/5144007
+I/flutter (26326):   ! No MMA fighters found in search results for: Tom Nolan
+I/flutter (26326): 🔍 Searching for fighter: Neil Magny
+I/flutter (26326):   🌐 Search URL: https://site.web.api.espn.com/apis/search/v2?region=us&lang=en§ion=mma&limit=5&page=1&query=Neil%20Magny&type=player
+I/flutter (26326):   ✅ Found 1 player results
+I/flutter (26326):   🎯 Found MMA fighter: Neil Magny (ID: 3001914)
+I/flutter (26326):   🔗 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/3001914
+I/flutter (26326):     📡 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/3001914
+I/flutter (26326):     📡 Response status: 200
+I/flutter (26326):     📊 Fighter data received: Neil Magny (ID: 3001914)
+I/flutter (26326):     ❌ HTTP request error: type '(dynamic) => dynamic' is not a subtype of type '(dynamic) => bool' of 'test'
+I/flutter (26326):     Stack: #0      new MMAFighter.fromESPN (package:bragging_rights_app/models/mma_fighter_model.dart:262:31)
+I/flutter (26326): #1      MMAService._getFighterSimple (package:bragging_rights_app/services/mma_service.dart:323:38)
+I/flutter (26326): 
+I/flutter (26326):   ❌ Failed to load fighter from URL: http://sports.core.api.espn.com/v2/sports/mma/athletes/3001914
+I/flutter (26326):   ! No MMA fighters found in search results for: Neil Magny
+I/flutter (26326): 🔍 Searching for fighter: Jake Matthews
+I/flutter (26326):   🌐 Search URL: https://site.web.api.espn.com/apis/search/v2?region=us&lang=en§ion=mma&limit=5&page=1&query=Jake%20Matthews&type=player
+I/flutter (26326):   ✅ Found 4 player results
+I/flutter (26326):   🎯 Found MMA fighter: Jake Matthews (ID: 3089915)
+I/flutter (26326):   🔗 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/3089915
+I/flutter (26326):     📡 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/3089915
+I/flutter (26326):     📡 Response status: 200
+I/flutter (26326):     📊 Fighter data received: Jake Matthews (ID: 3089915)
+I/flutter (26326):     ❌ HTTP request error: type '(dynamic) => dynamic' is not a subtype of type '(dynamic) => bool' of 'test'
+I/flutter (26326):     Stack: #0      new MMAFighter.fromESPN (package:bragging_rights_app/models/mma_fighter_model.dart:262:31)
+I/flutter (26326): #1      MMAService._getFighterSimple (package:bragging_rights_app/services/mma_service.dart:323:38)
+I/flutter (26326): 
+I/flutter (26326):   ❌ Failed to load fighter from URL: http://sports.core.api.espn.com/v2/sports/mma/athletes/3089915
+I/flutter (26326):   ! No MMA fighters found in search results for: Jake Matthews
+I/flutter (26326): 🔍 Searching for fighter: Ivan Erslan
+I/flutter (26326):   🌐 Search URL: https://site.web.api.espn.com/apis/search/v2?region=us&lang=en§ion=mma&limit=5&page=1&query=Ivan%20Erslan&type=player
+I/flutter (26326):   ✅ Found 1 player results
+I/flutter (26326):   🎯 Found MMA fighter: Ivan Erslan (ID: 4698417)
+I/flutter (26326):   🔗 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/4698417
+I/flutter (26326):     📡 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/4698417
+I/flutter (26326):     📡 Response status: 200
+I/flutter (26326):     📊 Fighter data received: Ivan Erslan (ID: 4698417)
+I/flutter (26326):     ❌ HTTP request error: type '(dynamic) => dynamic' is not a subtype of type '(dynamic) => bool' of 'test'
+I/flutter (26326):     Stack: #0      new MMAFighter.fromESPN (package:bragging_rights_app/models/mma_fighter_model.dart:262:31)
+I/flutter (26326): #1      MMAService._getFighterSimple (package:bragging_rights_app/services/mma_service.dart:323:38)
+I/flutter (26326): 
+I/flutter (26326):   ❌ Failed to load fighter from URL: http://sports.core.api.espn.com/v2/sports/mma/athletes/4698417
+I/flutter (26326):   ! No MMA fighters found in search results for: Ivan Erslan
+I/flutter (26326): 🔍 Searching for fighter: Jim Crute
+I/flutter (26326):   🌐 Search URL: https://site.web.api.espn.com/apis/search/v2?region=us&lang=en§ion=mma&limit=5&page=1&query=Jim%20Crute&type=player
+I/flutter (26326):   ! No search results found for: Jim Crute
+I/flutter (26326): 🔍 Searching for fighter: Ramon Taveras
+I/flutter (26326):   🌐 Search URL: https://site.web.api.espn.com/apis/search/v2?region=us&lang=en§ion=mma&limit=5&page=1&query=Ramon%20Taveras&type=player
+I/flutter (26326):   ✅ Found 1 player results
+I/flutter (26326):   🎯 Found MMA fighter: Ramon Taveras (ID: 5152409)
+I/flutter (26326):   🔗 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/5152409
+I/flutter (26326):     📡 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/5152409
+I/flutter (26326):     📡 Response status: 200
+I/flutter (26326):     📊 Fighter data received: Ramon Taveras (ID: 5152409)
+I/flutter (26326):     ❌ HTTP request error: type '(dynamic) => dynamic' is not a subtype of type '(dynamic) => bool' of 'test'
+I/flutter (26326):     Stack: #0      new MMAFighter.fromESPN (package:bragging_rights_app/models/mma_fighter_model.dart:262:31)
+I/flutter (26326): #1      MMAService._getFighterSimple (package:bragging_rights_app/services/mma_service.dart:323:38)
+I/flutter (26326): 
+I/flutter (26326):   ❌ Failed to load fighter from URL: http://sports.core.api.espn.com/v2/sports/mma/athletes/5152409
+I/flutter (26326):   ! No MMA fighters found in search results for: Ramon Taveras
+I/flutter (26326): 🔍 Searching for fighter: Jack Jenkins
+I/flutter (26326):   🌐 Search URL: https://site.web.api.espn.com/apis/search/v2?region=us&lang=en§ion=mma&limit=5&page=1&query=Jack%20Jenkins&type=player
+I/flutter (26326):   ✅ Found 4 player results
+I/flutter (26326):   🎯 Found MMA fighter: Jack Jenkins (ID: 5088885)
+I/flutter (26326):   🔗 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/5088885
+I/flutter (26326):     📡 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/5088885
+I/flutter (26326):     📡 Response status: 200
+I/flutter (26326):     📊 Fighter data received: Jack Jenkins (ID: 5088885)
+I/flutter (26326):     ❌ HTTP request error: type '(dynamic) => dynamic' is not a subtype of type '(dynamic) => bool' of 'test'
+I/flutter (26326):     Stack: #0      new MMAFighter.fromESPN (package:bragging_rights_app/models/mma_fighter_model.dart:262:31)
+I/flutter (26326): #1      MMAService._getFighterSimple (package:bragging_rights_app/services/mma_service.dart:323:38)
+I/flutter (26326): 
+I/flutter (26326):   ❌ Failed to load fighter from URL: http://sports.core.api.espn.com/v2/sports/mma/athletes/5088885
+I/flutter (26326):   ! No MMA fighters found in search results for: Jack Jenkins
+I/flutter (26326): 🔍 Searching for fighter: Dominick Reyes
+I/flutter (26326):   🌐 Search URL: https://site.web.api.espn.com/apis/search/v2?region=us&lang=en§ion=mma&limit=5&page=1&query=Dominick%20Reyes&type=player
+I/flutter (26326):   ✅ Found 2 player results
+I/flutter (26326):   🎯 Found MMA fighter: Dominick Reyes (ID: 4233039)
+I/flutter (26326):   🔗 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/4233039
+I/flutter (26326):     📡 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/4233039
+I/flutter (26326):     📡 Response status: 200
+I/flutter (26326):     📊 Fighter data received: Dominick Reyes (ID: 4233039)
+I/flutter (26326):     ❌ HTTP request error: type '(dynamic) => dynamic' is not a subtype of type '(dynamic) => bool' of 'test'
+I/flutter (26326):     Stack: #0      new MMAFighter.fromESPN (package:bragging_rights_app/models/mma_fighter_model.dart:262:31)
+I/flutter (26326): #1      MMAService._getFighterSimple (package:bragging_rights_app/services/mma_service.dart:323:38)
+I/flutter (26326): 
+I/flutter (26326):   ❌ Failed to load fighter from URL: http://sports.core.api.espn.com/v2/sports/mma/athletes/4233039
+I/flutter (26326):   ! No MMA fighters found in search results for: Dominick Reyes
+I/flutter (26326): 🔍 Searching for fighter: Carlos Ulberg
+I/flutter (26326):   🌐 Search URL: https://site.web.api.espn.com/apis/search/v2?region=us&lang=en§ion=mma&limit=5&page=1&query=Carlos%20Ulberg&type=player
+I/flutter (26326):   ✅ Found 1 player results
+I/flutter (26326):   🎯 Found MMA fighter: Carlos Ulberg (ID: 4695736)
+I/flutter (26326):   🔗 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/4695736
+I/flutter (26326):     📡 Fetching fighter from: http://sports.core.api.espn.com/v2/sports/mma/athletes/4695736
+I/flutter (26326):     📡 Response status: 200
+I/flutter (26326):     📊 Fighter data received: Carlos Ulberg (ID: 4695736)
+I/flutter (26326):     ❌ HTTP request error: type '(dynamic) => dynamic' is not a subtype of type '(dynamic) => bool' of 'test'
+I/flutter (26326):     Stack: #0      new MMAFighter.fromESPN (package:bragging_rights_app/models/mma_fighter_model.dart:262:31)
+I/flutter (26326): #1      MMAService._getFighterSimple (package:bragging_rights_app/services/mma_service.dart:323:38)
+I/flutter (26326): 
+I/flutter (26326):   ❌ Failed to load fighter from URL: http://sports.core.api.espn.com/v2/sports/mma/athletes/4695736
+I/flutter (26326):   ! No MMA fighters found in search results for: Carlos Ulberg
+I/flutter (26326): ✅ Progressive loading completed
+I/flutter (26326): 🔄 StreamBuilder state: ConnectionState.done
+I/flutter (26326): 📥 StreamBuilder data: Carlos Ulberg with 15 fights
+I/TRuntime.CctTransportBackend(26326): Making request to: https://firebaselogging.googleapis.com/v0cc/log/batch?format=json_proto3
+I/TRuntime.CctTransportBackend(26326): Status Code: 200
+I/flutter (26326): Pool 05z1qivGRkRbPwbDNT0x cancelled and 0 players refunded
+I/flutter (26326): Error cancelling pool: [cloud_firestore/permission-denied] The caller does not have permission to execute the specified operation.
+I/flutter (26326): Pool 0a1WUwjMgsH8D5iduUhW cancelled and 0 players refunded
+I/flutter (26326): Error cancelling pool: [cloud_firestore/permission-denied] The caller does not have permission to execute the specified operation.
+I/flutter (26326): Pool 0anWjzr8LEiVfQqbT1HQ cancelled and 0 players refunded
+I/flutter (26326): Error cancelling pool: [cloud_firestore/permission-denied] The caller does not have permission to execute the specified operation.
+I/flutter (26326): Pool 1cmsk10MdbYYwxwmeHGX cancelled and 0 players refunded
+I/flutter (26326): Error cancelling pool: [cloud_firestore/permission-denied] The caller does not have permission to execute the specified operation.
+I/flutter (26326): Pool 2mQyCoWsfXgWflB9pwmT cancelled and 0 players refunded
+I/flutter (26326): Error cancelling pool: [cloud_firestore/permission-denied] The caller does not have permission to execute the specified operation.
+I/flutter (26326): Pool 4RsmhxN9Ug6oZkGwPaLO cancelled and 0 players refunded
+I/flutter (26326): Error cancelling pool: [cloud_firestore/permission-denied] The caller does not have permission to execute the specified operation.
+I/flutter (26326): Pool 66Yk8oQLqwgrbuGurpFW cancelled and 0 players refunded

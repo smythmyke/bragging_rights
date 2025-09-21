@@ -52,6 +52,7 @@ class _FighterImageWidgetState extends State<FighterImageWidget> {
 
   Future<void> _loadImage() async {
     if (widget.fighterId == null) {
+      debugPrint('🖼️ FighterImageWidget: No fighter ID provided, using fallback');
       setState(() {
         _imageUrl = widget.fallbackUrl;
         _isLoading = false;
@@ -59,10 +60,13 @@ class _FighterImageWidgetState extends State<FighterImageWidget> {
       return;
     }
 
+    debugPrint('🖼️ FighterImageWidget: Loading image for fighter ID: ${widget.fighterId}');
     setState(() => _isLoading = true);
 
     try {
       final url = await _cacheService.getFighterImageUrl(widget.fighterId!);
+      debugPrint('🖼️ FighterImageWidget: Got URL for ${widget.fighterId}: ${url != null ? "Found" : "Not found"}');
+
       if (mounted) {
         setState(() {
           _imageUrl = url ?? widget.fallbackUrl;
@@ -70,7 +74,7 @@ class _FighterImageWidgetState extends State<FighterImageWidget> {
         });
       }
     } catch (e) {
-      debugPrint('Error loading fighter image: $e');
+      debugPrint('❌ FighterImageWidget: Error loading fighter image: $e');
       if (mounted) {
         setState(() {
           _imageUrl = widget.fallbackUrl;

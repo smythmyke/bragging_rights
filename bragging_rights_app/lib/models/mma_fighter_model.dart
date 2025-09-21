@@ -259,9 +259,12 @@ class MMAFighter {
       takedownDefense: json['takedownDefense']?.toDouble(),
       submissionAverage: json['submissionAverage']?.toDouble(),
       espnId: json['id']?.toString(),
-      espnUrl: json['links']?.firstWhere(
-          (link) => link['rel']?.contains('overview') ?? false,
-          orElse: () => null)?['href'],
+      espnUrl: json['links'] != null
+          ? (json['links'] as List).firstWhere(
+              (link) => link['rel']?.contains('overview') ?? false,
+              orElse: () => <String, dynamic>{},
+            )['href']
+          : null,
       lastUpdated: DateTime.now(),
     );
   }

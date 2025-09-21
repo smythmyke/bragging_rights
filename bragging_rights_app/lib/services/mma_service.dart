@@ -284,32 +284,58 @@ class MMAService {
         url = 'http:$url';
       }
 
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+      print('    📡 Fetching fighter from: $url');
 
-        // Only fetch record, skip statistics for now
-        final recordsRef = data['records']?['\$ref'];
-        if (recordsRef != null) {
-          try {
-            String recordUrl = recordsRef;
-            if (!recordUrl.startsWith('http')) {
-              recordUrl = 'http:$recordUrl';
-            }
+      try {
+        final response = await http.get(
+          Uri.parse(url),
+          headers: {'User-Agent': 'Mozilla/5.0'},
+        ).timeout(Duration(seconds: 10));
 
-            final recordResponse = await http.get(Uri.parse(recordUrl));
-            if (recordResponse.statusCode == 200) {
-              data['records'] = json.decode(recordResponse.body);
+        print('    📡 Response status: ${response.statusCode}');
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          print('    📊 Fighter data received: ${data['displayName']} (ID: ${data['id']})');
+
+          // Only fetch record, skip statistics for now
+          final recordsRef = data['records']?['\$ref'];
+          if (recordsRef != null) {
+            try {
+              String recordUrl = recordsRef;
+              if (!recordUrl.startsWith('http')) {
+                recordUrl = 'http:$recordUrl';
+              }
+
+              final recordResponse = await http.get(
+                Uri.parse(recordUrl),
+                headers: {'User-Agent': 'Mozilla/5.0'},
+              ).timeout(Duration(seconds: 5));
+
+              if (recordResponse.statusCode == 200) {
+                data['records'] = json.decode(recordResponse.body);
+              }
+            } catch (e) {
+              print('    ⚠️ Could not fetch record: $e');
             }
-          } catch (e) {
-            // Continue without record
           }
-        }
 
-        return MMAFighter.fromESPN(data);
+          final fighter = MMAFighter.fromESPN(data);
+          print('    ✅ Fighter object created: ${fighter.name} with ESPN ID: ${fighter.espnId}');
+          return fighter;
+        } else {
+          print('    ❌ Failed to fetch fighter. Status code: ${response.statusCode}');
+          print('    Response body: ${response.body.substring(0, 200 < response.body.length ? 200 : response.body.length)}');
+        }
+      } catch (e, stack) {
+        print('    ❌ HTTP request error: $e');
+        if (e.toString().contains('TimeoutException')) {
+          print('    ⏱️ Request timed out');
+        }
+        print('    Stack: ${stack.toString().split('\n').take(3).join('\n')}');
       }
     } catch (e) {
-      print('Error fetching fighter: $e');
+      print('    ❌ Error in _getFighterSimple: $e');
     }
     return null;
   }
@@ -700,9 +726,13 @@ class MMAService {
 
                       // Fetch fighter data WITHOUT statistics for faster load
                       final fighterUrl = '$ATHLETE_BASE$athleteId';
+                      print('  🔗 Fetching fighter from: $fighterUrl');
                       final fighter = await _getFighterSimple(fighterUrl);
                       if (fighter != null) {
+                        print('  ✅ Fighter loaded successfully: ${fighter.name} (ESPN ID: ${fighter.espnId})');
                         return fighter;
+                      } else {
+                        print('  ❌ Failed to load fighter from URL: $fighterUrl');
                       }
                     }
                   }
@@ -829,14 +859,19 @@ class MMAService {
           record: '',
         );
 
+        // Main events and title fights are 5 rounds
+        final isMainEvent = i == fightDataList.length - 1;
+        final isTitleFight = fightData['isTitle'] == true;
+        final defaultRounds = (isMainEvent || isTitleFight) ? 5 : 3;
+
         final fight = MMAFight(
           id: fightData['id']?.toString() ?? 'fight_$i',
           fighter1: fighter1,
           fighter2: fighter2,
           weightClass: fightData['weightClass']?.toString(),
-          rounds: (fightData['rounds'] is int) ? fightData['rounds'] : 3,
-          isTitleFight: fightData['isTitle'] == true,
-          isMainEvent: i == fightDataList.length - 1,
+          rounds: (fightData['rounds'] is int) ? fightData['rounds'] : defaultRounds,
+          isTitleFight: isTitleFight,
+          isMainEvent: isMainEvent,
           cardPosition: i >= fightDataList.length - 5 ? 'main' : 'prelim',
         );
 
@@ -878,34 +913,61 @@ class MMAService {
       String eventName;
       String? sportType = gameData['sport']?.toString().toUpperCase();
       final awayTeam = gameData['awayTeam']?.toString() ?? '';
+      final homeTeam = gameData['homeTeam']?.toString() ?? '';
+      final league = gameData['league']?.toString() ?? '';
+
+      print('🎯 Event Name Debug:');
+      print('  - sportType: $sportType');
+      print('  - awayTeam: "$awayTeam"');
+      print('  - homeTeam: "$homeTeam"');
+      print('  - league: "$league"');
+      print('  - Full gameData: ${gameData.keys.join(', ')}');
 
       // Check if the event name is provided by ESPN for major MMA promotions
       // ESPN provides full event names for UFC, Bellator, and PFL in the awayTeam field
       if (sportType == 'UFC' || sportType == 'MMA' || sportType == 'BELLATOR' || sportType == 'PFL') {
-        // Check if awayTeam contains a proper event name from these promotions
-        if (awayTeam.contains('UFC') ||
+        // Check if we have a full event name in league field first
+        if (league.contains('UFC') || league.contains('Bellator') || league.contains('PFL')) {
+          eventName = league;
+        } else if (awayTeam.contains('UFC') ||
             awayTeam.contains('Bellator') ||
             awayTeam.contains('PFL')) {
           eventName = awayTeam; // Use the full event name from ESPN
+        } else if (fights.isNotEmpty && fights.last.fighter1 != null && fights.last.fighter2 != null) {
+          // Create event name from main event fighters
+          final mainFighter1 = fights.last.fighter1!.displayName ?? fights.last.fighter1!.name;
+          final mainFighter2 = fights.last.fighter2!.displayName ?? fights.last.fighter2!.name;
+          final promotion = _detectPromotion(league.isNotEmpty ? league : 'UFC');
+          eventName = '$promotion: $mainFighter1 vs $mainFighter2';
         } else {
-          // Fallback to homeTeam or default
-          eventName = gameData['homeTeam']?.toString() ?? 'MMA Event';
+          // Fallback to combining available names
+          if (homeTeam.isNotEmpty && awayTeam.isNotEmpty && homeTeam != awayTeam) {
+            eventName = 'UFC: $awayTeam vs $homeTeam';
+          } else {
+            eventName = gameData['homeTeam']?.toString() ?? 'MMA Event';
+          }
         }
       } else {
         // For other sports/promotions, use homeTeam
         eventName = gameData['homeTeam']?.toString() ?? 'MMA Event';
       }
 
+      print('🎯 Final event name chosen: "$eventName"');
+      print('🎯 Promotion detected: "${_detectPromotion(eventName)}"');
+
       final event = MMAEvent(
         id: eventId,
         name: eventName,
-        shortName: eventName,
+        shortName: _detectPromotion(eventName), // Use promotion as short name
         date: eventDate,
         promotion: _detectPromotion(eventName),
         fights: fights,
       );
 
-      print('✅ Minimal event created successfully: ${event.name}');
+      print('✅ Minimal event created successfully:');
+      print('  - Event name: "${event.name}"');
+      print('  - Event shortName: "${event.shortName}"');
+      print('  - Event promotion: "${event.promotion}"');
       return event;
     } catch (e) {
       print('❌ Error creating minimal event: $e');

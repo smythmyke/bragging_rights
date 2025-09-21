@@ -1,0 +1,6 @@
+{
+    "error": {
+        "message": "No event found for eventId: 700",
+        "code": 404
+    }
+}

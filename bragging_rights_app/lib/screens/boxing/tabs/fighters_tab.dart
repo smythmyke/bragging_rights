@@ -87,7 +87,7 @@ class _FightersTabState extends State<FightersTab> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
       itemCount: widget.fights!.length,
       itemBuilder: (context, index) {
         final fight = widget.fights![index];

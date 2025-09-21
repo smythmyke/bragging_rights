@@ -173,7 +173,7 @@ class TaleOfTapeWidget extends StatelessWidget {
             ),
           ),
           child: FighterImageWidget(
-            fighterId: fighter.id,
+            fighterId: fighter.espnId ?? fighter.id,
             fallbackUrl: fighter.headshotUrl,
             size: 100,
             shape: BoxShape.circle,

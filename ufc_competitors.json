@@ -1,0 +1,6 @@
+{
+    "error": {
+        "message": "No competition found with eventId = 600055032 and competitionId = 600055032",
+        "code": 404
+    }
+}

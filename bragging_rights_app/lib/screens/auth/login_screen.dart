@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'dart:math' as math;
@@ -6,6 +7,7 @@ import 'dart:math' show sin, pi;
 import 'package:lottie/lottie.dart';
 import 'package:video_player/video_player.dart';
 import '../../services/auth_service.dart';
+import '../../services/optimized_games_service.dart';
 import '../../theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -236,13 +238,34 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _playSuccessVideoAndNavigate(String route) async {
+    // Start preloading games data immediately for home route
+    if (route == '/home') {
+      _preloadGamesData();  // Fire and forget - don't await
+    }
+
     // Start success animation
     setState(() => _isSuccessAnimating = true);
     await _successController.forward();
 
-    // Navigate to next screen
+    // Navigate to next screen (data might already be loading/loaded)
     if (mounted) {
       Navigator.pushReplacementNamed(context, route);
+    }
+  }
+
+  Future<void> _preloadGamesData() async {
+    try {
+      print('Starting games data preload during success animation...');
+      final optimizedService = OptimizedGamesService();
+
+      // Preload featured games which will cache data for initial display
+      await optimizedService.loadFeaturedGames(
+        forceRefresh: false,
+      );
+      print('Games data preload completed!');
+    } catch (e) {
+      // Don't block navigation on preload errors
+      print('Error preloading games data: $e');
     }
   }
 

@@ -163,13 +163,25 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Text(
-                      _event!.shortName ?? _event!.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                      textAlign: TextAlign.center,
+                    Builder(
+                      builder: (context) {
+                        final displayName = _event!.shortName ?? _event!.name;
+                        print('📺 MMA Details Screen Display:');
+                        print('  - Event name: "${_event!.name}"');
+                        print('  - Event shortName: "${_event!.shortName}"');
+                        print('  - Event promotion: "${_event!.promotion}"');
+                        print('  - Displaying: "$displayName"');
+                        return Text(
+                          displayName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      },
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -281,12 +293,15 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
                   ),
                 ),
                 child: Center(
-                  child: Text(
-                    _event!.promotion ?? 'MMA',
-                    style: const TextStyle(
-                      color: AppTheme.neonGreen,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      _event!.promotion ?? 'MMA',
+                      style: const TextStyle(
+                        color: AppTheme.neonGreen,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
                     ),
                   ),
                 ),
@@ -411,11 +426,11 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
         children: [
           const SizedBox(height: 24),
 
-          // Main Card
+          // Main Card - Reverse order so main event is first
           if (_event!.mainCardFights.isNotEmpty) ...[
             _buildCardSection(
               title: 'MAIN CARD',
-              fights: _event!.mainCardFights,
+              fights: _event!.mainCardFights.reversed.toList(),
               color: AppTheme.neonGreen,
               broadcast: _event!.broadcasters?.firstWhere(
                 (b) => b.contains('PPV') || b.contains('ESPN+'),
@@ -425,11 +440,11 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
             const SizedBox(height: 16),
           ],
 
-          // Preliminary Card
+          // Preliminary Card - Reverse order
           if (_event!.prelimFights.isNotEmpty) ...[
             _buildCardSection(
               title: 'PRELIMINARY CARD',
-              fights: _event!.prelimFights,
+              fights: _event!.prelimFights.reversed.toList(),
               color: AppTheme.primaryCyan,
               broadcast: _event!.broadcasters?.firstWhere(
                 (b) => b.contains('ESPN') && !b.contains('+'),
@@ -439,11 +454,11 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
             const SizedBox(height: 16),
           ],
 
-          // Early Prelims
+          // Early Prelims - Reverse order
           if (_event!.earlyPrelimFights.isNotEmpty) ...[
             _buildCardSection(
               title: 'EARLY PRELIMS',
-              fights: _event!.earlyPrelimFights,
+              fights: _event!.earlyPrelimFights.reversed.toList(),
               color: Colors.grey,
               broadcast: 'UFC Fight Pass',
             ),
@@ -650,30 +665,52 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
     );
   }
 
-  void _showFightDetails(MMAFight fight) {
+  Future<void> _showFightDetails(MMAFight fight) async {
     print('🎯 Opening fight details modal');
     print('📊 Fight: ${fight.fightDescription}');
     print('👤 Fighter 1: ${fight.fighter1?.name ?? 'NULL'} (ID: ${fight.fighter1?.id})');
     print('👤 Fighter 2: ${fight.fighter2?.name ?? 'NULL'} (ID: ${fight.fighter2?.id})');
 
-    if (fight.fighter1 != null) {
-      print('🥊 Fighter 1 details:');
-      print('  - Record: ${fight.fighter1!.record}');
-      print('  - Height: ${fight.fighter1!.displayHeight ?? fight.fighter1!.heightFeetInches}');
-      print('  - Weight: ${fight.fighter1!.displayWeight ?? fight.fighter1!.weight}');
-      print('  - Reach: ${fight.fighter1!.displayReach ?? fight.fighter1!.reachInches}');
-      print('  - Age: ${fight.fighter1!.age}');
-      print('  - Stance: ${fight.fighter1!.stance}');
+    // Create a mutable copy of the fight to update with loaded data
+    MMAFight updatedFight = fight;
+
+    // Load detailed fighter data if needed
+    if (fight.fighter1 != null && (fight.fighter1!.height == null || fight.fighter1!.reach == null)) {
+      print('⏳ Loading detailed data for fighter 1: ${fight.fighter1!.name}');
+      final fighter1Data = await _mmaService.searchFighterByName(fight.fighter1!.name);
+      if (fighter1Data != null) {
+        updatedFight = updatedFight.copyWith(fighter1: fighter1Data);
+        print('✅ Loaded fighter 1 data');
+      }
     }
 
-    if (fight.fighter2 != null) {
+    if (fight.fighter2 != null && (fight.fighter2!.height == null || fight.fighter2!.reach == null)) {
+      print('⏳ Loading detailed data for fighter 2: ${fight.fighter2!.name}');
+      final fighter2Data = await _mmaService.searchFighterByName(fight.fighter2!.name);
+      if (fighter2Data != null) {
+        updatedFight = updatedFight.copyWith(fighter2: fighter2Data);
+        print('✅ Loaded fighter 2 data');
+      }
+    }
+
+    if (updatedFight.fighter1 != null) {
+      print('🥊 Fighter 1 details:');
+      print('  - Record: ${updatedFight.fighter1!.record}');
+      print('  - Height: ${updatedFight.fighter1!.displayHeight ?? updatedFight.fighter1!.heightFeetInches}');
+      print('  - Weight: ${updatedFight.fighter1!.displayWeight ?? updatedFight.fighter1!.weight}');
+      print('  - Reach: ${updatedFight.fighter1!.displayReach ?? updatedFight.fighter1!.reachInches}');
+      print('  - Age: ${updatedFight.fighter1!.age}');
+      print('  - Stance: ${updatedFight.fighter1!.stance}');
+    }
+
+    if (updatedFight.fighter2 != null) {
       print('🥊 Fighter 2 details:');
-      print('  - Record: ${fight.fighter2!.record}');
-      print('  - Height: ${fight.fighter2!.displayHeight ?? fight.fighter2!.heightFeetInches}');
-      print('  - Weight: ${fight.fighter2!.displayWeight ?? fight.fighter2!.weight}');
-      print('  - Reach: ${fight.fighter2!.displayReach ?? fight.fighter2!.reachInches}');
-      print('  - Age: ${fight.fighter2!.age}');
-      print('  - Stance: ${fight.fighter2!.stance}');
+      print('  - Record: ${updatedFight.fighter2!.record}');
+      print('  - Height: ${updatedFight.fighter2!.displayHeight ?? updatedFight.fighter2!.heightFeetInches}');
+      print('  - Weight: ${updatedFight.fighter2!.displayWeight ?? updatedFight.fighter2!.weight}');
+      print('  - Reach: ${updatedFight.fighter2!.displayReach ?? updatedFight.fighter2!.reachInches}');
+      print('  - Age: ${updatedFight.fighter2!.age}');
+      print('  - Stance: ${updatedFight.fighter2!.stance}');
     }
 
     showModalBottomSheet(
@@ -721,16 +758,16 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
                     const SizedBox(height: 24),
 
                     // Tale of the Tape
-                    if (fight.fighter1 != null && fight.fighter2 != null) ...[
-                      Text('Tale of Tape for: ${fight.fighter1!.name} vs ${fight.fighter2!.name}',
+                    if (updatedFight.fighter1 != null && updatedFight.fighter2 != null) ...[
+                      Text('Tale of Tape for: ${updatedFight.fighter1!.name} vs ${updatedFight.fighter2!.name}',
                         style: TextStyle(color: Colors.white70, fontSize: 12)),
                       const SizedBox(height: 8),
                       TaleOfTapeWidget(
-                        fighter1: fight.fighter1!,
-                        fighter2: fight.fighter2!,
-                        weightClass: fight.weightClass,
-                        rounds: fight.rounds,
-                        isTitle: fight.isTitleFight,
+                        fighter1: updatedFight.fighter1!,
+                        fighter2: updatedFight.fighter2!,
+                        weightClass: updatedFight.weightClass,
+                        rounds: updatedFight.rounds,
+                        isTitle: updatedFight.isTitleFight,
                         showExtended: true,
                         onFighterTap: (fighter) {
                           Navigator.pop(context); // Close modal
@@ -754,11 +791,11 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Fighter 1: ${fight.fighter1?.name ?? "Missing"}',
+                              'Fighter 1: ${updatedFight.fighter1?.name ?? "Missing"}',
                               style: TextStyle(color: Colors.white70, fontSize: 12),
                             ),
                             Text(
-                              'Fighter 2: ${fight.fighter2?.name ?? "Missing"}',
+                              'Fighter 2: ${updatedFight.fighter2?.name ?? "Missing"}',
                               style: TextStyle(color: Colors.white70, fontSize: 12),
                             ),
                           ],

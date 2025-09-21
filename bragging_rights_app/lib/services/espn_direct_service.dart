@@ -375,6 +375,8 @@ class ESPNDirectService {
     if (sport == 'UFC' || sport == 'BELLATOR' || sport == 'PFL' || sport == 'BOXING') {
       final fullEventName = event['name'] ?? '';
       print('🥊 Processing combat sport ($sport) event: $fullEventName');
+      print('📝 Full ESPN event name: "$fullEventName"');
+      print('📝 Event ID: ${event['id']}');
       final competitions = event['competitions'] ?? [];
       
       // Parse ALL competitions into fight objects
