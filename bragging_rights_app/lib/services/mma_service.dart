@@ -845,14 +845,63 @@ class MMAService {
       }
 
       print('🏗️ Creating MMAEvent with ${fights.length} fights');
+
+      // Handle gameTime which could be either a timestamp or DateTime string
+      DateTime eventDate;
+      if (gameData['gameTime'] != null) {
+        final gameTime = gameData['gameTime'];
+        if (gameTime is int) {
+          // It's a timestamp in milliseconds
+          eventDate = DateTime.fromMillisecondsSinceEpoch(gameTime);
+        } else if (gameTime is DateTime) {
+          eventDate = gameTime;
+        } else {
+          // Try parsing as string
+          try {
+            eventDate = DateTime.parse(gameTime.toString());
+          } catch (e) {
+            // If parsing fails, try as timestamp string
+            try {
+              final timestamp = int.parse(gameTime.toString());
+              eventDate = DateTime.fromMillisecondsSinceEpoch(timestamp);
+            } catch (e2) {
+              print('⚠️ Could not parse gameTime: $gameTime, using current time');
+              eventDate = DateTime.now();
+            }
+          }
+        }
+      } else {
+        eventDate = DateTime.now();
+      }
+
+      // Determine the event name based on the data available
+      String eventName;
+      String? sportType = gameData['sport']?.toString().toUpperCase();
+      final awayTeam = gameData['awayTeam']?.toString() ?? '';
+
+      // Check if the event name is provided by ESPN for major MMA promotions
+      // ESPN provides full event names for UFC, Bellator, and PFL in the awayTeam field
+      if (sportType == 'UFC' || sportType == 'MMA' || sportType == 'BELLATOR' || sportType == 'PFL') {
+        // Check if awayTeam contains a proper event name from these promotions
+        if (awayTeam.contains('UFC') ||
+            awayTeam.contains('Bellator') ||
+            awayTeam.contains('PFL')) {
+          eventName = awayTeam; // Use the full event name from ESPN
+        } else {
+          // Fallback to homeTeam or default
+          eventName = gameData['homeTeam']?.toString() ?? 'MMA Event';
+        }
+      } else {
+        // For other sports/promotions, use homeTeam
+        eventName = gameData['homeTeam']?.toString() ?? 'MMA Event';
+      }
+
       final event = MMAEvent(
         id: eventId,
-        name: gameData['homeTeam']?.toString() ?? 'MMA Event',
-        shortName: gameData['homeTeam']?.toString(),
-        date: gameData['gameTime'] != null
-            ? DateTime.parse(gameData['gameTime'].toString())
-            : DateTime.now(),
-        promotion: _detectPromotion(gameData['homeTeam']?.toString() ?? ''),
+        name: eventName,
+        shortName: eventName,
+        date: eventDate,
+        promotion: _detectPromotion(eventName),
         fights: fights,
       );
 

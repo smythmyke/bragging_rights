@@ -510,7 +510,7 @@ class GameCardEnhanced extends StatelessWidget {
   String _formatGameTime(DateTime time) {
     final now = DateTime.now();
     final difference = time.difference(now);
-    
+
     if (difference.inDays > 0) {
       return DateFormat('MMM d, h:mm a').format(time);
     } else if (difference.inHours > 0) {
@@ -518,7 +518,7 @@ class GameCardEnhanced extends StatelessWidget {
     } else if (difference.inMinutes > 0) {
       return 'In ${difference.inMinutes} min';
     } else {
-      return DateFormat('h:mm a').format(time);
+      return DateFormat('MMM d, h:mm a').format(time);
     }
   }
 }
