@@ -18,14 +18,124 @@ class ESPNDirectService {
   static const Map<String, String> sportEndpoints = {
     'MLB': 'baseball/mlb',
     'NFL': 'football/nfl',
-    'NBA': 'basketball/nba', 
+    'NBA': 'basketball/nba',
     'NHL': 'hockey/nhl',
     'UFC': 'mma/ufc',
     'BELLATOR': 'mma/bellator',
     'PFL': 'mma/pfl',
     'BOXING': 'boxing',
   };
-  
+
+  // Cache for fighter IDs to avoid repeated searches
+  final Map<String, String> _fighterIdCache = {};
+
+  // Search for fighter ID by name using ESPN search API
+  Future<String?> _searchFighterIdByName(String fighterName) async {
+    if (fighterName.isEmpty || fighterName == 'TBD') {
+      return null;
+    }
+
+    // Check in-memory cache first
+    if (_fighterIdCache.containsKey(fighterName)) {
+      return _fighterIdCache[fighterName];
+    }
+
+    // Check Firestore cache
+    try {
+      final doc = await _firestore
+          .collection('fighter_id_lookups')
+          .doc(fighterName.toLowerCase().replaceAll(' ', '_'))
+          .get();
+
+      if (doc.exists && doc.data() != null) {
+        final fighterId = doc.data()!['fighterId']?.toString();
+        if (fighterId != null) {
+          print('✅ Found cached fighter ID for "$fighterName": $fighterId');
+          _fighterIdCache[fighterName] = fighterId;
+          return fighterId;
+        }
+      }
+    } catch (e) {
+      print('Error checking fighter ID cache: $e');
+    }
+
+    try {
+      final searchUrl = 'https://site.web.api.espn.com/apis/search/v2'
+          '?query=${Uri.encodeComponent(fighterName)}'
+          '&limit=5&sport=mma';
+
+      final response = await http.get(Uri.parse(searchUrl));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final results = data['results'] ?? [];
+
+        for (final result in results) {
+          if (result['type'] == 'player') {
+            final contents = result['contents'] ?? [];
+            for (final player in contents) {
+              final displayName = player['displayName']?.toString() ?? '';
+
+              // Check for exact or close match
+              if (displayName.toLowerCase() == fighterName.toLowerCase() ||
+                  displayName.toLowerCase().contains(fighterName.toLowerCase()) ||
+                  fighterName.toLowerCase().contains(displayName.toLowerCase())) {
+
+                // Extract ID from UID (format: s:3301~a:XXXXXX)
+                final uid = player['uid']?.toString() ?? '';
+                final idMatch = RegExp(r'a:(\d+)').firstMatch(uid);
+                if (idMatch != null) {
+                  final fighterId = idMatch.group(1)!;
+                  print('✅ Found fighter ID for "$fighterName": $fighterId ($displayName)');
+                  _fighterIdCache[fighterName] = fighterId;
+
+                  // Also cache the actual display name to handle variations
+                  _fighterIdCache[displayName] = fighterId;
+
+                  // Save to Firestore for persistent caching
+                  try {
+                    await _firestore
+                        .collection('fighter_id_lookups')
+                        .doc(fighterName.toLowerCase().replaceAll(' ', '_'))
+                        .set({
+                      'fighterName': fighterName,
+                      'displayName': displayName,
+                      'fighterId': fighterId,
+                      'timestamp': FieldValue.serverTimestamp(),
+                    });
+
+                    // Also save under the display name if different
+                    if (displayName.toLowerCase() != fighterName.toLowerCase()) {
+                      await _firestore
+                          .collection('fighter_id_lookups')
+                          .doc(displayName.toLowerCase().replaceAll(' ', '_'))
+                          .set({
+                        'fighterName': displayName,
+                        'displayName': displayName,
+                        'fighterId': fighterId,
+                        'timestamp': FieldValue.serverTimestamp(),
+                      });
+                    }
+                  } catch (e) {
+                    print('Error saving fighter ID to cache: $e');
+                  }
+
+                  return fighterId;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      print('⚠️ Could not find fighter ID for: $fighterName');
+      return null;
+    } catch (e) {
+      print('Error searching for fighter "$fighterName": $e');
+      return null;
+    }
+  }
+
   // Save game to Firestore (only updates if data has changed)
   Future<void> _saveGameToFirestore(GameModel game) async {
     try {
@@ -196,7 +306,7 @@ class ESPNDirectService {
         final games = <GameModel>[];
         for (final event in events) {
           try {
-            final game = _parseESPNEvent(event, sport);
+            final game = await _parseESPNEvent(event, sport);
             games.add(game);
             print('Added $sport game: ${game.awayTeam} @ ${game.homeTeam}');
           } catch (e) {
@@ -239,7 +349,7 @@ class ESPNDirectService {
         final games = <GameModel>[];
         for (final event in events) {
           try {
-            final game = _parseESPNEvent(event, sport);
+            final game = await _parseESPNEvent(event, sport);
             games.add(game);
           } catch (e) {
             print('Error parsing event: $e');
@@ -260,7 +370,7 @@ class ESPNDirectService {
   }
 
   // Parse ESPN event to GameModel
-  GameModel _parseESPNEvent(Map<String, dynamic> event, String sport) {
+  Future<GameModel> _parseESPNEvent(Map<String, dynamic> event, String sport) async {
     // For UFC/combat sports, parse all fights on the card
     if (sport == 'UFC' || sport == 'BELLATOR' || sport == 'PFL' || sport == 'BOXING') {
       final fullEventName = event['name'] ?? '';
@@ -298,12 +408,29 @@ class ESPNDirectService {
             rounds = 3;
           }
           
+          // Extract fighter IDs properly, keeping them null if not available
+          String? fighter1Id = fighter1['id']?.toString();
+          String? fighter2Id = fighter2['id']?.toString();
+          final fighter1Name = fighter1['displayName'] ?? 'TBD';
+          final fighter2Name = fighter2['displayName'] ?? 'TBD';
+
+          // If fighter IDs are missing, try to search for them by name
+          if ((fighter1Id == null || fighter1Id.isEmpty) && fighter1Name != 'TBD') {
+            print('🔍 Searching for fighter ID: $fighter1Name');
+            fighter1Id = await _searchFighterIdByName(fighter1Name);
+          }
+
+          if ((fighter2Id == null || fighter2Id.isEmpty) && fighter2Name != 'TBD') {
+            print('🔍 Searching for fighter ID: $fighter2Name');
+            fighter2Id = await _searchFighterIdByName(fighter2Name);
+          }
+
           fights.add({
             'id': comp['id']?.toString() ?? 'fight_$i',
-            'fighter1Id': fighter1['id']?.toString() ?? '',
-            'fighter2Id': fighter2['id']?.toString() ?? '',
-            'fighter1Name': fighter1['displayName'] ?? 'TBD',
-            'fighter2Name': fighter2['displayName'] ?? 'TBD',
+            'fighter1Id': fighter1Id ?? '', // Keep empty if still no ID found
+            'fighter2Id': fighter2Id ?? '', // Keep empty if still no ID found
+            'fighter1Name': fighter1Name,
+            'fighter2Name': fighter2Name,
             'fighter1Record': fighter1['record'] ?? '',
             'fighter2Record': fighter2['record'] ?? '',
             'weightClass': comp['notes']?[0]?['text'] ?? 'Catchweight',

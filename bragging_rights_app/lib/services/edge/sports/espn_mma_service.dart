@@ -52,15 +52,20 @@ class EspnMmaService {
   /// Get fighter profile and stats
   Future<FighterProfile?> getFighterProfile(String fighterId, {String promotion = 'ufc'}) async {
     try {
-      final baseUrl = _promotionUrls[promotion.toLowerCase()] ?? _promotionUrls['ufc']!;
+      // Use the ESPN Core API endpoint for fighter profiles
+      final url = 'http://sports.core.api.espn.com/v2/sports/mma/athletes/$fighterId';
+      debugPrint('🥊 Fetching fighter profile: $url');
+
       final response = await http.get(
-        Uri.parse('$baseUrl/athletes/$fighterId'),
+        Uri.parse(url),
         headers: {'Accept': 'application/json'},
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return FighterProfile.fromJson(data);
+      } else {
+        debugPrint('Fighter profile API error: ${response.statusCode}');
       }
     } catch (e) {
       debugPrint('Error fetching fighter profile: $e');
@@ -477,27 +482,44 @@ class FighterProfile {
   });
   
   factory FighterProfile.fromJson(Map<String, dynamic> json) {
-    final athlete = json['athlete'] ?? {};
+    // ESPN Core API returns the athlete data directly
     final stats = <String, dynamic>{};
-    
-    // Parse statistics
-    final statsList = athlete['statistics'] ?? [];
-    for (final stat in statsList) {
-      stats[stat['name']] = stat['value'];
+
+    // Parse record from records endpoint if available
+    String record = '0-0';
+    if (json['records'] != null) {
+      // TODO: Parse record from records endpoint
+      // For now, we'll use a placeholder
     }
-    
+
+    // Parse basic statistics
+    final height = json['height'] ?? json['displayHeight'];
+    final weight = json['weight'] ?? json['displayWeight'];
+    final reach = json['reach'] ?? json['displayReach'];
+
+    // Calculate age from date of birth
+    int? age;
+    if (json['dateOfBirth'] != null) {
+      final birthDate = DateTime.tryParse(json['dateOfBirth']);
+      if (birthDate != null) {
+        age = DateTime.now().year - birthDate.year;
+      }
+    } else {
+      age = json['age'];
+    }
+
     return FighterProfile(
-      id: athlete['id']?.toString() ?? '',
-      name: athlete['displayName'] ?? 'Unknown',
-      nickname: athlete['nickname'],
-      record: athlete['record'] ?? '0-0',
-      weightClass: athlete['weightClass']?['name'],
+      id: json['id']?.toString() ?? '',
+      name: json['displayName'] ?? json['fullName'] ?? 'Unknown',
+      nickname: json['nickname'],
+      record: record,
+      weightClass: json['weightClass']?['text'] ?? json['weightClass']?['shortName'],
       stats: stats,
-      stance: athlete['stance'],
-      reach: athlete['reach']?.toDouble(),
-      age: athlete['age'],
-      camp: athlete['team']?['displayName'],
-      coach: athlete['coach'],
+      stance: json['stance']?['text'] ?? json['stance'],
+      reach: reach is String ? double.tryParse(reach.replaceAll('"', '')) : reach?.toDouble(),
+      age: age,
+      camp: json['association']?['name'] ?? json['team']?['displayName'],
+      coach: json['coach'],
     );
   }
   

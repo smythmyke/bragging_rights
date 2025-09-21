@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../models/mma_fighter_model.dart';
 import '../../../theme/app_theme.dart';
+import '../../../widgets/fighter_image_widget.dart';
 
 class TaleOfTapeWidget extends StatelessWidget {
   final MMAFighter fighter1;
@@ -11,6 +12,7 @@ class TaleOfTapeWidget extends StatelessWidget {
   final int rounds;
   final bool isTitle;
   final bool showExtended;
+  final Function(MMAFighter)? onFighterTap;
 
   const TaleOfTapeWidget({
     Key? key,
@@ -20,6 +22,7 @@ class TaleOfTapeWidget extends StatelessWidget {
     this.rounds = 3,
     this.isTitle = false,
     this.showExtended = false,
+    this.onFighterTap,
   }) : super(key: key);
 
   @override
@@ -141,10 +144,19 @@ class TaleOfTapeWidget extends StatelessWidget {
   }) {
     final cornerColor = isRedCorner ? Colors.red : Colors.blue;
 
-    return Column(
-      children: [
-        // Fighter Image
-        Container(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onFighterTap != null ? () => onFighterTap!(fighter) : null,
+        borderRadius: BorderRadius.circular(12),
+        splashColor: cornerColor.withOpacity(0.2),
+        hoverColor: cornerColor.withOpacity(0.1),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            children: [
+              // Fighter Image
+              Container(
           width: 100,
           height: 100,
           decoration: BoxDecoration(
@@ -160,20 +172,18 @@ class TaleOfTapeWidget extends StatelessWidget {
               ],
             ),
           ),
-          child: ClipOval(
-            child: fighter.headshotUrl != null
-                ? CachedNetworkImage(
-                    imageUrl: fighter.headshotUrl!,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: cornerColor,
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => _buildFighterInitials(fighter),
-                  )
-                : _buildFighterInitials(fighter),
+          child: FighterImageWidget(
+            fighterId: fighter.id,
+            fallbackUrl: fighter.headshotUrl,
+            size: 100,
+            shape: BoxShape.circle,
+            placeholder: Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: cornerColor,
+              ),
+            ),
+            errorWidget: _buildFighterInitials(fighter),
           ),
         ),
 
@@ -296,7 +306,10 @@ class TaleOfTapeWidget extends StatelessWidget {
               );
             }).toList(),
           ),
-      ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -443,59 +456,234 @@ class TaleOfTapeWidget extends StatelessWidget {
   }
 
   Widget _buildExtendedStats() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceBlue.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppTheme.borderCyan.withOpacity(0.3),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'WIN METHODS',
-            style: TextStyle(
-              color: AppTheme.neonGreen,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
+    return Column(
+      children: [
+        // Win Methods Section
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceBlue.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppTheme.borderCyan.withOpacity(0.3),
             ),
           ),
-          const SizedBox(height: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'WIN METHODS',
+                style: TextStyle(
+                  color: AppTheme.neonGreen,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 16),
 
-          // KO/TKO
-          _buildWinMethodRow(
-            label: 'KO/TKO',
-            value1: fighter1.knockouts ?? 0,
-            value2: fighter2.knockouts ?? 0,
-            total1: fighter1.wins ?? 0,
-            total2: fighter2.wins ?? 0,
-          ),
-          const SizedBox(height: 8),
+              // KO/TKO
+              _buildWinMethodRow(
+                label: 'KO/TKO',
+                value1: fighter1.knockouts ?? 0,
+                value2: fighter2.knockouts ?? 0,
+                total1: fighter1.wins ?? 0,
+                total2: fighter2.wins ?? 0,
+              ),
+              const SizedBox(height: 8),
 
-          // Submissions
-          _buildWinMethodRow(
-            label: 'Submission',
-            value1: fighter1.submissions ?? 0,
-            value2: fighter2.submissions ?? 0,
-            total1: fighter1.wins ?? 0,
-            total2: fighter2.wins ?? 0,
-          ),
-          const SizedBox(height: 8),
+              // Submissions
+              _buildWinMethodRow(
+                label: 'Submission',
+                value1: fighter1.submissions ?? 0,
+                value2: fighter2.submissions ?? 0,
+                total1: fighter1.wins ?? 0,
+                total2: fighter2.wins ?? 0,
+              ),
+              const SizedBox(height: 8),
 
-          // Decisions
-          _buildWinMethodRow(
-            label: 'Decision',
-            value1: fighter1.decisions ?? 0,
-            value2: fighter2.decisions ?? 0,
-            total1: fighter1.wins ?? 0,
-            total2: fighter2.wins ?? 0,
+              // Decisions
+              _buildWinMethodRow(
+                label: 'Decision',
+                value1: fighter1.decisions ?? 0,
+                value2: fighter2.decisions ?? 0,
+                total1: fighter1.wins ?? 0,
+                total2: fighter2.wins ?? 0,
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Striking Statistics Section
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceBlue.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppTheme.borderCyan.withOpacity(0.3),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'STRIKING STATISTICS',
+                style: TextStyle(
+                  color: AppTheme.neonGreen,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              _buildStatisticRow(
+                label: 'Sig. Strikes/Min',
+                value1: fighter1.sigStrikesPerMinute?.toStringAsFixed(2) ?? 'N/A',
+                value2: fighter2.sigStrikesPerMinute?.toStringAsFixed(2) ?? 'N/A',
+                highlightBetter: true,
+              ),
+              const SizedBox(height: 8),
+
+              _buildStatisticRow(
+                label: 'Strike Accuracy',
+                value1: fighter1.strikeAccuracy != null
+                    ? '${fighter1.strikeAccuracy!.toStringAsFixed(0)}%'
+                    : 'N/A',
+                value2: fighter2.strikeAccuracy != null
+                    ? '${fighter2.strikeAccuracy!.toStringAsFixed(0)}%'
+                    : 'N/A',
+                highlightBetter: true,
+              ),
+              const SizedBox(height: 8),
+
+              _buildStatisticRow(
+                label: 'Strike Defense',
+                value1: fighter1.strikeDefense != null
+                    ? '${fighter1.strikeDefense!.toStringAsFixed(0)}%'
+                    : 'N/A',
+                value2: fighter2.strikeDefense != null
+                    ? '${fighter2.strikeDefense!.toStringAsFixed(0)}%'
+                    : 'N/A',
+                highlightBetter: true,
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Grappling Statistics Section
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceBlue.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppTheme.borderCyan.withOpacity(0.3),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'GRAPPLING STATISTICS',
+                style: TextStyle(
+                  color: AppTheme.neonGreen,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              _buildStatisticRow(
+                label: 'Takedown Avg',
+                value1: fighter1.takedownAverage?.toStringAsFixed(1) ?? 'N/A',
+                value2: fighter2.takedownAverage?.toStringAsFixed(1) ?? 'N/A',
+                highlightBetter: true,
+              ),
+              const SizedBox(height: 8),
+
+              _buildStatisticRow(
+                label: 'Takedown Acc',
+                value1: fighter1.takedownAccuracy != null
+                    ? '${fighter1.takedownAccuracy!.toStringAsFixed(0)}%'
+                    : 'N/A',
+                value2: fighter2.takedownAccuracy != null
+                    ? '${fighter2.takedownAccuracy!.toStringAsFixed(0)}%'
+                    : 'N/A',
+                highlightBetter: true,
+              ),
+              const SizedBox(height: 8),
+
+              _buildStatisticRow(
+                label: 'Takedown Def',
+                value1: fighter1.takedownDefense != null
+                    ? '${fighter1.takedownDefense!.toStringAsFixed(0)}%'
+                    : 'N/A',
+                value2: fighter2.takedownDefense != null
+                    ? '${fighter2.takedownDefense!.toStringAsFixed(0)}%'
+                    : 'N/A',
+                highlightBetter: true,
+              ),
+              const SizedBox(height: 8),
+
+              _buildStatisticRow(
+                label: 'Submission Avg',
+                value1: fighter1.submissionAverage?.toStringAsFixed(1) ?? 'N/A',
+                value2: fighter2.submissionAverage?.toStringAsFixed(1) ?? 'N/A',
+                highlightBetter: true,
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Performance Metrics Section
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceBlue.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppTheme.borderCyan.withOpacity(0.3),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'PERFORMANCE METRICS',
+                style: TextStyle(
+                  color: AppTheme.neonGreen,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              _buildPerformanceBar(
+                label: 'Win Rate',
+                value1: _calculateWinRate(fighter1),
+                value2: _calculateWinRate(fighter2),
+              ),
+              const SizedBox(height: 8),
+
+              _buildPerformanceBar(
+                label: 'Finish Rate',
+                value1: _calculateFinishRate(fighter1),
+                value2: _calculateFinishRate(fighter2),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -622,5 +810,198 @@ class TaleOfTapeWidget extends StatelessWidget {
     }
 
     return null;
+  }
+
+  Widget _buildStatisticRow({
+    required String label,
+    required String value1,
+    required String value2,
+    bool highlightBetter = false,
+  }) {
+    bool? fighter1Better;
+
+    if (highlightBetter && value1 != 'N/A' && value2 != 'N/A') {
+      // Extract numeric values for comparison
+      final num1 = _extractNumericValue(value1);
+      final num2 = _extractNumericValue(value2);
+
+      if (num1 != null && num2 != null) {
+        fighter1Better = num1 > num2;
+      }
+    }
+
+    return Row(
+      children: [
+        // Fighter 1 Value
+        Expanded(
+          child: Text(
+            value1,
+            style: TextStyle(
+              color: fighter1Better == true
+                  ? AppTheme.neonGreen
+                  : Colors.white,
+              fontSize: 14,
+              fontWeight: fighter1Better == true
+                  ? FontWeight.bold
+                  : FontWeight.normal,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+
+        // Label
+        Container(
+          width: 100,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: Colors.white60,
+              fontSize: 12,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+
+        // Fighter 2 Value
+        Expanded(
+          child: Text(
+            value2,
+            style: TextStyle(
+              color: fighter1Better == false
+                  ? AppTheme.neonGreen
+                  : Colors.white,
+              fontSize: 14,
+              fontWeight: fighter1Better == false
+                  ? FontWeight.bold
+                  : FontWeight.normal,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
+    );
+  }
+
+  double? _extractNumericValue(String value) {
+    final regex = RegExp(r'([\d.]+)');
+    final match = regex.firstMatch(value);
+    if (match != null) {
+      return double.tryParse(match.group(1)!);
+    }
+    return null;
+  }
+
+  Widget _buildPerformanceBar({
+    required String label,
+    required double value1,
+    required double value2,
+  }) {
+    final fighter1Better = value1 > value2;
+    final fighter2Better = value2 > value1;
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            // Fighter 1 percentage
+            Expanded(
+              child: Text(
+                '${value1.toStringAsFixed(0)}%',
+                style: TextStyle(
+                  color: fighter1Better ? AppTheme.neonGreen : Colors.white,
+                  fontSize: 14,
+                  fontWeight: fighter1Better ? FontWeight.bold : FontWeight.normal,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+
+            // Label
+            Container(
+              width: 100,
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: Colors.white60,
+                  fontSize: 12,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+
+            // Fighter 2 percentage
+            Expanded(
+              child: Text(
+                '${value2.toStringAsFixed(0)}%',
+                style: TextStyle(
+                  color: fighter2Better ? AppTheme.neonGreen : Colors.white,
+                  fontSize: 14,
+                  fontWeight: fighter2Better ? FontWeight.bold : FontWeight.normal,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 4),
+
+        // Visual Bars
+        Row(
+          children: [
+            Expanded(
+              child: LinearProgressIndicator(
+                value: value1 / 100,
+                backgroundColor: Colors.red.withOpacity(0.2),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  fighter1Better ? AppTheme.neonGreen : Colors.red,
+                ),
+                minHeight: 6,
+              ),
+            ),
+            const SizedBox(width: 100),
+            Expanded(
+              child: Transform.scale(
+                scaleX: -1,
+                child: LinearProgressIndicator(
+                  value: value2 / 100,
+                  backgroundColor: Colors.blue.withOpacity(0.2),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    fighter2Better ? AppTheme.neonGreen : Colors.blue,
+                  ),
+                  minHeight: 6,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  double _calculateWinRate(MMAFighter fighter) {
+    final totalFights = _extractTotalFights(fighter.record);
+    if (totalFights == 0) return 0;
+    return ((fighter.wins ?? 0) / totalFights * 100);
+  }
+
+  double _calculateFinishRate(MMAFighter fighter) {
+    final wins = fighter.wins ?? 0;
+    if (wins == 0) return 0;
+    final finishes = (fighter.knockouts ?? 0) + (fighter.submissions ?? 0);
+    return (finishes / wins * 100);
+  }
+
+  int _extractTotalFights(String record) {
+    // Parse record string like "20-5" or "20-5-1"
+    final parts = record.split('-');
+    int total = 0;
+    for (final part in parts) {
+      final num = int.tryParse(part.trim());
+      if (num != null) {
+        total += num;
+      }
+    }
+    return total;
   }
 }

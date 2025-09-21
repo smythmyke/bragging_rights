@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UFC Fight Card Test - ESPN API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #00ff41;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+        }
+
+        .event-info {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+        }
+
+        .fight-card {
+            background: rgba(26, 26, 46, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid #00ff41;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+        }
+
+        .card-title {
+            color: #00ff41;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #00ff41;
+        }
+
+        .fight {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 65, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .fight:hover {
+            background: rgba(0, 255, 65, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 65, 0.3);
+        }
+
+        .fighters {
+            flex: 1;
+        }
+
+        .fighter-name {
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            display: inline-block;
+            padding: 2px 5px;
+            transition: all 0.2s;
+        }
+
+        .fighter-name:hover {
+            color: #00ff41;
+            text-decoration: underline;
+        }
+
+        .vs {
+            color: #00ff41;
+            margin: 0 10px;
+            font-weight: bold;
+        }
+
+        .weight-class {
+            color: #888;
+            font-size: 14px;
+            margin-left: 20px;
+        }
+
+        .title-fight {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #000;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 5px;
+            margin-left: 10px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+            margin: 50px auto;
+            padding: 30px;
+            border: 2px solid #00ff41;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.5);
+        }
+
+        .close {
+            color: #00ff41;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #fff;
+        }
+
+        /* Tale of Tape Styles */
+        .tale-of-tape {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .fighter-section {
+            text-align: center;
+        }
+
+        .fighter-image {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 3px solid;
+            margin-bottom: 10px;
+            object-fit: cover;
+        }
+
+        .red-corner .fighter-image {
+            border-color: #ff0000;
+        }
+
+        .blue-corner .fighter-image {
+            border-color: #0080ff;
+        }
+
+        .fighter-record {
+            color: #00ff41;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .vs-divider {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .vs-circle {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #00ff41;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 255, 65, 0.1);
+            font-weight: bold;
+            color: #00ff41;
+        }
+
+        .stats-comparison {
+            margin-top: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .stat-row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-value {
+            font-weight: bold;
+        }
+
+        .stat-label {
+            text-align: center;
+            color: #888;
+            font-size: 14px;
+        }
+
+        .stat-advantage {
+            color: #00ff41;
+        }
+
+        /* Win Methods Styles */
+        .win-methods {
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid rgba(0, 255, 65, 0.2);
+        }
+
+        .win-methods h4 {
+            color: #00ff41;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 1.2px;
+            margin-bottom: 15px;
+        }
+
+        .win-method-row {
+            margin-bottom: 15px;
+        }
+
+        .win-method-stats {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            margin-bottom: 5px;
+        }
+
+        .win-method-value {
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .win-method-percentage {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 12px;
+            margin-left: 5px;
+        }
+
+        .win-method-label {
+            text-align: center;
+            color: #888;
+            font-size: 12px;
+        }
+
+        .win-method-bar {
+            display: grid;
+            grid-template-columns: 1fr 80px 1fr;
+            height: 4px;
+            align-items: center;
+        }
+
+        .bar-left, .bar-right {
+            height: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bar-left {
+            background: rgba(255, 0, 0, 0.2);
+        }
+
+        .bar-right {
+            background: rgba(0, 128, 255, 0.2);
+        }
+
+        .bar-fill-left {
+            height: 100%;
+            background: #ff0000;
+            transition: width 0.5s ease;
+        }
+
+        .bar-fill-right {
+            height: 100%;
+            background: #0080ff;
+            transition: width 0.5s ease;
+            float: right;
+        }
+
+        /* Fighter Statistics Sections */
+        .stats-sections {
+            margin-top: 20px;
+        }
+
+        .stat-section {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(0, 255, 65, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .stat-section h4 {
+            color: #00ff41;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(0, 255, 65, 0.3);
+        }
+
+        .advanced-stat-row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .advanced-stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-value-left {
+            text-align: right;
+            padding-right: 15px;
+        }
+
+        .stat-value-right {
+            text-align: left;
+            padding-left: 15px;
+        }
+
+        .stat-better {
+            color: #00ff41;
+            font-weight: bold;
+        }
+
+        .stat-worse {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .stat-label-center {
+            color: #888;
+            font-size: 12px;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .fight-history {
+            margin-top: 15px;
+        }
+
+        .recent-fights {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+
+        .fight-result {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+            border: 2px solid;
+        }
+
+        .fight-win {
+            background: rgba(0, 255, 0, 0.2);
+            border-color: #00ff00;
+            color: #00ff00;
+        }
+
+        .fight-loss {
+            background: rgba(255, 0, 0, 0.2);
+            border-color: #ff0000;
+            color: #ff0000;
+        }
+
+        .fight-draw {
+            background: rgba(128, 128, 128, 0.2);
+            border-color: #808080;
+            color: #808080;
+        }
+
+        .fight-nc {
+            background: rgba(255, 255, 0, 0.2);
+            border-color: #ffff00;
+            color: #ffff00;
+        }
+
+        .percentage-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .percentage-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff41 0%, #00cc33 100%);
+            transition: width 0.5s ease;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #00ff41;
+        }
+
+        .error {
+            color: #ff4444;
+            padding: 10px;
+            background: rgba(255, 0, 0, 0.1);
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .api-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 5px;
+            font-size: 12px;
+            border: 1px solid #00ff41;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-active {
+            background: #00ff41;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .fighter-details {
+            padding: 20px;
+        }
+
+        .fighter-details h3 {
+            color: #00ff41;
+            margin-bottom: 15px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .detail-label {
+            color: #888;
+        }
+
+        .detail-value {
+            color: #fff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>UFC Fight Card Test</h1>
+        <div class="event-info">ESPN API Testing - Click on fights for tale of the tape, click on fighter names for profiles</div>
+
+        <div class="api-status">
+            <span class="status-indicator status-active"></span>
+            <span id="api-status-text">Ready</span>
+        </div>
+
+        <!-- Main Card -->
+        <div class="fight-card">
+            <div class="card-title">MAIN CARD</div>
+
+            <div class="fight" onclick="showTaleOfTape('Dominick Reyes', 'Dustin Jacoby')">
+                <div class="fighters">
+                    <span class="fighter-name" onclick="event.stopPropagation(); showFighterProfile('Dominick Reyes')">Dominick Reyes</span>
+                    <span class="vs">vs</span>
+                    <span class="fighter-name" onclick="event.stopPropagation(); showFighterProfile('Dustin Jacoby')">Dustin Jacoby</span>
+                    <span class="weight-class">Light Heavyweight</span>
+                </div>
+            </div>
+
+            <div class="fight" onclick="showTaleOfTape('Cub Swanson', 'Billy Quarantillo')">
+                <div class="fighters">
+                    <span class="fighter-name" onclick="event.stopPropagation(); showFighterProfile('Cub Swanson')">Cub Swanson</span>
+                    <span class="vs">vs</span>
+                    <span class="fighter-name" onclick="event.stopPropagation(); showFighterProfile('Billy Quarantillo')">Billy Quarantillo</span>
+                    <span class="weight-class">Featherweight</span>
+                </div>
+            </div>
+
+            <div class="fight" onclick="showTaleOfTape('Punahele Soriano', 'Uros Medic')">
+                <div class="fighters">
+                    <span class="fighter-name" onclick="event.stopPropagation(); showFighterProfile('Punahele Soriano')">Punahele Soriano</span>
+                    <span class="vs">vs</span>
+                    <span class="fighter-name" onclick="event.stopPropagation(); showFighterProfile('Uros Medic')">Uros Medic</span>
+                    <span class="weight-class">Welterweight</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prelims -->
+        <div class="fight-card">
+            <div class="card-title">PRELIMINARY CARD</div>
+
+            <div class="fight" onclick="showTaleOfTape('Charlie Campbell', 'Tom Nolan')">
+                <div class="fighters">
+                    <span class="fighter-name" onclick="event.stopPropagation(); showFighterProfile('Charlie Campbell')">Charlie Campbell</span>
+                    <span class="vs">vs</span>
+                    <span class="fighter-name" onclick="event.stopPropagation(); showFighterProfile('Tom Nolan')">Tom Nolan</span>
+                    <span class="weight-class">Lightweight</span>
+                </div>
+            </div>
+
+            <div class="fight" onclick="showTaleOfTape('Themba Gorimbo', 'Vicente Luque')">
+                <div class="fighters">
+                    <span class="fighter-name" onclick="event.stopPropagation(); showFighterProfile('Themba Gorimbo')">Themba Gorimbo</span>
+                    <span class="vs">vs</span>
+                    <span class="fighter-name" onclick="event.stopPropagation(); showFighterProfile('Vicente Luque')">Vicente Luque</span>
+                    <span class="weight-class">Welterweight</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Tale of Tape -->
+    <div id="taleModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('taleModal')">&times;</span>
+            <h2 style="text-align: center; color: #00ff41; margin-bottom: 20px;">Tale of the Tape</h2>
+            <div id="taleContent">
+                <div class="loading">Loading fighter data...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Fighter Profile -->
+    <div id="fighterModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('fighterModal')">&times;</span>
+            <div id="fighterContent">
+                <div class="loading">Loading fighter profile...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ESPN API endpoints
+        const SEARCH_API = 'https://site.web.api.espn.com/apis/search/v2';
+        const ATHLETE_API = 'http://sports.core.api.espn.com/v2/sports/mma/athletes';
+
+        // Cache for fighter data
+        const fighterCache = {};
+
+        // Update API status
+        function updateStatus(message, isError = false) {
+            const statusText = document.getElementById('api-status-text');
+            statusText.textContent = message;
+            statusText.style.color = isError ? '#ff4444' : '#00ff41';
+        }
+
+        // Search for fighter by name
+        async function searchFighter(name) {
+            updateStatus(`Searching for ${name}...`);
+
+            // Check cache first
+            if (fighterCache[name]) {
+                updateStatus('Ready');
+                return fighterCache[name];
+            }
+
+            try {
+                const searchUrl = `${SEARCH_API}?region=us&lang=en&section=mma&limit=5&page=1&query=${encodeURIComponent(name)}&type=player`;
+                console.log('Searching:', searchUrl);
+
+                const response = await fetch(searchUrl);
+                const data = await response.json();
+
+                // Find the player results
+                if (data.results && data.results.length > 0) {
+                    for (const section of data.results) {
+                        if (section.type === 'player' && section.contents) {
+                            // Find MMA fighters
+                            for (const player of section.contents) {
+                                if (player.sport === 'mma' && player.uid) {
+                                    // Extract ESPN ID from UID
+                                    const match = player.uid.match(/a:(\d+)/);
+                                    if (match) {
+                                        const fighterId = match[1];
+                                        console.log(`Found ${name}: ID ${fighterId}`);
+
+                                        // Fetch full fighter data
+                                        const fighterData = await fetchFighterData(fighterId);
+                                        if (fighterData) {
+                                            fighterCache[name] = fighterData;
+                                            updateStatus('Ready');
+                                            return fighterData;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                updateStatus(`Fighter not found: ${name}`, true);
+                return null;
+            } catch (error) {
+                console.error('Search error:', error);
+                updateStatus(`Error: ${error.message}`, true);
+                return null;
+            }
+        }
+
+        // Fetch fighter data by ID
+        async function fetchFighterData(fighterId) {
+            try {
+                const url = `${ATHLETE_API}/${fighterId}`;
+                console.log('Fetching fighter:', url);
+
+                const response = await fetch(url, {
+                    mode: 'cors',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+
+                // Also fetch record if available
+                if (data.records && data.records.$ref) {
+                    try {
+                        const recordUrl = data.records.$ref.startsWith('http') ?
+                            data.records.$ref : 'http:' + data.records.$ref;
+                        console.log('Fetching record:', recordUrl);
+                        const recordResponse = await fetch(recordUrl, {
+                            mode: 'cors',
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        });
+                        if (recordResponse.ok) {
+                            const recordData = await recordResponse.json();
+                            console.log('Record data:', recordData);
+
+                            // Extract the summary from the items array
+                            if (recordData.items && recordData.items.length > 0) {
+                                const overallRecord = recordData.items.find(item =>
+                                    item.name === 'overall' || item.type === 'total'
+                                );
+                                if (overallRecord) {
+                                    data.recordSummary = overallRecord.summary || overallRecord.displayValue;
+                                    console.log('Found record:', data.recordSummary);
+                                }
+
+                                // Now fetch the full record details with win methods
+                                if (overallRecord && overallRecord.$ref) {
+                                    try {
+                                        const detailUrl = overallRecord.$ref.startsWith('http') ?
+                                            overallRecord.$ref : 'http:' + overallRecord.$ref;
+                                        const detailResponse = await fetch(detailUrl, {
+                                            mode: 'cors',
+                                            headers: {
+                                                'Accept': 'application/json'
+                                            }
+                                        });
+                                        if (detailResponse.ok) {
+                                            const detailData = await detailResponse.json();
+                                            console.log('Record details:', detailData);
+
+                                            // Extract win method stats
+                                            if (detailData.stats) {
+                                                const stats = {};
+                                                detailData.stats.forEach(stat => {
+                                                    stats[stat.name] = parseFloat(stat.value) || 0;
+                                                });
+
+                                                data.winStats = {
+                                                    wins: stats.wins || 0,
+                                                    losses: stats.losses || 0,
+                                                    draws: stats.draws || 0,
+                                                    tkos: stats.tkos || 0,
+                                                    submissions: stats.submissions || 0
+                                                };
+
+                                                // Calculate decisions (wins - tkos - submissions)
+                                                data.winStats.decisions = Math.max(0,
+                                                    data.winStats.wins - data.winStats.tkos - data.winStats.submissions
+                                                );
+
+                                                console.log('Win stats:', data.winStats);
+                                            }
+                                        }
+                                    } catch (e) {
+                                        console.error('Failed to fetch record details:', e);
+                                    }
+                                }
+                            }
+
+                            data.recordData = recordData;
+                        }
+                    } catch (e) {
+                        console.error('Failed to fetch record:', e);
+                    }
+                }
+
+                // Fetch fighter statistics
+                if (data.statistics && data.statistics.$ref) {
+                    try {
+                        const statsUrl = data.statistics.$ref.startsWith('http') ?
+                            data.statistics.$ref : 'http:' + data.statistics.$ref;
+                        console.log('Fetching statistics:', statsUrl);
+                        const statsResponse = await fetch(statsUrl, {
+                            mode: 'cors',
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        });
+                        if (statsResponse.ok) {
+                            const statsData = await statsResponse.json();
+                            console.log('Statistics data:', statsData);
+
+                            // Extract statistics from the response
+                            if (statsData.$ref) {
+                                // Need to fetch the actual statistics
+                                const fullStatsUrl = statsData.$ref.startsWith('http') ?
+                                    statsData.$ref : 'http:' + statsData.$ref;
+                                const fullStatsResponse = await fetch(fullStatsUrl, {
+                                    mode: 'cors',
+                                    headers: {
+                                        'Accept': 'application/json'
+                                    }
+                                });
+                                if (fullStatsResponse.ok) {
+                                    const fullStats = await fullStatsResponse.json();
+                                    data.fullStatistics = fullStats;
+                                    console.log('Full statistics:', fullStats);
+
+                                    // Parse the stats into a more usable format
+                                    if (fullStats.splits && fullStats.splits.categories) {
+                                        const parsedStats = {};
+                                        fullStats.splits.categories.forEach(category => {
+                                            if (category.stats) {
+                                                category.stats.forEach(stat => {
+                                                    parsedStats[stat.name] = {
+                                                        value: stat.value,
+                                                        displayValue: stat.displayValue,
+                                                        displayName: stat.displayName,
+                                                        description: stat.description
+                                                    };
+                                                });
+                                            }
+                                        });
+                                        data.parsedStats = parsedStats;
+                                        console.log('Parsed stats:', parsedStats);
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Failed to fetch statistics:', e);
+                    }
+                }
+
+                // Fetch fighter event log (recent fights)
+                if (data.eventLog && data.eventLog.$ref) {
+                    try {
+                        const eventUrl = data.eventLog.$ref.startsWith('http') ?
+                            data.eventLog.$ref : 'http:' + data.eventLog.$ref;
+                        console.log('Fetching event log:', eventUrl);
+                        const eventResponse = await fetch(eventUrl, {
+                            mode: 'cors',
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        });
+                        if (eventResponse.ok) {
+                            const eventData = await eventResponse.json();
+                            data.eventLog = eventData;
+                            console.log('Event log:', eventData);
+                        }
+                    } catch (e) {
+                        console.error('Failed to fetch event log:', e);
+                    }
+                }
+
+                return data;
+            } catch (error) {
+                console.error('Fetch error:', error);
+                return null;
+            }
+        }
+
+        // Show Tale of the Tape
+        async function showTaleOfTape(fighter1Name, fighter2Name) {
+            const modal = document.getElementById('taleModal');
+            const content = document.getElementById('taleContent');
+            modal.style.display = 'block';
+
+            content.innerHTML = '<div class="loading">Loading fighter data...</div>';
+
+            // Fetch both fighters
+            const [fighter1, fighter2] = await Promise.all([
+                searchFighter(fighter1Name),
+                searchFighter(fighter2Name)
+            ]);
+
+            if (!fighter1 || !fighter2) {
+                content.innerHTML = `
+                    <div class="error">
+                        Failed to load fighter data.
+                        ${!fighter1 ? `Could not find ${fighter1Name}. ` : ''}
+                        ${!fighter2 ? `Could not find ${fighter2Name}.` : ''}
+                    </div>
+                `;
+                return;
+            }
+
+            // Build tale of tape display
+            content.innerHTML = `
+                <div class="tale-of-tape">
+                    <div class="fighter-section red-corner">
+                        <img src="https://a.espncdn.com/i/headshots/mma/players/full/${fighter1.id}.png"
+                             class="fighter-image"
+                             onerror="this.src='https://via.placeholder.com/150?text=${fighter1.displayName}'">
+                        <h3>${fighter1.displayName}</h3>
+                        ${fighter1.nickname ? `<div style="color: #888; font-style: italic;">"${fighter1.nickname}"</div>` : ''}
+                        <div class="fighter-record">${getRecord(fighter1)}</div>
+                    </div>
+
+                    <div class="vs-divider">
+                        <div class="vs-circle">VS</div>
+                        <div style="margin-top: 10px; color: #888;">3 Rounds</div>
+                    </div>
+
+                    <div class="fighter-section blue-corner">
+                        <img src="https://a.espncdn.com/i/headshots/mma/players/full/${fighter2.id}.png"
+                             class="fighter-image"
+                             onerror="this.src='https://via.placeholder.com/150?text=${fighter2.displayName}'">
+                        <h3>${fighter2.displayName}</h3>
+                        ${fighter2.nickname ? `<div style="color: #888; font-style: italic;">"${fighter2.nickname}"</div>` : ''}
+                        <div class="fighter-record">${getRecord(fighter2)}</div>
+                    </div>
+                </div>
+
+                <div class="stats-comparison">
+                    ${buildStatRow('Age', fighter1.age || 'N/A', fighter2.age || 'N/A')}
+                    ${buildStatRow('Height', fighter1.displayHeight || 'N/A', fighter2.displayHeight || 'N/A')}
+                    ${buildStatRow('Weight', fighter1.displayWeight || 'N/A', fighter2.displayWeight || 'N/A')}
+                    ${buildStatRow('Reach', fighter1.displayReach || 'N/A', fighter2.displayReach || 'N/A')}
+                    ${buildStatRow('Stance', fighter1.stance || 'N/A', fighter2.stance || 'N/A')}
+                </div>
+
+                ${buildWinMethods(fighter1, fighter2)}
+
+                ${buildAdvancedStats(fighter1, fighter2)}
+            `;
+        }
+
+        // Show Fighter Profile
+        async function showFighterProfile(fighterName) {
+            const modal = document.getElementById('fighterModal');
+            const content = document.getElementById('fighterContent');
+            modal.style.display = 'block';
+
+            content.innerHTML = '<div class="loading">Loading fighter profile...</div>';
+
+            const fighter = await searchFighter(fighterName);
+
+            if (!fighter) {
+                content.innerHTML = `<div class="error">Failed to load fighter profile for ${fighterName}</div>`;
+                return;
+            }
+
+            content.innerHTML = `
+                <div class="fighter-details">
+                    <div style="text-align: center;">
+                        <img src="https://a.espncdn.com/i/headshots/mma/players/full/${fighter.id}.png"
+                             class="fighter-image"
+                             style="width: 200px; height: 200px;"
+                             onerror="this.src='https://via.placeholder.com/200?text=${fighter.displayName}'">
+                        <h2 style="color: #00ff41; margin: 10px 0;">${fighter.displayName}</h2>
+                        ${fighter.nickname ? `<div style="color: #888; font-style: italic; font-size: 18px;">"${fighter.nickname}"</div>` : ''}
+                        <div style="color: #00ff41; font-size: 24px; margin: 10px 0;">${getRecord(fighter)}</div>
+                    </div>
+
+                    <h3>Physical Stats</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">Age</span>
+                        <span class="detail-value">${fighter.age || 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Height</span>
+                        <span class="detail-value">${fighter.displayHeight || 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Weight</span>
+                        <span class="detail-value">${fighter.displayWeight || 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Reach</span>
+                        <span class="detail-value">${fighter.displayReach || 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Stance</span>
+                        <span class="detail-value">${fighter.stance || 'N/A'}</span>
+                    </div>
+
+                    <h3>Fighter Info</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">Birth Date</span>
+                        <span class="detail-value">${fighter.dateOfBirth ? new Date(fighter.dateOfBirth).toLocaleDateString() : 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Birth Place</span>
+                        <span class="detail-value">${fighter.birthPlace ? fighter.birthPlace.city + ', ' + fighter.birthPlace.country : 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">ESPN ID</span>
+                        <span class="detail-value">${fighter.id}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Helper function to get record
+        function getRecord(fighter) {
+            // First check if we have the recordSummary we extracted
+            if (fighter.recordSummary) {
+                return fighter.recordSummary;
+            }
+
+            // Fallback to checking recordData structure
+            if (fighter.recordData) {
+                // Check if it's in the items array
+                if (fighter.recordData.items && fighter.recordData.items.length > 0) {
+                    const overall = fighter.recordData.items[0];
+                    if (overall.summary) return overall.summary;
+                    if (overall.displayValue) return overall.displayValue;
+                }
+
+                // Check legacy structure
+                if (fighter.recordData.overall && fighter.recordData.overall.summary) {
+                    return fighter.recordData.overall.summary;
+                }
+            }
+
+            return 'Record not available';
+        }
+
+        // Helper function to build Win Methods section
+        function buildWinMethods(fighter1, fighter2) {
+            // Check if both fighters have win stats
+            if (!fighter1.winStats || !fighter2.winStats) {
+                return ''; // Don't show section if no data
+            }
+
+            const stats1 = fighter1.winStats;
+            const stats2 = fighter2.winStats;
+
+            function buildMethodRow(label, value1, value2, total1, total2) {
+                const pct1 = total1 > 0 ? (value1 / total1 * 100) : 0;
+                const pct2 = total2 > 0 ? (value2 / total2 * 100) : 0;
+
+                return `
+                    <div class="win-method-row">
+                        <div class="win-method-stats">
+                            <div style="text-align: right;">
+                                <span class="win-method-value">${value1}</span>
+                                <span class="win-method-percentage">(${pct1.toFixed(0)}%)</span>
+                            </div>
+                            <div class="win-method-label">${label}</div>
+                            <div style="text-align: left;">
+                                <span class="win-method-value">${value2}</span>
+                                <span class="win-method-percentage">(${pct2.toFixed(0)}%)</span>
+                            </div>
+                        </div>
+                        <div class="win-method-bar">
+                            <div class="bar-left">
+                                <div class="bar-fill-left" style="width: ${pct1}%"></div>
+                            </div>
+                            <div style="width: 80px;"></div>
+                            <div class="bar-right">
+                                <div class="bar-fill-right" style="width: ${pct2}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="win-methods">
+                    <h4>WIN METHODS</h4>
+                    ${buildMethodRow('KO/TKO', stats1.tkos, stats2.tkos, stats1.wins, stats2.wins)}
+                    ${buildMethodRow('Submission', stats1.submissions, stats2.submissions, stats1.wins, stats2.wins)}
+                    ${buildMethodRow('Decision', stats1.decisions, stats2.decisions, stats1.wins, stats2.wins)}
+                </div>
+            `;
+        }
+
+        // Helper function to build Advanced Statistics sections
+        function buildAdvancedStats(fighter1, fighter2) {
+            // Check if either fighter has statistics
+            const stats1 = fighter1.parsedStats || {};
+            const stats2 = fighter2.parsedStats || {};
+
+            if (Object.keys(stats1).length === 0 && Object.keys(stats2).length === 0) {
+                return ''; // No statistics available
+            }
+
+            function formatStatValue(stat, better) {
+                if (!stat) return 'N/A';
+                const className = better ? 'stat-better' : 'stat-worse';
+                return `<span class="${className}">${stat.displayValue || stat.value || 'N/A'}</span>`;
+            }
+
+            function compareStats(stat1, stat2, higherBetter = true) {
+                const val1 = stat1?.value || 0;
+                const val2 = stat2?.value || 0;
+                if (higherBetter) {
+                    return { better1: val1 > val2, better2: val2 > val1 };
+                } else {
+                    return { better1: val1 < val2, better2: val2 < val1 };
+                }
+            }
+
+            // Build striking statistics section
+            const strikingSection = `
+                <div class="stat-section">
+                    <h4>🥊 STRIKING</h4>
+                    <div class="advanced-stat-row">
+                        <div class="stat-value-left">
+                            ${formatStatValue(stats1.strikeLPM,
+                                compareStats(stats1.strikeLPM, stats2.strikeLPM).better1)}
+                        </div>
+                        <div class="stat-label-center">Sig. Strikes/Min</div>
+                        <div class="stat-value-right">
+                            ${formatStatValue(stats2.strikeLPM,
+                                compareStats(stats1.strikeLPM, stats2.strikeLPM).better2)}
+                        </div>
+                    </div>
+                    <div class="advanced-stat-row">
+                        <div class="stat-value-left">
+                            ${formatStatValue(stats1.strikeAccuracy,
+                                compareStats(stats1.strikeAccuracy, stats2.strikeAccuracy).better1)}%
+                        </div>
+                        <div class="stat-label-center">Strike Accuracy</div>
+                        <div class="stat-value-right">
+                            ${formatStatValue(stats2.strikeAccuracy,
+                                compareStats(stats1.strikeAccuracy, stats2.strikeAccuracy).better2)}%
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Build grappling statistics section
+            const grapplingSection = `
+                <div class="stat-section">
+                    <h4>🤼 GRAPPLING</h4>
+                    <div class="advanced-stat-row">
+                        <div class="stat-value-left">
+                            ${formatStatValue(stats1.takedownAccuracy,
+                                compareStats(stats1.takedownAccuracy, stats2.takedownAccuracy).better1)}%
+                        </div>
+                        <div class="stat-label-center">Takedown Acc.</div>
+                        <div class="stat-value-right">
+                            ${formatStatValue(stats2.takedownAccuracy,
+                                compareStats(stats1.takedownAccuracy, stats2.takedownAccuracy).better2)}%
+                        </div>
+                    </div>
+                    <div class="advanced-stat-row">
+                        <div class="stat-value-left">
+                            ${formatStatValue(stats1.takedownAvg,
+                                compareStats(stats1.takedownAvg, stats2.takedownAvg).better1)}
+                        </div>
+                        <div class="stat-label-center">TD Avg/15min</div>
+                        <div class="stat-value-right">
+                            ${formatStatValue(stats2.takedownAvg,
+                                compareStats(stats1.takedownAvg, stats2.takedownAvg).better2)}
+                        </div>
+                    </div>
+                    <div class="advanced-stat-row">
+                        <div class="stat-value-left">
+                            ${formatStatValue(stats1.submissionAvg,
+                                compareStats(stats1.submissionAvg, stats2.submissionAvg).better1)}
+                        </div>
+                        <div class="stat-label-center">Sub. Avg/15min</div>
+                        <div class="stat-value-right">
+                            ${formatStatValue(stats2.submissionAvg,
+                                compareStats(stats1.submissionAvg, stats2.submissionAvg).better2)}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Build recent form section
+            const recentFormSection = buildRecentForm(fighter1, fighter2);
+
+            return `
+                <div class="stats-sections">
+                    ${strikingSection}
+                    ${grapplingSection}
+                    ${recentFormSection}
+                </div>
+            `;
+        }
+
+        // Helper function to build recent form display
+        function buildRecentForm(fighter1, fighter2) {
+            // For now, we'll use the record data to show a simple form indicator
+            // In a full implementation, we'd parse the eventLog for actual recent fights
+
+            function getFormIndicator(fighter) {
+                if (!fighter.winStats) return '';
+
+                // Create a simple recent form based on win percentage
+                const winPct = fighter.winStats.wins / (fighter.winStats.wins + fighter.winStats.losses) * 100;
+                const formClass = winPct > 70 ? 'fight-win' : winPct > 50 ? 'fight-draw' : 'fight-loss';
+
+                return `
+                    <div style="text-align: center; margin-top: 10px;">
+                        <div style="color: #888; font-size: 12px; margin-bottom: 5px;">Win Rate</div>
+                        <div style="font-size: 24px; font-weight: bold; color: ${winPct > 70 ? '#00ff00' : winPct > 50 ? '#ffff00' : '#ff0000'}">
+                            ${winPct.toFixed(0)}%
+                        </div>
+                        <div class="percentage-bar">
+                            <div class="percentage-fill" style="width: ${winPct}%"></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="stat-section">
+                    <h4>📈 FIGHT PERFORMANCE</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            ${getFormIndicator(fighter1)}
+                        </div>
+                        <div>
+                            ${getFormIndicator(fighter2)}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Helper function to build stat comparison row
+        function buildStatRow(label, value1, value2) {
+            const advantage1 = compareValues(label, value1, value2);
+            const advantage2 = compareValues(label, value2, value1);
+
+            return `
+                <div class="stat-row">
+                    <div class="stat-value ${advantage1 ? 'stat-advantage' : ''}" style="text-align: right;">
+                        ${value1}
+                    </div>
+                    <div class="stat-label">${label}</div>
+                    <div class="stat-value ${advantage2 ? 'stat-advantage' : ''}" style="text-align: left;">
+                        ${value2}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Compare values for advantage highlighting
+        function compareValues(label, val1, val2) {
+            if (label === 'Height' || label === 'Reach') {
+                const num1 = parseFloat(val1);
+                const num2 = parseFloat(val2);
+                if (!isNaN(num1) && !isNaN(num2)) {
+                    return num1 > num2;
+                }
+            }
+            return false;
+        }
+
+        // Close modal
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const taleModal = document.getElementById('taleModal');
+            const fighterModal = document.getElementById('fighterModal');
+            if (event.target === taleModal) {
+                taleModal.style.display = 'none';
+            }
+            if (event.target === fighterModal) {
+                fighterModal.style.display = 'none';
+            }
+        }
+
+        // Test API on load with a known fighter
+        window.onload = async function() {
+            console.log('Testing ESPN API connection...');
+            const testFighter = await searchFighter('Jon Jones');
+            if (testFighter) {
+                console.log('✅ API connection successful');
+                updateStatus('API Connected');
+            } else {
+                console.log('❌ API connection failed');
+                updateStatus('API Error', true);
+            }
+        }
+    </script>
+</body>
+</html>

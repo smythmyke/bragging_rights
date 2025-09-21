@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'edge/sports/espn_mma_service.dart';
 
 /// Service for managing fighter profiles and data
@@ -135,26 +137,77 @@ class FighterDataService {
     String fighterName,
   ) async {
     try {
+      // First fetch the fighter profile
       final profile = await _espnService.getFighterProfile(espnId);
-      
-      if (profile != null) {
+
+      // Then fetch the fighter records directly
+      Map<String, dynamic>? recordData;
+      try {
+        final recordsUrl = 'http://sports.core.api.espn.com/v2/sports/mma/athletes/$espnId/records';
+        final recordResponse = await http.get(Uri.parse(recordsUrl));
+        if (recordResponse.statusCode == 200) {
+          recordData = json.decode(recordResponse.body);
+        }
+      } catch (e) {
+        debugPrint('Error fetching fighter records: $e');
+      }
+
+      // Parse record stats if available
+      int wins = 0, losses = 0, draws = 0, kos = 0, submissions = 0, decisions = 0;
+      String? record;
+
+      if (recordData != null && recordData['items'] != null && recordData['items'].isNotEmpty) {
+        final overallRecord = recordData['items'][0];
+        record = overallRecord['summary'] ?? overallRecord['displayValue'];
+
+        // Parse stats from record
+        final stats = overallRecord['stats'] as List? ?? [];
+        for (final stat in stats) {
+          final statName = stat['name'];
+          final value = (stat['value'] ?? 0).toInt();
+
+          switch (statName) {
+            case 'wins':
+              wins = value;
+              break;
+            case 'losses':
+              losses = value;
+              break;
+            case 'draws':
+              draws = value;
+              break;
+            case 'tkos':
+              kos = value;
+              break;
+            case 'submissions':
+              submissions = value;
+              break;
+          }
+        }
+
+        // Calculate decisions (wins - KOs - submissions)
+        decisions = wins - kos - submissions;
+        if (decisions < 0) decisions = 0;
+      }
+
+      if (profile != null || record != null) {
         return FighterData(
           id: fighterId,
           espnId: espnId,
-          name: fighterName,
-          nickname: profile.nickname,
-          record: profile.record,
-          weightClass: profile.weightClass,
-          reach: profile.reach,
-          stance: profile.stance,
-          age: profile.age,
-          camp: profile.camp,
-          wins: profile.stats['wins'] ?? 0,
-          losses: profile.stats['losses'] ?? 0,
-          draws: profile.stats['draws'] ?? 0,
-          kos: profile.stats['kos'] ?? 0,
-          submissions: profile.stats['submissions'] ?? 0,
-          decisions: profile.stats['decisions'] ?? 0,
+          name: profile?.name ?? fighterName,
+          nickname: profile?.nickname,
+          record: record ?? profile?.record ?? '$wins-$losses-$draws',
+          weightClass: profile?.weightClass,
+          reach: profile?.reach,
+          stance: profile?.stance,
+          age: profile?.age,
+          camp: profile?.camp,
+          wins: wins,
+          losses: losses,
+          draws: draws,
+          kos: kos,
+          submissions: submissions,
+          decisions: decisions,
           headshotUrl: _extractHeadshotUrl(espnId),
           flagUrl: null, // ESPN doesn't provide this consistently
           lastUpdated: DateTime.now(),
@@ -163,7 +216,7 @@ class FighterDataService {
     } catch (e) {
       debugPrint('Error fetching fighter from ESPN: $e');
     }
-    
+
     // Return basic data if ESPN fails
     return FighterData.basic(
       id: fighterId,

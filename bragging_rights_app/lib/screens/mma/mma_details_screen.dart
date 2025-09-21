@@ -8,6 +8,7 @@ import '../../services/mma_service.dart';
 import '../../theme/app_theme.dart';
 import 'widgets/tale_of_tape_widget.dart';
 import 'widgets/fight_card_item.dart';
+import '../../widgets/fighter_image_widget.dart';
 
 class MMADetailsScreen extends StatefulWidget {
   final String eventId;
@@ -31,14 +32,13 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
   final MMAService _mmaService = MMAService();
   final ScrollController _scrollController = ScrollController();
 
-  MMAEvent? _event;
-  bool _isLoading = true;
-  String? _error;
+  late Stream<MMAEvent> _eventStream;
+  MMAEvent? _event; // Store current event for use in nested methods
 
   @override
   void initState() {
     super.initState();
-    _loadEventDetails();
+    _initializeEventStream();
   }
 
   @override
@@ -47,58 +47,46 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
     super.dispose();
   }
 
-  Future<void> _loadEventDetails() async {
-    try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
-
-      print('🎯 MMADetailsScreen loading event: ${widget.eventId}');
-      print('📝 Event name: ${widget.eventName}');
-
-      final event = await _mmaService.getEventWithFights(
-        widget.eventId,
-        gameData: widget.gameData,
-      );
-
-      if (mounted) {
-        if (event != null) {
-          print('✅ Event loaded successfully');
-          setState(() {
-            _event = event;
-            _isLoading = false;
-          });
-        } else {
-          print('⚠️ No event data available');
-          setState(() {
-            _event = null;
-            _error = 'Unable to load event details. Please check your connection and try again.';
-            _isLoading = false;
-          });
-        }
-      }
-    } catch (e) {
-      print('❌ Error loading MMA event: $e');
-      if (mounted) {
-        setState(() {
-          _event = null;
-          _error = 'Failed to load event details: ${e.toString()}';
-          _isLoading = false;
-        });
-      }
+  void _initializeEventStream() {
+    print('🎯 MMADetailsScreen loading event: ${widget.eventId}');
+    print('📝 Event name: ${widget.eventName}');
+    print('📝 Game data provided: ${widget.gameData != null}');
+    if (widget.gameData != null) {
+      print('📝 Game data keys: ${widget.gameData!.keys}');
     }
+
+    print('🔄 Creating event stream...');
+    _eventStream = _mmaService.getEventWithFightsProgressive(
+      widget.eventId,
+      gameData: widget.gameData,
+    );
+    print('✅ Event stream initialized');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.deepBlue,
-      body: _isLoading
-          ? _buildLoadingState()
-          : _error != null
-              ? _buildErrorState()
-              : _buildContent(),
+      body: StreamBuilder<MMAEvent>(
+        stream: _eventStream,
+        builder: (context, snapshot) {
+          print('🔄 StreamBuilder state: ${snapshot.connectionState}');
+
+          if (snapshot.hasError) {
+            print('❌ StreamBuilder error: ${snapshot.error}');
+            return _buildErrorState(error: snapshot.error.toString());
+          }
+
+          if (snapshot.hasData) {
+            final event = snapshot.data!;
+            print('📥 StreamBuilder data: ${event.name} with ${event.fights.length} fights');
+            return _buildContent(event: event);
+          }
+
+          print('⏳ StreamBuilder waiting for data...');
+          return _buildLoadingState();
+        },
+      ),
     );
   }
 
@@ -110,7 +98,7 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
     );
   }
 
-  Widget _buildErrorState() {
+  Widget _buildErrorState({String? error}) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -122,7 +110,7 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            _error ?? 'Something went wrong',
+            error ?? 'Something went wrong',
             style: const TextStyle(
               fontSize: 18,
               color: Colors.white70,
@@ -130,7 +118,11 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: _loadEventDetails,
+            onPressed: () {
+              setState(() {
+                _initializeEventStream();
+              });
+            },
             icon: const Icon(Icons.refresh),
             label: const Text('Retry'),
             style: ElevatedButton.styleFrom(
@@ -142,13 +134,16 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
     );
   }
 
-  Widget _buildContent() {
-    if (_event == null) {
-      return _buildErrorState();
-    }
+  Widget _buildContent({required MMAEvent event}) {
+    // Store event in a local variable for nested methods
+    _event = event;
 
     return RefreshIndicator(
-      onRefresh: _loadEventDetails,
+      onRefresh: () async {
+        setState(() {
+          _initializeEventStream();
+        });
+      },
       color: AppTheme.neonGreen,
       backgroundColor: AppTheme.surfaceBlue,
       child: CustomScrollView(
@@ -161,27 +156,31 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
             pinned: true,
             backgroundColor: AppTheme.deepBlue,
             flexibleSpace: FlexibleSpaceBar(
-              title: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    _event!.shortName ?? _event!.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+              titlePadding: const EdgeInsets.only(left: 16, bottom: 16, right: 16),
+              title: Container(
+                padding: const EdgeInsets.only(top: 8),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      _event!.shortName ?? _event!.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _event!.formattedDate,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.white70,
+                    const SizedBox(height: 2),
+                    Text(
+                      _event!.formattedDate,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.white70,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               centerTitle: true,
               background: _buildEventHeader(),
@@ -235,13 +234,14 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
       ),
       child: SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
+            const SizedBox(height: 20), // Add spacing from top to avoid title overlap
             // Promotion Logo
             if (_event!.promotionLogoUrl != null)
               Container(
-                width: 100,
-                height: 100,
+                width: 80,
+                height: 80,
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: Colors.white.withAlpha(25),
@@ -270,8 +270,8 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
               )
             else
               Container(
-                width: 80,
-                height: 80,
+                width: 60,
+                height: 60,
                 decoration: BoxDecoration(
                   color: AppTheme.surfaceBlue,
                   borderRadius: BorderRadius.circular(8),
@@ -286,7 +286,7 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
                     style: const TextStyle(
                       color: AppTheme.neonGreen,
                       fontWeight: FontWeight.bold,
-                      fontSize: 24,
+                      fontSize: 20,
                     ),
                   ),
                 ),
@@ -395,6 +395,7 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
                 weightClass: mainEvent.weightClass,
                 rounds: mainEvent.rounds,
                 isTitle: mainEvent.isTitleFight,
+                onFighterTap: _navigateToFighterProfile,
               ),
             ),
         ],
@@ -650,6 +651,31 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
   }
 
   void _showFightDetails(MMAFight fight) {
+    print('🎯 Opening fight details modal');
+    print('📊 Fight: ${fight.fightDescription}');
+    print('👤 Fighter 1: ${fight.fighter1?.name ?? 'NULL'} (ID: ${fight.fighter1?.id})');
+    print('👤 Fighter 2: ${fight.fighter2?.name ?? 'NULL'} (ID: ${fight.fighter2?.id})');
+
+    if (fight.fighter1 != null) {
+      print('🥊 Fighter 1 details:');
+      print('  - Record: ${fight.fighter1!.record}');
+      print('  - Height: ${fight.fighter1!.displayHeight ?? fight.fighter1!.heightFeetInches}');
+      print('  - Weight: ${fight.fighter1!.displayWeight ?? fight.fighter1!.weight}');
+      print('  - Reach: ${fight.fighter1!.displayReach ?? fight.fighter1!.reachInches}');
+      print('  - Age: ${fight.fighter1!.age}');
+      print('  - Stance: ${fight.fighter1!.stance}');
+    }
+
+    if (fight.fighter2 != null) {
+      print('🥊 Fighter 2 details:');
+      print('  - Record: ${fight.fighter2!.record}');
+      print('  - Height: ${fight.fighter2!.displayHeight ?? fight.fighter2!.heightFeetInches}');
+      print('  - Weight: ${fight.fighter2!.displayWeight ?? fight.fighter2!.weight}');
+      print('  - Reach: ${fight.fighter2!.displayReach ?? fight.fighter2!.reachInches}');
+      print('  - Age: ${fight.fighter2!.age}');
+      print('  - Stance: ${fight.fighter2!.stance}');
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -682,37 +708,6 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    // Fighter Images Row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        // Fighter 1
-                        _buildFighterImageWithName(fight.fighter1, true),
-                        // VS
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppTheme.neonGreen.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            'VS',
-                            style: TextStyle(
-                              color: AppTheme.neonGreen,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        // Fighter 2
-                        _buildFighterImageWithName(fight.fighter2, false),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
                     // Fight Description
                     Text(
                       fight.fightDescription,
@@ -726,7 +721,10 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
                     const SizedBox(height: 24),
 
                     // Tale of the Tape
-                    if (fight.fighter1 != null && fight.fighter2 != null)
+                    if (fight.fighter1 != null && fight.fighter2 != null) ...[
+                      Text('Tale of Tape for: ${fight.fighter1!.name} vs ${fight.fighter2!.name}',
+                        style: TextStyle(color: Colors.white70, fontSize: 12)),
+                      const SizedBox(height: 8),
                       TaleOfTapeWidget(
                         fighter1: fight.fighter1!,
                         fighter2: fight.fighter2!,
@@ -734,52 +732,39 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
                         rounds: fight.rounds,
                         isTitle: fight.isTitleFight,
                         showExtended: true,
+                        onFighterTap: (fighter) {
+                          Navigator.pop(context); // Close modal
+                          _navigateToFighterProfile(fighter);
+                        },
                       ),
-
-                    const SizedBox(height: 20),
-
-                    // View Profile Buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(context); // Close modal
-                              _navigateToFighterProfile(fight.fighter1);
-                            },
-                            icon: const Icon(PhosphorIconsRegular.user),
-                            label: Text(
-                              'View ${fight.fighter1?.shortName ?? "Fighter 1"} Profile',
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primaryCyan,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                          ),
+                    ] else ...[
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(context); // Close modal
-                              _navigateToFighterProfile(fight.fighter2);
-                            },
-                            icon: const Icon(PhosphorIconsRegular.user),
-                            label: Text(
-                              'View ${fight.fighter2?.shortName ?? "Fighter 2"} Profile',
-                              overflow: TextOverflow.ellipsis,
+                        child: Column(
+                          children: [
+                            Icon(Icons.warning, color: Colors.red, size: 48),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Fighter data not available',
+                              style: TextStyle(color: Colors.red, fontSize: 16),
                             ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primaryCyan,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Fighter 1: ${fight.fighter1?.name ?? "Missing"}',
+                              style: TextStyle(color: Colors.white70, fontSize: 12),
                             ),
-                          ),
+                            Text(
+                              'Fighter 2: ${fight.fighter2?.name ?? "Missing"}',
+                              style: TextStyle(color: Colors.white70, fontSize: 12),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -814,49 +799,18 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
         ),
         const SizedBox(height: 8),
         // Fighter image
-        Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: borderColor,
-              width: 3,
-            ),
-            color: AppTheme.surfaceBlue,
-          ),
-          child: ClipOval(
-            child: fighter?.headshotUrl != null
-                ? CachedNetworkImage(
-                    imageUrl: fighter!.headshotUrl!,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => const Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppTheme.neonGreen,
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Center(
-                      child: Text(
-                        fighter.shortName.substring(0, 2).toUpperCase(),
-                        style: TextStyle(
-                          color: borderColor,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  )
-                : Center(
-                    child: Text(
-                      fighter?.shortName.substring(0, min(2, fighter.shortName.length)).toUpperCase() ?? '?',
-                      style: TextStyle(
-                        color: borderColor,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+        FighterImageWidget(
+          fighterId: fighter?.espnId ?? fighter?.id,
+          fallbackUrl: fighter?.headshotUrl,
+          size: 80,
+          shape: BoxShape.circle,
+          borderColor: borderColor,
+          borderWidth: 3,
+          errorWidget: FighterInitialsWidget(
+            name: fighter?.name ?? '?',
+            size: 80,
+            backgroundColor: AppTheme.surfaceBlue,
+            textColor: borderColor,
           ),
         ),
         const SizedBox(height: 8),
@@ -876,9 +830,9 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
           ),
         ),
         // Record
-        if (fighter?.record != null)
+        if (fighter != null)
           Text(
-            fighter!.record,
+            fighter.record.isNotEmpty ? fighter.record : '0-0',
             style: TextStyle(
               color: Colors.white.withOpacity(0.7),
               fontSize: 11,

@@ -59,11 +59,16 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
         _controller!.setLooping(false);
         _controller!.setVolume(0); // Mute the video
         
-        // Add listener for when video completes
+        // Add listener for when video is near completion (stop 0.2 seconds early)
         _controller!.addListener(() {
-          if (_controller!.value.position >= _controller!.value.duration && 
-              _controller!.value.duration > Duration.zero &&
+          final duration = _controller!.value.duration;
+          final position = _controller!.value.position;
+          final stopTime = duration - const Duration(milliseconds: 200);
+
+          if (position >= stopTime &&
+              duration > Duration.zero &&
               !_hasNavigated) {
+            _controller!.pause(); // Pause to avoid choppy ending
             _navigateToLogin();
           }
         });

@@ -203,8 +203,11 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
   }
   
   List<GameModel> _getFilteredGames() {
-    if (_selectedSport == null || _selectedSport == 'all') {
-      return _featuredGames;
+    if (_selectedSport == null) {
+      return [];  // No sport selected yet
+    }
+    if (_selectedSport == 'all') {
+      return _featuredGames;  // All sports selected
     }
     return _gamesBySport[_selectedSport] ?? [];
   }
@@ -327,6 +330,138 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
     }
   }
   
+  Widget _buildSportCard(String sport, {bool isAllSports = false}) {
+    final sportUpper = sport.toUpperCase();
+    final gameCount = isAllSports
+        ? _featuredGames.length
+        : (_gamesBySport[sport.toLowerCase()] ?? []).length;
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: InkWell(
+        onTap: () async {
+          if (isAllSports) {
+            setState(() {
+              _selectedSport = 'all';  // Set to 'all' instead of null for All Sports
+            });
+          } else {
+            setState(() {
+              _selectedSport = sport.toLowerCase();
+              _loadingMore = true;
+            });
+            await _loadAllGamesForSport(sport.toLowerCase());
+          }
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isAllSports
+                  ? [Colors.purple.shade400, Colors.purple.shade700]
+                  : [
+                      _getSportColor(sportUpper).withOpacity(0.8),
+                      _getSportColor(sportUpper),
+                    ],
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Icon(
+                    isAllSports ? Icons.sports : _getSportIcon(sportUpper),
+                    size: 36,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Flexible(
+                  child: Text(
+                    isAllSports ? 'ALL SPORTS' : sportUpper,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '$gameCount ${gameCount == 1 ? 'game' : 'games'}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSportSelectionGrid() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Select a Sport',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Review events by all sports',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Expanded(
+            child: GridView.count(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.3,  // Increased from 1.2 to give more height
+              children: [
+                _buildSportCard('all', isAllSports: true),
+                ..._availableSports.map((sport) => _buildSportCard(sport)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildGameCard(GameModel game) {
     final bool isLive = game.isLive;
     final bool hasStarted = game.isFinal || isLive;
@@ -573,7 +708,7 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
               stream: _cardService.getUserCardInventory(),
               builder: (context, snapshot) {
                 final inventory = snapshot.data ?? UserCardInventory.empty();
-                
+
                 return Row(
                   children: [
                     // Offensive Cards
@@ -651,89 +786,141 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
               },
             ),
           ],
-          bottom: _tabController != null && _availableSports.isNotEmpty
-            ? TabBar(
-                controller: _tabController,
-                isScrollable: true,
-                tabs: [
-                  const Tab(text: 'All'),
-                  ..._availableSports.map((sport) => Tab(
-                    text: sport.toUpperCase(),
-                  )),
-                ],
-                onTap: (index) async {
-                  if (index == 0) {
-                    // "All" tab - use featured games
-                    setState(() {
-                      _selectedSport = null;
-                    });
-                  } else {
-                    // Specific sport tab - load ALL games for that sport
-                    final sport = _availableSports[index - 1];
-                    debugPrint('Tab selected: $sport (index $index)');
-                    setState(() {
-                      _selectedSport = sport;
-                      _loadingMore = true;
-                    });
-
-                    // Load ALL games for this sport (not just 14 days)
-                    await _loadAllGamesForSport(sport);
-                  }
-                },
-              )
-            : null,
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _onRefresh,
-              child: _featuredGames.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.sports,
-                            size: 64,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No games available',
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey[600],
+          : _selectedSport == null
+              ? _buildSportSelectionGrid()
+              : RefreshIndicator(
+                  onRefresh: _onRefresh,
+                  child: Column(
+                    children: [
+                      // Sport header with back button
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              offset: const Offset(0, 2),
+                              blurRadius: 4,
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          ElevatedButton(
-                            onPressed: _onRefresh,
-                            child: const Text('Refresh'),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      controller: _scrollController,
-                      itemCount: _getFilteredGames().length + 1,
-                      itemBuilder: (context, index) {
-                        if (index == _getFilteredGames().length) {
-                          if (_loadingMore) {
-                            return const Padding(
-                              padding: EdgeInsets.all(16),
-                              child: Center(
-                                child: CircularProgressIndicator(),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.arrow_back),
+                              onPressed: () {
+                                setState(() {
+                                  _selectedSport = null;
+                                });
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              _selectedSport == 'all'
+                                  ? Icons.sports
+                                  : _getSportIcon(_selectedSport!.toUpperCase()),
+                              color: _selectedSport == 'all'
+                                  ? Colors.purple
+                                  : _getSportColor(_selectedSport!.toUpperCase()),
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              _selectedSport == 'all'
+                                  ? 'ALL SPORTS'
+                                  : _selectedSport!.toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
                               ),
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        }
-                        
-                        final game = _getFilteredGames()[index];
-                        return _buildGameCard(game);
-                      },
-                    ),
-            ),
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: (_selectedSport == 'all'
+                                    ? Colors.purple
+                                    : _getSportColor(_selectedSport!.toUpperCase()))
+                                    .withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Text(
+                                '${_getFilteredGames().length} games',
+                                style: TextStyle(
+                                  color: _selectedSport == 'all'
+                                      ? Colors.purple
+                                      : _getSportColor(_selectedSport!.toUpperCase()),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Games list
+                      Expanded(
+                        child: _getFilteredGames().isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      _selectedSport == 'all'
+                                          ? Icons.sports
+                                          : _getSportIcon(_selectedSport!.toUpperCase()),
+                                      size: 64,
+                                      color: (_selectedSport == 'all'
+                                          ? Colors.purple
+                                          : _getSportColor(_selectedSport!.toUpperCase()))
+                                          .withOpacity(0.5),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      _selectedSport == 'all'
+                                          ? 'No games available'
+                                          : 'No ${_selectedSport!.toUpperCase()} games available',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    ElevatedButton(
+                                      onPressed: _onRefresh,
+                                      child: const Text('Refresh'),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : ListView.builder(
+                                controller: _scrollController,
+                                itemCount: _getFilteredGames().length + 1,
+                                itemBuilder: (context, index) {
+                                  if (index == _getFilteredGames().length) {
+                                    if (_loadingMore) {
+                                      return const Padding(
+                                        padding: EdgeInsets.all(16),
+                                        child: Center(
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      );
+                                    }
+                                    return const SizedBox.shrink();
+                                  }
+
+                                  final game = _getFilteredGames()[index];
+                                  return _buildGameCard(game);
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
       );
   }
 

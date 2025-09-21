@@ -92,7 +92,7 @@ class MMAService {
       // If we have a pseudo-ID and game data with fights, use that directly
       if (isPseudoId && gameData != null && gameData['fights'] != null) {
         print('📦 Using provided game data for pseudo-ESPN ID: $eventId');
-        return _createEventFromGameData(eventId, gameData);
+        return await _createEventFromGameData(eventId, gameData);
       }
 
       // Check if eventId looks like an ESPN ID (should be numeric)
@@ -102,22 +102,7 @@ class MMAService {
         return null;
       }
 
-      // Check cache (with permission handling)
-      final cacheKey = 'mma_event_$eventId';
-      try {
-        final doc = await _firestore
-            .collection('mma_events')
-            .doc(cacheKey)
-            .get();
-
-        if (doc.exists && doc.data() != null) {
-          print('✅ Loaded event from cache');
-          return MMAEvent.fromESPN(doc.data()!);
-        }
-      } catch (e) {
-        print('⚠️ Cache read error (likely permissions): $e');
-        // Continue to fetch from API
-      }
+      // Cache removed due to permission issues
 
       // Don't try to fetch pseudo-IDs from ESPN
       if (isPseudoId) {
@@ -142,9 +127,14 @@ class MMAService {
       final fights = <MMAFight>[];
       if (eventData['competitions'] != null) {
         print('📊 Processing ${eventData['competitions'].length} fights');
+
+        // First, collect all fighter URLs to batch fetch
+        final fighterRefs = <String>[];
+        final competitionData = <Map<String, dynamic>>[];
+
+        // Fetch all competition data first
         for (final comp in eventData['competitions']) {
           try {
-            // Get competition details
             String compUrl = comp['\$ref'];
             if (!compUrl.startsWith('http')) {
               compUrl = 'http:$compUrl';
@@ -153,39 +143,60 @@ class MMAService {
             final compResponse = await http.get(Uri.parse(compUrl));
             if (compResponse.statusCode == 200) {
               final compData = json.decode(compResponse.body);
+              competitionData.add(compData);
 
-              // Get fighters for this competition
-              MMAFighter? fighter1;
-              MMAFighter? fighter2;
-
+              // Collect fighter refs
               if (compData['competitors'] != null) {
-                final competitors = compData['competitors'] as List;
-
-                for (int i = 0; i < competitors.length && i < 2; i++) {
-                  final competitor = competitors[i];
+                for (final competitor in compData['competitors']) {
                   final athleteRef = competitor['athlete']?['\$ref'];
-
                   if (athleteRef != null) {
-                    final fighter = await _getFighter(athleteRef);
-                    if (i == 0) {
-                      fighter1 = fighter;
-                    } else {
-                      fighter2 = fighter;
-                    }
+                    fighterRefs.add(athleteRef);
                   }
                 }
               }
+            }
+          } catch (e) {
+            print('Error fetching competition: $e');
+          }
+        }
 
-              // Determine card position based on fight order
-              final fightOrder = fights.length;
-              String cardPosition = 'early'; // Default
+        // Batch fetch all fighters
+        print('🎯 Batch fetching ${fighterRefs.length} fighters');
+        final fighterMap = await _batchFetchFighters(fighterRefs);
 
-              if (fightOrder == 0) {
-                // Main event (last fight added)
-                cardPosition = 'main';
-              } else if (fightOrder <= 4) {
-                // Main card (typically 4-5 fights)
-                cardPosition = 'main';
+        // Now process competitions with cached fighter data
+        for (final compData in competitionData) {
+          try {
+            MMAFighter? fighter1;
+            MMAFighter? fighter2;
+
+            if (compData['competitors'] != null) {
+              final competitors = compData['competitors'] as List;
+
+              for (int i = 0; i < competitors.length && i < 2; i++) {
+                final competitor = competitors[i];
+                final athleteRef = competitor['athlete']?['\$ref'];
+
+                if (athleteRef != null && fighterMap.containsKey(athleteRef)) {
+                  if (i == 0) {
+                    fighter1 = fighterMap[athleteRef];
+                  } else {
+                    fighter2 = fighterMap[athleteRef];
+                  }
+                }
+              }
+            }
+
+            // Determine card position based on fight order
+            final fightOrder = fights.length;
+            String cardPosition = 'early'; // Default
+
+            if (fightOrder == 0) {
+              // Main event (last fight added)
+              cardPosition = 'main';
+            } else if (fightOrder <= 4) {
+              // Main card (typically 4-5 fights)
+              cardPosition = 'main';
               } else if (fightOrder <= 8) {
                 // Prelims
                 cardPosition = 'prelim';
@@ -221,8 +232,7 @@ class MMAService {
                 isCancelled: fight.isCancelled,
               );
 
-              fights.add(updatedFight);
-            }
+            fights.add(updatedFight);
           } catch (e) {
             print('Error processing fight: $e');
           }
@@ -235,17 +245,7 @@ class MMAService {
       final event = MMAEvent.fromESPN(eventData, fights: fights);
       print('✅ Created MMA event with ${fights.length} fights');
 
-      // Try to cache the event (but don't fail if permissions denied)
-      try {
-        await _firestore
-            .collection('mma_events')
-            .doc(cacheKey)
-            .set(event.toJson());
-        print('💾 Event cached successfully');
-      } catch (e) {
-        print('⚠️ Failed to cache event (permissions?): $e');
-        // Continue without caching
-      }
+      // Cache removed due to permission issues
 
       return event;
     } catch (e) {
@@ -254,43 +254,41 @@ class MMAService {
     }
   }
 
-  /// Get fighter details
-  Future<MMAFighter?> _getFighter(String athleteRef) async {
-    try {
-      // Extract fighter ID from ref
-      final regex = RegExp(r'/athletes/(\d+)');
-      final match = regex.firstMatch(athleteRef);
-      if (match == null) return null;
+  /// Batch fetch fighters to reduce API calls
+  Future<Map<String, MMAFighter>> _batchFetchFighters(List<String> fighterRefs) async {
+    final fighterMap = <String, MMAFighter>{};
 
-      final fighterId = match.group(1)!;
+    // Process in parallel batches of 5 to avoid overwhelming the API
+    const batchSize = 5;
+    for (int i = 0; i < fighterRefs.length; i += batchSize) {
+      final batch = fighterRefs.skip(i).take(batchSize).toList();
+      final futures = batch.map((ref) => _getFighterSimple(ref));
 
-      // Check cache
-      final cacheKey = 'fighter_$fighterId';
-      try {
-        final doc = await _firestore
-            .collection('mma_fighters')
-            .doc(cacheKey)
-            .get();
+      final results = await Future.wait(futures);
 
-        if (doc.exists && doc.data() != null) {
-          return MMAFighter.fromJson(doc.data()!);
+      for (int j = 0; j < batch.length; j++) {
+        if (results[j] != null) {
+          fighterMap[batch[j]] = results[j]!;
         }
-      } catch (e) {
-        print('Cache read error: $e');
       }
+    }
 
-      // Ensure URL is complete
+    return fighterMap;
+  }
+
+  /// Get fighter with minimal API calls (no stats for initial load)
+  Future<MMAFighter?> _getFighterSimple(String athleteRef) async {
+    try {
       String url = athleteRef;
       if (!url.startsWith('http')) {
         url = 'http:$url';
       }
 
       final response = await http.get(Uri.parse(url));
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
-        // Parse fighter record if available
+        // Only fetch record, skip statistics for now
         final recordsRef = data['records']?['\$ref'];
         if (recordsRef != null) {
           try {
@@ -301,39 +299,321 @@ class MMAService {
 
             final recordResponse = await http.get(Uri.parse(recordUrl));
             if (recordResponse.statusCode == 200) {
+              data['records'] = json.decode(recordResponse.body);
+            }
+          } catch (e) {
+            // Continue without record
+          }
+        }
+
+        return MMAFighter.fromESPN(data);
+      }
+    } catch (e) {
+      print('Error fetching fighter: $e');
+    }
+    return null;
+  }
+
+  /// Get fighter by ID directly
+  Future<MMAFighter?> _getFighterById(String fighterId) async {
+    try {
+      print('\n📋 _getFighterById called with ID: $fighterId');
+
+      // Skip placeholder IDs
+      if (fighterId.startsWith('f1_') || fighterId.startsWith('f2_')) {
+        print('  ⚠️ Skipping placeholder fighter ID: $fighterId');
+        return null;
+      }
+
+      // Skip cache - removed due to permission issues
+
+      // Build the URL directly for the fighter
+      final url = '$ATHLETE_BASE$fighterId';
+      print('  🌐 Fetching from URL: $url');
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        print('  ✅ API response received successfully');
+        final data = json.decode(response.body);
+
+        print('  📊 Fighter data keys: ${data.keys.toList().take(10)}');
+        print('    - Name: ${data['displayName'] ?? data['fullName'] ?? 'Unknown'}');
+        print('    - ID: ${data['id']}');
+
+        // Parse fighter record if available
+        final recordsRef = data['records']?['\$ref'];
+        if (recordsRef != null) {
+          try {
+            String recordUrl = recordsRef;
+            if (!recordUrl.startsWith('http')) {
+              recordUrl = 'http:$recordUrl';
+            }
+
+            print('  🎯 Fetching record from: $recordUrl');
+            final recordResponse = await http.get(Uri.parse(recordUrl));
+            if (recordResponse.statusCode == 200) {
               final recordData = json.decode(recordResponse.body);
               data['records'] = recordData;
+              print('  ✅ Record fetched: ${recordData['overall']?['summary'] ?? 'N/A'}');
+            }
+          } catch (e) {
+            print('  ⚠️ Error fetching fighter record: $e');
+          }
+        }
+
+        // Fetch fighter statistics if available
+        final statsRef = data['statistics']?['\$ref'];
+        if (statsRef != null) {
+          try {
+            String statsUrl = statsRef;
+            if (!statsUrl.startsWith('http')) {
+              statsUrl = 'http:$statsUrl';
+            }
+
+            print('  📊 Fetching statistics from: $statsUrl');
+            final statsResponse = await http.get(Uri.parse(statsUrl));
+            if (statsResponse.statusCode == 200) {
+              final statsData = json.decode(statsResponse.body);
+
+              // Parse statistics into our format
+              if (statsData['splits'] != null && statsData['splits'].isNotEmpty) {
+                final stats = statsData['splits'][0]['stats'] ?? {};
+
+                // Extract striking statistics
+                data['sigStrikesPerMinute'] = stats['significantStrikesLandedPerMinute']?.toDouble();
+                data['strikeAccuracy'] = stats['significantStrikeAccuracy']?.toDouble();
+                data['strikeDefense'] = stats['significantStrikeDefense']?.toDouble();
+
+                // Extract grappling statistics
+                data['takedownAverage'] = stats['takedownsLandedPer15Minutes']?.toDouble();
+                data['takedownAccuracy'] = stats['takedownAccuracy']?.toDouble();
+                data['takedownDefense'] = stats['takedownDefense']?.toDouble();
+                data['submissionAverage'] = stats['submissionAttemptsPer15Minutes']?.toDouble();
+
+                print('  ✅ Statistics fetched successfully');
+                print('    - Sig Strikes/Min: ${data['sigStrikesPerMinute']}');
+                print('    - Strike Accuracy: ${data['strikeAccuracy']}%');
+                print('    - Takedown Avg: ${data['takedownAverage']}');
+              }
+            }
+          } catch (e) {
+            print('  ⚠️ Error fetching fighter statistics: $e');
+          }
+        }
+
+        print('  🏗️ Creating MMAFighter object from ESPN data');
+        final fighter = MMAFighter.fromESPN(data);
+        print('  ✅ Fighter created: ${fighter.name}');
+        print('    - Record: ${fighter.record}');
+        print('    - Height: ${fighter.displayHeight ?? fighter.height ?? 'N/A'}');
+        print('    - Weight: ${fighter.displayWeight ?? fighter.weight ?? 'N/A'}');
+        print('    - Reach: ${fighter.displayReach ?? fighter.reach ?? 'N/A'}');
+
+        // Cache removed due to permission issues
+
+        return fighter;
+      } else {
+        print('  ❌ API request failed with status: ${response.statusCode}');
+        print('  Response body: ${response.body}');
+      }
+
+      return null;
+    } catch (e) {
+      print('Error fetching fighter by ID: $e');
+      return null;
+    }
+  }
+
+  /// Get fighter details
+  Future<MMAFighter?> _getFighter(String athleteRef) async {
+    try {
+      // Extract fighter ID from ref
+      final regex = RegExp(r'/athletes/(\d+)');
+      final match = regex.firstMatch(athleteRef);
+      if (match == null) {
+        print('❌ Could not extract fighter ID from: $athleteRef');
+        return null;
+      }
+
+      final fighterId = match.group(1)!;
+      print('🥊 Fetching fighter ID: $fighterId');
+
+      // Check cache
+      final cacheKey = 'fighter_$fighterId';
+      try {
+        final doc = await _firestore
+            .collection('mma_fighters')
+            .doc(cacheKey)
+            .get();
+
+        if (doc.exists && doc.data() != null) {
+          print('✅ Fighter $fighterId loaded from cache');
+          final cachedFighter = MMAFighter.fromJson(doc.data()!);
+          _debugFighterData(cachedFighter);
+          return cachedFighter;
+        }
+      } catch (e) {
+        print('Cache read error: $e');
+      }
+
+      // Ensure URL is complete
+      String url = athleteRef;
+      if (!url.startsWith('http')) {
+        url = 'http:$url';
+      }
+      print('🌐 Fetching fighter from: $url');
+
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('📦 Raw fighter data received');
+
+        // Debug log raw data structure
+        print('📊 Fighter raw data keys: ${data.keys.toList()}');
+        if (data['displayName'] != null) {
+          print('  - Name: ${data['displayName']}');
+        }
+
+        // Check for physical attributes in various formats
+        if (data['weight'] != null) {
+          print('  - Weight raw: ${data['weight']} (type: ${data['weight'].runtimeType})');
+        }
+        if (data['height'] != null) {
+          print('  - Height raw: ${data['height']} (type: ${data['height'].runtimeType})');
+        }
+        if (data['reach'] != null) {
+          print('  - Reach raw: ${data['reach']} (type: ${data['reach'].runtimeType})');
+        }
+        if (data['displayHeight'] != null) {
+          print('  - Display Height: ${data['displayHeight']}');
+        }
+        if (data['displayWeight'] != null) {
+          print('  - Display Weight: ${data['displayWeight']}');
+        }
+        if (data['displayReach'] != null) {
+          print('  - Display Reach: ${data['displayReach']}');
+        }
+        if (data['stance'] != null) {
+          print('  - Stance raw: ${data['stance']} (type: ${data['stance'].runtimeType})');
+        }
+        if (data['age'] != null) {
+          print('  - Age: ${data['age']}');
+        }
+        if (data['dateOfBirth'] != null) {
+          print('  - Date of Birth: ${data['dateOfBirth']}');
+        }
+
+        // Check for alternate field names
+        if (data['measurements'] != null) {
+          print('  - Measurements found: ${data['measurements']}');
+        }
+        if (data['physicalAttributes'] != null) {
+          print('  - Physical Attributes found: ${data['physicalAttributes']}');
+        }
+
+        // Parse fighter record if available
+        final recordsRef = data['records']?['\$ref'];
+        if (recordsRef != null) {
+          try {
+            String recordUrl = recordsRef;
+            if (!recordUrl.startsWith('http')) {
+              recordUrl = 'http:$recordUrl';
+            }
+            print('🎯 Fetching fighter record from: $recordUrl');
+
+            final recordResponse = await http.get(Uri.parse(recordUrl));
+            if (recordResponse.statusCode == 200) {
+              final recordData = json.decode(recordResponse.body);
+              data['records'] = recordData;
+              print('✅ Fighter record fetched successfully');
+              if (recordData['overall']?['summary'] != null) {
+                print('  - Record: ${recordData['overall']['summary']}');
+              }
             }
           } catch (e) {
             print('Error fetching fighter record: $e');
           }
         }
 
-        final fighter = MMAFighter.fromESPN(data);
+        // Fetch fighter statistics if available
+        final statsRef = data['statistics']?['\$ref'];
+        if (statsRef != null) {
+          try {
+            String statsUrl = statsRef;
+            if (!statsUrl.startsWith('http')) {
+              statsUrl = 'http:$statsUrl';
+            }
 
-        // Cache fighter data
-        await _firestore
-            .collection('mma_fighters')
-            .doc(cacheKey)
-            .set(fighter.toJson());
+            print('📊 Fetching statistics from: $statsUrl');
+            final statsResponse = await http.get(Uri.parse(statsUrl));
+            if (statsResponse.statusCode == 200) {
+              final statsData = json.decode(statsResponse.body);
 
-        // Cache fighter image separately for longer duration
-        if (fighter.headshotUrl != null) {
-          await _cacheFighterImage(fighterId, fighter.headshotUrl!);
+              // Parse statistics into our format
+              if (statsData['splits'] != null && statsData['splits'].isNotEmpty) {
+                final stats = statsData['splits'][0]['stats'] ?? {};
+
+                // Extract striking statistics
+                data['sigStrikesPerMinute'] = stats['significantStrikesLandedPerMinute']?.toDouble();
+                data['strikeAccuracy'] = stats['significantStrikeAccuracy']?.toDouble();
+                data['strikeDefense'] = stats['significantStrikeDefense']?.toDouble();
+
+                // Extract grappling statistics
+                data['takedownAverage'] = stats['takedownsLandedPer15Minutes']?.toDouble();
+                data['takedownAccuracy'] = stats['takedownAccuracy']?.toDouble();
+                data['takedownDefense'] = stats['takedownDefense']?.toDouble();
+                data['submissionAverage'] = stats['submissionAttemptsPer15Minutes']?.toDouble();
+
+                print('✅ Statistics fetched successfully');
+                print('  - Sig Strikes/Min: ${data['sigStrikesPerMinute']}');
+                print('  - Strike Accuracy: ${data['strikeAccuracy']}%');
+                print('  - Takedown Avg: ${data['takedownAverage']}');
+              }
+            }
+          } catch (e) {
+            print('⚠️ Error fetching fighter statistics: $e');
+          }
         }
 
+        final fighter = MMAFighter.fromESPN(data);
+        print('✅ Fighter object created: ${fighter.name}');
+        _debugFighterData(fighter);
+
+        // Cache removed due to permission issues
+
         return fighter;
+      } else {
+        print('❌ Failed to fetch fighter. Status: ${response.statusCode}');
       }
 
       return null;
     } catch (e) {
-      print('Error fetching fighter: $e');
+      print('❌ Error fetching fighter: $e');
       return null;
     }
   }
 
-  /// Cache fighter image URL
+  void _debugFighterData(MMAFighter fighter) {
+    print('🔍 Fighter Details for ${fighter.name}:');
+    print('  - Record: ${fighter.record}');
+    print('  - Age: ${fighter.age ?? "N/A"}');
+    print('  - Height: ${fighter.displayHeight ?? fighter.height ?? "N/A"}');
+    print('  - Weight: ${fighter.displayWeight ?? fighter.weight ?? "N/A"}');
+    print('  - Reach: ${fighter.displayReach ?? fighter.reach ?? "N/A"}');
+    print('  - Stance: ${fighter.stance ?? "N/A"}');
+    print('  - Camp: ${fighter.camp ?? "N/A"}');
+    print('  - Country: ${fighter.country ?? "N/A"}');
+    print('  - Nickname: ${fighter.nickname ?? "None"}');
+    print('  - KOs: ${fighter.knockouts ?? "N/A"}');
+    print('  - Submissions: ${fighter.submissions ?? "N/A"}');
+    print('  - Decisions: ${fighter.decisions ?? "N/A"}');
+  }
+
+  /// Cache removed - deprecated method
   Future<void> _cacheFighterImage(String fighterId, String imageUrl) async {
+    // Method no longer used
+    return;
     try {
       await _firestore
           .collection('fighter_images')
@@ -367,15 +647,250 @@ class MMAService {
     }
   }
 
-  /// Get fighter by name (simplified without ID resolver)
+  /// Search for fighter by name using ESPN search API
+  Future<MMAFighter?> searchFighterByName(String name) async {
+    try {
+      print('🔍 Searching for fighter: $name');
+
+      // ESPN search API endpoint for MMA fighters (use 'player' not 'athlete')
+      final searchUrl = 'https://site.web.api.espn.com/apis/search/v2?region=us&lang=en&section=mma&limit=5&page=1&query=${Uri.encodeComponent(name)}&type=player';
+      print('  🌐 Search URL: $searchUrl');
+
+      final response = await http.get(Uri.parse(searchUrl));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        // Check if we have results - the structure is nested
+        if (data['results'] != null && data['results'].isNotEmpty) {
+          final results = data['results'] as List;
+
+          // Find the player results section
+          try {
+            for (final section in results) {
+              // Ensure section is a Map before accessing properties
+              if (section == null || section is! Map<String, dynamic>) {
+                continue;
+              }
+
+              if (section['type'] == 'player' && section['contents'] != null) {
+                final contents = section['contents'];
+                if (contents == null || contents is! List) {
+                  continue;
+                }
+
+                print('  ✅ Found ${contents.length} player results');
+
+                // Find MMA fighters (sport == 'mma')
+                for (final player in contents) {
+                  // Ensure player is a Map before accessing properties
+                  if (player == null || player is! Map<String, dynamic>) {
+                    continue;
+                  }
+
+                  if (player['sport'] == 'mma' && player['uid'] != null) {
+                    // Extract ESPN ID from UID (format: "s:3301~a:2335639")
+                    final uid = player['uid']?.toString();
+                    if (uid == null) continue;
+
+                    final idMatch = RegExp(r'a:(\d+)').firstMatch(uid);
+                    if (idMatch != null) {
+                      final athleteId = idMatch.group(1)!;
+                      print('  🎯 Found MMA fighter: ${player['displayName']} (ID: $athleteId)');
+
+                      // Fetch fighter data WITHOUT statistics for faster load
+                      final fighterUrl = '$ATHLETE_BASE$athleteId';
+                      final fighter = await _getFighterSimple(fighterUrl);
+                      if (fighter != null) {
+                        return fighter;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            print('  ❌ Error parsing search results: $e');
+          }
+          print('  ⚠️ No MMA fighters found in search results for: $name');
+        } else {
+          print('  ⚠️ No search results found for: $name');
+        }
+      } else {
+        print('  ❌ Search API returned status: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Error searching for fighter by name: $e');
+    }
+
+    return null;
+  }
+
+  /// Get fighter by name (simplified without caching)
   Future<MMAFighter?> getFighterByName(String name) async {
     try {
-      // For now, return null - would need to implement name search
-      // This could be done via ESPN search API or cached fighter names
-      return null;
+      // Directly search for the fighter without cache
+      return await searchFighterByName(name);
     } catch (e) {
       print('Error fetching fighter by name: $e');
       return null;
+    }
+  }
+
+  /// Get event with progressive loading - returns immediately with basic data
+  /// Then streams fighter updates as they load
+  Stream<MMAEvent> getEventWithFightsProgressive(String eventId, {Map<String, dynamic>? gameData}) async* {
+    print('🥊 Progressive loading MMA event: $eventId');
+    print('🔧 Event starts with 9: ${eventId.startsWith('9')}');
+    print('🔧 GameData provided: ${gameData != null}');
+    print('🔧 GameData has fights: ${gameData?['fights'] != null}');
+
+    try {
+      // First, create event with minimal fighter data
+      MMAEvent? baseEvent;
+
+      bool isPseudoId = eventId.startsWith('9');
+      if (isPseudoId && gameData != null && gameData['fights'] != null) {
+        print('📦 Creating base event from game data');
+        print('📦 Fights data: ${gameData['fights']}');
+
+        baseEvent = await _createEventFromGameDataMinimal(eventId, gameData);
+
+        if (baseEvent != null) {
+          print('✅ Base event created with ${baseEvent.fights.length} fights');
+          print('📤 Yielding initial event...');
+          yield baseEvent;
+          print('✅ Initial event yielded successfully');
+
+          // Now progressively load fighter details
+          print('🔄 Starting progressive fighter loading...');
+          await for (final updatedEvent in _progressivelyLoadFighters(baseEvent)) {
+            print('🔄 Yielding updated event with fighter data...');
+            yield updatedEvent;
+          }
+          print('✅ Progressive loading completed');
+        } else {
+          print('❌ Failed to create base event from game data');
+        }
+      } else {
+        print('📡 Loading regular ESPN event...');
+        // Regular ESPN event loading
+        final event = await getEventWithFights(eventId, gameData: gameData);
+        if (event != null) {
+          print('✅ ESPN event loaded, yielding...');
+          yield event;
+        } else {
+          print('❌ Failed to load ESPN event');
+        }
+      }
+    } catch (e) {
+      print('❌ Error in progressive loading: $e');
+      print('❌ Stack trace: ${StackTrace.current}');
+      rethrow;
+    }
+  }
+
+  /// Create event with minimal fighter data for immediate display
+  Future<MMAEvent?> _createEventFromGameDataMinimal(String eventId, Map<String, dynamic> gameData) async {
+    try {
+      print('🏗️ Creating minimal event from game data...');
+      print('🏗️ EventId: $eventId');
+      print('🏗️ GameData keys: ${gameData.keys}');
+
+      // Create event structure immediately with minimal fighter objects
+      final fightDataList = gameData['fights'] as List? ?? [];
+      print('🏗️ Found ${fightDataList.length} fights in data');
+
+      final List<MMAFight> fights = [];
+
+      for (int i = 0; i < fightDataList.length; i++) {
+        final fightData = fightDataList[i] as Map<String, dynamic>;
+        print('🏗️ Processing fight $i: ${fightData.keys}');
+
+        // Safely get fighter names as strings
+        final fighter1Name = fightData['fighter1']?.toString() ?? 'Fighter 1';
+        final fighter2Name = fightData['fighter2']?.toString() ?? 'Fighter 2';
+        print('🏗️ Fight $i: $fighter1Name vs $fighter2Name');
+
+        // Create minimal fighters with just names
+        final fighter1 = MMAFighter(
+          id: 'temp_f1_$i',
+          name: fighter1Name,
+          displayName: fighter1Name,
+          shortName: fighter1Name.split(' ').last,
+          record: '',
+        );
+
+        final fighter2 = MMAFighter(
+          id: 'temp_f2_$i',
+          name: fighter2Name,
+          displayName: fighter2Name,
+          shortName: fighter2Name.split(' ').last,
+          record: '',
+        );
+
+        final fight = MMAFight(
+          id: fightData['id']?.toString() ?? 'fight_$i',
+          fighter1: fighter1,
+          fighter2: fighter2,
+          weightClass: fightData['weightClass']?.toString(),
+          rounds: (fightData['rounds'] is int) ? fightData['rounds'] : 3,
+          isTitleFight: fightData['isTitle'] == true,
+          isMainEvent: i == fightDataList.length - 1,
+          cardPosition: i >= fightDataList.length - 5 ? 'main' : 'prelim',
+        );
+
+        fights.add(fight);
+        print('🏗️ Added fight: ${fight.id}');
+      }
+
+      print('🏗️ Creating MMAEvent with ${fights.length} fights');
+      final event = MMAEvent(
+        id: eventId,
+        name: gameData['homeTeam']?.toString() ?? 'MMA Event',
+        shortName: gameData['homeTeam']?.toString(),
+        date: gameData['gameTime'] != null
+            ? DateTime.parse(gameData['gameTime'].toString())
+            : DateTime.now(),
+        promotion: _detectPromotion(gameData['homeTeam']?.toString() ?? ''),
+        fights: fights,
+      );
+
+      print('✅ Minimal event created successfully: ${event.name}');
+      return event;
+    } catch (e) {
+      print('❌ Error creating minimal event: $e');
+      print('❌ Stack trace: ${StackTrace.current}');
+      return null;
+    }
+  }
+
+  /// Progressively load fighter details and yield updated events
+  Stream<MMAEvent> _progressivelyLoadFighters(MMAEvent baseEvent) async* {
+    try {
+      for (int i = 0; i < baseEvent.fights.length; i++) {
+        final fight = baseEvent.fights[i];
+
+        // Load fighter 1
+        if (fight.fighter1 != null) {
+          final fighter1Data = await searchFighterByName(fight.fighter1!.name);
+          if (fighter1Data != null) {
+            baseEvent.fights[i] = fight.copyWith(fighter1: fighter1Data);
+            yield baseEvent;
+          }
+        }
+
+        // Load fighter 2
+        if (fight.fighter2 != null) {
+          final fighter2Data = await searchFighterByName(fight.fighter2!.name);
+          if (fighter2Data != null) {
+            baseEvent.fights[i] = fight.copyWith(fighter2: fighter2Data);
+            yield baseEvent;
+          }
+        }
+      }
+    } catch (e) {
+      print('Error loading fighter details: $e');
     }
   }
 
@@ -441,51 +956,178 @@ class MMAService {
   }
 
   /// Generate fighter image URL
-  String? _generateFighterImageUrl(String fighterId) {
-    // Skip if it's a placeholder ID
+  String? _generateFighterImageUrl(String fighterId, String? fighterName) {
+    // Skip if it's a placeholder ID - use a generic image
     if (fighterId.startsWith('f1_') || fighterId.startsWith('f2_')) {
-      return null;
+      print('! Placeholder fighter ID: $fighterId - using default image');
+      // Return a generic MMA fighter silhouette
+      // Using a working placeholder image URL
+      return 'https://a.espncdn.com/combiner/i?img=/i/headshots/mma/players/full/nophoto.png&w=350&h=254';
     }
 
     // ESPN MMA fighter headshot URL format
     return 'https://a.espncdn.com/i/headshots/mma/players/full/$fighterId.png';
   }
 
+  /// Create minimal fighter from basic data (when API search fails)
+  MMAFighter _createMinimalFighter(String id, Map<String, dynamic> fighterData) {
+    final name = fighterData['name'] ?? 'Unknown Fighter';
+    final record = fighterData['record'] ?? '0-0';
+
+    // Parse record if available
+    int? wins, losses, draws;
+    if (record != null && record != '0-0') {
+      final parts = record.split('-');
+      if (parts.isNotEmpty) wins = int.tryParse(parts[0]);
+      if (parts.length > 1) losses = int.tryParse(parts[1]);
+      if (parts.length > 2) draws = int.tryParse(parts[2]);
+    }
+
+    return MMAFighter(
+      id: id,
+      name: name,
+      displayName: name,
+      shortName: name.split(' ').last,
+      record: record,
+      wins: wins,
+      losses: losses,
+      draws: draws,
+      nickname: fighterData['nickname'],
+      height: fighterData['height']?.toDouble(),
+      weight: fighterData['weight']?.toDouble(),
+      reach: fighterData['reach']?.toDouble(),
+      stance: fighterData['stance'],
+      age: fighterData['age'],
+      country: fighterData['country'],
+      headshotUrl: _generateFighterImageUrl(id, name),
+    );
+  }
+
   /// Create MMA event from game data (for pseudo-ESPN IDs)
-  MMAEvent _createEventFromGameData(String eventId, Map<String, dynamic> gameData) {
+  Future<MMAEvent> _createEventFromGameData(String eventId, Map<String, dynamic> gameData) async {
     print('🎯 Creating MMA event from game data');
+    print('📊 Game data keys: ${gameData.keys}');
+    print('🥊 Fights data: ${gameData['fights']}');
 
     final fights = <MMAFight>[];
-    final fightDataList = gameData['fights'] as List? ?? [];
+    var fightDataList = gameData['fights'] as List? ?? [];
+
+    // If no fights data, create a single main event from the game data
+    if (fightDataList.isEmpty && gameData['homeTeam'] != null && gameData['awayTeam'] != null) {
+      print('📋 No fights data, creating main event from homeTeam/awayTeam');
+      fightDataList = [
+        {
+          'fighter1': gameData['awayTeam'],
+          'fighter2': gameData['homeTeam'],
+          'weightClass': 'Main Event',
+          'isMainEvent': true,
+        }
+      ];
+    }
+
+    // BATCH PROCESSING: Collect all fighter names to search
+    print('🎯 Collecting fighter names for batch processing...');
+    final fighterSearches = <String, String>{}; // name -> placeholder ID
+    final fighterDataMap = <String, Map<String, dynamic>>{}; // ID -> fight data
 
     for (int i = 0; i < fightDataList.length; i++) {
       final fightData = fightDataList[i] as Map<String, dynamic>;
 
-      // Create basic fighter objects from the fight data
       final fighterName1 = fightData['fighter1'] ?? fightData['awayTeam'] ?? 'Fighter 1';
+      final fighterName2 = fightData['fighter2'] ?? fightData['homeTeam'] ?? 'Fighter 2';
+
+      var fighter1Id = fightData['fighter1Id']?.toString() ?? '';
+      var fighter2Id = fightData['fighter2Id']?.toString() ?? '';
+
+      // Only search for fighters we don't have IDs for
+      if (fighter1Id.isEmpty || fighter1Id.startsWith('f1_')) {
+        fighter1Id = 'f1_$i';
+        fighterSearches[fighterName1] = fighter1Id;
+      }
+
+      if (fighter2Id.isEmpty || fighter2Id.startsWith('f2_')) {
+        fighter2Id = 'f2_$i';
+        fighterSearches[fighterName2] = fighter2Id;
+      }
+
+      // Store fight data for later
+      fighterDataMap[fighter1Id] = {
+        'name': fighterName1,
+        'record': fightData['fighter1Record'] ?? '',
+        'nickname': fightData['fighter1Nickname'],
+        'height': fightData['fighter1Height']?.toDouble(),
+        'weight': fightData['fighter1Weight']?.toDouble(),
+        'reach': fightData['fighter1Reach']?.toDouble(),
+        'stance': fightData['fighter1Stance'],
+        'age': fightData['fighter1Age'],
+        'country': fightData['fighter1Country'],
+      };
+
+      fighterDataMap[fighter2Id] = {
+        'name': fighterName2,
+        'record': fightData['fighter2Record'] ?? '',
+        'nickname': fightData['fighter2Nickname'],
+        'height': fightData['fighter2Height']?.toDouble(),
+        'weight': fightData['fighter2Weight']?.toDouble(),
+        'reach': fightData['fighter2Reach']?.toDouble(),
+        'stance': fightData['fighter2Stance'],
+        'age': fightData['fighter2Age'],
+        'country': fightData['fighter2Country'],
+      };
+    }
+
+    // BATCH SEARCH: Search for all fighters in parallel
+    print('🎯 Batch searching for ${fighterSearches.length} fighters...');
+    final fighterMap = <String, MMAFighter>{}; // ID -> Fighter
+
+    // Process in batches of 5 to avoid overwhelming the API
+    const batchSize = 5;
+    final searchEntries = fighterSearches.entries.toList();
+
+    for (int i = 0; i < searchEntries.length; i += batchSize) {
+      final batch = searchEntries.skip(i).take(batchSize).toList();
+      final futures = batch.map((entry) async {
+        final name = entry.key;
+        final placeholderId = entry.value;
+
+        if (name == 'Fighter 1' || name == 'Fighter 2') {
+          return null; // Skip generic names
+        }
+
+        print('  🔍 Searching for: $name');
+        final fighter = await searchFighterByName(name);
+
+        if (fighter != null) {
+          print('  ✅ Found: ${fighter.name}');
+          fighterMap[placeholderId] = fighter;
+          return fighter;
+        } else {
+          print('  ⚠️ Not found: $name');
+          return null;
+        }
+      });
+
+      await Future.wait(futures);
+    }
+
+    print('✅ Batch search complete. Found ${fighterMap.length} fighters');
+
+    // Now create fights with the fetched fighter data
+    for (int i = 0; i < fightDataList.length; i++) {
+      final fightData = fightDataList[i] as Map<String, dynamic>;
+
       final fighter1Id = fightData['fighter1Id']?.toString() ?? 'f1_$i';
-      final fighter1 = MMAFighter(
-        id: fighter1Id,
-        name: fighterName1,
-        displayName: fighterName1,
-        shortName: fighterName1.split(' ').last,
-        record: fightData['fighter1Record'] ?? '0-0-0',
-        nickname: null,
-        headshotUrl: _generateFighterImageUrl(fighter1Id),
-        espnId: fighter1Id,
+      final fighter2Id = fightData['fighter2Id']?.toString() ?? 'f2_$i';
+
+      // Get fighters from our batch results or create minimal objects
+      MMAFighter fighter1 = fighterMap[fighter1Id] ?? _createMinimalFighter(
+        fighter1Id,
+        fighterDataMap[fighter1Id] ?? {},
       );
 
-      final fighterName2 = fightData['fighter2'] ?? fightData['homeTeam'] ?? 'Fighter 2';
-      final fighter2Id = fightData['fighter2Id']?.toString() ?? 'f2_$i';
-      final fighter2 = MMAFighter(
-        id: fighter2Id,
-        name: fighterName2,
-        displayName: fighterName2,
-        shortName: fighterName2.split(' ').last,
-        record: fightData['fighter2Record'] ?? '0-0-0',
-        nickname: null,
-        headshotUrl: _generateFighterImageUrl(fighter2Id),
-        espnId: fighter2Id,
+      MMAFighter fighter2 = fighterMap[fighter2Id] ?? _createMinimalFighter(
+        fighter2Id,
+        fighterDataMap[fighter2Id] ?? {},
       );
 
       // Determine card position based on fight order
@@ -518,6 +1160,11 @@ class MMAService {
         fighter1Odds = odds['moneyline']['fighter1']?.toDouble();
         fighter2Odds = odds['moneyline']['fighter2']?.toDouble();
       }
+
+      print('🥊 Creating fight: ${fighter1.name} vs ${fighter2.name}');
+      print('  - Weight class: ${fightData['weightClass'] ?? 'TBD'}');
+      print('  - Card position: $cardPosition');
+      print('  - Is main event: $isMainEvent');
 
       final fight = MMAFight(
         id: fightData['id']?.toString() ?? 'fight_$i',

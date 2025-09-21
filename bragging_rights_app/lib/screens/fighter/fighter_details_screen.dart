@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:math';
 import '../../theme/app_theme.dart';
 import '../../services/fighter_data_service.dart';
@@ -139,10 +140,18 @@ class _FighterDetailsScreenState extends State<FighterDetailsScreen> {
       reach: data.reach != null ? '${data.reach}"' : null,
       stance: data.stance,
       age: data.age,
-      imageUrl: data.headshotUrl,
+      imageUrl: data.headshotUrl ?? _generateFighterImageUrl(data.espnId),
       flagUrl: data.flagUrl,
       division: data.weightClass,
     );
+  }
+
+  String? _generateFighterImageUrl(String espnId) {
+    // ESPN fighter headshot URL pattern
+    if (espnId.isNotEmpty) {
+      return 'https://a.espncdn.com/i/headshots/mma/players/full/$espnId.png';
+    }
+    return null;
   }
 
   String? _formatHeight(FighterData data) {
@@ -242,10 +251,16 @@ class _FighterDetailsScreenState extends State<FighterDetailsScreen> {
                   ),
                   child: _fighter?.imageUrl != null
                       ? ClipOval(
-                          child: Image.network(
-                            _fighter!.imageUrl!,
+                          child: CachedNetworkImage(
+                            imageUrl: _fighter!.imageUrl!,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Icon(
+                            placeholder: (context, url) => Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppTheme.primaryCyan,
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Icon(
                               Icons.person,
                               size: 60,
                               color: AppTheme.primaryCyan,

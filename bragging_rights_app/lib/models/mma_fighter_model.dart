@@ -1,3 +1,5 @@
+import 'package:collection/collection.dart';
+
 /// MMA Fighter Model with ESPN API data structure
 class MMAFighter {
   final String id;
@@ -52,6 +54,15 @@ class MMAFighter {
   final List<String>? recentForm; // ["W", "W", "L", "W", "W"]
   final List<RecentFight>? recentFights;
 
+  // Fighting statistics
+  final double? sigStrikesPerMinute;
+  final double? strikeAccuracy;
+  final double? strikeDefense;
+  final double? takedownAverage;
+  final double? takedownAccuracy;
+  final double? takedownDefense;
+  final double? submissionAverage;
+
   // ESPN specific
   final String? espnId;
   final String? espnUrl;
@@ -97,6 +108,13 @@ class MMAFighter {
     this.rightStanceUrl,
     this.recentForm,
     this.recentFights,
+    this.sigStrikesPerMinute,
+    this.strikeAccuracy,
+    this.strikeDefense,
+    this.takedownAverage,
+    this.takedownAccuracy,
+    this.takedownDefense,
+    this.submissionAverage,
     this.espnId,
     this.espnUrl,
     this.lastUpdated,
@@ -128,6 +146,66 @@ class MMAFighter {
       recentForm = _generateMockRecentForm(wins, losses);
     }
 
+    // Parse physical attributes
+    double? heightValue;
+    String? heightDisplay;
+    double? weightValue;
+    String? weightDisplay;
+    double? reachValue;
+    String? reachDisplay;
+
+    // Height parsing
+    if (json['height'] != null) {
+      if (json['height'] is Map) {
+        heightValue = json['height']['value']?.toDouble();
+        heightDisplay = json['height']['display'];
+      } else {
+        heightValue = json['height'].toDouble();
+      }
+    }
+    if (heightDisplay == null && json['displayHeight'] != null) {
+      heightDisplay = json['displayHeight'];
+    }
+
+    // Weight parsing
+    if (json['weight'] != null) {
+      if (json['weight'] is Map) {
+        weightValue = json['weight']['value']?.toDouble();
+        weightDisplay = json['weight']['display'];
+      } else {
+        weightValue = json['weight'].toDouble();
+      }
+    }
+    if (weightDisplay == null && json['displayWeight'] != null) {
+      weightDisplay = json['displayWeight'];
+    }
+
+    // Reach parsing
+    if (json['reach'] != null) {
+      if (json['reach'] is Map) {
+        reachValue = json['reach']['value']?.toDouble();
+        reachDisplay = json['reach']['display'];
+      } else {
+        reachValue = json['reach'].toDouble();
+      }
+    }
+    if (reachDisplay == null && json['displayReach'] != null) {
+      reachDisplay = json['displayReach'];
+    }
+
+    // Parse age from dateOfBirth if age is not provided
+    int? age = json['age'];
+    if (age == null && json['dateOfBirth'] != null) {
+      final dob = DateTime.tryParse(json['dateOfBirth']);
+      if (dob != null) {
+        age = DateTime.now().year - dob.year;
+        if (DateTime.now().month < dob.month ||
+            (DateTime.now().month == dob.month && DateTime.now().day < dob.day)) {
+          age--;
+        }
+      }
+    }
+
     return MMAFighter(
       id: json['id']?.toString() ?? '',
       name: json['fullName'] ?? json['displayName'] ?? '',
@@ -141,14 +219,14 @@ class MMAFighter {
       knockouts: json['knockouts'],
       submissions: json['submissions'],
       decisions: json['decisions'],
-      height: json['height']?.toDouble(),
-      displayHeight: json['displayHeight'],
-      weight: json['weight']?.toDouble(),
-      displayWeight: json['displayWeight'],
-      reach: json['reach']?.toDouble(),
-      displayReach: json['displayReach'],
-      stance: json['stance']?['text'],
-      age: json['age'],
+      height: heightValue,
+      displayHeight: heightDisplay,
+      weight: weightValue,
+      displayWeight: weightDisplay,
+      reach: reachValue,
+      displayReach: reachDisplay,
+      stance: json['stance']?['text'] ?? json['stance'],
+      age: age,
       dateOfBirth: json['dateOfBirth'] != null
           ? DateTime.tryParse(json['dateOfBirth'])
           : null,
@@ -165,12 +243,21 @@ class MMAFighter {
       isChampion: json['isChampion'] ?? false,
       headshotUrl: json['headshot']?['href'],
       leftStanceUrl: (json['images'] as List?)
-          ?.firstWhere((img) => img['rel']?.contains('leftStance') ?? false,
-              orElse: () => null)?['href'],
+          ?.cast<Map<String, dynamic>>()
+          .where((img) => img['rel']?.toString().contains('leftStance') ?? false)
+          .firstOrNull?['href'],
       rightStanceUrl: (json['images'] as List?)
-          ?.firstWhere((img) => img['rel']?.contains('rightStance') ?? false,
-              orElse: () => null)?['href'],
+          ?.cast<Map<String, dynamic>>()
+          .where((img) => img['rel']?.toString().contains('rightStance') ?? false)
+          .firstOrNull?['href'],
       recentForm: recentForm,
+      sigStrikesPerMinute: json['sigStrikesPerMinute']?.toDouble(),
+      strikeAccuracy: json['strikeAccuracy']?.toDouble(),
+      strikeDefense: json['strikeDefense']?.toDouble(),
+      takedownAverage: json['takedownAverage']?.toDouble(),
+      takedownAccuracy: json['takedownAccuracy']?.toDouble(),
+      takedownDefense: json['takedownDefense']?.toDouble(),
+      submissionAverage: json['submissionAverage']?.toDouble(),
       espnId: json['id']?.toString(),
       espnUrl: json['links']?.firstWhere(
           (link) => link['rel']?.contains('overview') ?? false,
@@ -231,6 +318,13 @@ class MMAFighter {
       'rightStanceUrl': rightStanceUrl,
       'recentForm': recentForm,
       'recentFights': recentFights?.map((f) => f.toJson()).toList(),
+      'sigStrikesPerMinute': sigStrikesPerMinute,
+      'strikeAccuracy': strikeAccuracy,
+      'strikeDefense': strikeDefense,
+      'takedownAverage': takedownAverage,
+      'takedownAccuracy': takedownAccuracy,
+      'takedownDefense': takedownDefense,
+      'submissionAverage': submissionAverage,
       'espnId': espnId,
       'espnUrl': espnUrl,
       'lastUpdated': lastUpdated?.toIso8601String(),
@@ -286,6 +380,13 @@ class MMAFighter {
               .map((f) => RecentFight.fromJson(f))
               .toList()
           : null,
+      sigStrikesPerMinute: json['sigStrikesPerMinute']?.toDouble(),
+      strikeAccuracy: json['strikeAccuracy']?.toDouble(),
+      strikeDefense: json['strikeDefense']?.toDouble(),
+      takedownAverage: json['takedownAverage']?.toDouble(),
+      takedownAccuracy: json['takedownAccuracy']?.toDouble(),
+      takedownDefense: json['takedownDefense']?.toDouble(),
+      submissionAverage: json['submissionAverage']?.toDouble(),
       espnId: json['espnId'],
       espnUrl: json['espnUrl'],
       lastUpdated: json['lastUpdated'] != null

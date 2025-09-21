@@ -56,9 +56,14 @@ class _LoginScreenState extends State<LoginScreen>
   late Animation<double> _shakeAnimation;
   bool _isShaking = false;
 
+  // Success animation controllers
+  late AnimationController _successController;
+  late Animation<double> _successPulseAnimation;
+  late Animation<double> _successShineAnimation;
+  bool _isSuccessAnimating = false;
+
   // Video player for success animation
   VideoPlayerController? _videoController;
-  bool _showVideoOverlay = false;
 
   @override
   void initState() {
@@ -109,6 +114,34 @@ class _LoginScreenState extends State<LoginScreen>
       CurvedAnimation(
         parent: _shakeController,
         curve: Curves.elasticIn,
+      ),
+    );
+
+    // Initialize success animation controller
+    _successController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+
+    // Pulsing animation for neon green glow
+    _successPulseAnimation = Tween<double>(
+      begin: 0.5,
+      end: 1.0,
+    ).animate(
+      CurvedAnimation(
+        parent: _successController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    // Shine animation that travels around the edge
+    _successShineAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(
+      CurvedAnimation(
+        parent: _successController,
+        curve: Curves.linear,
       ),
     );
 
@@ -189,6 +222,7 @@ class _LoginScreenState extends State<LoginScreen>
     _gridAnimationController.dispose();
     _glowAnimationController.dispose();
     _shakeController.dispose();
+    _successController.dispose();
     _videoController?.dispose();
     super.dispose();
   }
@@ -202,11 +236,9 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _playSuccessVideoAndNavigate(String route) async {
-    // Show grid animation overlay
-    setState(() => _showVideoOverlay = true);
-
-    // Wait for 2 seconds showing the grid animation
-    await Future.delayed(const Duration(seconds: 2));
+    // Start success animation
+    setState(() => _isSuccessAnimating = true);
+    await _successController.forward();
 
     // Navigate to next screen
     if (mounted) {
@@ -761,27 +793,6 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         ),
 
-        // Video Overlay for successful login
-        if (_showVideoOverlay)
-          Positioned.fill(
-            child: Container(
-              color: Colors.black,
-              child: Stack(
-                children: [
-                  // Add the animated grid background behind the video
-                  Positioned.fill(
-                    child: CustomPaint(
-                      painter: NeonGridPainter(
-                        animation: _gridAnimationController.value,
-                        glowIntensity: _glowAnimation.value * 0.5, // Dimmer for video overlay
-                      ),
-                    ),
-                  ),
-                  // Video removed - keeping just the grid background
-                ],
-              ),
-            ),
-          ),
       ],
     ),
     );
@@ -801,9 +812,16 @@ class _LoginScreenState extends State<LoginScreen>
             );
           },
           child: AnimatedBuilder(
-            animation: _glowAnimation,
+            animation: _isSuccessAnimating ? _successShineAnimation : _glowAnimation,
             builder: (context, child) {
-              return Container(
+              return CustomPaint(
+                painter: _isSuccessAnimating
+                  ? EdgeShinePainter(
+                      progress: _successShineAnimation.value,
+                      color: Color(0xFF00FF00),
+                    )
+                  : null,
+                child: Container(
                 width: 100,
                 height: 100,
                 decoration: BoxDecoration(
@@ -817,21 +835,25 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: _isShaking ? Colors.red : goldPrimary,
+                    color: _isShaking ? Colors.red : (_isSuccessAnimating ? Color(0xFF00FF00) : goldPrimary),
                     width: 2,
                   ),
                   boxShadow: [
                     BoxShadow(
                       color: _isShaking
                         ? Colors.red.withOpacity(0.5 * _glowAnimation.value)
-                        : goldPrimary.withOpacity(0.5 * _glowAnimation.value),
-                      blurRadius: 30,
-                      spreadRadius: 0,
+                        : (_isSuccessAnimating
+                            ? Color(0xFF00FF00).withOpacity(_successPulseAnimation.value)
+                            : goldPrimary.withOpacity(0.5 * _glowAnimation.value)),
+                      blurRadius: 30 + (_isSuccessAnimating ? _successPulseAnimation.value * 20 : 0),
+                      spreadRadius: _isSuccessAnimating ? _successPulseAnimation.value * 5 : 0,
                     ),
                     BoxShadow(
                       color: _isShaking
                         ? Colors.red.withOpacity(0.2)
-                        : goldPrimary.withOpacity(0.2),
+                        : (_isSuccessAnimating
+                            ? Color(0xFF00FF00).withOpacity(0.3)
+                            : goldPrimary.withOpacity(0.2)),
                       blurRadius: 20,
                       spreadRadius: -5,
                     ),
@@ -845,7 +867,9 @@ class _LoginScreenState extends State<LoginScreen>
                         end: Alignment.bottomRight,
                         colors: _isShaking
                           ? [Colors.red, Colors.redAccent, Colors.white, Colors.red]
-                          : [goldSecondary, goldPrimary, Colors.white, goldPrimary],
+                          : (_isSuccessAnimating
+                              ? [Color(0xFF00FF00), Color(0xFF00FF88), Colors.white, Color(0xFF00FF00)]
+                              : [goldSecondary, goldPrimary, Colors.white, goldPrimary]),
                         stops: [0.0, 0.3, 0.5, 1.0],
                         transform: GradientRotation(_glowAnimation.value * math.pi),
                       ).createShader(bounds);
@@ -861,6 +885,7 @@ class _LoginScreenState extends State<LoginScreen>
                     ),
                   ),
                 ),
+              ),
               );
             },
           ),
@@ -1153,5 +1178,88 @@ class NeonGridPainter extends CustomPainter {
   @override
   bool shouldRepaint(NeonGridPainter oldDelegate) {
     return oldDelegate.animation != animation || oldDelegate.glowIntensity != glowIntensity;
+  }
+}
+
+// Custom painter for edge shine effect
+class EdgeShinePainter extends CustomPainter {
+  final double progress;
+  final Color color;
+
+  EdgeShinePainter({
+    required this.progress,
+    required this.color,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(20));
+
+    // Calculate the position of the shine along the perimeter
+    final perimeter = 2 * (size.width + size.height);
+    final shinePosition = progress * perimeter;
+
+    // Create gradient paint for the shine
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0
+      ..strokeCap = StrokeCap.round;
+
+    // Draw the path
+    final path = Path()..addRRect(rrect);
+
+    // Create a gradient that moves along the edge
+    Offset start, end;
+
+    if (shinePosition < size.width) {
+      // Top edge
+      start = Offset(shinePosition, 0);
+      end = Offset(math.max(0, shinePosition - 50), 0);
+    } else if (shinePosition < size.width + size.height) {
+      // Right edge
+      final y = shinePosition - size.width;
+      start = Offset(size.width, y);
+      end = Offset(size.width, math.max(0, y - 50));
+    } else if (shinePosition < 2 * size.width + size.height) {
+      // Bottom edge
+      final x = size.width - (shinePosition - size.width - size.height);
+      start = Offset(x, size.height);
+      end = Offset(math.min(size.width, x + 50), size.height);
+    } else {
+      // Left edge
+      final y = size.height - (shinePosition - 2 * size.width - size.height);
+      start = Offset(0, y);
+      end = Offset(0, math.min(size.height, y + 50));
+    }
+
+    paint.shader = LinearGradient(
+      colors: [
+        Colors.transparent,
+        color.withOpacity(0.8),
+        color,
+        color.withOpacity(0.8),
+        Colors.transparent,
+      ],
+      stops: [0.0, 0.3, 0.5, 0.7, 1.0],
+    ).createShader(Rect.fromPoints(start, end));
+
+    // Draw the shine path
+    canvas.save();
+    canvas.clipRRect(rrect.inflate(2));
+    canvas.drawPath(path, paint);
+    canvas.restore();
+
+    // Add extra glow at the shine position
+    final glowPaint = Paint()
+      ..color = color.withOpacity(0.3)
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, 10);
+
+    canvas.drawCircle(start, 10, glowPaint);
+  }
+
+  @override
+  bool shouldRepaint(EdgeShinePainter oldDelegate) {
+    return oldDelegate.progress != progress;
   }
 }

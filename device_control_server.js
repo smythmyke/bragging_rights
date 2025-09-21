@@ -73,6 +73,11 @@ async function checkADBConnection() {
 
 // Routes
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', message: 'Server is running' });
+});
+
 // Serve the HTML file
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'device_control.html'));
@@ -151,6 +156,46 @@ app.get('/device/status', async (req, res) => {
 });
 
 // App control endpoints
+
+// Add endpoint for simple force-stop (minimize)
+app.post('/app/minimize', async (req, res) => {
+    console.log('Minimize app requested for package:', APP_PACKAGE);
+    try {
+        const result = await executeCommand(`adb shell am force-stop ${APP_PACKAGE}`);
+        console.log('App minimized successfully');
+        res.json({ ...result, action: 'App minimized (processes stopped)' });
+    } catch (error) {
+        console.error('Minimize failed:', error);
+        res.json({ success: false, error: error.message });
+    }
+});
+
+// Add endpoint to kill app completely
+app.post('/app/kill', async (req, res) => {
+    console.log('Kill app requested for package:', APP_PACKAGE);
+    try {
+        // Kill all processes related to the app
+        await executeCommand(`adb shell am force-stop ${APP_PACKAGE}`);
+
+        // Also try to kill using pkill if available
+        try {
+            await executeCommand(`adb shell pkill -f ${APP_PACKAGE}`);
+        } catch (e) {
+            // pkill might not be available on all devices
+            console.log('pkill not available, using force-stop only');
+        }
+
+        // Clear from memory
+        await executeCommand(`adb shell am kill ${APP_PACKAGE}`);
+
+        console.log('App killed completely');
+        res.json({ success: true, action: 'App killed and cleared from memory' });
+    } catch (error) {
+        console.error('Kill failed:', error);
+        res.json({ success: false, error: error.message });
+    }
+});
+
 app.post('/app/launch', async (req, res) => {
     console.log('Launch app requested');
     try {
@@ -189,9 +234,29 @@ app.post('/app/launch', async (req, res) => {
 app.post('/app/close', async (req, res) => {
     console.log('Close app requested for package:', APP_PACKAGE);
     try {
-        const result = await executeCommand(`adb shell am force-stop ${APP_PACKAGE}`);
-        console.log('App closed successfully');
-        res.json({ ...result, action: 'App closed' });
+        // First force-stop the app
+        await executeCommand(`adb shell am force-stop ${APP_PACKAGE}`);
+        console.log('App processes stopped');
+
+        // Then remove it from recent apps by simulating the back button from home
+        // This ensures the app is fully closed and not just minimized
+        await executeCommand('adb shell input keyevent KEYCODE_HOME');
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Open recent apps
+        await executeCommand('adb shell input keyevent KEYCODE_APP_SWITCH');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Swipe to dismiss the app from recents (swipe up gesture)
+        // This simulates swiping the app away from recent apps
+        await executeCommand('adb shell input swipe 540 1500 540 300 100');
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Return to home
+        await executeCommand('adb shell input keyevent KEYCODE_HOME');
+
+        console.log('App closed and removed from recents successfully');
+        res.json({ success: true, action: 'App fully closed and removed from recents' });
     } catch (error) {
         console.error('Close failed:', error);
         res.json({ success: false, error: error.message });

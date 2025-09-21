@@ -374,12 +374,16 @@
             line.style.color = isError ? '#ef4444' : '#10b981';
             line.textContent = `$ ${new Date().toLocaleTimeString()} - ${message}`;
             console.appendChild(line);
-            console.scrollTop = console.scrollHeight;
 
             // Keep only last 50 lines
             while (console.children.length > 50) {
                 console.removeChild(console.firstChild);
             }
+
+            // Always scroll to bottom after adding new log
+            setTimeout(() => {
+                console.scrollTop = console.scrollHeight;
+            }, 10);
         }
 
         // Show toast notification
@@ -788,6 +792,16 @@ The server will run on http://localhost:5000
             document.getElementById('appStatus').textContent = status;
         }
 
+        // Auto-scroll console to bottom periodically
+        setInterval(() => {
+            const console = document.getElementById('console');
+            // Only auto-scroll if user isn't manually scrolling
+            const isScrolledToBottom = console.scrollHeight - console.clientHeight <= console.scrollTop + 1;
+            if (isScrolledToBottom || console.scrollTop === 0) {
+                console.scrollTop = console.scrollHeight;
+            }
+        }, 500);
+
         // Check connection on load
         window.onload = async function() {
             log('Device control panel initialized');
@@ -797,6 +811,10 @@ The server will run on http://localhost:5000
             setTimeout(() => {
                 checkStatus();
             }, 1000);
+
+            // Initial scroll to bottom
+            const console = document.getElementById('console');
+            console.scrollTop = console.scrollHeight;
         };
 
         // Keyboard shortcuts

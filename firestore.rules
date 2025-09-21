@@ -75,6 +75,11 @@ service cloud.firestore {
       allow write: if true;  // Allow public writes for caching
     }
 
+    match /fighter_images_cache/{fighterId} {
+      allow read: if true;  // Public read for cached fighter images
+      allow write: if true;  // Allow public writes for image caching
+    }
+
 
 
     // Game cache metadata - allow public writes for caching
@@ -95,15 +100,44 @@ service cloud.firestore {
       allow write: if isOwner(userId);
     }
 
+    // User pools subcollection
+    match /users/{userId}/pools/{document=**} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId);
+    }
+
+    // User games with bets subcollection
+    match /users/{userId}/gamesWithBets/{document=**} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId);
+    }
+
+    // User preferences collection
+    match /userPreferences/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId);
+    }
+
+    // Edge cache for API responses
+    match /edge_cache/{document=**} {
+      allow read: if true;
+      allow write: if true;  // Allow public writes for caching
+    }
+
     // Other collections (existing rules)
     match /pools/{poolId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() &&
         (resource.data.creator == request.auth.uid ||
-         request.auth.uid in resource.data.members);
+         request.auth.uid in resource.data.members ||
+         // Allow system to cancel empty pools past close time
+         (resource.data.members.size() == 0 && resource.data.closeTime < request.time));
       allow delete: if isAuthenticated() &&
-        resource.data.creator == request.auth.uid;
+        (resource.data.creator == request.auth.uid ||
+         // Allow system to delete empty/cancelled pools
+         (resource.data.members.size() == 0 && resource.data.status == 'cancelled') ||
+         (resource.data.members.size() == 0 && resource.data.closeTime < request.time));
     }
 
     match /bets/{betId} {

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UFC Fight Night: Ulberg vs. Reyes - Fighter Images</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1a1a1a;
+            color: white;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #ff0000;
+            margin-bottom: 10px;
+        }
+        .event-info {
+            text-align: center;
+            color: #aaa;
+            margin-bottom: 30px;
+        }
+        .fight-card {
+            background-color: #2a2a2a;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+        }
+        .fight-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #444;
+        }
+        .card-position {
+            color: #ff0000;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        .weight-class {
+            color: #888;
+            font-size: 14px;
+        }
+        .fighters-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            gap: 30px;
+        }
+        .fighter {
+            text-align: center;
+            flex: 1;
+        }
+        .fighter-image {
+            width: 150px;
+            height: 150px;
+            border-radius: 75px;
+            object-fit: cover;
+            border: 3px solid #ff0000;
+            margin-bottom: 10px;
+            background-color: #333;
+        }
+        .fighter-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .fighter-id {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        .fighter-record {
+            font-size: 14px;
+            color: #aaa;
+        }
+        .vs {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff0000;
+        }
+        .image-status {
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .main-event {
+            border: 3px solid #FFD700;
+            background: linear-gradient(135deg, #2a2a2a 0%, #3a3a3a 100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>UFC Fight Night: Perth</h1>
+        <div class="event-info">
+            Carlos Ulberg vs. Dominick Reyes<br>
+            September 28, 2025 • RAC Arena, Perth, Australia
+        </div>
+
+        <!-- Main Event -->
+        <div class="fight-card main-event">
+            <div class="fight-header">
+                <div class="card-position">MAIN EVENT</div>
+                <div class="weight-class">Light Heavyweight</div>
+            </div>
+            <div class="fighters-container">
+                <div class="fighter">
+                    <img class="fighter-image" src="https://a.espncdn.com/i/headshots/mma/players/full/4695736.png"
+                         onerror="this.src='https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png'"
+                         alt="Carlos Ulberg">
+                    <div class="fighter-name">Carlos Ulberg</div>
+                    <div class="fighter-id">ESPN ID: 4695736</div>
+                    <div class="fighter-record">9-1-0</div>
+                    <div class="image-status success">✓ Image Available</div>
+                </div>
+                <div class="vs">VS</div>
+                <div class="fighter">
+                    <img class="fighter-image" src="https://a.espncdn.com/i/headshots/mma/players/full/4233039.png"
+                         onerror="this.src='https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png'"
+                         alt="Dominick Reyes">
+                    <div class="fighter-name">Dominick Reyes</div>
+                    <div class="fighter-id">ESPN ID: 4233039</div>
+                    <div class="fighter-record">12-4-0</div>
+                    <div class="image-status success">✓ Image Available</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fight 2 - Note: These IDs are placeholders, actual ESPN IDs need to be fetched -->
+        <div class="fight-card">
+            <div class="fight-header">
+                <div class="card-position">CO-MAIN EVENT</div>
+                <div class="weight-class">Middleweight</div>
+            </div>
+            <div class="fighters-container">
+                <div class="fighter">
+                    <img class="fighter-image" src="https://a.espncdn.com/i/headshots/mma/players/full/4697476.png"
+                         onerror="this.src='https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png'"
+                         alt="Andre Petroski">
+                    <div class="fighter-name">Andre Petroski</div>
+                    <div class="fighter-id">ESPN ID: 4697476</div>
+                    <div class="fighter-record">10-3-0</div>
+                    <div class="image-status">Checking...</div>
+                </div>
+                <div class="vs">VS</div>
+                <div class="fighter">
+                    <img class="fighter-image" src="https://a.espncdn.com/i/headshots/mma/players/full/4694832.png"
+                         onerror="this.src='https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png'"
+                         alt="Cam Rowston">
+                    <div class="fighter-name">Cam Rowston</div>
+                    <div class="fighter-id">ESPN ID: 4694832</div>
+                    <div class="fighter-record">8-1-0</div>
+                    <div class="image-status">Checking...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Fights -->
+        <div class="fight-card">
+            <div class="fight-header">
+                <div class="card-position">MAIN CARD</div>
+                <div class="weight-class">Welterweight</div>
+            </div>
+            <div class="fighters-container">
+                <div class="fighter">
+                    <img class="fighter-image" src="https://a.espncdn.com/i/headshots/mma/players/full/4900808.png"
+                         onerror="this.src='https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png'"
+                         alt="Oban Elliott">
+                    <div class="fighter-name">Oban Elliott</div>
+                    <div class="fighter-id">ESPN ID: 4900808</div>
+                    <div class="fighter-record">11-2-0</div>
+                    <div class="image-status">Checking...</div>
+                </div>
+                <div class="vs">VS</div>
+                <div class="fighter">
+                    <img class="fighter-image" src="https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png"
+                         alt="Jonathan Micallef">
+                    <div class="fighter-name">Jonathan Micallef</div>
+                    <div class="fighter-id">ESPN ID: Unknown</div>
+                    <div class="fighter-record">TBD</div>
+                    <div class="image-status error">✗ No Image</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="fight-card">
+            <div class="fight-header">
+                <div class="card-position">MAIN CARD</div>
+                <div class="weight-class">Flyweight</div>
+            </div>
+            <div class="fighters-container">
+                <div class="fighter">
+                    <img class="fighter-image" src="https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png"
+                         alt="Alexia Thainara">
+                    <div class="fighter-name">Alexia Thainara</div>
+                    <div class="fighter-id">ESPN ID: Unknown</div>
+                    <div class="fighter-record">11-5-0</div>
+                    <div class="image-status">Checking...</div>
+                </div>
+                <div class="vs">VS</div>
+                <div class="fighter">
+                    <img class="fighter-image" src="https://a.espncdn.com/i/headshots/mma/players/full/4293483.png"
+                         onerror="this.src='https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png'"
+                         alt="Loma Lookboonmee">
+                    <div class="fighter-name">Loma Lookboonmee</div>
+                    <div class="fighter-id">ESPN ID: 4293483</div>
+                    <div class="fighter-record">8-4-0</div>
+                    <div class="image-status">Checking...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="fight-card">
+            <div class="fight-header">
+                <div class="card-position">PRELIMS</div>
+                <div class="weight-class">Light Heavyweight</div>
+            </div>
+            <div class="fighters-container">
+                <div class="fighter">
+                    <img class="fighter-image" src="https://a.espncdn.com/i/headshots/mma/players/full/5212850.png"
+                         onerror="this.src='https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png'"
+                         alt="Josias Musasa">
+                    <div class="fighter-name">Josias Musasa</div>
+                    <div class="fighter-id">ESPN ID: 5212850</div>
+                    <div class="fighter-record">11-1-0</div>
+                    <div class="image-status">Checking...</div>
+                </div>
+                <div class="vs">VS</div>
+                <div class="fighter">
+                    <img class="fighter-image" src="https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png"
+                         alt="Colby Thicknesse">
+                    <div class="fighter-name">Colby Thicknesse</div>
+                    <div class="fighter-id">ESPN ID: Unknown</div>
+                    <div class="fighter-record">TBD</div>
+                    <div class="image-status error">✗ No Image</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="fight-card">
+            <div class="fight-header">
+                <div class="card-position">PRELIMS</div>
+                <div class="weight-class">Lightweight</div>
+            </div>
+            <div class="fighters-container">
+                <div class="fighter">
+                    <img class="fighter-image" src="https://a.espncdn.com/i/headshots/mma/players/full/5125178.png"
+                         onerror="this.src='https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png'"
+                         alt="Rolando Bedoya">
+                    <div class="fighter-name">Rolando Bedoya</div>
+                    <div class="fighter-id">ESPN ID: 5125178</div>
+                    <div class="fighter-record">15-3-0</div>
+                    <div class="image-status">Checking...</div>
+                </div>
+                <div class="vs">VS</div>
+                <div class="fighter">
+                    <img class="fighter-image" src="https://a.espncdn.com/i/headshots/mma/players/full/4064883.png"
+                         onerror="this.src='https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png'"
+                         alt="Jamie Mullarkey">
+                    <div class="fighter-name">Jamie Mullarkey</div>
+                    <div class="fighter-id">ESPN ID: 4064883</div>
+                    <div class="fighter-record">16-7-0</div>
+                    <div class="image-status">Checking...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="fight-card">
+            <div class="fight-header">
+                <div class="card-position">EARLY PRELIMS</div>
+                <div class="weight-class">Women's Strawweight</div>
+            </div>
+            <div class="fighters-container">
+                <div class="fighter">
+                    <img class="fighter-image" src="https://a.espncdn.com/i/headshots/mma/players/full/4372194.png"
+                         onerror="this.src='https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png'"
+                         alt="Luana Carolina">
+                    <div class="fighter-name">Luana Carolina</div>
+                    <div class="fighter-id">ESPN ID: 4372194</div>
+                    <div class="fighter-record">10-4-0</div>
+                    <div class="image-status">Checking...</div>
+                </div>
+                <div class="vs">VS</div>
+                <div class="fighter">
+                    <img class="fighter-image" src="https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png"
+                         alt="Michelle Montague">
+                    <div class="fighter-name">Michelle Montague</div>
+                    <div class="fighter-id">ESPN ID: Unknown</div>
+                    <div class="fighter-record">TBD</div>
+                    <div class="image-status error">✗ No Image</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check image status for each fighter
+        document.querySelectorAll('.fighter-image').forEach(img => {
+            img.onload = function() {
+                const status = this.parentElement.querySelector('.image-status');
+                if (status && !status.classList.contains('error')) {
+                    status.textContent = '✓ Image Loaded';
+                    status.className = 'image-status success';
+                }
+            };
+
+            img.onerror = function() {
+                const status = this.parentElement.querySelector('.image-status');
+                if (status) {
+                    status.textContent = '✗ No Image';
+                    status.className = 'image-status error';
+                }
+            };
+        });
+
+        // Log fighter IDs for debugging
+        console.log('UFC Perth Fighter IDs:');
+        console.log('Main Event:');
+        console.log('- Carlos Ulberg: 4695736');
+        console.log('- Dominick Reyes: 3022677');
+        console.log('\nCo-Main Event:');
+        console.log('- Andre Petroski: 4697476');
+        console.log('- Cam Rowston: 4694832');
+    </script>
+</body>
+</html>

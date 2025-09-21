@@ -4245,8 +4245,33 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
   }
 
   Widget _buildNFLScoreCard() {
-    final boxscore = _eventDetails!['boxscore'];
-    final header = _eventDetails!['header'];
+    final boxscore = _eventDetails!['boxscore'] as Map<String, dynamic>?;
+    final header = _eventDetails!['header'] as Map<String, dynamic>?;
+
+    // If no boxscore data, show a simple score display
+    if (boxscore == null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceBlue,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+        ),
+        child: Column(
+          children: [
+            Text(
+              '${_game?.awayTeam ?? 'Away'} @ ${_game?.homeTeam ?? 'Home'}',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              header?['competitions']?[0]?['status']?['type']?['detail'] ?? 'Game Details Unavailable',
+              style: TextStyle(color: Colors.grey[400]),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -4379,8 +4404,8 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
   }
 
   Widget _buildNFLWeatherCard() {
-    final weather = _eventDetails!['weather'];
-    final venue = _eventDetails!['header']?['competitions']?[0]?['venue'];
+    final weather = _eventDetails?['weather'] as Map<String, dynamic>?;
+    final venue = _eventDetails?['header']?['competitions']?[0]?['venue'] as Map<String, dynamic>?;
 
     if (weather == null && venue?['indoor'] == true) {
       return const SizedBox();
@@ -4436,7 +4461,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
   }
 
   Widget _buildNFLLeadersCard() {
-    final leaders = _eventDetails!['leaders'] as List? ?? [];
+    final leaders = _eventDetails?['leaders'] as List? ?? [];
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -4508,7 +4533,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
   }
 
   Widget _buildNFLLastFiveGamesCard() {
-    final lastFiveGames = _eventDetails!['lastFiveGames'];
+    final lastFiveGames = _eventDetails?['lastFiveGames'];
     if (lastFiveGames == null) return const SizedBox();
 
     return Container(

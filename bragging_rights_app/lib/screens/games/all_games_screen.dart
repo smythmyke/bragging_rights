@@ -42,9 +42,19 @@ class _AllGamesScreenState extends State<AllGamesScreen> with WidgetsBindingObse
     WidgetsBinding.instance.addObserver(this);
     _initializeServices();
     _loadBetStatuses();
-    // Always load fresh games based on the category
-    // This prevents stale data when navigating from home screen
-    _loadGames();
+
+    // Use initialGames if provided, otherwise load fresh data
+    if (widget.initialGames != null && widget.initialGames!.isNotEmpty) {
+      setState(() {
+        _games = widget.initialGames!;
+        _loading = false;
+      });
+      // Still check for fresh data in background
+      _loadGamesInBackground();
+    } else {
+      // Load fresh games based on the category
+      _loadGames();
+    }
   }
 
   Future<void> _initializeServices() async {
@@ -107,6 +117,79 @@ class _AllGamesScreenState extends State<AllGamesScreen> with WidgetsBindingObse
     }
   }
   
+  Future<void> _loadGamesInBackground() async {
+    // Load fresh games in background without showing loading indicator
+    try {
+      List<GameModel> games = [];
+
+      // Load games based on category
+      debugPrint('📱 Background loading games for category: ${widget.category}');
+
+      switch (widget.category) {
+        case 'live':
+          games = await _gamesService.getLiveGames();
+          break;
+        case 'today':
+          final todayGames = await _gamesService.getTodayGamesAllSports();
+          games = [];
+          todayGames.forEach((sport, sportGames) {
+            games.addAll(sportGames);
+          });
+          break;
+        case 'tomorrow':
+          final futures = <Future<List<GameModel>>>[];
+          for (final sport in ALL_SUPPORTED_SPORTS) {
+            futures.add(_gamesService.getGamesForPeriod(
+              period: 'tomorrow',
+              sport: sport,
+            ));
+          }
+          final results = await Future.wait(futures);
+          games = results.expand((list) => list).toList();
+          break;
+        case 'thisweek':
+          final futures = <Future<List<GameModel>>>[];
+          for (final sport in ALL_SUPPORTED_SPORTS) {
+            futures.add(_gamesService.getGamesForPeriod(
+              period: 'this week',
+              sport: sport,
+            ));
+          }
+          final results = await Future.wait(futures);
+          games = results.expand((list) => list).toList();
+          break;
+        case 'nextweek':
+          final futures = <Future<List<GameModel>>>[];
+          for (final sport in ALL_SUPPORTED_SPORTS) {
+            futures.add(_gamesService.getGamesForPeriod(
+              period: 'next week',
+              sport: sport,
+            ));
+          }
+          final results = await Future.wait(futures);
+          games = results.expand((list) => list).toList();
+          break;
+        default:
+          final featured = await _gamesService.getFeaturedGames();
+          games = featured['games'] ?? [];
+      }
+
+      // Sort games by time
+      games.sort((a, b) => a.gameTime.compareTo(b.gameTime));
+
+      // Update UI only if we have different data
+      if (mounted && games.length != _games.length) {
+        setState(() {
+          _games = games;
+        });
+      }
+
+      debugPrint('✅ Background loaded ${games.length} games for ${widget.category}');
+    } catch (e) {
+      debugPrint('❌ Background load error: $e');
+    }
+  }
+
   Future<void> _loadGames() async {
     setState(() => _loading = true);
 
@@ -214,12 +297,45 @@ class _AllGamesScreenState extends State<AllGamesScreen> with WidgetsBindingObse
     // Always return all supported sports for consistent UI
     return ALL_SUPPORTED_SPORTS;
   }
-  
+
   List<GameModel> _getFilteredGames() {
     if (_selectedSport == null) return _games;
     return _games.where((game) => game.sport == _selectedSport).toList();
   }
-  
+
+  int _getGamesCountForSport(String sport) {
+    return _games.where((game) => game.sport == sport).length;
+  }
+
+  Future<void> _loadGamesForSport(String sport) async {
+    debugPrint('🔄 Loading games for $sport...');
+    setState(() => _loading = true);
+
+    try {
+      final games = await _gamesService.getAllGamesForSport(sport);
+
+      if (mounted) {
+        setState(() {
+          // Add new games to existing games, avoiding duplicates
+          final existingIds = _games.map((g) => g.id).toSet();
+          final newGames = games.where((g) => !existingIds.contains(g.id)).toList();
+          _games.addAll(newGames);
+
+          // Sort all games by time
+          _games.sort((a, b) => a.gameTime.compareTo(b.gameTime));
+          _loading = false;
+        });
+
+        debugPrint('✅ Loaded ${games.length} $sport games');
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading $sport games: $e');
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
   IconData _getSportIcon(String sport) {
     switch (sport.toUpperCase()) {
       case 'NFL':
@@ -552,29 +668,36 @@ class _AllGamesScreenState extends State<AllGamesScreen> with WidgetsBindingObse
                   },
                 ),
                 const SizedBox(width: 8),
-                ...availableSports.map((sport) => Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _getSportIcon(sport),
-                          size: 16,
-                          color: _selectedSport == sport ? Colors.white : _getSportColor(sport),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(sport),
-                      ],
+                ...availableSports.map((sport) {
+                  final count = _getGamesCountForSport(sport);
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _getSportIcon(sport),
+                            size: 16,
+                            color: _selectedSport == sport ? Colors.white : _getSportColor(sport),
+                          ),
+                          const SizedBox(width: 4),
+                          Text('$sport${count > 0 ? ' ($count)' : ''}'),
+                        ],
+                      ),
+                      selected: _selectedSport == sport,
+                      backgroundColor: _getSportColor(sport).withOpacity(0.2),
+                      selectedColor: _getSportColor(sport).withOpacity(0.4),
+                      onSelected: (selected) {
+                        setState(() => _selectedSport = selected ? sport : null);
+                        if (selected && count == 0) {
+                          // Load games for this sport if we don't have any
+                          _loadGamesForSport(sport);
+                        }
+                      },
                     ),
-                    selected: _selectedSport == sport,
-                    backgroundColor: _getSportColor(sport).withOpacity(0.2),
-                    selectedColor: _getSportColor(sport).withOpacity(0.4),
-                    onSelected: (selected) {
-                      setState(() => _selectedSport = selected ? sport : null);
-                    },
-                  ),
-                )),
+                  );
+                }),
               ],
             ),
           ),

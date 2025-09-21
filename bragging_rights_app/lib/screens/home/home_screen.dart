@@ -1154,21 +1154,21 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.speed, color: Colors.white),
+                          const Icon(Icons.sports_score, color: Colors.white),
                           const SizedBox(width: 12),
                           const Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  '⚡ Try Optimized Games',
+                                  '🏆 View All Sports',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 Text(
-                                  '90% faster loading, personalized for you',
+                                  'Browse games by sport category',
                                   style: TextStyle(
                                     color: Colors.white70,
                                     fontSize: 12,

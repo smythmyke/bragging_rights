@@ -383,4 +383,51 @@ class MMAFight {
     if (winnerId == null) return null;
     return winnerId == fighter1?.id ? fighter2 : fighter1;
   }
+
+  // Create a copy with updated fields
+  MMAFight copyWith({
+    String? id,
+    MMAFighter? fighter1,
+    MMAFighter? fighter2,
+    String? weightClass,
+    int? rounds,
+    bool? isMainEvent,
+    bool? isCoMainEvent,
+    bool? isTitleFight,
+    String? cardPosition,
+    int? fightOrder,
+    double? fighter1Odds,
+    double? fighter2Odds,
+    String? winnerId,
+    String? method,
+    String? methodDetails,
+    int? endRound,
+    String? endTime,
+    String? status,
+    bool? isComplete,
+    bool? isCancelled,
+  }) {
+    return MMAFight(
+      id: id ?? this.id,
+      fighter1: fighter1 ?? this.fighter1,
+      fighter2: fighter2 ?? this.fighter2,
+      weightClass: weightClass ?? this.weightClass,
+      rounds: rounds ?? this.rounds,
+      isMainEvent: isMainEvent ?? this.isMainEvent,
+      isCoMainEvent: isCoMainEvent ?? this.isCoMainEvent,
+      isTitleFight: isTitleFight ?? this.isTitleFight,
+      cardPosition: cardPosition ?? this.cardPosition,
+      fightOrder: fightOrder ?? this.fightOrder,
+      fighter1Odds: fighter1Odds ?? this.fighter1Odds,
+      fighter2Odds: fighter2Odds ?? this.fighter2Odds,
+      winnerId: winnerId ?? this.winnerId,
+      method: method ?? this.method,
+      methodDetails: methodDetails ?? this.methodDetails,
+      endRound: endRound ?? this.endRound,
+      endTime: endTime ?? this.endTime,
+      status: status ?? this.status,
+      isComplete: isComplete ?? this.isComplete,
+      isCancelled: isCancelled ?? this.isCancelled,
+    );
+  }
 }

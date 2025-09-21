@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../models/mma_event_model.dart';
 import '../../../models/mma_fighter_model.dart';
 import '../../../theme/app_theme.dart';
+import '../../../widgets/fighter_image_widget.dart';
 
 class FightCardItem extends StatelessWidget {
   final MMAFight fight;
@@ -164,33 +165,20 @@ class FightCardItem extends StatelessWidget {
   }
 
   Widget _buildFighterAvatar(MMAFighter fighter, Color cornerColor) {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: cornerColor.withOpacity(0.6),
-          width: 2,
+    return FighterImageWidget(
+      fighterId: fighter.id,
+      fallbackUrl: fighter.headshotUrl,
+      size: 48,
+      shape: BoxShape.circle,
+      borderColor: cornerColor.withOpacity(0.6),
+      borderWidth: 2,
+      placeholder: Center(
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: cornerColor,
         ),
-        color: AppTheme.surfaceBlue,
       ),
-      child: ClipOval(
-        child: fighter.headshotUrl != null
-            ? CachedNetworkImage(
-                imageUrl: fighter.headshotUrl!,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Center(
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: cornerColor,
-                  ),
-                ),
-                errorWidget: (context, url, error) =>
-                    _buildInitials(fighter),
-              )
-            : _buildInitials(fighter),
-      ),
+      errorWidget: _buildInitials(fighter),
     );
   }
 
@@ -219,17 +207,37 @@ class FightCardItem extends StatelessWidget {
     return Column(
       crossAxisAlignment: alignment,
       children: [
-        // Name
-        Text(
-          fighter.displayName,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-          textAlign: alignment == CrossAxisAlignment.end
-              ? TextAlign.right
-              : TextAlign.left,
+        // Name with responsive sizing
+        LayoutBuilder(
+          builder: (context, constraints) {
+            // Calculate font size based on name length and available width
+            final nameLength = fighter.displayName.length;
+            double fontSize = 14;
+
+            if (nameLength > 20) {
+              fontSize = 11;
+            } else if (nameLength > 15) {
+              fontSize = 12;
+            } else if (nameLength > 12) {
+              fontSize = 13;
+            }
+
+            return Text(
+              fighter.displayName,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: fontSize,
+                fontWeight: FontWeight.w600,
+                height: 1.1, // Tighter line height
+              ),
+              textAlign: alignment == CrossAxisAlignment.end
+                  ? TextAlign.right
+                  : TextAlign.left,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              softWrap: true,
+            );
+          },
         ),
         const SizedBox(height: 2),
 
