@@ -134,21 +134,29 @@ class OptimizedGamesService {
     _lastFeaturedLoad = DateTime.now();
     
     debugPrint('🏆 Loaded ${categorizedGames.length} total featured games across all timeframes');
-    
+
     // Save to Firestore for offline access (save all games, not just categorized)
     for (final entry in allGamesMap.entries) {
       await _saveGamesToFirestore(entry.value, sport: entry.key);
     }
-    
+
     // Get list of all sports that have games (not just featured)
     final allAvailableSports = allGamesMap.keys
         .where((sport) => allGamesMap[sport]!.isNotEmpty)
         .toList()..sort();
-    
+
     debugPrint('📊 All sports with games: $allAvailableSports');
-    
+
+    // Create a flat list of ALL games for accurate counting
+    final allGamesFlat = <GameModel>[];
+    allGamesMap.forEach((sport, games) {
+      allGamesFlat.addAll(games);
+    });
+
     return {
-      'games': categorizedGames,
+      'games': categorizedGames,  // Limited featured games for display
+      'allGames': allGamesFlat,    // ALL games within 14-day window
+      'allGamesMap': allGamesMap,  // Games organized by sport for counting
       'allSports': allAvailableSports,
     };
   }

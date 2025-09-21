@@ -29,6 +29,7 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
   
   List<GameModel> _featuredGames = [];
   Map<String, List<GameModel>> _gamesBySport = {};
+  Map<String, List<GameModel>> _allGamesBySport = {}; // Full 14-day game lists for counts
   bool _loading = true;
   bool _loadingMore = false;
   String? _selectedSport;
@@ -67,10 +68,11 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
       final result = await _gamesService.loadFeaturedGames();
       if (!mounted) return;
       
-      final games = result['games'] as List<GameModel>;
+      final games = result['games'] as List<GameModel>;  // Featured games for display
+      final allGamesMap = result['allGamesMap'] as Map<String, List<GameModel>>?;  // Full game lists by sport
       final allSports = result['allSports'] as List<String>;
-      
-      // Organize games by sport
+
+      // Organize featured games by sport (for featured "All Sports" view)
       _gamesBySport.clear();
       for (final game in games) {
         final sport = game.sport.toLowerCase();
@@ -81,7 +83,16 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
         _gamesBySport[sport] ??= [];
         _gamesBySport[sport]!.add(game);
       }
-      
+
+      // Store ALL games by sport for accurate counts (from full 14-day window)
+      _allGamesBySport.clear();
+      if (allGamesMap != null) {
+        allGamesMap.forEach((sport, gamesList) {
+          _allGamesBySport[sport.toLowerCase()] = gamesList;
+          debugPrint('Total ${sport} games in 14-day window: ${gamesList.length}');
+        });
+      }
+
       // Always show ALL supported sports, regardless of whether they have games
       // This ensures Boxing and other sports are always visible
       _availableSports = ['nfl', 'nba', 'nhl', 'mlb', 'boxing', 'mma', 'soccer'];
@@ -169,22 +180,36 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
   Future<void> _loadAllGamesForSport(String sport) async {
     try {
       debugPrint('Loading ALL games for $sport...');
-      
-      // Load ALL games for this sport without date limit
+
+      // First check if we have the full list in _allGamesBySport
+      if (_allGamesBySport[sport] != null && _allGamesBySport[sport]!.isNotEmpty) {
+        // Use the cached full list from initial load
+        debugPrint('Using cached full list for $sport: ${_allGamesBySport[sport]!.length} games');
+        if (mounted) {
+          setState(() {
+            _gamesBySport[sport] = _allGamesBySport[sport]!;
+            _loadingMore = false;
+          });
+        }
+        return;
+      }
+
+      // Otherwise load ALL games for this sport (still within 14-day window from the service)
       final allGames = await _gamesService.loadAllGamesForSport(sport);
-      
+
       if (mounted) {
         setState(() {
           _gamesBySport[sport] = allGames;
+          _allGamesBySport[sport] = allGames;  // Also update the full list
           _loadingMore = false;
         });
-        
+
         debugPrint('Loaded ${allGames.length} $sport games');
-        
+
         // Check if Canelo vs Crawford is in the list
         if (sport.toLowerCase() == 'boxing') {
           for (final game in allGames) {
-            if (game.homeTeam.toLowerCase().contains('canelo') || 
+            if (game.homeTeam.toLowerCase().contains('canelo') ||
                 game.awayTeam.toLowerCase().contains('crawford')) {
               debugPrint('✅ FOUND CANELO VS CRAWFORD IN UI: ${game.awayTeam} vs ${game.homeTeam}');
             }
@@ -334,7 +359,7 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
     final sportUpper = sport.toUpperCase();
     final gameCount = isAllSports
         ? _featuredGames.length
-        : (_gamesBySport[sport.toLowerCase()] ?? []).length;
+        : (_allGamesBySport[sport.toLowerCase()] ?? []).length;  // Use full 14-day counts
 
     return Card(
       elevation: 4,
