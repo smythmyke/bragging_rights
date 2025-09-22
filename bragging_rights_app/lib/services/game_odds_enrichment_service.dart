@@ -119,7 +119,88 @@ class GameOddsEnrichmentService {
       
       if (odds != null && odds.isNotEmpty) {
         debugPrint('✅ Got odds from The Odds API');
-        return odds;
+        debugPrint('   Raw odds response: $odds');
+
+        // Extract the odds from the response and convert to standard format
+        final oddsData = odds['odds'] ?? {};
+        debugPrint('   Extracted odds data: $oddsData');
+
+        final h2h = oddsData['h2h'] ?? {};
+        final spreads = oddsData['spreads'] ?? {};
+        final totals = oddsData['totals'] ?? {};
+
+        debugPrint('   h2h: $h2h');
+        debugPrint('   spreads: $spreads');
+        debugPrint('   totals: $totals');
+
+        final standardOdds = <String, dynamic>{};
+
+        // Convert h2h (moneyline) odds - fixed to access nested structure correctly
+        if (h2h.isNotEmpty) {
+          final homeOdds = h2h['home'];
+          final awayOdds = h2h['away'];
+
+          if (homeOdds != null && awayOdds != null) {
+            // Check if odds is a map with 'odds' field or a direct number
+            final homeOddsValue = (homeOdds is Map) ? homeOdds['odds'] : homeOdds;
+            final awayOddsValue = (awayOdds is Map) ? awayOdds['odds'] : awayOdds;
+
+            if (homeOddsValue != null && awayOddsValue != null) {
+              standardOdds['moneyline'] = {
+                'home': homeOddsValue,
+                'away': awayOddsValue,
+              };
+              debugPrint('   Added moneyline: home=$homeOddsValue, away=$awayOddsValue');
+            }
+          }
+        }
+
+        // Convert spread odds
+        if (spreads.isNotEmpty && spreads['outcomes'] != null) {
+          final spreadOutcomes = spreads['outcomes'] as List;
+          if (spreadOutcomes.isNotEmpty) {
+            final homeSpread = spreadOutcomes.firstWhere(
+              (o) => o['name'] == odds['home_team'],
+              orElse: () => spreadOutcomes.first,
+            );
+            final awaySpread = spreadOutcomes.firstWhere(
+              (o) => o['name'] == odds['away_team'],
+              orElse: () => spreadOutcomes.last,
+            );
+
+            standardOdds['spread'] = {
+              'points': homeSpread['point'] ?? 0,
+              'homeOdds': homeSpread['price'] ?? -110,
+              'awayOdds': awaySpread['price'] ?? -110,
+            };
+            debugPrint('   Added spread: points=${homeSpread['point']}');
+          }
+        }
+
+        // Convert totals odds
+        if (totals.isNotEmpty && totals['outcomes'] != null) {
+          final totalOutcomes = totals['outcomes'] as List;
+          if (totalOutcomes.isNotEmpty) {
+            final overOutcome = totalOutcomes.firstWhere(
+              (o) => o['name'] == 'Over',
+              orElse: () => totalOutcomes.first,
+            );
+            final underOutcome = totalOutcomes.firstWhere(
+              (o) => o['name'] == 'Under',
+              orElse: () => totalOutcomes.last,
+            );
+
+            standardOdds['total'] = {
+              'points': overOutcome['point'] ?? 0,
+              'overOdds': overOutcome['price'] ?? -110,
+              'underOdds': underOutcome['price'] ?? -110,
+            };
+            debugPrint('   Added total: points=${overOutcome['point']}');
+          }
+        }
+
+        debugPrint('   Final standardOdds: $standardOdds');
+        return standardOdds.isNotEmpty ? standardOdds : null;
       }
       
       // Fall back to FreeOddsService (ESPN) if The Odds API doesn't have data

@@ -74,14 +74,14 @@ class MMAEvent {
     if (allFights.isNotEmpty) {
       // Main event is usually the last fight or marked as main
       mainEvent = allFights.firstWhere(
-        (f) => f.isMainEvent,
+        (MMAFight f) => f.isMainEvent,
         orElse: () => allFights.last,
       );
 
       // Co-main is the second to last or marked as co-main
       if (allFights.length > 1) {
         coMainEvent = allFights.firstWhere(
-          (f) => f.isCoMainEvent && f != mainEvent,
+          (MMAFight f) => f.isCoMainEvent && f != mainEvent,
           orElse: () => allFights[allFights.length - 2],
         );
       }

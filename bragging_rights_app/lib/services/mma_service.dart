@@ -240,9 +240,9 @@ class MMAService {
       }
 
       // Reverse fights so main event is last
-      fights.reversed.toList();
+      final reversedFights = fights.reversed.toList();
 
-      final event = MMAEvent.fromESPN(eventData, fights: fights);
+      final event = MMAEvent.fromESPN(eventData, fights: reversedFights);
       print('✅ Created MMA event with ${fights.length} fights');
 
       // Cache removed due to permission issues

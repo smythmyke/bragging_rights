@@ -88,10 +88,12 @@ service cloud.firestore {
       allow write: if true;  // Allow public writes for cache metadata
     }
 
-    // User wallet subcollection
+    // User wallet subcollection - allow read/write for wallet operations
     match /users/{userId}/wallet/{document=**} {
-      allow read: if isOwner(userId);
-      allow write: if false; // Only Cloud Functions
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if false; // Wallet documents cannot be deleted
     }
 
     // User cards subcollection
@@ -124,20 +126,41 @@ service cloud.firestore {
       allow write: if true;  // Allow public writes for caching
     }
 
+    // User pools collection - tracks user participation in pools
+    match /user_pools/{documentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
     // Other collections (existing rules)
     match /pools/{poolId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() &&
         (resource.data.creator == request.auth.uid ||
-         request.auth.uid in resource.data.members ||
-         // Allow system to cancel empty pools past close time
-         (resource.data.members.size() == 0 && resource.data.closeTime < request.time));
+         resource.data.createdBy == request.auth.uid ||
+         request.auth.uid in resource.data.get('members', []) ||
+         request.auth.uid in resource.data.get('playerIds', []) ||
+         // Allow any authenticated user to cancel/update empty pools
+         resource.data.get('members', []).size() == 0 ||
+         resource.data.get('playerIds', []).size() == 0 ||
+         // Allow any authenticated user to update empty pools past close time
+         (resource.data.get('playerIds', []).size() == 0 && resource.data.closeTime < request.time));
       allow delete: if isAuthenticated() &&
-        (resource.data.creator == request.auth.uid ||
-         // Allow system to delete empty/cancelled pools
-         (resource.data.members.size() == 0 && resource.data.status == 'cancelled') ||
-         (resource.data.members.size() == 0 && resource.data.closeTime < request.time));
+        (resource.data.get('creator', '') == request.auth.uid ||
+         resource.data.get('createdBy', '') == request.auth.uid ||
+         // Allow any authenticated user to delete cancelled pools
+         resource.data.status == 'cancelled' ||
+         // Allow deletion of empty pools (checking both possible field names)
+         resource.data.get('members', []).size() == 0 ||
+         resource.data.get('playerIds', []).size() == 0 ||
+         // Allow deletion of pools past close time with no players
+         (resource.data.get('playerIds', []).size() == 0 && resource.data.closeTime < request.time));
     }
 
     match /bets/{betId} {
@@ -160,15 +183,27 @@ service cloud.firestore {
     }
 
     match /wallets/{walletId} {
-      allow read: if isOwner(walletId);
-      allow write: if false; // Only Cloud Functions can modify wallets
+      allow read: if isOwner(walletId) || isAuthenticated();
+      allow create: if isOwner(walletId);
+      allow update: if isOwner(walletId) || isAdmin();
+      allow delete: if false; // Wallets cannot be deleted
+    }
+
+    // Wallet transactions subcollection
+    match /wallets/{walletId}/transactions/{transactionId} {
+      allow read: if isOwner(walletId) || isAdmin();
+      allow create: if isOwner(walletId) || isAdmin();
+      allow update: if isAdmin();
+      allow delete: if false; // Transactions cannot be deleted
     }
 
     match /transactions/{transactionId} {
       allow read: if isAuthenticated() &&
         (resource.data.fromUserId == request.auth.uid ||
          resource.data.toUserId == request.auth.uid);
-      allow write: if false; // Only Cloud Functions can create transactions
+      allow create: if isAuthenticated();
+      allow update: if false;
+      allow delete: if false; // Transactions cannot be deleted
     }
   }
 }
