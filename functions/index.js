@@ -89,7 +89,8 @@ async function settleBetsForGame(gameId, gameData) {
       payouts.push({
         userId: bet.userId,
         amount: betResult.winAmount,
-        betId: betDoc.id
+        betId: betDoc.id,
+        betData: bet
       });
     }
     
@@ -102,7 +103,7 @@ async function settleBetsForGame(gameId, gameData) {
   
   // Process payouts
   for (const payout of payouts) {
-    await processPayout(payout.userId, payout.amount, payout.betId, gameId);
+    await processPayout(payout.userId, payout.amount, payout.betId, gameId, payout.betData);
   }
   
   console.log(`Settled ${betsSnapshot.size} bets, ${payouts.length} winners`);
@@ -203,6 +204,121 @@ function determineBetOutcome(bet, gameData) {
 }
 
 /**
+ * Awards Victory Coins based on bet winnings
+ */
+async function awardVictoryCoins(userId, brWagered, odds, betType) {
+  const VC_CONVERSION_RATES = {
+    'favorite_win': 0.15,      // 15% of BR wagered
+    'even_odds_win': 0.25,     // 25% of BR wagered
+    'underdog_win': 0.40,      // 40% of BR wagered
+    'parlay_2_team': 0.35,     // 35% of BR wagered
+    'parlay_3_team': 0.60,     // 60% of BR wagered
+    'parlay_4_team': 1.00,     // 100% of BR wagered
+    'parlay_5_plus': 1.50,     // 150% of BR wagered
+  };
+
+  try {
+    let conversionRate;
+    let vcAmount;
+
+    if (betType === 'parlay') {
+      // For parlays, we need to know the number of teams
+      // Since we don't have that info here, use a default rate
+      conversionRate = VC_CONVERSION_RATES['parlay_2_team'];
+      vcAmount = Math.floor(brWagered * conversionRate);
+    } else {
+      // Determine conversion rate based on odds
+      if (odds < -200) {
+        conversionRate = VC_CONVERSION_RATES['favorite_win'];
+      } else if (odds >= -110 && odds <= 110) {
+        conversionRate = VC_CONVERSION_RATES['even_odds_win'];
+      } else {
+        conversionRate = VC_CONVERSION_RATES['underdog_win'];
+      }
+
+      vcAmount = Math.floor(brWagered * conversionRate);
+    }
+
+    // Get current VC balance and check caps
+    const vcRef = db.collection('victory_coins').doc(userId);
+    const vcDoc = await vcRef.get();
+
+    if (!vcDoc.exists) {
+      // Initialize VC for user
+      const now = FieldValue.serverTimestamp();
+      await vcRef.set({
+        userId: userId,
+        balance: vcAmount,
+        lifetimeEarned: vcAmount,
+        lifetimeSpent: 0,
+        lastEarned: now,
+        dailyEarned: vcAmount,
+        weeklyEarned: vcAmount,
+        monthlyEarned: vcAmount,
+        lastResetDaily: now,
+        lastResetWeekly: now,
+        lastResetMonthly: now,
+        earningHistory: {
+          bet_wins: vcAmount
+        }
+      });
+    } else {
+      // Check and apply caps
+      const vcData = vcDoc.data();
+      const now = new Date();
+
+      // Check if caps need reset
+      let dailyEarned = vcData.dailyEarned || 0;
+      let weeklyEarned = vcData.weeklyEarned || 0;
+      let monthlyEarned = vcData.monthlyEarned || 0;
+
+      // Apply caps
+      const DAILY_CAP = 500;
+      const WEEKLY_CAP = 2500;
+      const MONTHLY_CAP = 8000;
+
+      const remainingDaily = Math.max(0, DAILY_CAP - dailyEarned);
+      const remainingWeekly = Math.max(0, WEEKLY_CAP - weeklyEarned);
+      const remainingMonthly = Math.max(0, MONTHLY_CAP - monthlyEarned);
+
+      const actualVCAmount = Math.min(vcAmount, remainingDaily, remainingWeekly, remainingMonthly);
+
+      if (actualVCAmount > 0) {
+        await vcRef.update({
+          balance: FieldValue.increment(actualVCAmount),
+          lifetimeEarned: FieldValue.increment(actualVCAmount),
+          dailyEarned: FieldValue.increment(actualVCAmount),
+          weeklyEarned: FieldValue.increment(actualVCAmount),
+          monthlyEarned: FieldValue.increment(actualVCAmount),
+          lastEarned: FieldValue.serverTimestamp(),
+          'earningHistory.bet_wins': FieldValue.increment(actualVCAmount)
+        });
+
+        // Log VC transaction
+        await db.collection('vc_transactions').add({
+          userId: userId,
+          type: 'earned',
+          amount: actualVCAmount,
+          source: 'bet_win',
+          metadata: {
+            brWagered: brWagered,
+            odds: odds,
+            conversionRate: conversionRate
+          },
+          timestamp: FieldValue.serverTimestamp()
+        });
+
+        console.log(`Awarded ${actualVCAmount} VC to user ${userId} (${conversionRate * 100}% of ${brWagered} BR)`);
+      } else {
+        console.log(`User ${userId} has reached VC earning caps`);
+      }
+    }
+  } catch (error) {
+    console.error(`Error awarding VC to user ${userId}:`, error);
+  }
+}
+
+/**
  * Calculates payout based on American odds
  */
 function calculatePayout(wagerAmount, odds) {
@@ -216,32 +332,32 @@ function calculatePayout(wagerAmount, odds) {
 }
 
 /**
- * Processes a payout to user's wallet
+ * Processes a payout to user's wallet and awards Victory Coins
  */
-async function processPayout(userId, amount, betId, gameId) {
+async function processPayout(userId, amount, betId, gameId, betData = null) {
   const walletRef = db.collection('users').doc(userId)
     .collection('wallet').doc('current');
-  
+
   const transactionRef = db.collection('transactions').doc();
-  
+
   try {
     await db.runTransaction(async (transaction) => {
       const walletDoc = await transaction.get(walletRef);
-      
+
       if (!walletDoc.exists) {
         throw new Error(`Wallet not found for user ${userId}`);
       }
-      
+
       const currentBalance = walletDoc.data().balance || 0;
       const newBalance = currentBalance + amount;
-      
+
       // Update wallet balance
       transaction.update(walletRef, {
         balance: newBalance,
         lastWin: FieldValue.serverTimestamp(),
         lifetimeWinnings: FieldValue.increment(amount)
       });
-      
+
       // Create transaction record
       transaction.set(transactionRef, {
         userId: userId,
@@ -254,19 +370,24 @@ async function processPayout(userId, amount, betId, gameId) {
         relatedId: betId,
         status: 'completed'
       });
-      
+
       // Update user stats
       const statsRef = db.collection('users').doc(userId)
         .collection('stats').doc('current');
-      
+
       transaction.set(statsRef, {
         wins: FieldValue.increment(1),
         totalWinnings: FieldValue.increment(amount),
         lastWin: FieldValue.serverTimestamp()
       }, { merge: true });
     });
-    
+
     console.log(`Paid out ${amount} BR to user ${userId} for bet ${betId}`);
+
+    // Award Victory Coins for winning bet
+    if (betData) {
+      await awardVictoryCoins(userId, betData.wager, betData.odds, betData.type);
+    }
   } catch (error) {
     console.error(`Failed to process payout for user ${userId}:`, error);
     throw error;

@@ -205,5 +205,22 @@ service cloud.firestore {
       allow update: if false;
       allow delete: if false; // Transactions cannot be deleted
     }
+
+    // Victory Coins collection
+    match /victory_coins/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if false; // Victory Coin documents cannot be deleted
+    }
+
+    // Victory Coin transactions collection
+    match /vc_transactions/{transactionId} {
+      allow read: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated();
+      allow update: if false;
+      allow delete: if false; // VC transactions cannot be deleted
+    }
   }
 }

@@ -24,7 +24,7 @@ import '../../widgets/power_card_widget.dart';
 import '../../widgets/intel_card_widget.dart';
 import '../card_detail_screen.dart';
 import '../../models/intel_product.dart';
-import '../../utils/dev_tools.dart';
+// import '../../utils/dev_tools.dart'; // Removed for production
 import '../premium/edge_screen.dart';
 import '../cards/card_inventory_screen.dart';
 import '../games/all_games_screen.dart';
@@ -734,33 +734,52 @@ class _HomeScreenState extends State<HomeScreen> {
         centerTitle: false,
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
-          // Power Cards Indicators
-          StreamBuilder<UserCardInventory>(
-            stream: _cardService.getUserCardInventory(),
-            builder: (context, snapshot) {
-              final inventory = snapshot.data ?? UserCardInventory.empty();
-              
-              return Row(
+          // Victory Coins Display
+          InkWell(
+            onTap: () {
+              setState(() {
+                _selectedIndex = 4; // Navigate to More tab
+                _pageController.animateToPage(
+                  4,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              });
+            },
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
+              decoration: BoxDecoration(
+                color: Colors.purple.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.purple, width: 1),
+              ),
+              child: Row(
                 children: [
-                  // Offensive Cards
-                  _buildCardIndicatorWithIcon(
-                    icon: PhosphorIconsDuotone.lightning,
-                    count: inventory.offensiveCount,
-                    type: CardType.offensive,
-                    context: context,
+                  Icon(
+                    PhosphorIconsDuotone.trophy,
+                    color: Colors.purple,
+                    size: 20,
                   ),
                   const SizedBox(width: 4),
-                  // Defensive Cards
-                  _buildCardIndicatorWithIcon(
-                    icon: PhosphorIconsDuotone.castleTurret,
-                    count: inventory.defensiveCount,
-                    type: CardType.defensive,
-                    context: context,
+                  StreamBuilder<Map<String, dynamic>>(
+                    stream: _walletService.getCombinedWalletStream(),
+                    builder: (context, snapshot) {
+                      final data = snapshot.data ?? {'br': 0, 'vc': 0};
+                      final vcBalance = data['vc'] ?? 0;
+                      return Text(
+                        '$vcBalance VC',
+                        style: const TextStyle(
+                          color: Colors.purple,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      );
+                    },
                   ),
-                  const SizedBox(width: 8),
                 ],
-              );
-            },
+              ),
+            ),
           ),
           // BR Balance Display
           InkWell(
@@ -3367,20 +3386,48 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            StreamBuilder<int>(
-                              stream: _walletService.getBalanceStream(),
+                            StreamBuilder<Map<String, dynamic>>(
+                              stream: _walletService.getCombinedWalletStream(),
                               builder: (context, snapshot) {
-                                final balance = snapshot.data ?? 0;
-                                return FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    '$balance BR Coins',
-                                    style: const TextStyle(
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.bold,
+                                final data = snapshot.data ?? {'br': 0, 'vc': 0};
+                                final brBalance = data['br'] ?? 0;
+                                final vcBalance = data['vc'] ?? 0;
+                                final vcModel = data['vcModel'];
+
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerLeft,
+                                      child: Text(
+                                        '$brBalance BR',
+                                        style: const TextStyle(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          PhosphorIconsRegular.star,
+                                          size: 16,
+                                          color: Colors.amber,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '$vcBalance Victory Coins',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.amber[700],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 );
                               },
                             ),
@@ -3425,13 +3472,67 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     },
                   ),
+                  // Victory Coins Earning Progress
+                  FutureBuilder<Map<String, int>>(
+                    future: _walletService.getVCStats(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return const SizedBox.shrink();
+
+                      final stats = snapshot.data!;
+                      if (stats['dailyEarned'] == 0 &&
+                          stats['weeklyEarned'] == 0 &&
+                          stats['monthlyEarned'] == 0) {
+                        return const SizedBox.shrink();
+                      }
+
+                      return Column(
+                        children: [
+                          const Divider(height: 24),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Victory Coin Earning Caps',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.amber[700],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              _buildVCProgressBar(
+                                'Daily',
+                                stats['dailyEarned']!,
+                                stats['dailyCap']!,
+                                Colors.blue,
+                              ),
+                              const SizedBox(height: 4),
+                              _buildVCProgressBar(
+                                'Weekly',
+                                stats['weeklyEarned']!,
+                                stats['weeklyCap']!,
+                                Colors.purple,
+                              ),
+                              const SizedBox(height: 4),
+                              _buildVCProgressBar(
+                                'Monthly',
+                                stats['monthlyEarned']!,
+                                stats['monthlyCap']!,
+                                Colors.green,
+                              ),
+                            ],
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Quick Actions
           _buildSectionHeader('⚡ Quick Actions', 'Common tasks'),
           const SizedBox(height: 12),
@@ -3508,60 +3609,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          
-          const SizedBox(height: 24),
-          
-          // DEV TOOLS SECTION (REMOVE IN PRODUCTION)
-          _buildSectionHeader('🔧 Dev Tools', 'Testing utilities'),
-          const SizedBox(height: 12),
-          Column(
-            children: [
-              _buildMenuTile(
-                'Set Balance to 99,999 BR',
-                PhosphorIconsRegular.coins,
-                Colors.orange,
-                () async {
-                  await DevTools.setTestBalance(amount: 99999);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Balance set to 99,999 BR!'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                  setState(() {}); // Refresh UI
-                },
-              ),
-              _buildMenuTile(
-                'Add Test Cards',
-                PhosphorIconsRegular.cards,
-                Colors.purple,
-                () async {
-                  await DevTools.initializeTestData();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Test cards added!'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                },
-              ),
-              _buildMenuTile(
-                'Create Firestore Index',
-                PhosphorIconsRegular.database,
-                Colors.blue,
-                () {
-                  // Open the index creation URL
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Copy this URL: ${DevTools.getIndexCreationUrl().substring(0, 50)}...'),
-                      duration: const Duration(seconds: 10),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-          
+
           const SizedBox(height: 24),
           
           // Settings Section
@@ -3678,6 +3726,56 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
   
+  Widget _buildVCProgressBar(String label, int earned, int cap, Color color) {
+    final progress = cap > 0 ? (earned / cap).clamp(0.0, 1.0) : 0.0;
+    final remaining = (cap - earned).clamp(0, cap);
+
+    return Row(
+      children: [
+        SizedBox(
+          width: 50,
+          child: Text(
+            label,
+            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+          ),
+        ),
+        Expanded(
+          child: Stack(
+            children: [
+              LinearProgressIndicator(
+                value: progress,
+                backgroundColor: color.withOpacity(0.2),
+                valueColor: AlwaysStoppedAnimation<Color>(color),
+                minHeight: 6,
+              ),
+              Positioned.fill(
+                child: Center(
+                  child: Text(
+                    '$earned / $cap VC',
+                    style: const TextStyle(
+                      fontSize: 9,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          '+$remaining',
+          style: TextStyle(
+            fontSize: 11,
+            color: progress >= 1.0 ? Colors.red : Colors.green,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildWalletStat(String label, String value, Color color) {
     return Expanded(
       child: Column(

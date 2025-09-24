@@ -22,7 +22,7 @@ import 'screens/betting/bet_selection_screen.dart';
 import 'screens/betting/fight_card_grid_screen.dart';
 import 'screens/betting/quick_pick_screen.dart';
 import 'screens/premium/edge_screen_v2.dart';
-import 'screens/splash/video_splash_screen.dart';
+// import 'screens/splash/video_splash_screen.dart'; // Disabled - going directly to login
 import 'screens/bets/active_bets_screen.dart';
 import 'screens/pools/my_pools_screen.dart';
 import 'screens/transactions/transaction_history_screen.dart';
@@ -73,9 +73,9 @@ class BraggingRightsApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.dark, // Force dark theme for Neon Cyber
-      initialRoute: '/',
+      initialRoute: '/login',
       routes: {
-        '/': (context) => const VideoSplashScreen(),
+        '/': (context) => const LoginScreen(),
         '/login': (context) => const LoginScreen(),
         '/sports-selection': (context) => const SportsSelectionScreen(),
         '/home': (context) => const home.HomeScreen(),

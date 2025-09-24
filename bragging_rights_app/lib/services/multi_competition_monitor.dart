@@ -5,6 +5,7 @@ import 'event_splitter_service.dart';
 import 'enhanced_espn_service.dart';
 import 'game_state_controller.dart';
 import 'pool_service.dart';
+import 'wallet_service.dart';
 
 // Monitors multiple competitions within a single event
 class MultiCompetitionMonitor {
@@ -20,6 +21,7 @@ class MultiCompetitionMonitor {
   final EnhancedESPNService _espnService = EnhancedESPNService();
   final GameStateController _stateController = GameStateController();
   final PoolService _poolService = PoolService();
+  final WalletService _walletService = WalletService();
 
   // Active event monitors
   final Map<String, Timer> _eventMonitors = {};
@@ -429,11 +431,33 @@ class MultiCompetitionMonitor {
       if (winners.isNotEmpty) {
         final pool = poolQuery.docs.first.data();
         final totalPot = pool['prizePool'] ?? 0;
+        final buyIn = pool['buyIn'] ?? 0;
         final winnerShare = totalPot ~/ winners.length;
-        
+
         for (final winnerId in winners) {
-          // TODO: Add winnings to wallet
-          print('Paying out $winnerShare BR to winner: $winnerId');
+          // Add BR winnings to wallet
+          await _walletService.addToWallet(
+            winnerId,
+            winnerShare,
+            'Fight pool winnings: ${fight.title}',
+            metadata: {
+              'poolId': poolId,
+              'fightId': fight.id,
+              'fightTitle': fight.title,
+            },
+          );
+
+          // Process Victory Coins for MMA picks
+          // For fight pools, award VC based on winning
+          await _walletService.processMMAPicks(
+            brWagered: buyIn,
+            correctPicks: 1,  // They picked the winner
+            totalFights: 1,    // Single fight pool
+            eventId: fight.id,
+            eventName: fight.title,
+          );
+
+          print('Paid out $winnerShare BR + Victory Coins to winner: $winnerId');
         }
       }
       
@@ -489,8 +513,18 @@ class MultiCompetitionMonitor {
       
       // Refund all participants
       for (final userId in participants) {
-        // TODO: Call wallet service to refund BR
-        print('Refunding $buyIn BR to user: $userId (Reason: $reason)');
+        // Refund BR to wallet (no VC since no win occurred)
+        await _walletService.addToWallet(
+          userId,
+          buyIn,
+          'Pool refund: $reason',
+          metadata: {
+            'poolId': poolId,
+            'matchId': match.id,
+            'reason': reason,
+          },
+        );
+        print('Refunded $buyIn BR to user: $userId (Reason: $reason)');
       }
       
       // Update pool status

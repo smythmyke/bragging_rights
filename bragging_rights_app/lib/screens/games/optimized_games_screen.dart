@@ -4,6 +4,7 @@ import '../../models/game_model.dart';
 import '../../services/optimized_games_service.dart';
 import '../../services/user_preferences_service.dart';
 import '../../services/wallet_service.dart';
+import '../../models/victory_coin_model.dart';
 import '../../services/card_service.dart';
 import 'package:intl/intl.dart';
 import '../pools/pool_selection_screen.dart';
@@ -728,33 +729,70 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
             },
           ),
           actions: [
-            // Power Cards Indicators
-            StreamBuilder<UserCardInventory>(
-              stream: _cardService.getUserCardInventory(),
-              builder: (context, snapshot) {
-                final inventory = snapshot.data ?? UserCardInventory.empty();
-
-                return Row(
+            // Victory Coins Display
+            InkWell(
+              onTap: () {
+                Navigator.of(context).pushNamed('/more');
+              },
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                margin: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
+                decoration: BoxDecoration(
+                  color: Colors.purple.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.purple, width: 1),
+                ),
+                child: Row(
                   children: [
-                    // Offensive Cards
-                    _buildCardIndicatorWithIcon(
-                      icon: PhosphorIconsDuotone.lightning,
-                      count: inventory.offensiveCount,
-                      type: CardType.offensive,
-                      context: context,
+                    Icon(
+                      PhosphorIconsDuotone.trophy,
+                      color: Colors.purple,
+                      size: 20,
                     ),
                     const SizedBox(width: 4),
-                    // Defensive Cards
-                    _buildCardIndicatorWithIcon(
-                      icon: PhosphorIconsDuotone.castleTurret,
-                      count: inventory.defensiveCount,
-                      type: CardType.defensive,
-                      context: context,
+                    StreamBuilder<VictoryCoinModel?>(
+                      stream: _walletService.getVCStream(),
+                      builder: (context, snapshot) {
+                        // Debug logging
+                        print('VC StreamBuilder: hasData=${snapshot.hasData}, data=${snapshot.data}, error=${snapshot.error}');
+
+                        if (snapshot.hasError) {
+                          print('VC Stream Error: ${snapshot.error}');
+                          return const Text(
+                            '-- VC',
+                            style: TextStyle(
+                              color: Colors.purple,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          );
+                        }
+
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Text(
+                            '... VC',
+                            style: TextStyle(
+                              color: Colors.purple,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          );
+                        }
+
+                        final vcBalance = snapshot.data?.balance ?? 0;
+                        print('VC Balance displayed: $vcBalance');
+
+                        return Text(
+                          '$vcBalance VC',
+                          style: const TextStyle(
+                            color: Colors.purple,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        );
+                      },
                     ),
-                    const SizedBox(width: 8),
                   ],
-                );
-              },
+                ),
+              ),
             ),
             // BR Balance Display
             InkWell(

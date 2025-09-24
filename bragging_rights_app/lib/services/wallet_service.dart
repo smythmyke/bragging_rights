@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'victory_coin_service.dart';
+import '../models/victory_coin_model.dart';
 
 class WalletService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final VictoryCoinService _vcService = VictoryCoinService();
 
   // Get current user ID
   String? get _userId => _auth.currentUser?.uid;
@@ -484,6 +487,185 @@ class WalletService {
       return {'won': won, 'lost': lost, 'pending': pending};
     });
   }
+
+  // Victory Coin Methods
+  Stream<VictoryCoinModel?> getVCStream() {
+    if (_userId == null) return Stream.value(null);
+    return _vcService.streamUserVC(_userId!);
+  }
+
+  Future<VictoryCoinModel?> getCurrentVC() async {
+    if (_userId == null) return null;
+    return await _vcService.getUserVC(_userId!);
+  }
+
+  Stream<Map<String, dynamic>> getCombinedWalletStream() {
+    if (_userId == null) {
+      return Stream.value({'br': 0, 'vc': null});
+    }
+
+    return getBalanceStream().asyncMap((brBalance) async {
+      final vcModel = await _vcService.getUserVC(_userId!);
+      return {
+        'br': brBalance,
+        'vc': vcModel?.balance ?? 0,
+        'vcModel': vcModel,
+      };
+    });
+  }
+
+  Future<bool> processWinnings({
+    required int brWagered,
+    required int brWon,
+    required double odds,
+    required String betType,
+    required String betId,
+    required String description,
+  }) async {
+    if (_userId == null) throw Exception('User not logged in');
+
+    try {
+      // Award BR winnings first
+      if (brWon > 0) {
+        await addWinnings(
+          amount: brWon,
+          betId: betId,
+          description: description,
+        );
+      }
+
+      // Calculate and award Victory Coins
+      final vcAmount = await _vcService.calculateVCForBet(
+        brWagered: brWagered,
+        odds: odds,
+        won: brWon > 0,
+        betType: betType,
+      );
+
+      if (vcAmount > 0) {
+        await _vcService.awardVC(
+          userId: _userId!,
+          amount: vcAmount,
+          source: 'bet_win',
+          metadata: {
+            'betId': betId,
+            'brWagered': brWagered,
+            'brWon': brWon,
+            'odds': odds,
+            'betType': betType,
+          },
+        );
+      }
+
+      return true;
+    } catch (e) {
+      print('Error processing winnings: $e');
+      return false;
+    }
+  }
+
+  Future<bool> processMMAPicks({
+    required int brWagered,
+    required int correctPicks,
+    required int totalFights,
+    required String eventId,
+    required String eventName,
+  }) async {
+    if (_userId == null) throw Exception('User not logged in');
+
+    try {
+      // Calculate and award Victory Coins for MMA card
+      final vcAmount = await _vcService.calculateVCForMMACard(
+        brWagered: brWagered,
+        correctPicks: correctPicks,
+        totalFights: totalFights,
+      );
+
+      if (vcAmount > 0) {
+        await _vcService.awardVC(
+          userId: _userId!,
+          amount: vcAmount,
+          source: 'mma_picks',
+          metadata: {
+            'eventId': eventId,
+            'eventName': eventName,
+            'correctPicks': correctPicks,
+            'totalFights': totalFights,
+            'accuracy': (correctPicks / totalFights * 100).toStringAsFixed(1),
+            'brWagered': brWagered,
+          },
+        );
+      }
+
+      return true;
+    } catch (e) {
+      print('Error processing MMA picks: $e');
+      return false;
+    }
+  }
+
+  Future<bool> processParlayWin({
+    required int brWagered,
+    required int brWon,
+    required int numTeams,
+    required String parlayId,
+    required String description,
+  }) async {
+    if (_userId == null) throw Exception('User not logged in');
+
+    try {
+      // Award BR winnings first
+      if (brWon > 0) {
+        await addWinnings(
+          amount: brWon,
+          betId: parlayId,
+          description: description,
+        );
+      }
+
+      // Calculate and award Victory Coins for parlay
+      final vcAmount = await _vcService.calculateVCForParlay(
+        brWagered: brWagered,
+        numTeams: numTeams,
+        won: brWon > 0,
+      );
+
+      if (vcAmount > 0) {
+        await _vcService.awardVC(
+          userId: _userId!,
+          amount: vcAmount,
+          source: 'parlay_win',
+          metadata: {
+            'parlayId': parlayId,
+            'numTeams': numTeams,
+            'brWagered': brWagered,
+            'brWon': brWon,
+          },
+        );
+      }
+
+      return true;
+    } catch (e) {
+      print('Error processing parlay win: $e');
+      return false;
+    }
+  }
+
+  Future<Map<String, int>> getVCStats() async {
+    if (_userId == null) return {'dailyEarned': 0, 'weeklyEarned': 0, 'monthlyEarned': 0};
+
+    final vcModel = await _vcService.getUserVC(_userId!);
+    if (vcModel == null) return {'dailyEarned': 0, 'weeklyEarned': 0, 'monthlyEarned': 0};
+
+    return {
+      'dailyEarned': vcModel.dailyEarned,
+      'weeklyEarned': vcModel.weeklyEarned,
+      'monthlyEarned': vcModel.monthlyEarned,
+      'dailyCap': VictoryCoinModel.DAILY_CAP,
+      'weeklyCap': VictoryCoinModel.WEEKLY_CAP,
+      'monthlyCap': VictoryCoinModel.MONTHLY_CAP,
+    };
+  }
 }
 
 // Transaction model
@@ -571,7 +753,6 @@ class WalletStats {
   }
 }
 
-// Custom exception for insufficient funds
 class InsufficientFundsException implements Exception {
   final String message;
   InsufficientFundsException(this.message);
