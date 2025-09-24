@@ -24,6 +24,7 @@ class MMAEvent {
   // Broadcast
   final List<String>? broadcasters; // ["ESPN+ PPV", "ESPN", "UFC Fight Pass"]
   final String? broadcastDetails;
+  final Map<String, String>? broadcastByCard; // {'main': 'DAZN PPV', 'prelim': 'DAZN'}
 
   // Status
   final String? status; // "Scheduled", "In Progress", "Final"
@@ -54,6 +55,7 @@ class MMAEvent {
     this.coMainEvent,
     this.broadcasters,
     this.broadcastDetails,
+    this.broadcastByCard,
     this.status,
     this.isLive = false,
     this.isComplete = false,

@@ -21,102 +21,175 @@ class FightCardItem extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        height: 135, // Increased height to prevent bottom overflow
-        child: Row(
+        height: fight.isMainEvent || fight.isCoMainEvent ? 155 : 135, // Dynamic height based on badges
+        child: Column(
           children: [
-            // Fighter 1
-            Expanded(
-              child: _buildFighterInfo(
-                fighter: fight.fighter1,
-                isRedCorner: true,
-                alignment: CrossAxisAlignment.center,
+            // Event badges (Main Event, Co-Main Event)
+            if (fight.isMainEvent || fight.isCoMainEvent)
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (fight.isMainEvent)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Colors.red.shade600, Colors.orange.shade600],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(4),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withOpacity(0.3),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Text(
+                          'MAIN EVENT',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    if (fight.isCoMainEvent && !fight.isMainEvent)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Colors.purple.shade600, Colors.blue.shade600],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(4),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.purple.withOpacity(0.3),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Text(
+                          'CO-MAIN EVENT',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
-
-            // Center Info
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+            // Fighters row
+            Expanded(
+              child: Row(
                 children: [
-                  // Weight Class
-                  Text(
-                    fight.weightClass ?? 'Catchweight',
-                    style: TextStyle(
-                      color: AppTheme.neonGreen,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
+                  // Fighter 1
+                  Expanded(
+                    child: _buildFighterInfo(
+                      fighter: fight.fighter1,
+                      isRedCorner: true,
+                      alignment: CrossAxisAlignment.center,
                     ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 2),
 
-                  // VS Badge
+                  // Center Info
                   Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppTheme.surfaceBlue,
-                      border: Border.all(
-                        color: AppTheme.borderCyan.withOpacity(0.3),
-                      ),
-                    ),
-                    child: const Text(
-                      'VS',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Weight Class
+                        Text(
+                          fight.weightClass ?? 'Catchweight',
+                          style: TextStyle(
+                            color: AppTheme.neonGreen,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+
+                        // VS Badge
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppTheme.surfaceBlue,
+                            border: Border.all(
+                              color: AppTheme.borderCyan.withOpacity(0.3),
+                            ),
+                          ),
+                          child: const Text(
+                            'VS',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 2),
+
+                        // Rounds
+                        Text(
+                          '${fight.rounds} RDS',
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: 9,
+                          ),
+                        ),
+
+                        // Title Badge
+                        if (fight.isTitleFight)
+                          Container(
+                            margin: const EdgeInsets.only(top: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                              ),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                            child: const Text(
+                              'TITLE FIGHT',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 7,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
 
-                  const SizedBox(height: 2),
-
-                  // Rounds
-                  Text(
-                    '${fight.rounds} RDS',
-                    style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 9,
+                  // Fighter 2
+                  Expanded(
+                    child: _buildFighterInfo(
+                      fighter: fight.fighter2,
+                      isRedCorner: false,
+                      alignment: CrossAxisAlignment.center,
                     ),
                   ),
-
-                  // Title Badge
-                  if (fight.isTitleFight)
-                    Container(
-                      margin: const EdgeInsets.only(top: 2),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 1,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-                        ),
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                      child: const Text(
-                        'TITLE',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 7,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
                 ],
-              ),
-            ),
-
-            // Fighter 2
-            Expanded(
-              child: _buildFighterInfo(
-                fighter: fight.fighter2,
-                isRedCorner: false,
-                alignment: CrossAxisAlignment.center,
               ),
             ),
           ],

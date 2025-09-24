@@ -22,6 +22,7 @@ class GameModel {
   final int? totalFights;
   final String? mainEventFighters;
   final String? espnId; // ESPN's game ID for API calls
+  final String? eventName; // Full event name for combat sports
 
   GameModel({
     required this.id,
@@ -45,6 +46,7 @@ class GameModel {
     this.totalFights,
     this.mainEventFighters,
     this.espnId,
+    this.eventName,
   });
 
   factory GameModel.fromFirestore(DocumentSnapshot doc) {
@@ -86,6 +88,7 @@ class GameModel {
       isCombatSport: data['isCombatSport'] ?? false,
       totalFights: data['totalFights'],
       mainEventFighters: data['mainEventFighters'],
+      eventName: data['eventName'],
     );
   }
 
@@ -131,6 +134,7 @@ class GameModel {
       'isCombatSport': isCombatSport,
       'totalFights': totalFights,
       'mainEventFighters': mainEventFighters,
+      'eventName': eventName,
     };
   }
 
@@ -160,6 +164,7 @@ class GameModel {
       'isCombatSport': isCombatSport,
       'totalFights': totalFights,
       'mainEventFighters': mainEventFighters,
+      'eventName': eventName,
     };
   }
   
@@ -198,6 +203,7 @@ class GameModel {
       totalFights: map['totalFights'],
       mainEventFighters: map['mainEventFighters'],
       espnId: map['espnId'] ?? map['externalId'] ?? map['eventId'],
+      eventName: map['eventName'],
     );
   }
   

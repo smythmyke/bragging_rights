@@ -432,10 +432,11 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
               title: 'MAIN CARD',
               fights: _event!.mainCardFights.reversed.toList(),
               color: AppTheme.neonGreen,
-              broadcast: _event!.broadcasters?.firstWhere(
-                (String b) => b.contains('PPV') || b.contains('ESPN+'),
-                orElse: () => 'ESPN+',
-              ) ?? 'ESPN+',
+              broadcast: _event!.broadcastByCard?['main'] ??
+                        _event!.broadcasters?.firstWhere(
+                          (String b) => b.contains('PPV') || b.contains('ESPN+'),
+                          orElse: () => 'ESPN+',
+                        ) ?? 'ESPN+',
             ),
             const SizedBox(height: 16),
           ],
@@ -446,10 +447,11 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
               title: 'PRELIMINARY CARD',
               fights: _event!.prelimFights.reversed.toList(),
               color: AppTheme.primaryCyan,
-              broadcast: _event!.broadcasters?.firstWhere(
-                (String b) => b.contains('ESPN') && !b.contains('+'),
-                orElse: () => 'ESPN',
-              ) ?? 'ESPN',
+              broadcast: _event!.broadcastByCard?['prelim'] ??
+                        _event!.broadcasters?.firstWhere(
+                          (String b) => b.contains('ESPN') && !b.contains('+'),
+                          orElse: () => 'ESPN',
+                        ) ?? 'ESPN',
             ),
             const SizedBox(height: 16),
           ],
@@ -460,7 +462,7 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
               title: 'EARLY PRELIMS',
               fights: _event!.earlyPrelimFights.reversed.toList(),
               color: Colors.grey,
-              broadcast: 'UFC Fight Pass',
+              broadcast: _event!.broadcastByCard?['early'] ?? 'UFC Fight Pass',
             ),
             const SizedBox(height: 16),
           ],

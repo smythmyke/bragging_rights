@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MMA Events Display Test (Updated Sept 2025)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .date-notice {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .header {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h2 {
+            color: #FF5722;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sport-icon {
+            width: 24px;
+            height: 24px;
+            background: #FF5722;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+
+        .event-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+
+        .event-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .event-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .promotion-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        .ufc { background: rgba(255, 0, 0, 0.2); color: #FF0000; }
+        .pfl { background: rgba(0, 123, 255, 0.2); color: #007BFF; }
+        .bellator { background: rgba(255, 152, 0, 0.2); color: #FF9800; }
+        .one { background: rgba(156, 39, 176, 0.2); color: #9C27B0; }
+
+        .event-date {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .event-name {
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .main-event {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .fight-count {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .fight-icon {
+            width: 14px;
+            height: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .event-meta {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .time-badge {
+            padding: 4px 8px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .venue {
+            font-size: 11px;
+            color: #888;
+        }
+
+        .live-badge {
+            background: #FF0000;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+
+        .tbd-notice {
+            font-size: 10px;
+            color: #999;
+            font-style: italic;
+            margin-top: 4px;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MMA Events Display Test</h1>
+        <div class="date-notice">Current Date: September 24, 2025</div>
+
+        <div class="header">
+            <h2>
+                <span class="sport-icon">🥊</span>
+                MMA - UPCOMING EVENTS
+            </h2>
+        </div>
+
+        <!-- PFL Events (Current/Upcoming) -->
+        <div class="event-card">
+            <div class="event-header">
+                <span class="promotion-badge pfl">PFL</span>
+                <span class="event-date">September 26, 2025</span>
+            </div>
+            <div class="event-name">PFL Europe 3: Nantes 2025</div>
+            <div class="main-event">Amin Ayoub vs Donovan Desmae</div>
+            <div class="fight-count">
+                <span class="fight-icon">🥊</span>
+                <span>10 fights on card</span>
+            </div>
+            <div class="event-meta">
+                <span class="time-badge">3:00 PM ET</span>
+                <span class="venue">Zenith Nantes, France</span>
+            </div>
+        </div>
+
+        <div class="event-card">
+            <div class="event-header">
+                <span class="promotion-badge pfl">PFL</span>
+                <span class="event-date">October 3, 2025</span>
+            </div>
+            <div class="event-name">PFL Champions Series Dubai</div>
+            <div class="main-event">Usman Nurmagomedov vs Paul Hughes</div>
+            <div class="fight-count">
+                <span class="fight-icon">🥊</span>
+                <span>8 fights on card</span>
+            </div>
+            <div class="event-meta">
+                <span class="time-badge">11:30 AM ET</span>
+                <span class="venue">Coca-Cola Arena, Dubai</span>
+            </div>
+        </div>
+
+        <div class="event-card">
+            <div class="event-header">
+                <span class="promotion-badge pfl">PFL</span>
+                <span class="event-date">November 15, 2025</span>
+            </div>
+            <div class="event-name">PFL World Championship 2025</div>
+            <div class="main-event">TBD vs TBD</div>
+            <div class="fight-count">
+                <span class="fight-icon">🥊</span>
+                <span>Championship Finals</span>
+            </div>
+            <div class="event-meta">
+                <span class="time-badge">8:00 PM ET</span>
+                <span class="venue">Madison Square Garden, NYC</span>
+            </div>
+            <div class="tbd-notice">* Finalists to be determined</div>
+        </div>
+
+        <!-- UFC Events -->
+        <div class="event-card">
+            <div class="event-header">
+                <span class="promotion-badge ufc">UFC</span>
+                <span class="event-date">October 4, 2025</span>
+            </div>
+            <div class="event-name">UFC 307: Pereira vs Rountree Jr</div>
+            <div class="main-event">Alex Pereira vs Khalil Rountree Jr</div>
+            <div class="fight-count">
+                <span class="fight-icon">🥊</span>
+                <span>13 fights on card</span>
+            </div>
+            <div class="event-meta">
+                <span class="time-badge">10:00 PM ET</span>
+                <span class="venue">Delta Center, Salt Lake City</span>
+            </div>
+        </div>
+
+        <div class="event-card">
+            <div class="event-header">
+                <span class="promotion-badge ufc">UFC</span>
+                <span class="event-date">October 18, 2025</span>
+            </div>
+            <div class="event-name">UFC Fight Night: Hernandez vs Pereira</div>
+            <div class="main-event">Anthony Hernandez vs Michel Pereira</div>
+            <div class="fight-count">
+                <span class="fight-icon">🥊</span>
+                <span>11 fights on card</span>
+            </div>
+            <div class="event-meta">
+                <span class="time-badge">7:00 PM ET</span>
+                <span class="venue">UFC APEX, Las Vegas</span>
+            </div>
+        </div>
+
+        <div class="event-card">
+            <div class="event-header">
+                <span class="promotion-badge ufc">UFC</span>
+                <span class="event-date">November 8, 2025</span>
+            </div>
+            <div class="event-name">UFC 308: Topuria vs Holloway</div>
+            <div class="main-event">Ilia Topuria vs Max Holloway</div>
+            <div class="fight-count">
+                <span class="fight-icon">🥊</span>
+                <span>12 fights on card</span>
+            </div>
+            <div class="event-meta">
+                <span class="time-badge">2:00 PM ET</span>
+                <span class="venue">Etihad Arena, Abu Dhabi</span>
+            </div>
+        </div>
+
+        <!-- Bellator Events -->
+        <div class="event-card">
+            <div class="event-header">
+                <span class="promotion-badge bellator">BELLATOR</span>
+                <span class="event-date">October 11, 2025</span>
+            </div>
+            <div class="event-name">Bellator Champions Series: San Diego</div>
+            <div class="main-event">Usman Nurmagomedov vs Alexandr Shabliy</div>
+            <div class="fight-count">
+                <span class="fight-icon">🥊</span>
+                <span>10 fights on card</span>
+            </div>
+            <div class="event-meta">
+                <span class="time-badge">10:00 PM ET</span>
+                <span class="venue">Pechanga Arena, San Diego</span>
+            </div>
+        </div>
+
+        <div class="event-card">
+            <div class="event-header">
+                <span class="promotion-badge bellator">BELLATOR</span>
+                <span class="event-date">November 1, 2025</span>
+            </div>
+            <div class="event-name">Bellator 306</div>
+            <div class="main-event">Johnny Eblen vs Fabian Edwards</div>
+            <div class="fight-count">
+                <span class="fight-icon">🥊</span>
+                <span>11 fights on card</span>
+            </div>
+            <div class="event-meta">
+                <span class="time-badge">9:00 PM ET</span>
+                <span class="venue">SAP Center, San Jose</span>
+            </div>
+        </div>
+
+        <div class="event-card">
+            <div class="event-header">
+                <span class="promotion-badge bellator">BELLATOR</span>
+                <span class="event-date">December 6, 2025</span>
+            </div>
+            <div class="event-name">Bellator Champions Series: London</div>
+            <div class="main-event">TBD vs TBD</div>
+            <div class="fight-count">
+                <span class="fight-icon">🥊</span>
+                <span>Main card TBA</span>
+            </div>
+            <div class="event-meta">
+                <span class="time-badge">4:00 PM ET</span>
+                <span class="venue">OVO Arena Wembley, London</span>
+            </div>
+            <div class="tbd-notice">* Card to be announced</div>
+        </div>
+
+        <!-- ONE Championship Events -->
+        <div class="event-card">
+            <div class="event-header">
+                <span class="promotion-badge one">ONE</span>
+                <span class="event-date">September 28, 2025</span>
+            </div>
+            <div class="event-name">ONE 169: Atlanta</div>
+            <div class="main-event">Anatoly Malykhin vs Reug Reug</div>
+            <div class="fight-count">
+                <span class="fight-icon">🥊</span>
+                <span>9 fights on card</span>
+            </div>
+            <div class="event-meta">
+                <span class="time-badge">8:00 PM ET</span>
+                <span class="venue">State Farm Arena, Atlanta</span>
+            </div>
+        </div>
+
+        <div class="event-card">
+            <div class="event-header">
+                <span class="promotion-badge one">ONE</span>
+                <span class="live-badge">LIVE</span>
+            </div>
+            <div class="event-name">ONE Fight Night 25</div>
+            <div class="main-event">Nico Carrillo vs Saemapetch</div>
+            <div class="fight-count">
+                <span class="fight-icon">🥊</span>
+                <span>8 fights on card</span>
+            </div>
+            <div class="event-meta">
+                <span class="time-badge">In Progress</span>
+                <span class="venue">Lumpinee Stadium, Bangkok</span>
+            </div>
+        </div>
+
+        <div class="event-card">
+            <div class="event-header">
+                <span class="promotion-badge one">ONE</span>
+                <span class="event-date">October 25, 2025</span>
+            </div>
+            <div class="event-name">ONE 170: Bangkok</div>
+            <div class="main-event">Tawanchai vs Jo Nattawut</div>
+            <div class="fight-count">
+                <span class="fight-icon">🥊</span>
+                <span>10 fights on card</span>
+            </div>
+            <div class="event-meta">
+                <span class="time-badge">5:00 AM ET</span>
+                <span class="venue">Impact Arena, Bangkok</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

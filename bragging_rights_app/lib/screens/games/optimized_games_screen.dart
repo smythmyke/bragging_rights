@@ -355,6 +355,23 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
         return Colors.grey;
     }
   }
+
+  Color _getPromotionColor(String promotion) {
+    switch (promotion.toUpperCase()) {
+      case 'UFC':
+        return Colors.red;
+      case 'PFL':
+        return Colors.blue;
+      case 'BELLATOR':
+        return Colors.orange;
+      case 'ONE':
+        return Colors.purple;
+      case 'BOXING':
+        return Colors.amber;
+      default:
+        return Colors.grey;
+    }
+  }
   
   Widget _buildSportCard(String sport, {bool isAllSports = false}) {
     final sportUpper = sport.toUpperCase();
@@ -588,30 +605,73 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
                       children: [
                         // Show event title for combat sports, regular matchup for others
                         if (game.isCombatSport && game.league != null) ...[
+                          // Promotion and Event Name
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: _getPromotionColor(game.league!).withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  game.league!.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: _getPromotionColor(game.league!),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _formatDateForDisplay(game.gameTime),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          // Event Name if available
+                          if (game.eventName != null) ...[
+                            Text(
+                              game.eventName!,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                          ],
+                          // Main Event Fighters
                           Text(
-                            game.league!, // Event name (UFC 311, Boxing Card, etc.)
+                            game.mainEventFighters ?? '${game.awayTeam} vs ${game.homeTeam}',
                             style: const TextStyle(
-                              fontSize: 18,
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            game.mainEventFighters ?? '${game.awayTeam} vs ${game.homeTeam}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[700],
-                            ),
-                          ),
                           if (game.totalFights != null && game.totalFights! > 1) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              '${game.totalFights} fights on card',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                                fontStyle: FontStyle.italic,
-                              ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.sports_mma,
+                                  size: 14,
+                                  color: Colors.grey[600],
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${game.totalFights} fights on card',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ] else ...[
@@ -1049,5 +1109,30 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
         ),
       ),
     );
+  }
+
+  String _formatDateForDisplay(DateTime date) {
+    final now = DateTime.now();
+    final localDate = date.toLocal();
+
+    // Check if it's today
+    if (localDate.year == now.year &&
+        localDate.month == now.month &&
+        localDate.day == now.day) {
+      return 'Today ${localDate.hour.toString().padLeft(2, '0')}:${localDate.minute.toString().padLeft(2, '0')}';
+    }
+
+    // Check if it's tomorrow
+    final tomorrow = now.add(const Duration(days: 1));
+    if (localDate.year == tomorrow.year &&
+        localDate.month == tomorrow.month &&
+        localDate.day == tomorrow.day) {
+      return 'Tomorrow ${localDate.hour.toString().padLeft(2, '0')}:${localDate.minute.toString().padLeft(2, '0')}';
+    }
+
+    // Otherwise show month/day
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[localDate.month - 1]} ${localDate.day}';
   }
 }

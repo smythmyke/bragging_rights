@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MMA Events Interactive Test - Click to View Fight Cards</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        .instructions {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 14px;
+            opacity: 0.9;
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .event-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .event-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .event-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .promotion-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .ufc { background: rgba(255, 0, 0, 0.2); color: #FF0000; }
+        .pfl { background: rgba(0, 123, 255, 0.2); color: #007BFF; }
+        .bellator { background: rgba(255, 152, 0, 0.2); color: #FF9800; }
+        .one { background: rgba(156, 39, 176, 0.2); color: #9C27B0; }
+
+        .event-date {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .event-name {
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .main-event {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .fight-count {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            overflow-y: auto;
+        }
+
+        .modal.active {
+            display: block;
+        }
+
+        .modal-content {
+            background: #1a1a2e;
+            margin: 20px auto;
+            width: 90%;
+            max-width: 700px;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            color: white;
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+
+        .close-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .modal-event-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .modal-event-info {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .fight-card-section {
+            padding: 20px;
+        }
+
+        .card-title {
+            color: #00ff88;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .prelim-title {
+            color: #00bcd4;
+        }
+
+        .early-title {
+            color: #9e9e9e;
+        }
+
+        .broadcast-info {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-left: auto;
+        }
+
+        .fight-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-left: 3px solid transparent;
+        }
+
+        .main-card-fight {
+            border-left-color: #00ff88;
+        }
+
+        .prelim-fight {
+            border-left-color: #00bcd4;
+        }
+
+        .early-fight {
+            border-left-color: #9e9e9e;
+        }
+
+        .fight-matchup {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .fighter-names {
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .vs {
+            color: #666;
+            margin: 0 8px;
+            font-size: 12px;
+        }
+
+        .fight-details {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .weight-class {
+            color: #ccc;
+            margin-right: 8px;
+        }
+
+        .title-fight {
+            color: gold;
+            font-weight: bold;
+        }
+
+        .main-event-badge {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            margin-left: 8px;
+        }
+
+        .no-fights {
+            color: #999;
+            font-style: italic;
+            padding: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MMA Events Interactive Test</h1>
+        <div class="instructions">
+            📱 Click on any event card to view the full fight card with all bouts separated by Main Card and Prelims
+            <br>
+            <button onclick="console.log('Test button clicked'); alert('JavaScript is working!');" style="margin-top: 10px; padding: 5px 10px; background: white; color: #667eea; border: none; border-radius: 4px; cursor: pointer;">Test JavaScript</button>
+        </div>
+
+        <!-- PFL Events -->
+        <div class="event-card" onclick="showEventDetails('pfl1')">
+            <div class="event-header">
+                <span class="promotion-badge pfl">PFL</span>
+                <span class="event-date">September 26, 2025</span>
+            </div>
+            <div class="event-name">PFL Europe 3: Nantes 2025</div>
+            <div class="main-event">Amin Ayoub vs Donovan Desmae</div>
+            <div class="fight-count">
+                <span>🥊 10 fights on card</span>
+            </div>
+        </div>
+
+        <div class="event-card" onclick="showEventDetails('pfl2')">
+            <div class="event-header">
+                <span class="promotion-badge pfl">PFL</span>
+                <span class="event-date">October 3, 2025</span>
+            </div>
+            <div class="event-name">PFL Champions Series Dubai</div>
+            <div class="main-event">Usman Nurmagomedov vs Paul Hughes</div>
+            <div class="fight-count">
+                <span>🥊 8 fights on card</span>
+            </div>
+        </div>
+
+        <div class="event-card" onclick="showEventDetails('pfl3')">
+            <div class="event-header">
+                <span class="promotion-badge pfl">PFL</span>
+                <span class="event-date">November 15, 2025</span>
+            </div>
+            <div class="event-name">PFL World Championship 2025</div>
+            <div class="main-event">Championship Finals</div>
+            <div class="fight-count">
+                <span>🥊 6 Title Fights</span>
+            </div>
+        </div>
+
+        <!-- UFC Events -->
+        <div class="event-card" onclick="showEventDetails('ufc1')">
+            <div class="event-header">
+                <span class="promotion-badge ufc">UFC</span>
+                <span class="event-date">October 4, 2025</span>
+            </div>
+            <div class="event-name">UFC 307: Pereira vs Rountree Jr</div>
+            <div class="main-event">Alex Pereira vs Khalil Rountree Jr</div>
+            <div class="fight-count">
+                <span>🥊 13 fights on card</span>
+            </div>
+        </div>
+
+        <!-- Bellator Events -->
+        <div class="event-card" onclick="showEventDetails('bellator1')">
+            <div class="event-header">
+                <span class="promotion-badge bellator">BELLATOR</span>
+                <span class="event-date">October 11, 2025</span>
+            </div>
+            <div class="event-name">Bellator Champions Series: San Diego</div>
+            <div class="main-event">Usman Nurmagomedov vs Alexandr Shabliy</div>
+            <div class="fight-count">
+                <span>🥊 10 fights on card</span>
+            </div>
+        </div>
+
+        <!-- ONE Events -->
+        <div class="event-card" onclick="showEventDetails('one1')">
+            <div class="event-header">
+                <span class="promotion-badge one">ONE</span>
+                <span class="event-date">September 28, 2025</span>
+            </div>
+            <div class="event-name">ONE 169: Atlanta</div>
+            <div class="main-event">Anatoly Malykhin vs Reug Reug</div>
+            <div class="fight-count">
+                <span>🥊 9 fights on card</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Event Details -->
+    <div id="eventModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close-btn" onclick="closeModal()">&times;</span>
+                <div id="modalEventTitle" class="modal-event-title"></div>
+                <div id="modalEventInfo" class="modal-event-info"></div>
+            </div>
+            <div id="modalFightCard" class="fight-card-section"></div>
+        </div>
+    </div>
+
+    <script>
+        // Fight card data for each event
+        const eventData = {
+            pfl1: {
+                title: "PFL Europe 3: Nantes 2025",
+                date: "September 26, 2025",
+                venue: "Zenith Nantes, France",
+                mainCard: [
+                    { fighter1: "Amin Ayoub", fighter2: "Donovan Desmae", weightClass: "Lightweight", isMainEvent: true },
+                    { fighter1: "Boris Mbarga Atangana", fighter2: "Jhony Gregory", weightClass: "Light Heavyweight" },
+                    { fighter1: "Connor Hughes", fighter2: "Gino van Steenis", weightClass: "Lightweight" },
+                    { fighter1: "Dean Garnett", fighter2: "Jan Ciepłowski", weightClass: "Bantamweight" },
+                    { fighter1: "Claudio Pacella", fighter2: "Aleksandr Chizov", weightClass: "Lightweight" }
+                ],
+                prelims: [
+                    { fighter1: "Gustavo Oliveira", fighter2: "Baris Adiguzel", weightClass: "Bantamweight" },
+                    { fighter1: "Darragh Kelly", fighter2: "Bakhtiyor Abdulaev", weightClass: "Lightweight" },
+                    { fighter1: "Sofiane Di Franco", fighter2: "Mark Ewen", weightClass: "Lightweight" },
+                    { fighter1: "Mandy Guedez Jr", fighter2: "Katie O'Sullivan", weightClass: "Women's Flyweight" },
+                    { fighter1: "Vincent del Guerra", fighter2: "Sofiane Aïssaoui", weightClass: "Middleweight" }
+                ],
+                broadcast: { main: "DAZN", prelim: "PFL App" }
+            },
+            pfl2: {
+                title: "PFL Champions Series Dubai",
+                date: "October 3, 2025",
+                venue: "Coca-Cola Arena, Dubai",
+                mainCard: [
+                    { fighter1: "Usman Nurmagomedov", fighter2: "Paul Hughes", weightClass: "Lightweight", isMainEvent: true, isTitle: true },
+                    { fighter1: "Bellal Muhammad", fighter2: "Jason Jackson", weightClass: "Welterweight" },
+                    { fighter1: "Taila Santos", fighter2: "Jena Bishop", weightClass: "Women's Flyweight" },
+                    { fighter1: "Raufeon Stots", fighter2: "Marcos Galvao", weightClass: "Bantamweight" }
+                ],
+                prelims: [
+                    { fighter1: "Dedrek Sanders", fighter2: "Hattan Alsaif", weightClass: "Featherweight" },
+                    { fighter1: "Vadim Nemkov", fighter2: "Tim Johnson", weightClass: "Heavyweight" },
+                    { fighter1: "AJ McKee", fighter2: "Sidney Outlaw", weightClass: "Lightweight" },
+                    { fighter1: "Nate Diaz", fighter2: "Jorge Masvidal", weightClass: "Welterweight" }
+                ],
+                broadcast: { main: "DAZN PPV", prelim: "DAZN" }
+            },
+            pfl3: {
+                title: "PFL World Championship 2025",
+                date: "November 15, 2025",
+                venue: "Madison Square Garden, NYC",
+                mainCard: [
+                    { fighter1: "TBD", fighter2: "TBD", weightClass: "Heavyweight Championship", isTitle: true },
+                    { fighter1: "TBD", fighter2: "TBD", weightClass: "Light Heavyweight Championship", isTitle: true },
+                    { fighter1: "TBD", fighter2: "TBD", weightClass: "Welterweight Championship", isTitle: true },
+                    { fighter1: "TBD", fighter2: "TBD", weightClass: "Lightweight Championship", isTitle: true },
+                    { fighter1: "TBD", fighter2: "TBD", weightClass: "Featherweight Championship", isTitle: true },
+                    { fighter1: "TBD", fighter2: "TBD", weightClass: "Women's Flyweight Championship", isTitle: true }
+                ],
+                prelims: [],
+                broadcast: { main: "ESPN+ PPV", prelim: "ESPN+" }
+            },
+            ufc1: {
+                title: "UFC 307: Pereira vs Rountree Jr",
+                date: "October 4, 2025",
+                venue: "Delta Center, Salt Lake City",
+                mainCard: [
+                    { fighter1: "Alex Pereira", fighter2: "Khalil Rountree Jr", weightClass: "Light Heavyweight", isMainEvent: true, isTitle: true },
+                    { fighter1: "Raquel Pennington", fighter2: "Julianna Peña", weightClass: "Women's Bantamweight", isTitle: true },
+                    { fighter1: "José Aldo", fighter2: "Mario Bautista", weightClass: "Bantamweight" },
+                    { fighter1: "Ketlen Vieira", fighter2: "Kayla Harrison", weightClass: "Women's Bantamweight" },
+                    { fighter1: "Roman Dolidze", fighter2: "Kevin Holland", weightClass: "Middleweight" }
+                ],
+                prelims: [
+                    { fighter1: "Stephen Thompson", fighter2: "Joaquin Buckley", weightClass: "Welterweight" },
+                    { fighter1: "Marina Rodriguez", fighter2: "Iasmin Lucindo", weightClass: "Women's Strawweight" },
+                    { fighter1: "Austin Hubbard", fighter2: "Alexander Hernandez", weightClass: "Lightweight" },
+                    { fighter1: "Cesar Almeida", fighter2: "Ihor Potieria", weightClass: "Middleweight" }
+                ],
+                earlyPrelims: [
+                    { fighter1: "Tatsuro Taira", fighter2: "Brandon Royval", weightClass: "Flyweight" },
+                    { fighter1: "Carla Esparza", fighter2: "Tecia Pennington", weightClass: "Women's Strawweight" },
+                    { fighter1: "Court McGee", fighter2: "Tim Means", weightClass: "Welterweight" },
+                    { fighter1: "Ovince Saint Preux", fighter2: "Ryan Spann", weightClass: "Light Heavyweight" }
+                ],
+                broadcast: { main: "ESPN+ PPV", prelim: "ESPN", early: "ESPN+" }
+            },
+            bellator1: {
+                title: "Bellator Champions Series: San Diego",
+                date: "October 11, 2025",
+                venue: "Pechanga Arena, San Diego",
+                mainCard: [
+                    { fighter1: "Usman Nurmagomedov", fighter2: "Alexandr Shabliy", weightClass: "Lightweight", isMainEvent: true, isTitle: true },
+                    { fighter1: "Lorenz Larkin", fighter2: "Levan Chokheli", weightClass: "Welterweight" },
+                    { fighter1: "Aaron Pico", fighter2: "Henry Corrales", weightClass: "Featherweight" },
+                    { fighter1: "Douglas Lima", fighter2: "Aaron Jeffery", weightClass: "Welterweight" },
+                    { fighter1: "Yancy Medeiros", fighter2: "Jora Ayvazyan", weightClass: "Lightweight" }
+                ],
+                prelims: [
+                    { fighter1: "Masayuki Kikuiri", fighter2: "Herman Terrado", weightClass: "Lightweight" },
+                    { fighter1: "Sumiko Inaba", fighter2: "Jackie Cataline", weightClass: "Women's Flyweight" },
+                    { fighter1: "Josh Hokit", fighter2: "Sean Rose", weightClass: "Lightweight" },
+                    { fighter1: "Aysia Cortez", fighter2: "Mackenzie Stiller", weightClass: "Women's Featherweight" },
+                    { fighter1: "Bryce Meredith", fighter2: "John MaCalolooy", weightClass: "Bantamweight" }
+                ],
+                broadcast: { main: "MAX", prelim: "Bellator App" }
+            },
+            one1: {
+                title: "ONE 169: Atlanta",
+                date: "September 28, 2025",
+                venue: "State Farm Arena, Atlanta",
+                mainCard: [
+                    { fighter1: "Anatoly Malykhin", fighter2: "Reug Reug", weightClass: "Heavyweight", isMainEvent: true, isTitle: true },
+                    { fighter1: "Christian Lee", fighter2: "Alibeg Rasulov", weightClass: "Lightweight", isTitle: true },
+                    { fighter1: "Victoria Lee", fighter2: "Zeba Bano", weightClass: "Women's Atomweight" },
+                    { fighter1: "Maurice Abevi", fighter2: "Saemapetch Fairtex", weightClass: "Bantamweight Muay Thai" }
+                ],
+                prelims: [
+                    { fighter1: "Eddie Abasolo", fighter2: "Mohamed Younes Rabah", weightClass: "Featherweight" },
+                    { fighter1: "Amir Aliakbari", fighter2: "Mauro Cerilli", weightClass: "Heavyweight" },
+                    { fighter1: "Thongpoon PK Saenchai", fighter2: "Ellis Barboza", weightClass: "Strawweight Muay Thai" },
+                    { fighter1: "Eko Roni Saputra", fighter2: "Kang Ji Won", weightClass: "Flyweight" },
+                    { fighter1: "Johan Ghazali", fighter2: "Nguyen Tran Duy Nhat", weightClass: "Flyweight Muay Thai" }
+                ],
+                broadcast: { main: "Amazon Prime", prelim: "ONE App" }
+            }
+        };
+
+        function showEventDetails(eventId) {
+            console.log('Click detected for event:', eventId);
+
+            const event = eventData[eventId];
+            if (!event) {
+                console.error('Event not found:', eventId);
+                return;
+            }
+            console.log('Event data found:', event.title);
+
+            // Set modal header
+            document.getElementById('modalEventTitle').textContent = event.title;
+            document.getElementById('modalEventInfo').textContent = `${event.date} • ${event.venue}`;
+            console.log('Modal header updated');
+
+            // Build fight card HTML
+            let cardHTML = '';
+
+            // Main Card
+            if (event.mainCard && event.mainCard.length > 0) {
+                cardHTML += `
+                    <div class="card-title">
+                        MAIN CARD
+                        <span class="broadcast-info">${event.broadcast.main}</span>
+                    </div>
+                `;
+                event.mainCard.forEach(fight => {
+                    cardHTML += createFightHTML(fight, 'main-card-fight');
+                });
+            }
+
+            // Preliminary Card
+            if (event.prelims && event.prelims.length > 0) {
+                cardHTML += `
+                    <div class="card-title prelim-title">
+                        PRELIMINARY CARD
+                        <span class="broadcast-info">${event.broadcast.prelim}</span>
+                    </div>
+                `;
+                event.prelims.forEach(fight => {
+                    cardHTML += createFightHTML(fight, 'prelim-fight');
+                });
+            }
+
+            // Early Prelims (UFC only in this example)
+            if (event.earlyPrelims && event.earlyPrelims.length > 0) {
+                cardHTML += `
+                    <div class="card-title early-title">
+                        EARLY PRELIMS
+                        <span class="broadcast-info">${event.broadcast.early}</span>
+                    </div>
+                `;
+                event.earlyPrelims.forEach(fight => {
+                    cardHTML += createFightHTML(fight, 'early-fight');
+                });
+            }
+
+            // If no fights
+            if (!cardHTML) {
+                cardHTML = '<div class="no-fights">Fight card to be announced</div>';
+            }
+
+            document.getElementById('modalFightCard').innerHTML = cardHTML;
+            console.log('Fight card HTML set');
+
+            // Show modal
+            const modal = document.getElementById('eventModal');
+            if (modal) {
+                modal.classList.add('active');
+                console.log('Modal should be visible now');
+            } else {
+                console.error('Modal element not found!');
+            }
+        }
+
+        function createFightHTML(fight, cardClass) {
+            let badges = '';
+            if (fight.isMainEvent) badges += '<span class="main-event-badge">MAIN EVENT</span>';
+            if (fight.isTitle) badges += '<span class="main-event-badge" style="background: linear-gradient(135deg, gold, #ff9800);">TITLE FIGHT</span>';
+
+            return `
+                <div class="fight-item ${cardClass}">
+                    <div class="fight-matchup">
+                        <div class="fighter-names">
+                            ${fight.fighter1} <span class="vs">vs</span> ${fight.fighter2}
+                            ${badges}
+                        </div>
+                    </div>
+                    <div class="fight-details">
+                        <span class="weight-class">${fight.weightClass}</span>
+                        ${fight.isTitle ? '<span class="title-fight">🏆 Championship</span>' : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function closeModal() {
+            document.getElementById('eventModal').classList.remove('active');
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('eventModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Verify everything is loaded
+        window.onload = function() {
+            console.log('Page loaded successfully');
+            console.log('Event data available:', Object.keys(eventData));
+            console.log('Modal element:', document.getElementById('eventModal') ? 'Found' : 'Not found');
+            console.log('Click handlers attached to', document.querySelectorAll('[onclick]').length, 'elements');
+        }
+    </script>
+</body>
+</html>

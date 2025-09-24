@@ -1066,6 +1066,47 @@ class MMAService {
     }
   }
 
+  /// Get promotion-specific broadcast information
+  Map<String, String> _getPromotionBroadcasts(String promotion, {bool isPPV = false, String? eventName}) {
+    // Check if it's a PPV event based on event name
+    if (eventName != null) {
+      isPPV = isPPV ||
+             eventName.contains(RegExp(r'\d{3}')) || // UFC 307, etc.
+             eventName.toLowerCase().contains('championship') ||
+             eventName.toLowerCase().contains('ppv');
+    }
+
+    switch (promotion.toUpperCase()) {
+      case 'PFL':
+        return {
+          'main': isPPV ? 'DAZN PPV' : 'DAZN',
+          'prelim': 'PFL App',
+        };
+      case 'UFC':
+        return {
+          'main': isPPV ? 'ESPN+ PPV' : 'ESPN+',
+          'prelim': 'ESPN',
+          'early': 'ESPN+',
+        };
+      case 'BELLATOR':
+        return {
+          'main': 'MAX',
+          'prelim': 'Bellator App',
+        };
+      case 'ONE':
+      case 'ONE CHAMPIONSHIP':
+        return {
+          'main': 'Amazon Prime',
+          'prelim': 'ONE App',
+        };
+      default:
+        return {
+          'main': isPPV ? 'PPV' : 'Streaming',
+          'prelim': 'Streaming',
+        };
+    }
+  }
+
   /// Generate fighter image URL
   String? _generateFighterImageUrl(String fighterId, String? fighterName) {
     // Skip if it's a placeholder ID - use a generic image
@@ -1318,13 +1359,18 @@ class MMAService {
     final promotion = _detectPromotion(eventName);
     final promotionLogo = _getPromotionLogoUrl(promotion);
 
+    // Get promotion-specific broadcasts
+    final broadcasts = _getPromotionBroadcasts(promotion, eventName: eventName);
+    final broadcastList = broadcasts.values.toSet().toList(); // Unique list of all broadcasts
+
     return MMAEvent(
       id: eventId,
       name: eventName,
       date: eventDate,
       venueName: gameData['venue'],
       fights: fights,
-      broadcasters: gameData['broadcast'] != null ? [gameData['broadcast']] : [],
+      broadcasters: broadcastList.isNotEmpty ? broadcastList : null,
+      broadcastByCard: broadcasts,  // Store structured broadcast info
       promotion: promotion,
       promotionLogoUrl: promotionLogo,
       espnEventId: eventId,
