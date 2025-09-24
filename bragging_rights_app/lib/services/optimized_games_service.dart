@@ -14,6 +14,7 @@ import 'odds_api_service.dart';
 import 'firestore_cache_service.dart';
 import 'live_score_update_service.dart';
 import 'mma_id_fix.dart';
+import '../utils/mma_debug_logger.dart';
 
 /// Optimized games service with intelligent loading and timeframe categorization
 class OptimizedGamesService {
@@ -784,6 +785,9 @@ class OptimizedGamesService {
 
     debugPrint('🥊 Grouping ${fights.length} $sport fights into events...');
 
+    // Log all incoming fights for debugging
+    MMADebugLogger.logEventGrouping(fights, windowName: 'All incoming fights from Odds API');
+
     // Filter out past events first
     final now = DateTime.now();
     final pastCutoff = now.subtract(const Duration(hours: 24)); // Allow recently completed events
@@ -838,7 +842,29 @@ class OptimizedGamesService {
           // Sort by time to find main event (usually last)
           matchedFights.sort((a, b) => a.gameTime.compareTo(b.gameTime));
 
-          final mainEvent = matchedFights.last;
+          // Log main event selection process
+          MMADebugLogger.logMainEventSelection(matchedFights, null);
+
+          // Check if ESPN provided main event info
+          GameModel? mainEvent;
+          if (espnEvent['mainEventFighters'] != null) {
+            // Try to find the designated main event
+            final mainEventFighters = espnEvent['mainEventFighters'].toString().toLowerCase();
+            for (final fight in matchedFights) {
+              final fightStr = '${fight.awayTeam} vs ${fight.homeTeam}'.toLowerCase();
+              if (mainEventFighters.contains(fight.awayTeam.toLowerCase()) ||
+                  mainEventFighters.contains(fight.homeTeam.toLowerCase())) {
+                mainEvent = fight;
+                debugPrint('   ✅ Found designated main event: ${fight.awayTeam} vs ${fight.homeTeam}');
+                break;
+              }
+            }
+          }
+
+          // Fallback: Use last fight (typically main event)
+          mainEvent ??= matchedFights.last;
+
+          MMADebugLogger.logMainEventSelection(matchedFights, mainEvent);
           final eventName = espnEvent['name'] ?? '${mainEvent.awayTeam} vs ${mainEvent.homeTeam}';
 
           // Create safe Firestore ID (only used for Boxing or when ESPN ID unavailable)
@@ -1268,6 +1294,12 @@ class OptimizedGamesService {
 
   /// Group fights by time windows as fallback
   List<GameModel> _groupByTimeWindows(List<GameModel> fights, String sport) {
+    MMADebugLogger.logWarning('Using time-based grouping fallback', details: {
+      'sport': sport,
+      'fightsCount': fights.length,
+      'reason': 'No ESPN event data available',
+    });
+
     const windowHours = 6; // 6-hour window for same event
     final Map<String, List<GameModel>> groups = {};
     final now = DateTime.now();
@@ -1310,10 +1342,30 @@ class OptimizedGamesService {
         continue;
       }
 
-      // Sort by time - latest is usually main event
-      eventFights.sort((a, b) => a.gameTime.compareTo(b.gameTime));
+      // Sort fights by importance and time to find the actual main event
+      eventFights.sort((a, b) {
+        // First sort by importance score
+        final scoreA = _getFightImportance(a);
+        final scoreB = _getFightImportance(b);
+        if (scoreA != scoreB) {
+          return scoreB.compareTo(scoreA); // Higher score first
+        }
+        // Then by time (later fights are usually more important)
+        return b.gameTime.compareTo(a.gameTime);
+      });
 
-      final mainEvent = eventFights.last;
+      // Log the selection process
+      debugPrint('🎯 Selecting main event from ${eventFights.length} fights in time window');
+      for (int i = 0; i < eventFights.length; i++) {
+        final f = eventFights[i];
+        final score = _getFightImportance(f);
+        debugPrint('  [$i] ${f.awayTeam} vs ${f.homeTeam} - Score: $score, Time: ${f.gameTime}');
+      }
+
+      // Select main event - now the first after sorting by importance
+      final mainEvent = eventFights.first;
+      debugPrint('  ✅ Selected: ${mainEvent.awayTeam} vs ${mainEvent.homeTeam}');
+
       final fighterNames = '${mainEvent.awayTeam} vs ${mainEvent.homeTeam}';
 
       // For MMA/Boxing, create a proper event name with promotion

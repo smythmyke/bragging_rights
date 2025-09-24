@@ -243,6 +243,17 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
     debugPrint('  - Sport: ${game.sport}');
     debugPrint('  - Game: ${game.awayTeam} vs ${game.homeTeam}');
     debugPrint('  - Game ID: ${game.id}');
+
+    // Additional logging for MMA events
+    if (game.sport == 'MMA') {
+      debugPrint('  📍 MMA Event Details:');
+      debugPrint('    - Event Name: ${game.eventName}');
+      debugPrint('    - Main Event Fighters: ${game.mainEventFighters}');
+      debugPrint('    - League/Promotion: ${game.league}');
+      debugPrint('    - Total Fights: ${game.totalFightsCount}');
+      debugPrint('    - Has Fights List: ${game.fights != null ? game.fights!.length : 0} fights');
+    }
+
     debugPrint('  - Navigating to /game-details');
 
     // Navigate to game details page
