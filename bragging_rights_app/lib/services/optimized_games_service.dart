@@ -781,159 +781,169 @@ class OptimizedGamesService {
 
   /// Group MMA/Boxing fights by event using ESPN event structure
   Future<List<GameModel>> _groupCombatSportsByEvent(List<GameModel> fights, String sport) async {
-    if (fights.isEmpty) return fights;
+    debugPrint('🥊 Processing $sport events...');
 
-    debugPrint('🥊 Grouping ${fights.length} $sport fights into events...');
+    // Fetch ESPN events for the sport - these are our primary source
+    final espnEvents = await _fetchESPNEvents(sport);
 
-    // Log all incoming fights for debugging
-    MMADebugLogger.logEventGrouping(fights, windowName: 'All incoming fights from Odds API');
-
-    // Filter out past events first
-    final now = DateTime.now();
-    final pastCutoff = now.subtract(const Duration(hours: 24)); // Allow recently completed events
-    final filteredFights = fights.where((fight) => fight.gameTime.isAfter(pastCutoff)).toList();
-
-    if (filteredFights.isEmpty) {
-      debugPrint('All fights are in the past, returning empty list');
+    if (espnEvents.isEmpty) {
+      debugPrint('No ESPN events found');
+      // If we have odds fights but no ESPN events, group by time
+      if (fights.isNotEmpty) {
+        debugPrint('Falling back to time-based grouping for ${fights.length} fights');
+        return _groupByTimeWindows(fights, sport);
+      }
       return [];
     }
 
-    debugPrint('📅 Filtered to ${filteredFights.length} future/recent fights from ${fights.length} total');
+    debugPrint('📡 Found ${espnEvents.length} ESPN events');
 
-    try {
-      // Fetch ESPN events for the sport
-      final espnEvents = await _fetchESPNEvents(sport);
+    // Filter out past events
+    final now = DateTime.now();
+    final pastCutoff = now.subtract(const Duration(hours: 24));
 
-      if (espnEvents.isEmpty) {
-        debugPrint('No ESPN events found, falling back to time-based grouping');
-        return _groupByTimeWindows(filteredFights, sport);
+    final List<GameModel> groupedEvents = [];
+    final Set<String> usedFightIds = {};
+
+    // Create events from ESPN data, enhance with odds when available
+    for (final espnEvent in espnEvents) {
+      // Parse event date
+      DateTime? eventDate;
+      if (espnEvent['date'] != null) {
+        try {
+          eventDate = DateTime.parse(espnEvent['date']);
+          if (eventDate.isBefore(pastCutoff)) {
+            debugPrint('Skipping past event: ${espnEvent['name']}');
+            continue;
+          }
+        } catch (e) {
+          debugPrint('Error parsing date for ${espnEvent['name']}: $e');
+        }
       }
 
-      final List<GameModel> groupedEvents = [];
-      final Set<String> usedFightIds = {};
+      final espnFights = espnEvent['fights'] ?? [];
+      if (espnFights.isEmpty) continue;
 
-      // Match fights to ESPN events
-      for (final espnEvent in espnEvents) {
-        final matchedFights = <GameModel>[];
+      final eventName = espnEvent['name'] ?? 'Unknown Event';
+      final promotion = espnEvent['league'] ?? espnEvent['promotion'] ?? sport.toUpperCase();
 
-        for (final espnFight in espnEvent['fights'] ?? []) {
-          final espnFighter1 = (espnFight['fighter1'] ?? '').toLowerCase();
-          final espnFighter2 = (espnFight['fighter2'] ?? '').toLowerCase();
+      // Determine main event from ESPN data (last fight is typically main event)
+      final mainEventFight = espnFights.last;
+      final mainFighter1 = mainEventFight['fighter1'] ?? 'TBD';
+      final mainFighter2 = mainEventFight['fighter2'] ?? 'TBD';
+
+      debugPrint('🎯 Creating event: $eventName');
+      debugPrint('   Promotion: $promotion');
+      debugPrint('   Total fights: ${espnFights.length}');
+      debugPrint('   Main Event: $mainFighter1 vs $mainFighter2');
+
+      // Try to match with odds data for enhanced information
+      final matchedOddsFights = <GameModel>[];
+      Map<String, dynamic>? mainEventOdds;
+
+      if (fights.isNotEmpty) {
+        for (final espnFight in espnFights) {
+          final espnF1 = (espnFight['fighter1'] ?? '').toLowerCase();
+          final espnF2 = (espnFight['fighter2'] ?? '').toLowerCase();
 
           // Find matching fight in Odds API data
-          for (final oddsFight in filteredFights) {
+          for (final oddsFight in fights) {
             if (usedFightIds.contains(oddsFight.id)) continue;
 
             final oddsF1 = oddsFight.awayTeam.toLowerCase();
             final oddsF2 = oddsFight.homeTeam.toLowerCase();
 
-            // Flexible name matching - check last names
-            bool isMatch = _fightersMatch(espnFighter1, espnFighter2, oddsF1, oddsF2);
-
-            if (isMatch) {
-              matchedFights.add(oddsFight);
+            if (_fightersMatch(espnF1, espnF2, oddsF1, oddsF2)) {
+              matchedOddsFights.add(oddsFight);
               usedFightIds.add(oddsFight.id);
+
+              // Check if this is the main event
+              if (espnFight == mainEventFight) {
+                mainEventOdds = {
+                  'homeTeam': oddsFight.homeTeam,
+                  'awayTeam': oddsFight.awayTeam,
+                  'odds': oddsFight.odds,
+                  'gameTime': oddsFight.gameTime,
+                };
+              }
               break;
             }
           }
         }
+      }
 
-        if (matchedFights.isNotEmpty) {
-          // Sort by time to find main event (usually last)
-          matchedFights.sort((a, b) => a.gameTime.compareTo(b.gameTime));
+      // Use odds data for main event if available, otherwise use ESPN data
+      final homeTeam = mainEventOdds?['homeTeam'] ?? mainFighter2;
+      final awayTeam = mainEventOdds?['awayTeam'] ?? mainFighter1;
+      final gameTime = mainEventOdds?['gameTime'] ?? eventDate ?? DateTime.now().add(const Duration(days: 7));
 
-          // Log main event selection process
-          MMADebugLogger.logMainEventSelection(matchedFights, null);
+      // Create safe Firestore ID
+      final espnEventId = espnEvent['id']?.toString();
+      final safeId = '${sport.toLowerCase()}_${eventName.toLowerCase()
+        .replaceAll(' ', '_')
+        .replaceAll('/', '_')
+        .replaceAll(':', '')
+        .replaceAll('.', '')
+        .replaceAll('vs', 'v')}';
 
-          // Check if ESPN provided main event info
-          GameModel? mainEvent;
-          if (espnEvent['mainEventFighters'] != null) {
-            // Try to find the designated main event
-            final mainEventFighters = espnEvent['mainEventFighters'].toString().toLowerCase();
-            for (final fight in matchedFights) {
-              final fightStr = '${fight.awayTeam} vs ${fight.homeTeam}'.toLowerCase();
-              if (mainEventFighters.contains(fight.awayTeam.toLowerCase()) ||
-                  mainEventFighters.contains(fight.homeTeam.toLowerCase())) {
-                mainEvent = fight;
-                debugPrint('   ✅ Found designated main event: ${fight.awayTeam} vs ${fight.homeTeam}');
-                break;
-              }
-            }
+      final eventId = espnEventId ?? safeId;
+
+      // Build fights list with all ESPN fights, enhanced with odds where available
+      final allFights = <Map<String, dynamic>>[];
+      for (int i = 0; i < espnFights.length; i++) {
+        final espnFight = espnFights[i];
+        final fighter1 = espnFight['fighter1'] ?? 'TBD';
+        final fighter2 = espnFight['fighter2'] ?? 'TBD';
+
+        // Find matching odds fight if any
+        GameModel? matchingOddsFight;
+        for (final oddsFight in matchedOddsFights) {
+          if (_fightersMatch(fighter1.toLowerCase(), fighter2.toLowerCase(),
+              oddsFight.awayTeam.toLowerCase(), oddsFight.homeTeam.toLowerCase())) {
+            matchingOddsFight = oddsFight;
+            break;
           }
-
-          // Fallback: Use last fight (typically main event)
-          mainEvent ??= matchedFights.last;
-
-          MMADebugLogger.logMainEventSelection(matchedFights, mainEvent);
-          final eventName = espnEvent['name'] ?? '${mainEvent.awayTeam} vs ${mainEvent.homeTeam}';
-
-          // Create safe Firestore ID (only used for Boxing or when ESPN ID unavailable)
-          final safeId = '${sport.toLowerCase()}_${eventName.toLowerCase()
-            .replaceAll(' ', '_')
-            .replaceAll('/', '_')
-            .replaceAll(':', '')
-            .replaceAll('.', '')
-            .replaceAll('vs', 'v')}';
-
-          // For MMA, use ESPN event ID directly; for Boxing use safe ID
-          final espnEventId = espnEvent['id']?.toString();
-          final eventId = (sport.toUpperCase() == 'MMA' && espnEventId != null)
-              ? espnEventId
-              : safeId;
-
-          debugPrint('🎯 Event: $eventName with ${matchedFights.length} fights');
-          debugPrint('   Main Event: ${mainEvent.awayTeam} vs ${mainEvent.homeTeam}');
-          debugPrint('   Using ID: $eventId (ESPN: $espnEventId)');
-
-          final groupedEvent = GameModel(
-            id: eventId,
-            espnId: espnEventId,  // Store ESPN ID for API calls
-            sport: sport.toUpperCase(),
-            homeTeam: mainEvent.homeTeam,
-            awayTeam: mainEvent.awayTeam,
-            gameTime: matchedFights.first.gameTime, // Event starts with first fight
-            status: mainEvent.status,
-            venue: espnEvent['venue'] ?? mainEvent.venue,
-            broadcast: mainEvent.broadcast,
-            league: espnEvent['league'] ?? espnEvent['promotion'] ?? 'MMA',  // Use promotion from ESPN
-            homeTeamLogo: mainEvent.homeTeamLogo,
-            awayTeamLogo: mainEvent.awayTeamLogo,
-            isCombatSport: true,
-            totalFights: matchedFights.length,
-            mainEventFighters: '${mainEvent.awayTeam} vs ${mainEvent.homeTeam}',
-            eventName: eventName, // Store the full event name
-            fights: matchedFights.map((f) => {
-              'id': f.id,
-              'fighter1': f.awayTeam,
-              'fighter2': f.homeTeam,
-              'time': f.gameTime.toIso8601String(),
-              'odds': f.odds,
-            }).toList(),
-          );
-
-          groupedEvents.add(groupedEvent);
         }
+
+        allFights.add({
+          'id': matchingOddsFight?.id ?? 'espn_${eventId}_$i',
+          'fighter1': matchingOddsFight?.awayTeam ?? fighter1,
+          'fighter2': matchingOddsFight?.homeTeam ?? fighter2,
+          'time': matchingOddsFight?.gameTime.toIso8601String() ?? gameTime.toIso8601String(),
+          'odds': matchingOddsFight?.odds,
+          'cardPosition': i == espnFights.length - 1 ? 'main' : (i >= espnFights.length - 5 ? 'main' : 'prelim'),
+          'fightOrder': i,
+        });
       }
 
-      // Handle unmatched fights with time-based grouping
-      final unmatchedFights = filteredFights.where((f) => !usedFightIds.contains(f.id)).toList();
-      if (unmatchedFights.isNotEmpty) {
-        debugPrint('${unmatchedFights.length} unmatched fights, grouping by time windows');
-        final timeGrouped = _groupByTimeWindows(unmatchedFights, sport);
-        groupedEvents.addAll(timeGrouped);
-      }
+      final groupedEvent = GameModel(
+        id: eventId,
+        espnId: espnEventId,
+        sport: sport.toUpperCase(),
+        homeTeam: homeTeam,
+        awayTeam: awayTeam,
+        gameTime: gameTime,
+        status: 'scheduled',
+        venue: espnEvent['venue'],
+        broadcast: null,
+        league: promotion,
+        homeTeamLogo: null,
+        awayTeamLogo: null,
+        isCombatSport: true,
+        totalFights: espnFights.length,
+        mainEventFighters: '$awayTeam vs $homeTeam',
+        eventName: eventName,
+        fights: allFights,
+      );
 
-      // Sort events by date
-      groupedEvents.sort((a, b) => a.gameTime.compareTo(b.gameTime));
-
-      debugPrint('✅ Grouped into ${groupedEvents.length} events');
-      return groupedEvents;
-
-    } catch (e) {
-      debugPrint('Error grouping with ESPN data: $e');
-      debugPrint('Falling back to time-based grouping');
-      return _groupByTimeWindows(filteredFights, sport);
+      groupedEvents.add(groupedEvent);
     }
+
+    // Sort events by date
+    groupedEvents.sort((a, b) => a.gameTime.compareTo(b.gameTime));
+
+    debugPrint('✅ Created ${groupedEvents.length} events from ESPN data');
+    return groupedEvents;
   }
   
   /// Extract event name from fight data
@@ -1173,11 +1183,17 @@ class OptimizedGamesService {
       final List<Map<String, dynamic>> allEvents = [];
 
       if (sportLower == 'mma') {
-        // Try multiple MMA promotions
+        // Generate date range for MMA events (today to 14 days out - 2 weeks)
+        final now = DateTime.now();
+        final endDate = now.add(Duration(days: 14));
+        final dateRange = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}'
+            '-${endDate.year}${endDate.month.toString().padLeft(2, '0')}${endDate.day.toString().padLeft(2, '0')}';
+
+        // Try multiple MMA promotions with date range
         final promotions = [
-          {'name': 'UFC', 'url': 'https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard'},
-          {'name': 'PFL', 'url': 'https://site.api.espn.com/apis/site/v2/sports/mma/pfl/scoreboard'},
-          {'name': 'Bellator', 'url': 'https://site.api.espn.com/apis/site/v2/sports/mma/bellator/scoreboard'},
+          {'name': 'UFC', 'url': 'https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard?dates=$dateRange'},
+          {'name': 'PFL', 'url': 'https://site.api.espn.com/apis/site/v2/sports/mma/pfl/scoreboard?dates=$dateRange'},
+          {'name': 'Bellator', 'url': 'https://site.api.espn.com/apis/site/v2/sports/mma/bellator/scoreboard?dates=$dateRange'},
         ];
 
         for (final promotion in promotions) {
@@ -1190,8 +1206,14 @@ class OptimizedGamesService {
         }
         return allEvents;
       } else if (sportLower == 'boxing') {
+        // Generate date range for Boxing events (today to 14 days out - 2 weeks)
+        final now = DateTime.now();
+        final endDate = now.add(Duration(days: 14));
+        final dateRange = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}'
+            '-${endDate.year}${endDate.month.toString().padLeft(2, '0')}${endDate.day.toString().padLeft(2, '0')}';
+
         final events = await _fetchPromotionEvents(
-          'https://site.api.espn.com/apis/site/v2/sports/boxing/scoreboard',
+          'https://site.api.espn.com/apis/site/v2/sports/boxing/scoreboard?dates=$dateRange',
           'Boxing'
         );
         return events;

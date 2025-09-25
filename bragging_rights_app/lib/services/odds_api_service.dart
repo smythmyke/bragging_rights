@@ -632,17 +632,25 @@ class OddsApiService {
   }
   
   /// Get all events for a sport
-  Future<List<Map<String, dynamic>>?> getSportEvents(String sport) async {
+  Future<List<Map<String, dynamic>>?> getSportEvents(String sport, {int? daysAhead}) async {
     try {
       // Ensure initialization
       await ensureInitialized();
-      
+
       String sportKey = _sportKeys[sport.toLowerCase()] ?? sport;
-      
-      final url = '$_baseUrl/sports/$sportKey/events?apiKey=$_apiKey';
-      
+
+      // Add date range parameters if daysAhead is specified
+      String url = '$_baseUrl/sports/$sportKey/events?apiKey=$_apiKey';
+      if (daysAhead != null) {
+        final now = DateTime.now().toUtc();
+        final endDate = now.add(Duration(days: daysAhead));
+        url += '&commenceTimeFrom=${now.toIso8601String()}';
+        url += '&commenceTimeTo=${endDate.toIso8601String()}';
+        debugPrint('📅 Fetching $sport events for next $daysAhead days');
+      }
+
       debugPrint('📡 Fetching events for $sport');
-      
+
       final response = await http.get(Uri.parse(url));
       
       if (response.statusCode == 200) {
@@ -670,14 +678,16 @@ class OddsApiService {
   /// This can be used as the primary source for game listings
   Future<List<GameModel>> getSportGames(String sport, {int? daysAhead}) async {
     try {
-      final events = await getSportEvents(sport);
+      // Pass daysAhead to getSportEvents for API-level filtering
+      final events = await getSportEvents(sport, daysAhead: daysAhead);
       if (events == null || events.isEmpty) {
         return [];
       }
-      
+
       final games = <GameModel>[];
       final now = DateTime.now();
-      final cutoffDate = daysAhead != null 
+      // Still keep client-side filtering as a safety check
+      final cutoffDate = daysAhead != null
           ? now.add(Duration(days: daysAhead))
           : null;
       

@@ -171,7 +171,13 @@ class MMAService {
             MMAFighter? fighter2;
 
             if (compData['competitors'] != null) {
-              final competitors = compData['competitors'] as List;
+              // Handle both List and Map structures
+              final competitorsData = compData['competitors'];
+              final competitors = competitorsData is List
+                  ? competitorsData
+                  : competitorsData is Map && competitorsData.containsKey('items')
+                      ? competitorsData['items'] as List
+                      : [];
 
               for (int i = 0; i < competitors.length && i < 2; i++) {
                 final competitor = competitors[i];
