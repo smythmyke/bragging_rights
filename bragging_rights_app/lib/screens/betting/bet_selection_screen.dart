@@ -3717,10 +3717,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // Clear current bets for next selection
-              setState(() {
-                _selectedBets.clear();
-              });
+              // DON'T clear selections - keep them for multi-tab/parlay betting
               // Navigate to next tab if available
               if (nextTabIndex != -1) {
                 _betTypeController.animateTo(nextTabIndex);
@@ -3909,7 +3906,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
             onPressed: () {
               Navigator.pop(context);
               setState(() {
-                _selectedBets.clear();
+                // Keep _selectedBets intact for review
                 _showingSummary = false;
               });
             },

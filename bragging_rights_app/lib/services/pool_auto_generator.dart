@@ -57,24 +57,25 @@ class PoolAutoGenerator {
     }
   }
 
-  /// Clean up old MLB pools that were incorrectly created as separate bet type pools
-  Future<void> cleanupOldMLBPools() async {
+  /// Clean up old pools that were incorrectly created as separate bet type pools
+  /// Works for MLB, NFL, and NBA
+  Future<void> cleanupOldSportPools(String sport) async {
     try {
-      debugPrint('🧹 Starting MLB pool cleanup...');
+      debugPrint('🧹 Starting $sport pool cleanup...');
 
-      // Get all MLB pools
-      final mlbPoolsQuery = await _firestore
+      // Get all pools for this sport
+      final poolsQuery = await _firestore
           .collection('pools')
-          .where('sport', isEqualTo: 'MLB')
+          .where('sport', isEqualTo: sport)
           .where('status', isEqualTo: 'open')
           .get();
 
-      debugPrint('Found ${mlbPoolsQuery.docs.length} open MLB pools');
+      debugPrint('Found ${poolsQuery.docs.length} open $sport pools');
 
       final batch = _firestore.batch();
       int deleteCount = 0;
 
-      for (final doc in mlbPoolsQuery.docs) {
+      for (final doc in poolsQuery.docs) {
         final poolData = doc.data();
         final poolName = poolData['name'] ?? '';
 
@@ -97,13 +98,18 @@ class PoolAutoGenerator {
 
       if (deleteCount > 0) {
         await batch.commit();
-        debugPrint('✅ Deleted $deleteCount old MLB pools');
+        debugPrint('✅ Deleted $deleteCount old $sport pools');
       } else {
-        debugPrint('✅ No old MLB pools to delete');
+        debugPrint('✅ No old $sport pools to delete');
       }
     } catch (e) {
-      debugPrint('❌ Error cleaning up MLB pools: $e');
+      debugPrint('❌ Error cleaning up $sport pools: $e');
     }
+  }
+
+  /// Clean up old MLB pools (kept for backward compatibility)
+  Future<void> cleanupOldMLBPools() async {
+    await cleanupOldSportPools('MLB');
   }
 
   /// Generate pools for a fight card event
@@ -283,13 +289,22 @@ class PoolAutoGenerator {
     required GameModel game,
   }) async {
     try {
+      // Clean up old-style pools for sports we've updated to unified pools
+      final unifiedPoolSports = ['MLB', 'NFL', 'NBA', 'NHL', 'SOCCER', 'BOXING', 'MMA', 'UFC'];
+      final sportUpper = game.sport.toUpperCase();
+
+      if (unifiedPoolSports.contains(sportUpper)) {
+        // Use the actual sport name from the game for cleanup (handles Soccer case sensitivity)
+        await cleanupOldSportPools(sportUpper == 'UFC' ? 'MMA' : game.sport);
+      }
+
       // Check if pools already exist
       final existingPools = await _firestore
           .collection('pools')
           .where('gameId', isEqualTo: game.id)
           .limit(1)
           .get();
-      
+
       if (existingPools.docs.isNotEmpty) {
         return;
       }
@@ -333,8 +348,15 @@ class PoolAutoGenerator {
       }
 
       for (final buyIn in quickPlayBuyIns) {
-        // For MLB and NFL, create a single pool that allows all available bet types
-        if (game.sport.toUpperCase() == 'MLB' || game.sport.toUpperCase() == 'NFL') {
+        // For MLB, NFL, NBA, NHL, Soccer, Boxing, and MMA, create a single pool that allows all available bet types
+        if (game.sport.toUpperCase() == 'MLB' ||
+            game.sport.toUpperCase() == 'NFL' ||
+            game.sport.toUpperCase() == 'NBA' ||
+            game.sport.toUpperCase() == 'NHL' ||
+            game.sport.toUpperCase() == 'SOCCER' ||
+            game.sport.toUpperCase() == 'BOXING' ||
+            game.sport.toUpperCase() == 'MMA' ||
+            game.sport.toUpperCase() == 'UFC') {
           // Determine max players based on buy-in
           final maxPlayers = buyIn <= 25 ? 50 : (buyIn <= 50 ? 30 : 20);
 
