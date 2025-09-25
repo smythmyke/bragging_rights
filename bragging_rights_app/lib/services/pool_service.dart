@@ -92,20 +92,30 @@ class PoolService {
 
   // Join a pool - returns result with success and message
   Future<Map<String, dynamic>> joinPoolWithResult(String poolId, int buyIn) async {
+    print('[POOL_SERVICE] joinPoolWithResult called - poolId: $poolId, buyIn: $buyIn');
+
     final userId = _auth.currentUser?.uid;
+    print('[POOL_SERVICE] Current user ID: $userId');
+
     if (userId == null) {
       return {'success': false, 'message': 'User not logged in', 'code': 'NOT_LOGGED_IN'};
     }
 
     try {
       // First, check pool conditions outside of transaction
+      print('[POOL_SERVICE] Fetching pool document...');
       final poolDoc = await _firestore.collection('pools').doc(poolId).get();
 
       if (!poolDoc.exists) {
+        print('[POOL_SERVICE] Pool document does not exist!');
         return {'success': false, 'message': 'Pool not found', 'code': 'POOL_NOT_FOUND'};
       }
 
+      print('[POOL_SERVICE] Pool document found, converting to Pool model...');
+      print('[POOL_SERVICE] Pool doc data keys: ${poolDoc.data()?.keys.toList()}');
+
       final pool = Pool.fromFirestore(poolDoc);
+      print('[POOL_SERVICE] Pool model created - name: ${pool.name}, gameId: ${pool.gameId}, espnEventId: ${pool.espnEventId}');
 
       // Check if user is already in pool
       if (pool.playerIds.contains(userId)) {
@@ -131,6 +141,9 @@ class PoolService {
       // Deduct buy-in from wallet (this has its own transaction)
       bool walletSuccess = false;
       try {
+        print('[POOL_SERVICE] Attempting to deduct $buyIn from wallet...');
+        print('[POOL_SERVICE] Pool metadata - poolId: $poolId, poolName: ${pool.name}, gameId: ${pool.gameId}');
+
         walletSuccess = await _walletService.deductFromWallet(
           userId,
           buyIn,
@@ -141,7 +154,13 @@ class PoolService {
             'gameId': pool.gameId,
           },
         );
+
+        print('[POOL_SERVICE] Wallet deduction result: $walletSuccess');
       } catch (e) {
+        print('[POOL_SERVICE] Error during wallet deduction: $e');
+        print('[POOL_SERVICE] Error type: ${e.runtimeType}');
+        print('[POOL_SERVICE] Stack trace: ${StackTrace.current}');
+
         if (e.toString().contains('Insufficient')) {
           return {'success': false, 'message': 'Insufficient BR balance', 'code': 'INSUFFICIENT_BALANCE'};
         }

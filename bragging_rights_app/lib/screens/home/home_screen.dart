@@ -1612,7 +1612,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 )
               else
-                TextButton(
+                OutlinedButton(
                   onPressed: () {
                     Navigator.pushNamed(
                       context,
@@ -1626,7 +1626,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                     );
                   },
-                  child: const Text('View Pools'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Theme.of(context).primaryColor,
+                    side: BorderSide(
+                      color: Theme.of(context).primaryColor,
+                      width: 1.5,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  ),
+                  child: const Text('Enter Pool'),
                 ),
             ],
           ),
@@ -1874,7 +1882,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  TextButton(
+                  OutlinedButton(
                     onPressed: () {
                       Navigator.pushNamed(
                         context,
@@ -1888,11 +1896,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                       );
                     },
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(50, 20),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      minimumSize: const Size(80, 28),
+                      side: BorderSide(
+                        color: Theme.of(context).primaryColor,
+                        width: 1.5,
+                      ),
                     ),
-                    child: const Text('View Pools'),
+                    child: const Text('Enter Pool'),
                   ),
                 ],
               ),

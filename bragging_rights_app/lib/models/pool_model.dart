@@ -52,6 +52,8 @@ class Pool {
   final DateTime createdAt;
   final String? createdBy;
   final Map<String, dynamic>? metadata;
+  final String? espnEventId; // ESPN event ID for direct ESPN reference
+  final String? scoringType; // 'odds-based' or 'skill-based'
 
   Pool({
     required this.id,
@@ -77,6 +79,8 @@ class Pool {
     required this.createdAt,
     this.createdBy,
     this.metadata,
+    this.espnEventId,
+    this.scoringType,
   });
 
   // Calculate fill percentage
@@ -131,6 +135,8 @@ class Pool {
       'createdAt': Timestamp.fromDate(createdAt),
       'createdBy': createdBy,
       'metadata': metadata,
+      'espnEventId': espnEventId,
+      'scoringType': scoringType,
     };
   }
 
@@ -168,14 +174,14 @@ class Pool {
           : DateTime.now().add(const Duration(hours: 2)),
       prizePool: data['prizePool'] ?? 0,
       prizeStructure: data['prizeStructure'] ?? {},
-      code: data['code'],
+      code: data['code'] ?? '',
       regionalLevel: data['regionalLevel'] != null
           ? RegionalLevel.values.firstWhere(
               (e) => e.toString().split('.').last == data['regionalLevel'],
               orElse: () => RegionalLevel.neighborhood,
             )
           : null,
-      region: data['region'],
+      region: data['region'] ?? '',
       tier: data['tier'] != null
           ? PoolTier.values.firstWhere(
               (e) => e.toString().split('.').last == data['tier'],
@@ -185,8 +191,10 @@ class Pool {
       createdAt: data['createdAt'] != null
           ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
-      createdBy: data['createdBy'],
-      metadata: data['metadata'],
+      createdBy: data['createdBy'] ?? '',
+      metadata: data['metadata'] ?? {},
+      espnEventId: data['espnEventId'],
+      scoringType: data['scoringType'] ?? 'odds-based',
     );
   }
 
@@ -215,6 +223,8 @@ class Pool {
     DateTime? createdAt,
     String? createdBy,
     Map<String, dynamic>? metadata,
+    String? espnEventId,
+    String? scoringType,
   }) {
     return Pool(
       id: id ?? this.id,
@@ -240,6 +250,8 @@ class Pool {
       createdAt: createdAt ?? this.createdAt,
       createdBy: createdBy ?? this.createdBy,
       metadata: metadata ?? this.metadata,
+      espnEventId: espnEventId ?? this.espnEventId,
+      scoringType: scoringType ?? this.scoringType,
     );
   }
 }

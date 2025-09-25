@@ -592,17 +592,21 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         child: Row(
           children: [
             Expanded(
-              child: ElevatedButton(
+              child: OutlinedButton(
                 onPressed: _navigateToPoolSelection,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryCyan,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.primaryCyan,
+                  side: const BorderSide(
+                    color: AppTheme.primaryCyan,
+                    width: 2,
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 child: const Text(
-                  'View Pools',
+                  'Enter Pool',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

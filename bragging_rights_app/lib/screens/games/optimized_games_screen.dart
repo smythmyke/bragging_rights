@@ -746,27 +746,31 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
-              // Add View Pools button
+              // Add Enter Pool button
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
+                child: OutlinedButton(
                   onPressed: () {
                     // Stop propagation by handling the tap here
                     _onViewPoolsTap(game);
                   },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).primaryColor,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Theme.of(context).primaryColor,
+                      side: BorderSide(
+                        color: Theme.of(context).primaryColor,
+                        width: 2,
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                     child: const Text(
-                      'View Pools',
+                      'Enter Pool',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        fontSize: 15,
                       ),
                   ),
                 ),

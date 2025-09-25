@@ -58,18 +58,20 @@ class _QuickPickScreenState extends State<QuickPickScreen> {
       final requests = <FighterRequest>[];
       
       for (final fight in widget.event.typedFights) {
-        // Add fighter 1
+        // Add fighter 1 - Use ESPN ID if available, fall back to name-based ID
+        final fighter1EspnId = fight.fighter1EspnId ?? fight.fighter1Id;
         requests.add(FighterRequest(
-          fighterId: fight.fighter1Id,
+          fighterId: fighter1EspnId,
           fighterName: fight.fighter1Name,
-          espnId: fight.fighter1Id, // Assuming ID maps to ESPN
+          espnId: fighter1EspnId,
         ));
-        
-        // Add fighter 2
+
+        // Add fighter 2 - Use ESPN ID if available, fall back to name-based ID
+        final fighter2EspnId = fight.fighter2EspnId ?? fight.fighter2Id;
         requests.add(FighterRequest(
-          fighterId: fight.fighter2Id,
+          fighterId: fighter2EspnId,
           fighterName: fight.fighter2Name,
-          espnId: fight.fighter2Id,
+          espnId: fighter2EspnId,
         ));
       }
       
@@ -104,10 +106,15 @@ class _QuickPickScreenState extends State<QuickPickScreen> {
   }
   
   void _selectFighter(String fightId, String fighterId) {
+    debugPrint('[QUICK_PICK] Selecting fighter: fightId=$fightId, fighterId=$fighterId');
+    debugPrint('[QUICK_PICK] Current selections before: $_selections');
+
     setState(() {
       _selections[fightId] = fighterId;
     });
-    
+
+    debugPrint('[QUICK_PICK] Current selections after: $_selections');
+
     // Haptic feedback
     HapticFeedback.lightImpact();
   }
@@ -324,10 +331,19 @@ class _QuickPickScreenState extends State<QuickPickScreen> {
   }
   
   Widget _buildFightCard(Fight fight) {
-    final isSelected1 = _selections[fight.id] == fight.fighter1Id;
-    final isSelected2 = _selections[fight.id] == fight.fighter2Id;
-    final fighter1Data = _fighterData[fight.fighter1Id];
-    final fighter2Data = _fighterData[fight.fighter2Id];
+    // Use ESPN IDs if available for proper fighter identification
+    final fighter1Id = fight.fighter1EspnId ?? fight.fighter1Id;
+    final fighter2Id = fight.fighter2EspnId ?? fight.fighter2Id;
+
+    final isSelected1 = _selections[fight.id] == fighter1Id;
+    final isSelected2 = _selections[fight.id] == fighter2Id;
+    final fighter1Data = _fighterData[fighter1Id];
+    final fighter2Data = _fighterData[fighter2Id];
+
+    debugPrint('[QUICK_PICK] Building fight card: ${fight.id}');
+    debugPrint('[QUICK_PICK]   Fighter1: ${fight.fighter1Name} (ESPN ID: $fighter1Id) - Selected: $isSelected1');
+    debugPrint('[QUICK_PICK]   Fighter2: ${fight.fighter2Name} (ESPN ID: $fighter2Id) - Selected: $isSelected2');
+    debugPrint('[QUICK_PICK]   Current selection for this fight: ${_selections[fight.id]}');
     
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -375,11 +391,11 @@ class _QuickPickScreenState extends State<QuickPickScreen> {
                 Expanded(
                   child: _buildFighterCard(
                     fight: fight,
-                    fighterId: fight.fighter1Id,
+                    fighterId: fighter1Id,
                     fighterName: fight.fighter1Name,
                     fighterData: fighter1Data,
                     isSelected: isSelected1,
-                    onTap: () => _selectFighter(fight.id, fight.fighter1Id),
+                    onTap: () => _selectFighter(fight.id, fighter1Id),
                   ),
                 ),
                 
@@ -412,11 +428,11 @@ class _QuickPickScreenState extends State<QuickPickScreen> {
                 Expanded(
                   child: _buildFighterCard(
                     fight: fight,
-                    fighterId: fight.fighter2Id,
+                    fighterId: fighter2Id,
                     fighterName: fight.fighter2Name,
                     fighterData: fighter2Data,
                     isSelected: isSelected2,
-                    onTap: () => _selectFighter(fight.id, fight.fighter2Id),
+                    onTap: () => _selectFighter(fight.id, fighter2Id),
                   ),
                 ),
               ],

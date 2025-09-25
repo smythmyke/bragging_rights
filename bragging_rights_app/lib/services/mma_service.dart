@@ -81,7 +81,35 @@ class MMAService {
     }
   }
 
-  /// Get event with full fight card
+  /// Get event with full fight card from ESPN only
+  Future<MMAEvent?> getFullEventFromESPN(String eventId) async {
+    print('🥊 Loading MMA event from ESPN: $eventId');
+
+    try {
+      // Check cache first
+      final cacheKey = 'mma_event_full_$eventId';
+      final cachedEvent = await _getEventFromCache(cacheKey);
+      if (cachedEvent != null) {
+        print('📦 Using cached event data');
+        return cachedEvent;
+      }
+
+      // Fetch from ESPN API
+      final event = await _fetchEventFromESPN(eventId);
+
+      if (event != null) {
+        // Cache the event
+        await _cacheEvent(cacheKey, event);
+      }
+
+      return event;
+    } catch (e) {
+      print('❌ Error loading event: $e');
+      return null;
+    }
+  }
+
+  /// Get event with full fight card (legacy method for compatibility)
   Future<MMAEvent?> getEventWithFights(String eventId, {Map<String, dynamic>? gameData}) async {
     print('🥊 Loading MMA event: $eventId');
 
@@ -265,6 +293,156 @@ class MMAService {
       print('Error fetching event with fights: $e');
       return null;
     }
+  }
+
+  /// Get event from cache
+  Future<MMAEvent?> _getEventFromCache(String cacheKey) async {
+    try {
+      final doc = await _firestore
+          .collection('mma_events_cache')
+          .doc(cacheKey)
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data();
+        final timestamp = data?['timestamp'];
+        if (timestamp != null) {
+          final cachedTime = DateTime.parse(timestamp);
+          if (DateTime.now().difference(cachedTime) < EVENT_CACHE_DURATION) {
+            return MMAEvent.fromJson(data!['event']);
+          }
+        }
+      }
+    } catch (e) {
+      print('Cache read error: $e');
+    }
+    return null;
+  }
+
+  /// Cache event data
+  Future<void> _cacheEvent(String cacheKey, MMAEvent event) async {
+    try {
+      await _firestore
+          .collection('mma_events_cache')
+          .doc(cacheKey)
+          .set({
+        'event': event.toJson(),
+        'timestamp': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      print('Cache write error: $e');
+    }
+  }
+
+  /// Fetch event from ESPN API
+  Future<MMAEvent?> _fetchEventFromESPN(String eventId) async {
+    try {
+      // Fetch main event data
+      final eventUrl = '$EVENT_BASE$eventId';
+      print('🌐 Fetching event from: $eventUrl');
+
+      final response = await http.get(Uri.parse(eventUrl));
+      if (response.statusCode != 200) {
+        print('❌ ESPN API returned status: ${response.statusCode}');
+        return null;
+      }
+
+      final eventData = json.decode(response.body);
+
+      // Fetch competitions with proper ESPN IDs
+      final fights = await _fetchEventCompetitions(eventData);
+
+      // Create event with all ESPN data
+      final event = MMAEvent(
+        id: eventId,
+        espnId: eventId,
+        name: eventData['name'] ?? '',
+        shortName: eventData['shortName'],
+        date: DateTime.parse(eventData['date']),
+        status: eventData['status']?['type']?['description'] ?? 'scheduled',
+        venue: eventData['venue']?['fullName'],
+        venueCity: eventData['venue']?['address']?['city'],
+        venueCountry: eventData['venue']?['address']?['country'],
+        promotion: _extractPromotion(eventData),
+        fights: fights,
+        mainEvent: fights.isNotEmpty ? fights.first : null,
+      );
+
+      return event;
+    } catch (e) {
+      print('Error fetching event from ESPN: $e');
+      return null;
+    }
+  }
+
+  /// Fetch all competitions (fights) for an event
+  Future<List<MMAFight>> _fetchEventCompetitions(Map<String, dynamic> eventData) async {
+    final fights = <MMAFight>[];
+
+    if (eventData['competitions'] == null) return fights;
+
+    for (final comp in eventData['competitions']) {
+      try {
+        String compUrl = comp['\$ref'];
+        if (!compUrl.startsWith('http')) {
+          compUrl = 'http:$compUrl';
+        }
+
+        final compResponse = await http.get(Uri.parse(compUrl));
+        if (compResponse.statusCode == 200) {
+          final compData = json.decode(compResponse.body);
+
+          // Extract fighter ESPN IDs directly
+          final competitors = compData['competitors'] ?? [];
+          String? fighter1Id;
+          String? fighter2Id;
+
+          if (competitors.length >= 2) {
+            fighter1Id = competitors[0]['id']?.toString();
+            fighter2Id = competitors[1]['id']?.toString();
+          }
+
+          // Create fight with ESPN IDs
+          final fight = MMAFight(
+            id: compData['id']?.toString() ?? '',
+            espnCompetitionId: compData['id']?.toString(),
+            fighter1EspnId: fighter1Id,
+            fighter2EspnId: fighter2Id,
+            fighter1: await _getFighter(competitors[0]['athlete']?['\$ref']),
+            fighter2: await _getFighter(competitors[1]['athlete']?['\$ref']),
+            weightClass: compData['type']?['text'] ?? '',
+            rounds: compData['format']?['regulation']?['periods'] ?? 3,
+            isMainEvent: fights.isEmpty, // First fight is main event
+            isCoMainEvent: fights.length == 1,
+            isTitleFight: compData['notes']?.toString().contains('Title') ?? false,
+            cardPosition: _determineCardPosition(fights.length),
+            fightOrder: fights.length,
+            status: compData['status']?['type']?['description'],
+            isComplete: compData['status']?['type']?['completed'] ?? false,
+          );
+
+          fights.add(fight);
+        }
+      } catch (e) {
+        print('Error processing competition: $e');
+      }
+    }
+
+    return fights;
+  }
+
+  /// Determine card position based on fight order
+  String _determineCardPosition(int fightOrder) {
+    if (fightOrder == 0) return 'main';
+    if (fightOrder <= 4) return 'main';
+    if (fightOrder <= 8) return 'prelim';
+    return 'early';
+  }
+
+  /// Extract promotion from event data
+  String _extractPromotion(Map<String, dynamic> eventData) {
+    final league = eventData['league']?['abbreviation'] ?? '';
+    return league.toUpperCase();
   }
 
   /// Batch fetch fighters to reduce API calls

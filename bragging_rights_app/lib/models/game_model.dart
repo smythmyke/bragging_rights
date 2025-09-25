@@ -23,6 +23,8 @@ class GameModel {
   final String? mainEventFighters;
   final String? espnId; // ESPN's game ID for API calls
   final String? eventName; // Full event name for combat sports
+  final String? espnEventId; // ESPN event ID for direct ESPN reference
+  final List<String>? competitions; // Array to store bout IDs for combat sports
 
   GameModel({
     required this.id,
@@ -47,6 +49,8 @@ class GameModel {
     this.mainEventFighters,
     this.espnId,
     this.eventName,
+    this.espnEventId,
+    this.competitions,
   });
 
   factory GameModel.fromFirestore(DocumentSnapshot doc) {
@@ -89,6 +93,8 @@ class GameModel {
       totalFights: data['totalFights'],
       mainEventFighters: data['mainEventFighters'],
       eventName: data['eventName'],
+      espnEventId: data['espnEventId'],
+      competitions: data['competitions'] != null ? List<String>.from(data['competitions']) : null,
     );
   }
 
@@ -135,6 +141,8 @@ class GameModel {
       'totalFights': totalFights,
       'mainEventFighters': mainEventFighters,
       'eventName': eventName,
+      'espnEventId': espnEventId,
+      'competitions': competitions,
     };
   }
 
@@ -165,6 +173,8 @@ class GameModel {
       'totalFights': totalFights,
       'mainEventFighters': mainEventFighters,
       'eventName': eventName,
+      'espnEventId': espnEventId,
+      'competitions': competitions,
     };
   }
   
@@ -204,6 +214,8 @@ class GameModel {
       mainEventFighters: map['mainEventFighters'],
       espnId: map['espnId'] ?? map['externalId'] ?? map['eventId'],
       eventName: map['eventName'],
+      espnEventId: map['espnEventId'],
+      competitions: map['competitions'] != null ? List<String>.from(map['competitions']) : null,
     );
   }
   

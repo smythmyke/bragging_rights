@@ -560,9 +560,9 @@ class _AllGamesScreenState extends State<AllGamesScreen> with WidgetsBindingObse
                   if (!hasStarted)
                     GestureDetector(
                       onTap: () {}, // This blocks the tap from propagating to parent InkWell
-                      child: ElevatedButton(
+                      child: OutlinedButton(
                         onPressed: () async {
-                          debugPrint('🎯 View Pools button tapped in AllGamesScreen');
+                          debugPrint('🎯 Enter Pool button tapped in AllGamesScreen');
                           debugPrint('  - Navigating to /pool-selection');
                           debugPrint('  - Game ID: ${game.id}');
                           await Navigator.pushNamed(
@@ -580,13 +580,18 @@ class _AllGamesScreenState extends State<AllGamesScreen> with WidgetsBindingObse
                         debugPrint('  - Returned from pool selection, reloading bet statuses...');
                         await _loadBetStatuses();
                       },
-                      style: ElevatedButton.styleFrom(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Theme.of(context).primaryColor,
+                        side: BorderSide(
+                          color: Theme.of(context).primaryColor,
+                          width: 1.5,
+                        ),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text('View Pools'),
+                      child: const Text('Enter Pool'),
                       ),
                     )
                   else if (isLive)

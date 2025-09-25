@@ -3,6 +3,7 @@ import 'mma_fighter_model.dart';
 /// MMA Event Model (UFC, Bellator, PFL, ONE Championship)
 class MMAEvent {
   final String id;
+  final String? espnId; // ESPN event ID for direct API access
   final String name; // "UFC 311: Makhachev vs. Moicano"
   final String? shortName; // "UFC 311"
   final DateTime date;
@@ -10,6 +11,7 @@ class MMAEvent {
   final String? promotionLogoUrl;
 
   // Venue
+  final String? venue;
   final String? venueName;
   final String? venueCity;
   final String? venueState;
@@ -31,7 +33,7 @@ class MMAEvent {
   final bool isLive;
   final bool isComplete;
 
-  // ESPN specific
+  // ESPN specific (legacy - keeping for compatibility)
   final String? espnEventId;
   final String? espnUrl;
 
@@ -40,11 +42,13 @@ class MMAEvent {
 
   MMAEvent({
     required this.id,
+    this.espnId,
     required this.name,
     this.shortName,
     required this.date,
     this.promotion,
     this.promotionLogoUrl,
+    this.venue,
     this.venueName,
     this.venueCity,
     this.venueState,
@@ -162,11 +166,13 @@ class MMAEvent {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'espnId': espnId,
       'name': name,
       'shortName': shortName,
       'date': date.toIso8601String(),
       'promotion': promotion,
       'promotionLogoUrl': promotionLogoUrl,
+      'venue': venue,
       'venueName': venueName,
       'venueCity': venueCity,
       'venueState': venueState,
@@ -184,6 +190,37 @@ class MMAEvent {
       'espnUrl': espnUrl,
       'lastUpdated': lastUpdated?.toIso8601String(),
     };
+  }
+
+  factory MMAEvent.fromJson(Map<String, dynamic> json) {
+    return MMAEvent(
+      id: json['id'],
+      espnId: json['espnId'],
+      name: json['name'],
+      shortName: json['shortName'],
+      date: DateTime.parse(json['date']),
+      promotion: json['promotion'],
+      promotionLogoUrl: json['promotionLogoUrl'],
+      venue: json['venue'],
+      venueName: json['venueName'],
+      venueCity: json['venueCity'],
+      venueState: json['venueState'],
+      venueCountry: json['venueCountry'],
+      isIndoor: json['isIndoor'],
+      fights: (json['fights'] as List?)
+          ?.map((f) => MMAFight.fromJson(f))
+          .toList() ?? [],
+      broadcasters: (json['broadcasters'] as List?)?.cast<String>(),
+      broadcastDetails: json['broadcastDetails'],
+      status: json['status'],
+      isLive: json['isLive'] ?? false,
+      isComplete: json['isComplete'] ?? false,
+      espnEventId: json['espnEventId'],
+      espnUrl: json['espnUrl'],
+      lastUpdated: json['lastUpdated'] != null
+          ? DateTime.parse(json['lastUpdated'])
+          : null,
+    );
   }
 
   // Helper getters
@@ -217,6 +254,9 @@ class MMAEvent {
 /// Individual MMA Fight/Bout
 class MMAFight {
   final String id;
+  final String? espnCompetitionId; // ESPN competition ID for this specific fight
+  final String? fighter1EspnId; // ESPN athlete ID for fighter 1
+  final String? fighter2EspnId; // ESPN athlete ID for fighter 2
   final MMAFighter? fighter1;
   final MMAFighter? fighter2;
 
@@ -247,6 +287,9 @@ class MMAFight {
 
   MMAFight({
     required this.id,
+    this.espnCompetitionId,
+    this.fighter1EspnId,
+    this.fighter2EspnId,
     this.fighter1,
     this.fighter2,
     this.weightClass,
@@ -328,6 +371,9 @@ class MMAFight {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'espnCompetitionId': espnCompetitionId,
+      'fighter1EspnId': fighter1EspnId,
+      'fighter2EspnId': fighter2EspnId,
       'fighter1': fighter1?.toJson(),
       'fighter2': fighter2?.toJson(),
       'weightClass': weightClass,
@@ -348,6 +394,38 @@ class MMAFight {
       'isComplete': isComplete,
       'isCancelled': isCancelled,
     };
+  }
+
+  factory MMAFight.fromJson(Map<String, dynamic> json) {
+    return MMAFight(
+      id: json['id'],
+      espnCompetitionId: json['espnCompetitionId'],
+      fighter1EspnId: json['fighter1EspnId'],
+      fighter2EspnId: json['fighter2EspnId'],
+      fighter1: json['fighter1'] != null
+          ? MMAFighter.fromJson(json['fighter1'])
+          : null,
+      fighter2: json['fighter2'] != null
+          ? MMAFighter.fromJson(json['fighter2'])
+          : null,
+      weightClass: json['weightClass'],
+      rounds: json['rounds'] ?? 3,
+      isMainEvent: json['isMainEvent'] ?? false,
+      isCoMainEvent: json['isCoMainEvent'] ?? false,
+      isTitleFight: json['isTitleFight'] ?? false,
+      cardPosition: json['cardPosition'] ?? 'main',
+      fightOrder: json['fightOrder'],
+      fighter1Odds: json['fighter1Odds']?.toDouble(),
+      fighter2Odds: json['fighter2Odds']?.toDouble(),
+      winnerId: json['winnerId'],
+      method: json['method'],
+      methodDetails: json['methodDetails'],
+      endRound: json['endRound'],
+      endTime: json['endTime'],
+      status: json['status'],
+      isComplete: json['isComplete'] ?? false,
+      isCancelled: json['isCancelled'] ?? false,
+    );
   }
 
   // Helper getters
