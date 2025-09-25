@@ -145,9 +145,16 @@ class MMAService {
               final compData = json.decode(compResponse.body);
               competitionData.add(compData);
 
-              // Collect fighter refs
+              // Collect fighter refs - handle both List and Map structures
               if (compData['competitors'] != null) {
-                for (final competitor in compData['competitors']) {
+                final competitorsData = compData['competitors'];
+                final competitors = competitorsData is List
+                    ? competitorsData
+                    : competitorsData is Map && competitorsData.containsKey('items')
+                        ? competitorsData['items'] as List
+                        : [];
+
+                for (final competitor in competitors) {
                   final athleteRef = competitor['athlete']?['\$ref'];
                   if (athleteRef != null) {
                     fighterRefs.add(athleteRef);

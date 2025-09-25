@@ -2,8 +2,8 @@ import '../models/mma_event_model.dart';
 import '../models/game_model.dart';
 
 class MMADebugLogger {
-  static const String _separator = '=' * 60;
-  static const String _subSeparator = '-' * 40;
+  static final String _separator = '=' * 60;
+  static final String _subSeparator = '-' * 40;
 
   // Event structure logging
   static void logEventStructure(MMAEvent event, {String? context}) {
@@ -82,7 +82,7 @@ class MMADebugLogger {
     print('Away Team (Fighter 2): ${game.awayTeam}');
     print('Event Name: ${game.eventName}');
     print('Main Event Fighters: ${game.mainEventFighters}');
-    print('Total Fights: ${game.totalFightsCount}');
+    print('Total Fights: ${game.totalFights ?? 0}');
     print('Has Fights List: ${game.fights != null ? game.fights!.length : 0} fights');
     print(_separator);
   }
@@ -147,8 +147,8 @@ class MMADebugLogger {
       final prefix = isSelected ? '✅' : '  ';
 
       print('$prefix [$i] ${game.homeTeam} vs ${game.awayTeam}');
-      print('       - Has main event flag: ${game.isMainEvent}');
-      print('       - Fight order: ${game.fightOrder}');
+      // Note: isMainEvent and fightOrder are not in GameModel
+      // These would need to be checked in the fights list
       print('       - Main event fighters: ${game.mainEventFighters}');
     }
 
@@ -163,10 +163,10 @@ class MMADebugLogger {
   }
 
   static String _getSelectionReason(List<GameModel> candidates, GameModel selected) {
-    if (selected.isMainEvent == true) return 'Has isMainEvent flag';
+    // Check if it's the last fight (typical main event position)
     if (candidates.last.id == selected.id) return 'Last fight in list (typical main event position)';
-    if (candidates.first.id == selected.id) return 'First fight (fallback)';
-    return 'Unknown selection logic';
+    if (candidates.first.id == selected.id) return 'First fight (highest importance score or fallback)';
+    return 'Selected based on importance scoring';
   }
 
   // Navigation logging

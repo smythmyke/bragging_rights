@@ -250,7 +250,7 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
       debugPrint('    - Event Name: ${game.eventName}');
       debugPrint('    - Main Event Fighters: ${game.mainEventFighters}');
       debugPrint('    - League/Promotion: ${game.league}');
-      debugPrint('    - Total Fights: ${game.totalFightsCount}');
+      debugPrint('    - Total Fights: ${game.totalFights ?? 0}');
       debugPrint('    - Has Fights List: ${game.fights != null ? game.fights!.length : 0} fights');
     }
 

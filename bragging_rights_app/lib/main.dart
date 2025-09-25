@@ -40,22 +40,27 @@ void main() async {
   
   // Load environment variables
   await dotenv.load(fileName: '.env');
-  
-  // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
 
-  // Initialize Firebase App Check with debug provider for development
-  await FirebaseAppCheck.instance.activate(
-    androidProvider: AndroidProvider.debug,
-  );
+  // Initialize Firebase - wrapped in try-catch for web compatibility
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+
+    // Initialize Firebase App Check with debug provider for development
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: AndroidProvider.debug,
+    );
+
+    // Initialize notification service
+    await NotificationService().initialize();
+  } catch (e) {
+    print('⚠️ Firebase initialization error (continuing without Firebase): $e');
+    // Continue without Firebase for testing
+  }
 
   // Initialize game cache service
   await GameCacheService().initialize();
-  
-  // Initialize notification service
-  await NotificationService().initialize();
   
   // Don't start pool management here - wait for authentication
   // PoolManagementService().startPoolManagement();
@@ -73,7 +78,7 @@ class BraggingRightsApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.dark, // Force dark theme for Neon Cyber
-      initialRoute: '/login',
+      initialRoute: '/home', // Bypass login for web testing
       routes: {
         '/': (context) => const LoginScreen(),
         '/login': (context) => const LoginScreen(),

@@ -98,42 +98,40 @@ class PoolService {
     }
 
     try {
-      // Start a transaction
-      final success = await _firestore.runTransaction((transaction) async {
-        // Get the pool document
-        final poolDoc = await transaction.get(
-          _firestore.collection('pools').doc(poolId),
-        );
+      // First, check pool conditions outside of transaction
+      final poolDoc = await _firestore.collection('pools').doc(poolId).get();
 
-        if (!poolDoc.exists) {
-          throw Exception('POOL_NOT_FOUND');
-        }
+      if (!poolDoc.exists) {
+        return {'success': false, 'message': 'Pool not found', 'code': 'POOL_NOT_FOUND'};
+      }
 
-        final pool = Pool.fromFirestore(poolDoc);
+      final pool = Pool.fromFirestore(poolDoc);
 
-        // Check if user is already in pool
-        if (pool.playerIds.contains(userId)) {
-          throw Exception('ALREADY_IN_POOL');
-        }
+      // Check if user is already in pool
+      if (pool.playerIds.contains(userId)) {
+        return {'success': false, 'message': 'You are already in this pool', 'code': 'ALREADY_IN_POOL'};
+      }
 
-        // Check if pool is full
-        if (pool.isFull) {
-          throw Exception('POOL_FULL');
-        }
+      // Check if pool is full
+      if (pool.isFull) {
+        return {'success': false, 'message': 'Pool is full', 'code': 'POOL_FULL'};
+      }
 
-        // Check if pool is still open
-        if (pool.status != PoolStatus.open) {
-          throw Exception('POOL_CLOSED');
-        }
+      // Check if pool is still open
+      if (pool.status != PoolStatus.open) {
+        return {'success': false, 'message': 'Pool is no longer open for entry', 'code': 'POOL_CLOSED'};
+      }
 
-        // Check user's balance
-        final balance = await _walletService.getBalance(userId);
-        if (balance < buyIn) {
-          throw Exception('INSUFFICIENT_BALANCE');
-        }
+      // Check user's balance
+      final balance = await _walletService.getBalance(userId);
+      if (balance < buyIn) {
+        return {'success': false, 'message': 'Insufficient BR balance', 'code': 'INSUFFICIENT_BALANCE'};
+      }
 
-        // Deduct buy-in from wallet
-        final walletSuccess = await _walletService.deductFromWallet(
+      // Deduct buy-in from wallet (this has its own transaction)
+      bool walletSuccess = false;
+      try {
+        walletSuccess = await _walletService.deductFromWallet(
           userId,
           buyIn,
           'Pool entry: ${pool.name}',
@@ -143,36 +141,89 @@ class PoolService {
             'gameId': pool.gameId,
           },
         );
-
-        if (!walletSuccess) {
-          throw Exception('PAYMENT_FAILED');
+      } catch (e) {
+        if (e.toString().contains('Insufficient')) {
+          return {'success': false, 'message': 'Insufficient BR balance', 'code': 'INSUFFICIENT_BALANCE'};
         }
+        return {'success': false, 'message': 'Payment failed', 'code': 'PAYMENT_FAILED'};
+      }
 
-        // Update pool with new player
-        transaction.update(poolDoc.reference, {
-          'currentPlayers': FieldValue.increment(1),
-          'playerIds': FieldValue.arrayUnion([userId]),
-          'prizePool': FieldValue.increment(buyIn),
+      if (!walletSuccess) {
+        return {'success': false, 'message': 'Payment failed', 'code': 'PAYMENT_FAILED'};
+      }
+
+      // Now update the pool in a transaction
+      try {
+        final success = await _firestore.runTransaction((transaction) async {
+          // Re-fetch pool document to ensure current state
+          final currentPoolDoc = await transaction.get(
+            _firestore.collection('pools').doc(poolId),
+          );
+
+          if (!currentPoolDoc.exists) {
+            throw Exception('POOL_NOT_FOUND');
+          }
+
+          final currentPool = Pool.fromFirestore(currentPoolDoc);
+
+          // Double-check conditions haven't changed
+          if (currentPool.playerIds.contains(userId)) {
+            throw Exception('ALREADY_IN_POOL');
+          }
+
+          if (currentPool.isFull) {
+            throw Exception('POOL_FULL');
+          }
+
+          if (currentPool.status != PoolStatus.open) {
+            throw Exception('POOL_CLOSED');
+          }
+
+          // Update pool with new player
+          transaction.update(currentPoolDoc.reference, {
+            'currentPlayers': FieldValue.increment(1),
+            'playerIds': FieldValue.arrayUnion([userId]),
+            'prizePool': FieldValue.increment(buyIn),
+          });
+
+          // Create pool entry record for user
+          transaction.set(
+            _firestore.collection('user_pools').doc('${userId}_$poolId'),
+            {
+              'userId': userId,
+              'poolId': poolId,
+              'gameId': currentPool.gameId,
+              'buyIn': buyIn,
+              'joinedAt': FieldValue.serverTimestamp(),
+              'poolName': currentPool.name,
+              'poolType': currentPool.type.toString().split('.').last,
+            },
+          );
+
+          return true;
         });
 
-        // Create pool entry record for user
-        transaction.set(
-          _firestore.collection('user_pools').doc('${userId}_$poolId'),
-          {
-            'userId': userId,
-            'poolId': poolId,
-            'gameId': pool.gameId,
-            'buyIn': buyIn,
-            'joinedAt': FieldValue.serverTimestamp(),
-            'poolName': pool.name,
-            'poolType': pool.type.toString().split('.').last,
-          },
+        return {'success': true, 'message': 'Successfully joined pool', 'code': 'SUCCESS'};
+      } catch (e) {
+        // If pool update fails, refund the wallet
+        await _walletService.addToWallet(
+          userId,
+          buyIn,
+          'Refund: Failed to join pool',
+          metadata: {'poolId': poolId, 'error': e.toString()},
         );
 
-        return true;
-      });
-      
-      return {'success': true, 'message': 'Successfully joined pool', 'code': 'SUCCESS'};
+        if (e.toString().contains('ALREADY_IN_POOL')) {
+          return {'success': false, 'message': 'You are already in this pool', 'code': 'ALREADY_IN_POOL'};
+        } else if (e.toString().contains('POOL_FULL')) {
+          return {'success': false, 'message': 'Pool became full', 'code': 'POOL_FULL'};
+        } else if (e.toString().contains('POOL_CLOSED')) {
+          return {'success': false, 'message': 'Pool closed before you could join', 'code': 'POOL_CLOSED'};
+        } else if (e.toString().contains('POOL_NOT_FOUND')) {
+          return {'success': false, 'message': 'Pool no longer exists', 'code': 'POOL_NOT_FOUND'};
+        }
+        throw e; // Re-throw to be caught by outer catch
+      }
     } catch (e) {
       print('Error joining pool: $e');
       String message = 'Failed to join pool';
@@ -214,54 +265,73 @@ class PoolService {
     if (userId == null) return false;
 
     try {
-      return await _firestore.runTransaction((transaction) async {
-        // Get the pool document
-        final poolDoc = await transaction.get(
+      // First get pool information
+      final poolDoc = await _firestore.collection('pools').doc(poolId).get();
+
+      if (!poolDoc.exists) {
+        throw Exception('Pool not found');
+      }
+
+      final pool = Pool.fromFirestore(poolDoc);
+
+      // Check if pool has started
+      if (pool.status != PoolStatus.open) {
+        throw Exception('Cannot leave pool after it has started');
+      }
+
+      // Check if user is in pool
+      if (!pool.playerIds.contains(userId)) {
+        throw Exception('Not in this pool');
+      }
+
+      // Update pool in a transaction first
+      await _firestore.runTransaction((transaction) async {
+        // Re-fetch to ensure current state
+        final currentPoolDoc = await transaction.get(
           _firestore.collection('pools').doc(poolId),
         );
 
-        if (!poolDoc.exists) {
+        if (!currentPoolDoc.exists) {
           throw Exception('Pool not found');
         }
 
-        final pool = Pool.fromFirestore(poolDoc);
+        final currentPool = Pool.fromFirestore(currentPoolDoc);
 
-        // Check if pool has started
-        if (pool.status != PoolStatus.open) {
+        // Re-check conditions
+        if (currentPool.status != PoolStatus.open) {
           throw Exception('Cannot leave pool after it has started');
         }
 
-        // Check if user is in pool
-        if (!pool.playerIds.contains(userId)) {
+        if (!currentPool.playerIds.contains(userId)) {
           throw Exception('Not in this pool');
         }
 
-        // Refund buy-in to wallet
-        await _walletService.addToWallet(
-          userId,
-          pool.buyIn,
-          'Pool refund: ${pool.name}',
-          metadata: {
-            'poolId': poolId,
-            'poolName': pool.name,
-            'gameId': pool.gameId,
-          },
-        );
-
         // Update pool
-        transaction.update(poolDoc.reference, {
+        transaction.update(currentPoolDoc.reference, {
           'currentPlayers': FieldValue.increment(-1),
           'playerIds': FieldValue.arrayRemove([userId]),
-          'prizePool': FieldValue.increment(-pool.buyIn),
+          'prizePool': FieldValue.increment(-currentPool.buyIn),
         });
 
         // Delete pool entry record
         transaction.delete(
           _firestore.collection('user_pools').doc('${userId}_$poolId'),
         );
-
-        return true;
       });
+
+      // After successfully updating pool, refund the buy-in
+      await _walletService.addToWallet(
+        userId,
+        pool.buyIn,
+        'Pool refund: ${pool.name}',
+        metadata: {
+          'poolId': poolId,
+          'poolName': pool.name,
+          'gameId': pool.gameId,
+        },
+      );
+
+      return true;
     } catch (e) {
       print('Error leaving pool: $e');
       return false;
@@ -629,55 +699,79 @@ class PoolService {
   Future<bool> deletePool(String poolId) async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) return false;
-    
+
     try {
-      return await _firestore.runTransaction((transaction) async {
-        final poolDoc = await transaction.get(
+      // First get pool information
+      final poolDoc = await _firestore.collection('pools').doc(poolId).get();
+
+      if (!poolDoc.exists) {
+        throw Exception('Pool not found');
+      }
+
+      final pool = Pool.fromFirestore(poolDoc);
+
+      // Check if user is the creator
+      if (pool.createdBy != userId) {
+        throw Exception('Only the pool creator can delete this pool');
+      }
+
+      // Check if pool has started
+      if (pool.status != PoolStatus.open) {
+        throw Exception('Cannot delete pool after it has started');
+      }
+
+      // Check if there are other players (besides creator)
+      if (pool.currentPlayers > 1) {
+        throw Exception('Cannot delete pool with other players. They must leave first.');
+      }
+
+      // Delete the pool in a transaction
+      await _firestore.runTransaction((transaction) async {
+        // Re-fetch to ensure current state
+        final currentPoolDoc = await transaction.get(
           _firestore.collection('pools').doc(poolId),
         );
-        
-        if (!poolDoc.exists) {
+
+        if (!currentPoolDoc.exists) {
           throw Exception('Pool not found');
         }
-        
-        final pool = Pool.fromFirestore(poolDoc);
-        
-        // Check if user is the creator
-        if (pool.createdBy != userId) {
+
+        final currentPool = Pool.fromFirestore(currentPoolDoc);
+
+        // Re-check conditions
+        if (currentPool.createdBy != userId) {
           throw Exception('Only the pool creator can delete this pool');
         }
-        
-        // Check if pool has started
-        if (pool.status != PoolStatus.open) {
+
+        if (currentPool.status != PoolStatus.open) {
           throw Exception('Cannot delete pool after it has started');
         }
-        
-        // Check if there are other players (besides creator)
-        if (pool.currentPlayers > 1) {
+
+        if (currentPool.currentPlayers > 1) {
           throw Exception('Cannot delete pool with other players. They must leave first.');
         }
         
-        // Refund creator's buy-in
-        await _walletService.addToWallet(
-          userId,
-          pool.buyIn,
-          'Pool deleted: ${pool.name}',
-          metadata: {
-            'poolId': poolId,
-            'poolName': pool.name,
-          },
-        );
-        
         // Delete the pool document
-        transaction.delete(poolDoc.reference);
-        
+        transaction.delete(currentPoolDoc.reference);
+
         // Delete user pool entry
         transaction.delete(
           _firestore.collection('user_pools').doc('${userId}_$poolId'),
         );
-        
-        return true;
       });
+
+      // After successfully deleting pool, refund creator's buy-in
+      await _walletService.addToWallet(
+        userId,
+        pool.buyIn,
+        'Pool deleted: ${pool.name}',
+        metadata: {
+          'poolId': poolId,
+          'poolName': pool.name,
+        },
+      );
+
+      return true;
     } catch (e) {
       print('Error deleting pool: $e');
       return false;
