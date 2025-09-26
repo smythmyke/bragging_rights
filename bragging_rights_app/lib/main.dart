@@ -284,46 +284,106 @@ class BraggingRightsApp extends StatelessWidget {
   // Helper function to load fight card event from Firestore
   static Future<FightCardEventModel?> _loadFightCardEvent(String eventId) async {
     try {
+      print('🔍 Loading fight card event for eventId: $eventId');
+
       // Fetch game data from Firestore which should have full fight card
       final gameDoc = await FirebaseFirestore.instance
           .collection('games')
           .doc(eventId)
           .get();
-      
+
       if (!gameDoc.exists) {
-        print('Game not found in Firestore: $eventId');
+        print('❌ Game not found in Firestore: $eventId');
         return null;
       }
-      
+
       final data = gameDoc.data()!;
+      print('📄 Game document data loaded:');
+      print('   homeTeam: ${data['homeTeam']}');
+      print('   awayTeam: ${data['awayTeam']}');
+      print('   sport: ${data['sport']}');
+      print('   league: ${data['league']}');
+      print('   fights array: ${data['fights']?.toString() ?? 'null'}');
       final fights = data['fights'] as List<dynamic>? ?? [];
-      
-      // Convert fight data to Fight objects
-      final fightObjects = fights.map((fightData) {
-        final fight = fightData as Map<String, dynamic>;
-        return Fight(
-          id: fight['id'] ?? '',
-          eventId: eventId,
-          fighter1Id: fight['fighter1Id'] ?? '',
-          fighter2Id: fight['fighter2Id'] ?? '',
-          fighter1Name: fight['fighter1Name'] ?? 'TBD',
-          fighter2Name: fight['fighter2Name'] ?? 'TBD',
-          fighter1Record: fight['fighter1Record'] ?? '',
-          fighter2Record: fight['fighter2Record'] ?? '',
-          fighter1Country: '',  // Not available in ESPN data
-          fighter2Country: '',  // Not available in ESPN data
-          weightClass: fight['weightClass'] ?? 'Catchweight',
-          rounds: fight['rounds'] ?? 3,
-          cardPosition: fight['cardPosition']?.toString().toLowerCase() ?? 'main',
-          fightOrder: fight['fightOrder'] ?? 1,
-        );
-      }).toList();
-      
-      // Get main event title from last fight
+
+      List<Fight> fightObjects = [];
       String mainEventTitle = 'TBD vs TBD';
-      if (fightObjects.isNotEmpty) {
-        final mainFight = fightObjects.last;
-        mainEventTitle = '${mainFight.fighter1Name} vs ${mainFight.fighter2Name}';
+
+      // If no fights array but we have homeTeam and awayTeam (from Odds API)
+      if (fights.isEmpty && data['homeTeam'] != null && data['awayTeam'] != null) {
+        print('✅ No fights array but found homeTeam/awayTeam - creating main event fight');
+        // Create a single main event fight from the game data
+        mainEventTitle = '${data['awayTeam']} vs ${data['homeTeam']}';
+        print('   Main event title: $mainEventTitle');
+
+        fightObjects = [
+          Fight(
+            id: '${eventId}_main',
+            eventId: eventId,
+            fighter1Id: data['awayTeam']?.toString().replaceAll(' ', '_').toLowerCase() ?? '',
+            fighter2Id: data['homeTeam']?.toString().replaceAll(' ', '_').toLowerCase() ?? '',
+            fighter1Name: data['awayTeam']?.toString() ?? 'TBD',
+            fighter2Name: data['homeTeam']?.toString() ?? 'TBD',
+            fighter1Record: '',  // Not available from Odds API
+            fighter2Record: '',  // Not available from Odds API
+            fighter1Country: '',
+            fighter2Country: '',
+            weightClass: data['league']?.toString() ?? 'Main Event',
+            rounds: 5,  // Main events are typically 5 rounds
+            cardPosition: 'main',
+            fightOrder: 1,
+          ),
+        ];
+        print('   Created fight: ${fightObjects.first.fighter1Name} vs ${fightObjects.first.fighter2Name}');
+      } else if (fights.isNotEmpty) {
+        print('✅ Found ${fights.length} fights in array');
+        // Convert fight data to Fight objects - handle different field names
+        fightObjects = fights.map((fightData) {
+          final fight = fightData as Map<String, dynamic>;
+          // Handle both field naming conventions
+          final fighter1Name = fight['fighter1Name'] ?? fight['fighter1'] ?? 'TBD';
+          final fighter2Name = fight['fighter2Name'] ?? fight['fighter2'] ?? 'TBD';
+
+          print('   Processing fight: $fighter1Name vs $fighter2Name');
+          print('   Fight data keys: ${fight.keys}');
+          print('   Weight class in data: ${fight['weightClass']}');
+
+          // Determine weight class based on fight position and event type
+          String weightClass = 'TBD';
+          if (fight['weightClass'] != null && fight['weightClass'].toString().isNotEmpty) {
+            weightClass = fight['weightClass'].toString();
+          } else if (fight['division'] != null && fight['division'].toString().isNotEmpty) {
+            weightClass = fight['division'].toString();
+          } else if (fight['cardPosition'] == 'main' || fight['fightOrder'] == 13) {
+            // Main events often don't specify weight class in the data
+            weightClass = 'Light Heavyweight'; // Default for main events, should be fetched from ESPN
+          }
+
+          return Fight(
+            id: fight['id'] ?? '',
+            eventId: eventId,
+            fighter1Id: fight['fighter1Id'] ?? fighter1Name.toString().replaceAll(' ', '_').toLowerCase(),
+            fighter2Id: fight['fighter2Id'] ?? fighter2Name.toString().replaceAll(' ', '_').toLowerCase(),
+            fighter1Name: fighter1Name.toString(),
+            fighter2Name: fighter2Name.toString(),
+            fighter1Record: fight['fighter1Record'] ?? '',
+            fighter2Record: fight['fighter2Record'] ?? '',
+            fighter1Country: '',  // Not available
+            fighter2Country: '',  // Not available
+            fighter1ImageUrl: fight['fighter1ImageUrl'],  // Add image URLs
+            fighter2ImageUrl: fight['fighter2ImageUrl'],  // Add image URLs
+            weightClass: weightClass,
+            rounds: fight['rounds'] ?? 3,
+            cardPosition: fight['cardPosition']?.toString().toLowerCase() ?? 'main',
+            fightOrder: fight['fightOrder'] ?? 1,
+          );
+        }).toList();
+
+        // Get main event title from last fight
+        if (fightObjects.isNotEmpty) {
+          final mainFight = fightObjects.last;
+          mainEventTitle = '${mainFight.fighter1Name} vs ${mainFight.fighter2Name}';
+        }
       }
       
       // Handle both Timestamp and int types for gameTime
@@ -336,7 +396,7 @@ class BraggingRightsApp extends StatelessWidget {
         gameTime = DateTime.now(); // Fallback
       }
 
-      return FightCardEventModel(
+      final eventModel = FightCardEventModel(
         id: eventId,
         gameTime: gameTime,
         status: data['status'] ?? 'scheduled',
@@ -347,8 +407,24 @@ class BraggingRightsApp extends StatelessWidget {
         fights: fightObjects,
         venue: data['venue'],
       );
-    } catch (e) {
-      print('Error loading fight card from Firestore: $e');
+
+      print('✅ Created FightCardEventModel:');
+      print('   Event ID: ${eventModel.id}');
+      print('   Event name: ${eventModel.eventName}');
+      print('   Main event: ${eventModel.mainEventTitle}');
+      print('   Total fights: ${eventModel.totalFights}');
+      if (eventModel.typedFights.isNotEmpty) {
+        for (var fight in eventModel.typedFights) {
+          print('   Fight: ${fight.fighter1Name} vs ${fight.fighter2Name}');
+        }
+      } else {
+        print('   No fights in event');
+      }
+
+      return eventModel;
+    } catch (e, stack) {
+      print('❌ Error loading fight card from Firestore: $e');
+      print('Stack trace: $stack');
       return null;
     }
   }

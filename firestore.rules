@@ -161,6 +161,14 @@ service cloud.firestore {
          resource.data.get('playerIds', []).size() == 0 ||
          // Allow deletion of pools past close time with no players
          (resource.data.get('playerIds', []).size() == 0 && resource.data.closeTime < request.time));
+
+      // Picks subcollection - users can read all picks and write their own
+      match /picks/{userId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && request.auth.uid == userId;
+        allow update: if isAuthenticated() && request.auth.uid == userId;
+        allow delete: if false; // Picks cannot be deleted once made
+      }
     }
 
     match /bets/{betId} {

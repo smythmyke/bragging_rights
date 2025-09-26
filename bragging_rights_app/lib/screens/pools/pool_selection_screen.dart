@@ -1144,12 +1144,16 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
         
         // Check if this is a combat sport
         if (SportUtils.isCombatSport(widget.sport)) {
+          final gameIdToPass = this.gameId ?? widget.gameId ?? '${widget.gameTitle}_${widget.sport}'.replaceAll(' ', '_').toLowerCase();
           print('[POOL JOIN] Combat sport detected, navigating to fight card grid');
+          print('[POOL JOIN] Game ID being passed: $gameIdToPass');
+          print('[POOL JOIN] this.gameId: ${this.gameId}');
+          print('[POOL JOIN] widget.gameId: ${widget.gameId}');
           Navigator.pushNamed(
             context,
             '/fight-card-grid',
             arguments: {
-              'gameId': this.gameId ?? widget.gameId ?? '${widget.gameTitle}_${widget.sport}'.replaceAll(' ', '_').toLowerCase(),  // Pass the real game ID!
+              'gameId': gameIdToPass,  // Pass the real game ID!
               'gameTitle': widget.gameTitle,
               'sport': widget.sport,
               'poolName': poolName,

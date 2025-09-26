@@ -712,6 +712,7 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Scaffold(
           appBar: AppBar(
+        automaticallyImplyLeading: false, // Prevent back button from appearing
         title: Align(
           alignment: Alignment.centerLeft,
           child: GestureDetector(

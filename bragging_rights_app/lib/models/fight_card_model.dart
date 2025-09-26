@@ -120,6 +120,7 @@ class Fight {
   final String fighter1Record;
   final String fighter1Country;
   final String? fighter1FlagUrl;
+  final String? fighter1ImageUrl;  // Fighter headshot URL
   final Map<String, dynamic>? fighter1Odds;
   
   // Fighter 2 (Blue Corner)
@@ -128,6 +129,7 @@ class Fight {
   final String fighter2Record;
   final String fighter2Country;
   final String? fighter2FlagUrl;
+  final String? fighter2ImageUrl;  // Fighter headshot URL
   final Map<String, dynamic>? fighter2Odds;
   
   // Fight details
@@ -153,12 +155,14 @@ class Fight {
     required this.fighter1Record,
     required this.fighter1Country,
     this.fighter1FlagUrl,
+    this.fighter1ImageUrl,
     this.fighter1Odds,
     required this.fighter2Id,
     required this.fighter2Name,
     required this.fighter2Record,
     required this.fighter2Country,
     this.fighter2FlagUrl,
+    this.fighter2ImageUrl,
     this.fighter2Odds,
     required this.weightClass,
     required this.rounds,
@@ -211,12 +215,14 @@ class Fight {
       fighter1Record: map['fighter1Record'] ?? '0-0',
       fighter1Country: map['fighter1Country'] ?? '',
       fighter1FlagUrl: map['fighter1FlagUrl'],
+      fighter1ImageUrl: map['fighter1ImageUrl'],
       fighter1Odds: map['fighter1Odds'],
       fighter2Id: map['fighter2Id'] ?? '',
       fighter2Name: map['fighter2Name']?.toString().isNotEmpty == true ? map['fighter2Name'] : 'TBD',
       fighter2Record: map['fighter2Record'] ?? '0-0',
       fighter2Country: map['fighter2Country'] ?? '',
       fighter2FlagUrl: map['fighter2FlagUrl'],
+      fighter2ImageUrl: map['fighter2ImageUrl'],
       fighter2Odds: map['fighter2Odds'],
       weightClass: map['weightClass'] ?? '',
       rounds: map['rounds'] ?? 3,
@@ -245,12 +251,14 @@ class Fight {
       'fighter1Record': fighter1Record,
       'fighter1Country': fighter1Country,
       'fighter1FlagUrl': fighter1FlagUrl,
+      'fighter1ImageUrl': fighter1ImageUrl,
       'fighter1Odds': fighter1Odds,
       'fighter2Id': fighter2Id,
       'fighter2Name': fighter2Name,
       'fighter2Record': fighter2Record,
       'fighter2Country': fighter2Country,
       'fighter2FlagUrl': fighter2FlagUrl,
+      'fighter2ImageUrl': fighter2ImageUrl,
       'fighter2Odds': fighter2Odds,
       'weightClass': weightClass,
       'rounds': rounds,

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/pool_service.dart';
 import '../../services/wager_service.dart';
 import '../../models/pool_model.dart';
+import '../../models/game_model.dart';
 import '../../widgets/br_app_bar.dart';
+import '../../utils/sport_utils.dart';
 import 'package:intl/intl.dart';
 
 class EnhancedPoolScreen extends StatefulWidget {
@@ -27,29 +31,61 @@ class _EnhancedPoolScreenState extends State<EnhancedPoolScreen>
   late TabController _tabController;
   
   Pool? _pool;
+  GameModel? _game;
   bool _isLoading = true;
   bool _hasJoined = false;
   bool _hasWagered = false;
+  String? _currentUserId;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _currentUserId = FirebaseAuth.instance.currentUser?.uid;
     _loadPoolData();
   }
 
   Future<void> _loadPoolData() async {
     setState(() => _isLoading = true);
-    
+
     try {
-      // Fetch pool data from Firestore when available
-      await Future.delayed(const Duration(seconds: 1));
-      
+      // Fetch pool data from Firestore
+      final poolDoc = await FirebaseFirestore.instance
+          .collection('pools')
+          .doc(widget.poolId)
+          .get();
+
+      if (!poolDoc.exists) {
+        throw Exception('Pool not found');
+      }
+
+      final pool = Pool.fromFirestore(poolDoc);
+
+      // Fetch game data
+      final gameDoc = await FirebaseFirestore.instance
+          .collection('games')
+          .doc(pool.gameId)
+          .get();
+
+      GameModel? game;
+      if (gameDoc.exists) {
+        game = GameModel.fromFirestore(gameDoc.data()!, gameDoc.id);
+      }
+
+      // Check if current user has joined
+      bool hasJoined = false;
+      if (_currentUserId != null) {
+        hasJoined = pool.playerIds.contains(_currentUserId);
+      }
+
       setState(() {
+        _pool = pool;
+        _game = game;
+        _hasJoined = hasJoined;
         _isLoading = false;
-        // Real pool data will be loaded from Firestore
       });
     } catch (e) {
+      print('Error loading pool data: $e');
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -642,28 +678,191 @@ class _EnhancedPoolScreenState extends State<EnhancedPoolScreen>
   }
 
   void _joinPool() async {
-    // Implement pool joining logic
-    setState(() => _hasJoined = true);
+    if (_pool == null || _currentUserId == null) return;
+
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      // Join the pool using the pool service
+      final result = await _poolService.joinPoolWithResult(
+        widget.poolId,
+        _pool!.buyInAmount,
+      );
+
+      // Hide loading dialog
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+
+      if (result != null && result['success'] == true) {
+        setState(() => _hasJoined = true);
+
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Successfully joined pool!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+
+        // Reload pool data to get updated state
+        await _loadPoolData();
+      } else {
+        final errorMessage = result?['message'] ?? 'Failed to join pool';
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Hide loading dialog
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+
+      print('Error joining pool: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error joining pool: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _leavePool() async {
-    // Implement pool leaving logic
-    setState(() {
-      _hasJoined = false;
-      _hasWagered = false;
-    });
+    if (_pool == null || _currentUserId == null) return;
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('Leave Pool?'),
+        content: const Text('Are you sure you want to leave this pool?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Leave'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      // Leave the pool using the pool service
+      await _poolService.leavePool(widget.poolId);
+
+      // Hide loading dialog
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+
+      setState(() {
+        _hasJoined = false;
+        _hasWagered = false;
+      });
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Successfully left the pool'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+
+      // Reload pool data to get updated state
+      await _loadPoolData();
+    } catch (e) {
+      // Hide loading dialog
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+
+      print('Error leaving pool: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error leaving pool: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _placeWager() {
-    // Navigate to wager placement
-    Navigator.pushNamed(
-      context,
-      '/bet-selection',
-      arguments: {
-        'gameTitle': widget.gameTitle,
-        'poolId': widget.poolId,
-      },
-    );
+    if (_pool == null || _game == null) return;
+
+    // Check if this is a combat sport
+    final sport = _game!.sport.toLowerCase();
+    print('🎮 _placeWager called in EnhancedPoolScreen');
+    print('   Sport: $sport');
+    print('   Game ID: ${_game!.id}');
+    print('   Game Title: ${widget.gameTitle}');
+    print('   Pool Name: ${_pool!.name}');
+    print('   Is Combat Sport: ${SportUtils.isCombatSport(sport)}');
+
+    if (SportUtils.isCombatSport(sport)) {
+      // Navigate to fight card grid for combat sports
+      print('   ➡️ Navigating to /fight-card-grid');
+      Navigator.pushNamed(
+        context,
+        '/fight-card-grid',
+        arguments: {
+          'gameId': _game!.id,
+          'gameTitle': widget.gameTitle,
+          'sport': sport,
+          'poolName': _pool!.name,
+          'poolId': widget.poolId,
+        },
+      );
+    } else {
+      // Navigate to standard bet selection for team sports
+      print('   ➡️ Navigating to /bet-selection');
+      Navigator.pushNamed(
+        context,
+        '/bet-selection',
+        arguments: {
+          'gameId': _game!.id,
+          'gameTitle': widget.gameTitle,
+          'sport': sport,
+          'poolName': _pool!.name,
+          'poolId': widget.poolId,
+        },
+      );
+    }
   }
 
   void _viewWager() {

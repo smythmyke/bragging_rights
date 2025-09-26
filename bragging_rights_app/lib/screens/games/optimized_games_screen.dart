@@ -9,7 +9,7 @@ import '../../services/card_service.dart';
 import 'package:intl/intl.dart';
 import '../pools/pool_selection_screen.dart';
 import '../cards/card_inventory_screen.dart';
-import '../../widgets/bragging_rights_logo.dart';
+import 'dart:math' as math;
 import '../../data/card_definitions.dart';
 
 /// Optimized games screen with lazy loading and smart fetching
@@ -20,8 +20,13 @@ class OptimizedGamesScreen extends StatefulWidget {
   State<OptimizedGamesScreen> createState() => _OptimizedGamesScreenState();
 }
 
-class _OptimizedGamesScreenState extends State<OptimizedGamesScreen> 
+class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
     with TickerProviderStateMixin {
+  // Animation controllers for BR tile
+  late AnimationController _glowController;
+  late AnimationController _shimmerController;
+  late Animation<double> _glowAnimation;
+  late Animation<double> _shimmerAnimation;
   final OptimizedGamesService _gamesService = OptimizedGamesService();
   final UserPreferencesService _prefsService = UserPreferencesService();
   final WalletService _walletService = WalletService();
@@ -30,7 +35,7 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
   
   List<GameModel> _featuredGames = [];
   Map<String, List<GameModel>> _gamesBySport = {};
-  Map<String, List<GameModel>> _allGamesBySport = {}; // Full 14-day game lists for counts
+  Map<String, List<GameModel>> _allGamesBySport = {}; // Full 14-day game lists cache
   bool _loading = true;
   bool _loadingMore = false;
   String? _selectedSport;
@@ -41,8 +46,50 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
   void initState() {
     super.initState();
     debugPrint('OptimizedGamesScreen: initState called');
+
+    // Initialize BR tile animations
+    _glowController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _shimmerController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _glowAnimation = Tween<double>(
+      begin: 0.3,
+      end: 0.6,
+    ).animate(CurvedAnimation(
+      parent: _glowController,
+      curve: Curves.easeInOut,
+    ));
+
+    _shimmerAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _shimmerController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Start shimmer effect every 5 seconds
+    _startShimmerTimer();
+
     _loadInitialData();
     _scrollController.addListener(_onScroll);
+  }
+
+  void _startShimmerTimer() {
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted) {
+        _shimmerController.forward().then((_) {
+          _shimmerController.reset();
+          _startShimmerTimer();
+        });
+      }
+    });
   }
   
   @override
@@ -51,6 +98,8 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _tabController?.dispose();
+    _glowController.dispose();
+    _shimmerController.dispose();
     // Cancel any pending async operations
     _gamesService.dispose();
     super.dispose();
@@ -85,7 +134,7 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
         _gamesBySport[sport]!.add(game);
       }
 
-      // Store ALL games by sport for accurate counts (from full 14-day window)
+      // Store ALL games by sport for caching (from full 14-day window)
       _allGamesBySport.clear();
       if (allGamesMap != null) {
         allGamesMap.forEach((sport, gamesList) {
@@ -386,9 +435,6 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
   
   Widget _buildSportCard(String sport, {bool isAllSports = false}) {
     final sportUpper = sport.toUpperCase();
-    final gameCount = isAllSports
-        ? _featuredGames.length
-        : (_allGamesBySport[sport.toLowerCase()] ?? []).length;  // Use full 14-day counts
 
     return Card(
       elevation: 4,
@@ -450,23 +496,6 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Flexible(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '$gameCount ${gameCount == 1 ? 'game' : 'games'}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                      ),
-                    ),
                   ),
                 ),
               ],
@@ -789,10 +818,7 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
         appBar: AppBar(
           title: Align(
             alignment: Alignment.centerLeft,
-            child: const BraggingRightsLogo(
-              height: 100,
-              showUnderline: true,
-            ),
+            child: _buildBRTile(),
           ),
           centerTitle: false,
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -1062,6 +1088,88 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
       );
   }
 
+  Widget _buildBRTile() {
+    const Color goldPrimary = Color(0xFFFFD700);
+    const Color goldSecondary = Color(0xFFFFC107);
+
+    return AnimatedBuilder(
+      animation: Listenable.merge([_glowAnimation, _shimmerAnimation]),
+      builder: (context, child) {
+        return Container(
+          width: 45,
+          height: 45,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                goldPrimary.withOpacity(0.3),
+                goldSecondary.withOpacity(0.3),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: goldPrimary,
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: goldPrimary.withOpacity(0.5 * _glowAnimation.value),
+                blurRadius: 15,
+                spreadRadius: 0,
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              // Shimmer overlay
+              if (_shimmerAnimation.value > 0)
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(9),
+                    child: CustomPaint(
+                      painter: ShimmerPainter(
+                        progress: _shimmerAnimation.value,
+                        color: goldPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+              // BR text
+              Center(
+                child: ShaderMask(
+                  shaderCallback: (Rect bounds) {
+                    return LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        goldSecondary,
+                        goldPrimary,
+                        Colors.white,
+                        goldPrimary,
+                      ],
+                      stops: const [0.0, 0.3, 0.5, 1.0],
+                      transform: GradientRotation(_glowAnimation.value * math.pi),
+                    ).createShader(bounds);
+                  },
+                  child: const Text(
+                    'BR',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildCardIndicatorWithIcon({
     required IconData icon,
     required int count,
@@ -1149,5 +1257,47 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return '${months[localDate.month - 1]} ${localDate.day}';
+  }
+}
+
+// Custom painter for shimmer effect
+class ShimmerPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+
+  ShimmerPainter({
+    required this.progress,
+    required this.color,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+
+    // Create a diagonal gradient that moves across the tile
+    final gradientStart = Offset(-size.width + (size.width * 3 * progress), 0);
+    final gradientEnd = Offset(gradientStart.dx + size.width, size.height);
+
+    final paint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        colors: [
+          Colors.transparent,
+          color.withOpacity(0.4),
+          color.withOpacity(0.6),
+          color.withOpacity(0.4),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.4, 0.5, 0.6, 1.0],
+      ).createShader(Rect.fromPoints(gradientStart, gradientEnd))
+      ..blendMode = BlendMode.srcOver;
+
+    canvas.drawRect(rect, paint);
+  }
+
+  @override
+  bool shouldRepaint(ShimmerPainter oldDelegate) {
+    return oldDelegate.progress != progress;
   }
 }

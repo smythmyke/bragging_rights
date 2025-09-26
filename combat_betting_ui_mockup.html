@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Combat Sports Betting UI - Bragging Rights</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0e27 0%, #151932 100%);
+            color: #ffffff;
+            font-family: 'Arial', sans-serif;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 12px;
+        }
+
+        .event-title {
+            font-size: 24px;
+            color: #00ffff;
+            margin-bottom: 10px;
+        }
+
+        .event-details {
+            color: #888;
+            font-size: 14px;
+        }
+
+        .fights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .fight-card {
+            background: rgba(20, 30, 60, 0.6);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .fight-card:hover {
+            border-color: rgba(0, 255, 255, 0.5);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .fight-header {
+            text-align: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .weight-class {
+            color: #ffd700;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .fight-position {
+            color: #888;
+            font-size: 11px;
+        }
+
+        .rounds-info {
+            color: #00ffff;
+            font-size: 11px;
+            margin-top: 5px;
+        }
+
+        .fighters-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: stretch;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .fighter-box {
+            flex: 1;
+            background: rgba(10, 20, 40, 0.8);
+            border: 2px solid rgba(0, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 15px 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            text-align: center;
+        }
+
+        .fighter-box.selected-winner {
+            border-color: #00ff00;
+            background: rgba(0, 255, 0, 0.1);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+        }
+
+        .fighter-box.selected-ko {
+            border-color: #ff6600;
+            background: rgba(255, 102, 0, 0.1);
+        }
+
+        .fighter-box.selected-sub {
+            border-color: #ff00ff;
+            background: rgba(255, 0, 255, 0.1);
+        }
+
+        .fighter-box.selected-dec {
+            border-color: #00ffff;
+            background: rgba(0, 255, 255, 0.1);
+        }
+
+        .fighter-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 10px;
+            border: 2px solid #333;
+            background: #222;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            color: #666;
+            overflow: hidden;
+        }
+
+        .fighter-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .fighter-name {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 5px;
+            color: #fff;
+        }
+
+        .fighter-record {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        .event-badge {
+            margin-top: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            background: rgba(255, 215, 0, 0.15);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            color: #ffd700;
+            text-transform: uppercase;
+        }
+
+        .event-badge.co-main {
+            background: rgba(192, 192, 192, 0.15);
+            border: 1px solid rgba(192, 192, 192, 0.3);
+            color: #c0c0c0;
+        }
+
+        .event-badge .icon {
+            font-size: 11px;
+        }
+
+        .method-indicator {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #ff6600;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .method-indicator.ko { background: #ff6600; }
+        .method-indicator.tko { background: #ff9933; }
+        .method-indicator.sub { background: #ff00ff; }
+        .method-indicator.dec { background: #00ffff; color: #000; }
+
+        .vs-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-weight: bold;
+            font-size: 12px;
+            padding: 0 5px;
+        }
+
+        .rounds-selector {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .rounds-label {
+            font-size: 10px;
+            color: #888;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        .round-selector-single {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 5px;
+        }
+
+        .round-tile-single {
+            min-width: 80px;
+            height: 32px;
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            background: rgba(0, 255, 255, 0.05);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            padding: 0 12px;
+        }
+
+        .round-tile-single:hover {
+            background: rgba(0, 255, 255, 0.2);
+            border-color: rgba(0, 255, 255, 0.6);
+            transform: scale(1.05);
+        }
+
+        .round-tile-single.active {
+            background: rgba(0, 255, 255, 0.3);
+            border-color: #00ffff;
+            color: #00ffff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .round-tile-single.inactive {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .tie-option {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .tie-button {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            color: #ffd700;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .tie-button:hover {
+            background: rgba(255, 215, 0, 0.2);
+            border-color: rgba(255, 215, 0, 0.5);
+        }
+
+        .tie-button.selected {
+            background: rgba(255, 215, 0, 0.3);
+            border-color: #ffd700;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .scoring-info {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .scoring-info h3 {
+            color: #00ffff;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .scoring-rule {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 12px;
+            color: #ccc;
+        }
+
+        .scoring-rule .points {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .action-button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-size: 14px;
+        }
+
+        .save-button {
+            background: linear-gradient(135deg, #00ffff 0%, #0099cc 100%);
+            color: #000;
+        }
+
+        .save-button:hover {
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .save-button:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .advanced-button {
+            background: transparent;
+            border: 2px solid #ffd700;
+            color: #ffd700;
+        }
+
+        .advanced-button:hover {
+            background: rgba(255, 215, 0, 0.1);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+        }
+
+        .instruction-text {
+            text-align: center;
+            color: #888;
+            font-size: 12px;
+            margin: 15px 0;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="event-title">UFC 311: Makhachev vs Tsarukyan</h1>
+            <div class="event-details">January 18, 2025 • T-Mobile Arena, Las Vegas</div>
+        </div>
+
+        <div class="instruction-text">
+            Tap fighter to select winner → Tap again to cycle through methods (KO/TKO/SUB/DEC) → Select round below
+        </div>
+
+        <div class="scoring-info">
+            <h3>🏆 POINT SCORING SYSTEM</h3>
+            <div class="scoring-rule">
+                <span>Correct Winner</span>
+                <span class="points">+10 pts</span>
+            </div>
+            <div class="scoring-rule">
+                <span>Correct Method (KO/TKO, Submission, Decision)</span>
+                <span class="points">+5 pts</span>
+            </div>
+            <div class="scoring-rule">
+                <span>Correct Round</span>
+                <span class="points">+5 pts</span>
+            </div>
+            <div class="scoring-rule">
+                <span>Underdog Win Bonus</span>
+                <span class="points">+10 pts</span>
+            </div>
+            <div class="scoring-rule">
+                <span>Maximum per fight</span>
+                <span class="points">30 pts</span>
+            </div>
+        </div>
+
+        <div class="fights-grid">
+            <!-- Main Event -->
+            <div class="fight-card">
+                <div class="fight-header">
+                    <div class="weight-class">LIGHTWEIGHT CHAMPIONSHIP</div>
+                    <div class="fight-position">Main Event</div>
+                    <div class="rounds-info">5 Rounds</div>
+                </div>
+
+                <div class="fighters-container">
+                    <div class="fighter-box selected-ko" onclick="cycleFighterMethod(this)">
+                        <div class="method-indicator ko">KO/TKO</div>
+                        <div class="fighter-image">
+                            <img src="https://a.espncdn.com/i/headshots/mma/players/full/3074889.png" alt="">
+                        </div>
+                        <div class="fighter-name">Islam Makhachev</div>
+                        <div class="fighter-record">26-1-0</div>
+
+                        <div class="rounds-selector">
+                            <div class="rounds-label">ROUND PREDICTION</div>
+                            <div class="round-selector-single">
+                                <div class="round-tile-single active" onclick="cycleRound(this, 5)" data-round="3">
+                                    <i class="fas fa-clock"></i> Round 3
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="vs-divider">VS</div>
+
+                    <div class="fighter-box" onclick="cycleFighterMethod(this)">
+                        <div class="fighter-image">
+                            <img src="https://a.espncdn.com/i/headshots/mma/players/full/4285973.png" alt="">
+                        </div>
+                        <div class="fighter-name">Arman Tsarukyan</div>
+                        <div class="fighter-record">22-3-0</div>
+
+                        <div class="rounds-selector">
+                            <div class="rounds-label">ROUND PREDICTION</div>
+                            <div class="round-selector-single">
+                                <div class="round-tile-single inactive" onclick="cycleRound(this, 5)" data-round="0">
+                                    <i class="fas fa-clock"></i> Select Round
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tie-option">
+                    <button class="tie-button" onclick="selectTie(this)">DRAW / NO CONTEST</button>
+                    <div style="text-align: center; margin-top: 10px;">
+                        <div class="event-badge">
+                            <span class="icon">👑</span>
+                            <span>MAIN EVENT</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Co-Main Event -->
+            <div class="fight-card">
+                <div class="fight-header">
+                    <div class="weight-class">BANTAMWEIGHT</div>
+                    <div class="fight-position">Co-Main Event</div>
+                    <div class="rounds-info">3 Rounds</div>
+                </div>
+
+                <div class="fighters-container">
+                    <div class="fighter-box" onclick="cycleFighterMethod(this)">
+                        <div class="fighter-image">
+                            <span>MU</span>
+                        </div>
+                        <div class="fighter-name">Merab Dvalishvili</div>
+                        <div class="fighter-record">18-4-0</div>
+
+                        <div class="rounds-selector">
+                            <div class="rounds-label">ROUND PREDICTION</div>
+                            <div class="round-selector-single">
+                                <div class="round-tile-single inactive" onclick="cycleRound(this, 3)" data-round="0">
+                                    <i class="fas fa-clock"></i> Select Round
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="vs-divider">VS</div>
+
+                    <div class="fighter-box selected-dec" onclick="cycleFighterMethod(this)">
+                        <div class="method-indicator dec">DECISION</div>
+                        <div class="fighter-image">
+                            <span>UN</span>
+                        </div>
+                        <div class="fighter-name">Umar Nurmagomedov</div>
+                        <div class="fighter-record">18-0-0</div>
+
+                        <div class="rounds-selector">
+                            <div class="rounds-label">ROUND PREDICTION</div>
+                            <div class="round-selector-single">
+                                <div class="round-tile-single inactive" onclick="cycleRound(this, 3)" data-round="0">
+                                    <i class="fas fa-clock"></i> Select Round
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tie-option">
+                    <button class="tie-button" onclick="selectTie(this)">DRAW / NO CONTEST</button>
+                    <div style="text-align: center; margin-top: 10px;">
+                        <div class="event-badge co-main">
+                            <span class="icon">⭐</span>
+                            <span>CO-MAIN</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Another Fight -->
+            <div class="fight-card">
+                <div class="fight-header">
+                    <div class="weight-class">LIGHT HEAVYWEIGHT</div>
+                    <div class="fight-position">Main Card</div>
+                    <div class="rounds-info">3 Rounds</div>
+                </div>
+
+                <div class="fighters-container">
+                    <div class="fighter-box selected-sub" onclick="cycleFighterMethod(this)">
+                        <div class="method-indicator sub">SUBMISSION</div>
+                        <div class="fighter-image">
+                            <span>JH</span>
+                        </div>
+                        <div class="fighter-name">Jamahal Hill</div>
+                        <div class="fighter-record">12-2-0</div>
+
+                        <div class="rounds-selector">
+                            <div class="rounds-label">ROUND PREDICTION</div>
+                            <div class="round-selector-single">
+                                <div class="round-tile-single active" onclick="cycleRound(this, 3)" data-round="1">
+                                    <i class="fas fa-clock"></i> Round 1
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="vs-divider">VS</div>
+
+                    <div class="fighter-box" onclick="cycleFighterMethod(this)">
+                        <div class="fighter-image">
+                            <span>JP</span>
+                        </div>
+                        <div class="fighter-name">Jiří Procházka</div>
+                        <div class="fighter-record">30-5-1</div>
+
+                        <div class="rounds-selector">
+                            <div class="rounds-label">ROUND PREDICTION</div>
+                            <div class="round-selector-single">
+                                <div class="round-tile-single inactive" onclick="cycleRound(this, 3)" data-round="0">
+                                    <i class="fas fa-clock"></i> Select Round
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tie-option">
+                    <button class="tie-button" onclick="selectTie(this)">DRAW / NO CONTEST</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="action-button advanced-button">ADVANCED BETS</button>
+            <button class="action-button save-button">SAVE PICKS (3/12)</button>
+        </div>
+    </div>
+
+    <script>
+        function cycleFighterMethod(fighterBox) {
+            // Clear any tie selection
+            const fightCard = fighterBox.closest('.fight-card');
+            const tieButton = fightCard.querySelector('.tie-button');
+            tieButton.classList.remove('selected');
+
+            // Clear opponent selection AND their round selection
+            const fighters = fightCard.querySelectorAll('.fighter-box');
+            fighters.forEach(f => {
+                if (f !== fighterBox) {
+                    // Clear fighter selection
+                    f.classList.remove('selected-winner', 'selected-ko', 'selected-sub', 'selected-dec');
+                    const indicator = f.querySelector('.method-indicator');
+                    if (indicator) indicator.remove();
+
+                    // Clear round selection for opponent
+                    const opponentRoundTile = f.querySelector('.round-tile-single');
+                    if (opponentRoundTile) {
+                        opponentRoundTile.dataset.round = '0';
+                        opponentRoundTile.classList.remove('active');
+                        opponentRoundTile.classList.add('inactive');
+                        opponentRoundTile.innerHTML = '<i class="fas fa-clock"></i> Select Round';
+                    }
+                }
+            });
+
+            // Cycle through states: none -> winner -> KO -> SUB -> DEC -> none
+            const states = ['', 'selected-winner', 'selected-ko', 'selected-sub', 'selected-dec'];
+            const methods = ['', '', 'KO/TKO', 'SUBMISSION', 'DECISION'];
+            const methodClasses = ['', '', 'ko', 'sub', 'dec'];
+
+            let currentState = 0;
+            states.forEach((state, index) => {
+                if (state && fighterBox.classList.contains(state)) {
+                    currentState = index;
+                }
+            });
+
+            // Remove all selection classes
+            fighterBox.classList.remove('selected-winner', 'selected-ko', 'selected-sub', 'selected-dec');
+
+            // Remove existing method indicator
+            const existingIndicator = fighterBox.querySelector('.method-indicator');
+            if (existingIndicator) existingIndicator.remove();
+
+            // Move to next state
+            currentState = (currentState + 1) % states.length;
+
+            if (states[currentState]) {
+                fighterBox.classList.add(states[currentState]);
+
+                // Add method indicator if it's a method selection
+                if (currentState > 1) {
+                    const indicator = document.createElement('div');
+                    indicator.className = `method-indicator ${methodClasses[currentState]}`;
+                    indicator.textContent = methods[currentState];
+                    fighterBox.insertBefore(indicator, fighterBox.firstChild);
+                }
+            } else {
+                // If cycling back to no selection, clear round selection too
+                const roundTile = fighterBox.querySelector('.round-tile-single');
+                if (roundTile) {
+                    roundTile.dataset.round = '0';
+                    roundTile.classList.remove('active');
+                    roundTile.classList.add('inactive');
+                    roundTile.innerHTML = '<i class="fas fa-clock"></i> Select Round';
+                }
+            }
+        }
+
+        function cycleRound(tile, maxRounds) {
+            // Only allow round selection if fighter is selected
+            const fighterBox = tile.closest('.fighter-box');
+            const isSelected = fighterBox.classList.contains('selected-winner') ||
+                             fighterBox.classList.contains('selected-ko') ||
+                             fighterBox.classList.contains('selected-sub') ||
+                             fighterBox.classList.contains('selected-dec');
+
+            if (!isSelected) {
+                // Visual feedback that fighter must be selected first
+                tile.style.transform = 'scale(0.95)';
+                setTimeout(() => tile.style.transform = '', 100);
+                return;
+            }
+
+            // Get current round and cycle to next
+            let currentRound = parseInt(tile.dataset.round) || 0;
+            currentRound = (currentRound % maxRounds) + 1;
+
+            // Update the tile
+            tile.dataset.round = currentRound;
+            tile.classList.remove('inactive');
+            tile.classList.add('active');
+            tile.innerHTML = `<i class="fas fa-clock"></i> Round ${currentRound}`;
+
+            event.stopPropagation(); // Prevent fighter selection from triggering
+        }
+
+        function selectTie(button) {
+            const fightCard = button.closest('.fight-card');
+
+            // Clear all fighter selections
+            const fighters = fightCard.querySelectorAll('.fighter-box');
+            fighters.forEach(f => {
+                f.classList.remove('selected-winner', 'selected-ko', 'selected-sub', 'selected-dec');
+                const indicator = f.querySelector('.method-indicator');
+                if (indicator) indicator.remove();
+
+                // Clear round selections
+                const roundTile = f.querySelector('.round-tile-single');
+                if (roundTile) {
+                    roundTile.dataset.round = '0';
+                    roundTile.classList.remove('active');
+                    roundTile.classList.add('inactive');
+                    roundTile.innerHTML = '<i class="fas fa-clock"></i> Select Round';
+                }
+            });
+
+            // Toggle tie selection
+            button.classList.toggle('selected');
+        }
+    </script>
+</body>
+</html>

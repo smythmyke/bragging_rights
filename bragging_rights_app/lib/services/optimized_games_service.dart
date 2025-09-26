@@ -491,21 +491,54 @@ class OptimizedGamesService {
   /// Convert ESPN event to GameModel
   GameModel? _convertEspnEventToGame(Map<String, dynamic> event, String sport) {
     try {
+      // Add detailed logging for MMA events
+      if (sport.toUpperCase() == 'MMA') {
+        debugPrint('🥊 Processing MMA event:');
+        debugPrint('   Event ID: ${event['id']}');
+        debugPrint('   Event name: ${event['name']}');
+        debugPrint('   Event short name: ${event['shortName']}');
+        debugPrint('   Competitions count: ${event['competitions']?.length ?? 0}');
+      }
+
       final competition = event['competitions']?[0];
-      if (competition == null) return null;
-      
+      if (competition == null) {
+        if (sport.toUpperCase() == 'MMA') {
+          debugPrint('   ❌ No competition found in MMA event');
+        }
+        return null;
+      }
+
       final competitors = competition['competitors'] ?? [];
-      if (competitors.length < 2) return null;
-      
-      // Find home and away teams
+      if (sport.toUpperCase() == 'MMA') {
+        debugPrint('   Competitors count: ${competitors.length}');
+        if (competitors.isNotEmpty) {
+          debugPrint('   Competitors structure: ${competitors.map((c) => c['team']?['displayName'] ?? 'Unknown').toList()}');
+        }
+      }
+
+      if (competitors.length < 2) {
+        if (sport.toUpperCase() == 'MMA') {
+          debugPrint('   ❌ Not enough competitors (${competitors.length} < 2)');
+        }
+        return null;
+      }
+
+      // Find home and away teams - with safety checks
       final homeTeam = competitors.firstWhere(
         (c) => c['homeAway'] == 'home',
-        orElse: () => competitors[0],
+        orElse: () => competitors.isNotEmpty ? competitors[0] : null,
       );
       final awayTeam = competitors.firstWhere(
         (c) => c['homeAway'] == 'away',
-        orElse: () => competitors[1],
+        orElse: () => competitors.length > 1 ? competitors[1] : null,
       );
+
+      if (homeTeam == null || awayTeam == null) {
+        if (sport.toUpperCase() == 'MMA') {
+          debugPrint('   ❌ Could not determine home/away teams');
+        }
+        return null;
+      }
       
       // Parse game time
       final dateStr = competition['date'] ?? event['date'];
@@ -549,8 +582,14 @@ class OptimizedGamesService {
         league: event['league']?['abbreviation'] ?? sport,
         odds: null, // Will be enriched on demand
       );
-    } catch (e) {
-      debugPrint('Error converting ESPN event: $e');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error converting ESPN event: $e');
+      if (sport.toUpperCase() == 'MMA') {
+        debugPrint('   Event data that caused error:');
+        debugPrint('   Event ID: ${event['id']}');
+        debugPrint('   Event name: ${event['name']}');
+        debugPrint('   Stack trace: $stackTrace');
+      }
       return null;
     }
   }
@@ -909,6 +948,14 @@ class OptimizedGamesService {
           'id': matchingOddsFight?.id ?? 'espn_${eventId}_$i',
           'fighter1': matchingOddsFight?.awayTeam ?? fighter1,
           'fighter2': matchingOddsFight?.homeTeam ?? fighter2,
+          'fighter1Id': espnFight['fighter1Id'],
+          'fighter2Id': espnFight['fighter2Id'],
+          'fighter1ImageUrl': espnFight['fighter1ImageUrl'],
+          'fighter2ImageUrl': espnFight['fighter2ImageUrl'],
+          'fighter1Record': espnFight['fighter1Record'] ?? '',
+          'fighter2Record': espnFight['fighter2Record'] ?? '',
+          'weightClass': espnFight['weightClass'] ?? '',
+          'rounds': espnFight['rounds'] ?? 3,
           'time': matchingOddsFight?.gameTime.toIso8601String() ?? gameTime.toIso8601String(),
           'odds': matchingOddsFight?.odds,
           'cardPosition': i == espnFights.length - 1 ? 'main' : (i >= espnFights.length - 5 ? 'main' : 'prelim'),
@@ -1253,9 +1300,34 @@ class OptimizedGamesService {
         for (final comp in competitions) {
           final competitors = comp['competitors'] ?? [];
           if (competitors.length >= 2) {
+            // Get athlete IDs for image URLs
+            final athlete1Id = competitors[0]['id'] ?? '';
+            final athlete2Id = competitors[1]['id'] ?? '';
+
+            // Extract weight class from competition type
+            final weightClass = comp['type']?['text'] ??
+                              comp['type']?['abbreviation'] ??
+                              comp['note'] ?? '';
+
+            // Get records
+            final record1 = competitors[0]['records']?[0]?['summary'] ?? '';
+            final record2 = competitors[1]['records']?[0]?['summary'] ?? '';
+
             fights.add({
               'fighter1': competitors[0]['athlete']?['displayName'] ?? '',
               'fighter2': competitors[1]['athlete']?['displayName'] ?? '',
+              'fighter1Id': athlete1Id,
+              'fighter2Id': athlete2Id,
+              'fighter1ImageUrl': athlete1Id.isNotEmpty
+                  ? 'https://a.espncdn.com/i/headshots/mma/players/full/$athlete1Id.png'
+                  : null,
+              'fighter2ImageUrl': athlete2Id.isNotEmpty
+                  ? 'https://a.espncdn.com/i/headshots/mma/players/full/$athlete2Id.png'
+                  : null,
+              'fighter1Record': record1,
+              'fighter2Record': record2,
+              'weightClass': weightClass,
+              'rounds': comp['format']?['regulation']?['periods'] ?? 3,
             });
           }
         }

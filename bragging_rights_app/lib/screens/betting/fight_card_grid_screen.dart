@@ -5,7 +5,10 @@ import '../../models/fight_card_model.dart';
 import '../../models/fight_card_scoring.dart';
 import '../../services/fight_odds_service.dart';
 import '../../theme/app_theme.dart';
-// Removed custom app bar import - using standard AppBar
+import 'widgets/fighter_card.dart';
+import 'widgets/round_selector.dart';
+import 'widgets/event_badge.dart';
+import 'widgets/scoring_info.dart';
 
 /// Quick Pick Grid for entire fight card
 class FightCardGridScreen extends StatefulWidget {
@@ -31,18 +34,26 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
   Map<String, FightOdds> _odds = {};
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _scoringExpanded = false;
   
   @override
   void initState() {
     super.initState();
+    print('🎯 FightCardGridScreen initState called');
+    print('   Event ID: ${widget.event.id}');
+    print('   Event name: ${widget.event.eventName}');
+    print('   Total fights: ${widget.event.totalFights}');
+    print('   Pool ID: ${widget.poolId}');
+    print('   Pool name: ${widget.poolName}');
     _loadOddsAndPicks();
   }
   
   Future<void> _loadOddsAndPicks() async {
     setState(() => _isLoading = true);
-    
+
     try {
-      // Load odds for all fights
+      // Load odds for all fights (kept for future use, not displayed in UI)
+      // Currently using point-based scoring system instead of real odds
       _odds = await _oddsService.getFightCardOdds(event: widget.event);
       
       // Load existing picks if any
@@ -78,6 +89,11 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
   
   @override
   Widget build(BuildContext context) {
+    print('🎨 FightCardGridScreen BUILD method called');
+    print('   Is Loading: $_isLoading');
+    print('   Odds loaded: ${_odds.length}');
+    print('   Picks made: ${_picks.length}');
+
     return Scaffold(
       backgroundColor: AppTheme.deepBlue,
       appBar: AppBar(
@@ -111,12 +127,21 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
           : Column(
               children: [
                 _buildProgressBar(),
+                ScoringInfo(
+                  isExpanded: _scoringExpanded,
+                  onToggle: () {
+                    setState(() {
+                      _scoringExpanded = !_scoringExpanded;
+                    });
+                  },
+                ),
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        _buildInstructionText(),
                         if (widget.event.mainCard.isNotEmpty) ...[
                           _buildSectionHeader('MAIN CARD'),
                           ..._buildFightCards(widget.event.mainCard),
@@ -212,14 +237,23 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
   Widget _buildFightRow(Fight fight) {
     final pick = _picks[fight.id];
     final odds = _odds[fight.id];
-    
+    final fightIndex = widget.event.typedFights.indexOf(fight);
+    final isMainEvent = fightIndex == widget.event.typedFights.length - 1 && widget.event.mainCard.contains(fight);
+    final isCoMain = fightIndex == widget.event.typedFights.length - 2 && widget.event.mainCard.contains(fight);
+
+    // Debug logging for weight class and images
+    print('🥊 Fight ${fight.id}:');
+    print('   Weight Class: "${fight.weightClass}"');
+    print('   Fighter1 Image: ${fight.fighter1ImageUrl}');
+    print('   Fighter2 Image: ${fight.fighter2ImageUrl}');
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       child: Column(
         children: [
           // Weight class and fight details
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [AppTheme.surfaceBlue.withOpacity(0.9), AppTheme.cardBlue],
@@ -236,307 +270,167 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
                 right: BorderSide(color: AppTheme.borderCyan.withOpacity(0.3), width: 1),
               ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: Column(
               children: [
-                Text(
-                  fight.weightClass.toUpperCase(),
-                  style: TextStyle(
-                    color: AppTheme.primaryCyan.withOpacity(0.7),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                if (fight.isTitle) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [AppTheme.warningAmber, AppTheme.warningAmber.withOpacity(0.8)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(4),
-                      boxShadow: AppTheme.neonGlow(
-                        color: AppTheme.warningAmber,
-                        intensity: 0.3,
-                      ),
-                    ),
-                    child: const Text(
-                      'TITLE',
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      fight.weightClass.toUpperCase(),
                       style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 9,
+                        color: fight.isTitle ? AppTheme.warningAmber : AppTheme.primaryCyan,
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
+                        letterSpacing: 0.8,
                       ),
                     ),
-                  ),
-                ],
-                const SizedBox(width: 8),
+                    if (fight.isTitle) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        'CHAMPIONSHIP',
+                        style: TextStyle(
+                          color: AppTheme.warningAmber.withOpacity(0.7),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 2),
                 Text(
                   '${fight.rounds} ROUNDS',
                   style: TextStyle(
                     color: AppTheme.primaryCyan.withOpacity(0.5),
-                    fontSize: 11,
+                    fontSize: 10,
                   ),
                 ),
               ],
             ),
           ),
-          // Fighter cards
-          Row(
-            children: [
-              Expanded(
-                child: _buildFighterCard(
-                  fight: fight,
-                  fighterId: fight.fighter1Id,
-                  fighterName: fight.fighter1Name,
-                  record: fight.fighter1Record,
-                  country: fight.fighter1Country,
-                  odds: odds?.fighter1OddsDisplay,
-                  isLeft: true,
-                  pick: pick,
-                ),
+          // Fighter cards container
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppTheme.surfaceBlue.withOpacity(0.4), AppTheme.cardBlue.withOpacity(0.6)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Text(
-                  'VS',
-                  style: AppTheme.neonText(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryCyan,
+              border: Border(
+                left: BorderSide(color: AppTheme.borderCyan.withOpacity(0.3), width: 1),
+                right: BorderSide(color: AppTheme.borderCyan.withOpacity(0.3), width: 1),
+                bottom: BorderSide(color: AppTheme.borderCyan.withOpacity(0.3), width: 1),
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(8),
+                bottomRight: Radius.circular(8),
+              ),
+            ),
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: [
+                // Fighter cards
+                Row(
+                  children: [
+                    Expanded(
+                      child: FighterCard(
+                        fight: fight,
+                        fighterId: fight.fighter1Id,
+                        fighterName: fight.fighter1Name,
+                        record: fight.fighter1Record,
+                        country: fight.fighter1Country,
+                        odds: null, // odds?.fighter1OddsDisplay - kept for future use
+                        imageUrl: fight.fighter1ImageUrl,
+                        isLeft: true,
+                        pick: pick,
+                        onTap: () => _handleFighterTap(fight, fight.fighter1Id, fight.fighter1Name),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        'VS',
+                        style: TextStyle(
+                          color: AppTheme.primaryCyan.withOpacity(0.5),
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: FighterCard(
+                        fight: fight,
+                        fighterId: fight.fighter2Id,
+                        fighterName: fight.fighter2Name,
+                        record: fight.fighter2Record,
+                        country: fight.fighter2Country,
+                        odds: null, // odds?.fighter2OddsDisplay - kept for future use
+                        imageUrl: fight.fighter2ImageUrl,
+                        isLeft: false,
+                        pick: pick,
+                        onTap: () => _handleFighterTap(fight, fight.fighter2Id, fight.fighter2Name),
+                      ),
+                    ),
+                  ],
+                ),
+                // Round selector
+                if (pick?.winnerId != null && pick?.method != 'TIE') ...[
+                  const SizedBox(height: 12),
+                  Center(
+                    child: RoundSelector(
+                      currentRound: pick?.round,
+                      maxRounds: fight.rounds,
+                      isActive: true,
+                      onTap: () => _cycleRound(fight.id, fight.rounds),
+                    ),
                   ),
+                ],
+                // TIE button
+                const SizedBox(height: 12),
+                Center(
+                  child: _buildTieButton(fight, pick),
                 ),
-              ),
-              Expanded(
-                child: _buildFighterCard(
-                  fight: fight,
-                  fighterId: fight.fighter2Id,
-                  fighterName: fight.fighter2Name,
-                  record: fight.fighter2Record,
-                  country: fight.fighter2Country,
-                  odds: odds?.fighter2OddsDisplay,
-                  isLeft: false,
-                  pick: pick,
-                ),
-              ),
-            ],
+                // Event badge
+                if (isMainEvent || isCoMain || fight.isTitle) ...[
+                  const SizedBox(height: 12),
+                  Center(
+                    child: EventBadge(
+                      type: isMainEvent
+                          ? EventType.mainEvent
+                          : isCoMain
+                              ? EventType.coMain
+                              : EventType.titleFight,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ],
       ),
     );
   }
-  
-  Widget _buildFighterCard({
-    required Fight fight,
-    required String fighterId,
-    required String fighterName,
-    required String record,
-    required String country,
-    String? odds,
-    required bool isLeft,
-    FightPickState? pick,
-  }) {
-    final isSelected = pick?.winnerId == fighterId;
-    final isTie = pick?.method == 'TIE';
-    final isOpponentSelected = pick?.winnerId != null &&
-                               pick?.winnerId != fighterId &&
-                               !isTie;
-    
-    return GestureDetector(
-      onTap: () => _handleFighterTap(fight, fighterId, fighterName),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isSelected
-                ? [AppTheme.neonGreen.withOpacity(0.2), AppTheme.neonGreen.withOpacity(0.1)]
-                : isTie
-                    ? [AppTheme.primaryCyan.withOpacity(0.2), AppTheme.primaryCyan.withOpacity(0.1)]
-                    : [AppTheme.surfaceBlue.withOpacity(0.6), AppTheme.cardBlue.withOpacity(0.8)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          border: Border.all(
-            color: isSelected
-                ? AppTheme.neonGreen
-                : isTie
-                    ? AppTheme.primaryCyan
-                    : isOpponentSelected
-                        ? AppTheme.borderCyan.withOpacity(0.2)
-                        : AppTheme.borderCyan.withOpacity(0.3),
-            width: isSelected || isTie ? 2 : 1,
-          ),
-          boxShadow: isSelected || isTie
-              ? AppTheme.neonGlow(
-                  color: isSelected ? AppTheme.neonGreen : AppTheme.primaryCyan,
-                  intensity: 0.5,
-                )
-              : null,
-          borderRadius: BorderRadius.only(
-            bottomLeft: isLeft ? const Radius.circular(8) : Radius.zero,
-            bottomRight: !isLeft ? const Radius.circular(8) : Radius.zero,
-          ),
-        ),
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            // Fighter avatar placeholder
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: isSelected
-                      ? [AppTheme.neonGreen.withOpacity(0.3), AppTheme.neonGreen.withOpacity(0.1)]
-                      : isTie
-                          ? [AppTheme.primaryCyan.withOpacity(0.3), AppTheme.primaryCyan.withOpacity(0.1)]
-                          : [AppTheme.surfaceBlue, AppTheme.cardBlue],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                border: Border.all(
-                  color: isSelected ? AppTheme.neonGreen : isTie ? AppTheme.primaryCyan : AppTheme.borderCyan.withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  fighterName.split(' ').map((n) => n[0]).join(),
-                  style: TextStyle(
-                    color: isSelected ? AppTheme.neonGreen : isTie ? AppTheme.primaryCyan : AppTheme.primaryCyan.withOpacity(0.7),
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            // Fighter name
-            Text(
-              fighterName.toUpperCase(),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: isSelected ? AppTheme.neonGreen : isTie ? AppTheme.primaryCyan : Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                shadows: isSelected || isTie
-                    ? [
-                        Shadow(
-                          color: (isSelected ? AppTheme.neonGreen : AppTheme.primaryCyan).withOpacity(0.5),
-                          blurRadius: 4,
-                        ),
-                      ]
-                    : null,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            // Record
-            Text(
-              record,
-              style: TextStyle(
-                color: isSelected || isTie
-                    ? (isSelected ? AppTheme.neonGreen : AppTheme.primaryCyan).withOpacity(0.8)
-                    : AppTheme.primaryCyan.withOpacity(0.5),
-                fontSize: 11,
-              ),
-            ),
-            if (odds != null) ...[
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: odds.startsWith('+')
-                      ? AppTheme.primaryCyan.withOpacity(0.2)
-                      : AppTheme.warningAmber.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(
-                    color: odds.startsWith('+')
-                        ? AppTheme.primaryCyan.withOpacity(0.3)
-                        : AppTheme.warningAmber.withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Text(
-                  odds,
-                  style: TextStyle(
-                    color: odds.startsWith('+') ? AppTheme.primaryCyan : AppTheme.warningAmber,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-            // Method indicator
-            if (isSelected && pick?.method != null && pick?.method != 'TIE') ...[
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppTheme.neonGreen, AppTheme.neonGreen.withOpacity(0.7)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: AppTheme.neonGlow(
-                    color: AppTheme.neonGreen,
-                    intensity: 0.3,
-                  ),
-                ),
-                child: Text(
-                  pick!.method!,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-            // TIE indicator
-            if (isTie) ...[
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppTheme.warningAmber, AppTheme.warningAmber.withOpacity(0.7)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: AppTheme.neonGlow(
-                    color: AppTheme.warningAmber,
-                    intensity: 0.3,
-                  ),
-                ),
-                child: const Text(
-                  'TIE',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
+  void _cycleRound(String fightId, int maxRounds) {
+    final currentPick = _picks[fightId];
+    if (currentPick?.winnerId == null) return; // Must select fighter first
+
+    setState(() {
+      int nextRound = ((currentPick?.round ?? 0) % maxRounds) + 1;
+
+      _picks[fightId] = FightPickState(
+        winnerId: currentPick!.winnerId,
+        winnerName: currentPick.winnerName,
+        method: currentPick.method,
+        round: nextRound,
+        confidence: currentPick.confidence,
+      );
+    });
   }
-  
+
   void _handleFighterTap(Fight fight, String fighterId, String fighterName) {
     setState(() {
       final currentPick = _picks[fight.id];
-      
+
       // If no pick exists, create new with winner
       if (currentPick == null) {
         _picks[fight.id] = FightPickState(
@@ -544,32 +438,27 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
           winnerName: fighterName,
         );
       }
-      // If same fighter tapped, cycle through methods
+      // If same fighter tapped, cycle through methods (excluding TIE)
       else if (currentPick.winnerId == fighterId && currentPick.method != 'TIE') {
-        final methods = ['KO', 'TKO', 'SUB', 'DEC', 'TIE', null];
+        final methods = ['KO/TKO', 'SUBMISSION', 'DECISION', null];
         final currentIndex = methods.indexOf(currentPick.method);
         final nextIndex = (currentIndex + 1) % methods.length;
         final nextMethod = methods[nextIndex];
-        
-        if (nextMethod == 'TIE') {
-          // Set TIE for both fighters
-          _picks[fight.id] = FightPickState(
-            winnerId: null,
-            winnerName: null,
-            method: 'TIE',
-          );
-        } else if (nextMethod == null) {
+
+        if (nextMethod == null) {
           // Back to basic winner pick
           _picks[fight.id] = FightPickState(
             winnerId: fighterId,
             winnerName: fighterName,
+            round: null, // Clear round when cycling back
           );
         } else {
-          // Set specific method
+          // Set specific method, preserve round selection if exists
           _picks[fight.id] = FightPickState(
             winnerId: fighterId,
             winnerName: fighterName,
             method: nextMethod,
+            round: currentPick.round, // Preserve existing round
           );
         }
       }
@@ -578,9 +467,65 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
         _picks[fight.id] = FightPickState(
           winnerId: fighterId,
           winnerName: fighterName,
+          round: null, // Clear round when switching fighters
         );
       }
     });
+  }
+
+  Widget _buildTieButton(Fight fight, FightPickState? pick) {
+    final isTie = pick?.method == 'TIE';
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (isTie) {
+            // Clear tie selection
+            _picks.remove(fight.id);
+          } else {
+            // Set tie
+            _picks[fight.id] = FightPickState(
+              winnerId: null,
+              winnerName: null,
+              method: 'TIE',
+            );
+          }
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          gradient: isTie
+              ? LinearGradient(
+                  colors: [AppTheme.warningAmber.withOpacity(0.3), AppTheme.warningAmber.withOpacity(0.1)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: !isTie ? AppTheme.surfaceBlue.withOpacity(0.3) : null,
+          border: Border.all(
+            color: isTie ? AppTheme.warningAmber : AppTheme.warningAmber.withOpacity(0.3),
+            width: isTie ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(6),
+          boxShadow: isTie
+              ? AppTheme.neonGlow(
+                  color: AppTheme.warningAmber,
+                  intensity: 0.3,
+                )
+              : null,
+        ),
+        child: Text(
+          'DRAW / NO CONTEST',
+          style: TextStyle(
+            color: isTie ? AppTheme.warningAmber : AppTheme.warningAmber.withOpacity(0.7),
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
   }
   
   Widget _buildSubmitButton() {
@@ -611,24 +556,26 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
             child: OutlinedButton(
               onPressed: hasAnyPicks ? _showAdvancedOptions : null,
               style: OutlinedButton.styleFrom(
-                side: BorderSide(color: AppTheme.primaryCyan.withOpacity(0.5)),
+                side: BorderSide(color: AppTheme.warningAmber.withOpacity(0.5)),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: Text(
-                'ADVANCED BETS',
-                style: TextStyle(
-                  color: hasAnyPicks ? AppTheme.primaryCyan : AppTheme.primaryCyan.withOpacity(0.3),
-                  fontWeight: FontWeight.bold,
+              child: Center(
+                child: Text(
+                  'ADVANCED BETS',
+                  style: TextStyle(
+                    color: hasAnyPicks ? AppTheme.warningAmber : AppTheme.warningAmber.withOpacity(0.3),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                 ),
               ),
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            flex: 2,
             child: Container(
               decoration: hasAnyPicks && !_isSaving
                   ? BoxDecoration(
@@ -663,12 +610,14 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
                           strokeWidth: 2,
                         ),
                       )
-                    : Text(
-                        'SAVE PICKS',
-                        style: TextStyle(
-                          color: hasAnyPicks ? Colors.white : AppTheme.primaryCyan.withOpacity(0.3),
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                    : Center(
+                        child: Text(
+                          'SAVE PICKS (${_picks.values.where((p) => p.winnerId != null || p.method == 'TIE').length}/${widget.event.typedFights.length})',
+                          style: TextStyle(
+                            color: hasAnyPicks ? Colors.white : AppTheme.primaryCyan.withOpacity(0.3),
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
               ),
@@ -696,6 +645,7 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
             'winnerId': pick.winnerId,
             'winnerName': pick.winnerName,
             'method': pick.method,
+            'round': pick.round, // Include round prediction
             'confidence': pick.confidence,
             'pickedAt': FieldValue.serverTimestamp(),
           };
@@ -749,47 +699,126 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
     );
   }
   
+
   void _showInstructions() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text(
-          'How to Pick',
-          style: TextStyle(color: Colors.white),
+        backgroundColor: AppTheme.cardBlue,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: AppTheme.borderCyan.withOpacity(0.3)),
         ),
-        content: const Column(
+        title: Row(
+          children: [
+            Icon(Icons.help_outline, color: AppTheme.primaryCyan, size: 24),
+            const SizedBox(width: 8),
+            Text(
+              'How to Make Picks',
+              style: TextStyle(color: AppTheme.primaryCyan, fontSize: 18),
+            ),
+          ],
+        ),
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '1. TAP fighter to select winner (green outline)',
-              style: TextStyle(color: Colors.white70),
+            _buildInstructionItem(
+              '1',
+              'TAP fighter to select winner',
+              'Green highlight shows selection',
+              AppTheme.neonGreen,
             ),
-            SizedBox(height: 8),
-            Text(
-              '2. TAP AGAIN to add method (KO, TKO, SUB, DEC)',
-              style: TextStyle(color: Colors.white70),
+            const SizedBox(height: 12),
+            _buildInstructionItem(
+              '2',
+              'TAP AGAIN to cycle methods',
+              'KO/TKO → SUBMISSION → DECISION',
+              AppTheme.primaryCyan,
             ),
-            SizedBox(height: 8),
-            Text(
-              '3. Keep TAPPING to cycle through methods or TIE',
-              style: TextStyle(color: Colors.white70),
+            const SizedBox(height: 12),
+            _buildInstructionItem(
+              '3',
+              'Select round prediction',
+              'Tap round selector after picking method',
+              AppTheme.secondaryCyan,
             ),
-            SizedBox(height: 8),
-            Text(
-              '4. TAP opponent to switch selection',
-              style: TextStyle(color: Colors.white70),
+            const SizedBox(height: 12),
+            _buildInstructionItem(
+              '4',
+              'Or select DRAW/NO CONTEST',
+              'Use the button below fighters',
+              AppTheme.warningAmber,
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('GOT IT', style: TextStyle(color: Colors.green)),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            ),
+            child: Text(
+              'GOT IT',
+              style: TextStyle(
+                color: AppTheme.neonGreen,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildInstructionItem(String number, String title, String subtitle, Color color) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.2),
+            border: Border.all(color: color, width: 1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: Text(
+              number,
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
   
@@ -798,6 +827,41 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
     if (section.contains('PRELIM')) return AppTheme.primaryCyan;
     return AppTheme.primaryCyan.withOpacity(0.5);
   }
+
+  Widget _buildInstructionText() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceBlue.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: AppTheme.borderCyan.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.info_outline,
+            size: 16,
+            color: AppTheme.primaryCyan.withOpacity(0.7),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Tap fighter to select winner → Tap again to cycle methods → Select round below',
+              style: TextStyle(
+                color: AppTheme.primaryCyan.withOpacity(0.7),
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// State for a single fight pick
@@ -805,12 +869,14 @@ class FightPickState {
   final String? winnerId;
   final String? winnerName;
   final String? method; // KO, TKO, SUB, DEC, TIE
+  final int? round; // Round prediction (1-3 or 1-5)
   final int confidence;
-  
+
   FightPickState({
     this.winnerId,
     this.winnerName,
     this.method,
+    this.round,
     this.confidence = 3,
   });
 }
