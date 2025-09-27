@@ -156,14 +156,52 @@ class MMAService {
       // Fetch competitions (fights)
       final fights = <MMAFight>[];
       if (eventData['competitions'] != null) {
-        print('📊 Processing ${eventData['competitions'].length} fights');
+        // Handle both List and Map structures for competitions
+        final competitionsData = eventData['competitions'];
+        print('🔍 Competitions data type: ${competitionsData.runtimeType}');
+
+        List<dynamic> competitions = [];
+
+        if (competitionsData is List) {
+          competitions = competitionsData;
+        } else if (competitionsData is Map) {
+          if (competitionsData.containsKey('items')) {
+            competitions = competitionsData['items'] as List;
+          } else if (competitionsData.containsKey('\$ref')) {
+            // Single competition with $ref - need to fetch it
+            try {
+              String compUrl = competitionsData['\$ref'];
+              if (!compUrl.startsWith('http')) {
+                compUrl = 'http:$compUrl';
+              }
+              print('🔗 Fetching competitions from: $compUrl');
+              final compResponse = await http.get(Uri.parse(compUrl));
+              if (compResponse.statusCode == 200) {
+                final compData = json.decode(compResponse.body);
+                // Check if the response contains items or is a list
+                if (compData is List) {
+                  competitions = compData;
+                } else if (compData is Map && compData.containsKey('items')) {
+                  competitions = compData['items'] as List;
+                } else if (compData is Map) {
+                  // Single competition object
+                  competitions = [compData];
+                }
+              }
+            } catch (e) {
+              print('Error fetching competitions from ref: $e');
+            }
+          }
+        }
+
+        print('📊 Processing ${competitions.length} fights');
 
         // First, collect all fighter URLs to batch fetch
         final fighterRefs = <String>[];
         final competitionData = <Map<String, dynamic>>[];
 
         // Fetch all competition data first
-        for (final comp in eventData['competitions']) {
+        for (final comp in competitions) {
           try {
             String compUrl = comp['\$ref'];
             if (!compUrl.startsWith('http')) {
