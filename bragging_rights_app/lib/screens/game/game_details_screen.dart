@@ -200,7 +200,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         print('Response body: ${summaryResponse.body.substring(0, 200)}...');
       }
 
-      // Fetch scoreboard for additional data like weather and probables
+      // Fetch scoreboard for additional data like probables
       // Parse the game date from the header if available, otherwise use game time
       DateTime? gameDate;
       if (_eventDetails?['header']?['competitions']?[0]?['date'] != null) {
@@ -245,13 +245,6 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                 print('    - ${pitcher['homeAway']}: ${athlete?['fullName']}');
               }
 
-              // Check for weather
-              final weather = competition['weather'];
-              if (weather != null) {
-                print('  - Weather: ${weather['temperature']}°F, ${weather['displayValue']}');
-              } else {
-                print('  - No weather data');
-              }
 
               // Check for competitors (teams)
               final competitors = competition['competitors'] as List? ?? [];
@@ -272,7 +265,6 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                 'competitions': [{
                   ...competition,
                   'probables': competition['probables'] ?? [],
-                  'weather': competition['weather'] ?? {},
                 }],
               };
             });
@@ -1943,8 +1935,6 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         children: [
           _buildPitchingMatchupCard(),
           const SizedBox(height: 16),
-          _buildWeatherCard(),
-          const SizedBox(height: 16),
           _buildTeamFormCard(),
         ],
       ),
@@ -2313,70 +2303,6 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildWeatherCard() {
-    final weather = _eventDetails?['competitions']?[0]?['weather'];
-
-    if (weather == null) {
-      return const SizedBox();
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceBlue,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'WEATHER CONDITIONS',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.primaryCyan,
-              letterSpacing: 1.2,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              Column(
-                children: [
-                  const Icon(Icons.thermostat, color: AppTheme.warningAmber),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${weather['temperature'] ?? 'N/A'}°F',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-              Column(
-                children: [
-                  const Icon(Icons.air, color: AppTheme.secondaryCyan),
-                  const SizedBox(height: 4),
-                  Text(
-                    weather['displayValue'] ?? 'N/A',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 
