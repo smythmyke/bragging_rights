@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum DataSource { boxingData, espn }
+enum DataSource { boxingData, espn, oddsApi }
 enum EventStatus { upcoming, live, completed }
 
 class BoxingEvent {

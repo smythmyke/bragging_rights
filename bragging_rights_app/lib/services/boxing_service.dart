@@ -4,17 +4,28 @@ import '../models/boxing_fight_model.dart';
 import '../models/boxing_fighter_model.dart';
 import 'boxing_data_api_service.dart';
 import 'espn_boxing_service.dart';
+import 'boxing_odds_service.dart';
 
 class BoxingService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final BoxingDataApiService _boxingDataApi = BoxingDataApiService();
   final ESPNBoxingService _espnApi = ESPNBoxingService();
+  final BoxingOddsService _oddsApi = BoxingOddsService();
 
   static const int CACHE_HOURS = 24;
 
   Future<List<BoxingEvent>> getUpcomingEvents() async {
     try {
-      // Try Firestore cache first (Boxing Data API cached data)
+      // PRIMARY: Try The Odds API first (live data)
+      print('Boxing: Fetching from The Odds API...');
+      final oddsEvents = await _oddsApi.getUpcomingEventsFromOdds();
+
+      if (oddsEvents.isNotEmpty) {
+        print('Boxing: Using ${oddsEvents.length} events from The Odds API');
+        return oddsEvents;
+      }
+
+      // SECONDARY: Try Firestore cache (Boxing Data API cached data)
       final cacheData = await _getEventsFromCache();
 
       if (cacheData.isNotEmpty && await _isCacheFresh()) {
@@ -22,20 +33,26 @@ class BoxingService {
         return cacheData;
       }
 
-      // Fallback to ESPN if cache is stale or empty
-      print('Boxing: Cache stale or empty, falling back to ESPN API');
+      // TERTIARY: Fallback to ESPN if all else fails
+      print('Boxing: Trying ESPN API as last resort');
       final espnEvents = await _espnApi.getBoxingEvents();
 
       if (espnEvents.isEmpty) {
-        // Return stale cache if ESPN also fails
-        print('Boxing: ESPN failed, returning stale cache');
+        // Return stale cache if everything fails
+        print('Boxing: All APIs failed, returning stale cache');
         return cacheData;
       }
 
       return espnEvents;
     } catch (e) {
       print('Error fetching boxing events: $e');
-      // Try to return cached data even if stale
+      // Try The Odds API one more time
+      try {
+        final oddsEvents = await _oddsApi.getUpcomingEventsFromOdds(forceRefresh: true);
+        if (oddsEvents.isNotEmpty) return oddsEvents;
+      } catch (_) {}
+
+      // Return cached data as last resort
       return await _getEventsFromCache();
     }
   }
