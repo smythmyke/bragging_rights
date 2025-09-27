@@ -34,7 +34,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
   String _selectedPoolType = 'quick';
   Timer? _countdownTimer;
   Duration _poolCloseCountdown = const Duration(minutes: 15, seconds: 30);
-  String? gameId;
+  late String gameId;
   bool _isLoadingOdds = false;
   
   // Cache wallet balance to prevent flickering
@@ -55,11 +55,15 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
     _tabController = TabController(length: 4, vsync: this);
     _startCountdownTimer();
     // Use the real game ID passed from navigation, or generate one as fallback
-    gameId = widget.gameId ?? '${widget.gameTitle}_${widget.sport}'.replaceAll(' ', '_').toLowerCase();
-    
+    // For boxing from Odds API, widget.gameId might be the generated ID without espnId
+    gameId = widget.gameId ?? '${widget.sport.toLowerCase()}_${widget.gameTitle.toLowerCase()}'.replaceAll(' ', '_').replaceAll('vs', 'v');
+
+    print('[POOL SELECTION] Initializing with gameId: $gameId');
+    print('[POOL SELECTION] widget.gameId: ${widget.gameId}, sport: ${widget.sport}, title: ${widget.gameTitle}');
+
     // Initialize streams once to prevent recreation
-    _quickPlayStream = _poolService.getPoolsByType(gameId!, PoolType.quick).distinct();
-    _tournamentStream = _poolService.getTournamentPools(gameId!).distinct();
+    _quickPlayStream = _poolService.getPoolsByType(gameId, PoolType.quick).distinct();
+    _tournamentStream = _poolService.getTournamentPools(gameId).distinct();
     
     // Load initial balance and listen for changes
     _loadBalance();
@@ -1144,7 +1148,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
         
         // Check if this is a combat sport
         if (SportUtils.isCombatSport(widget.sport)) {
-          final gameIdToPass = this.gameId ?? widget.gameId ?? '${widget.gameTitle}_${widget.sport}'.replaceAll(' ', '_').toLowerCase();
+          final gameIdToPass = gameId;  // Use the already initialized gameId
           print('[POOL JOIN] Combat sport detected, navigating to fight card grid');
           print('[POOL JOIN] Game ID being passed: $gameIdToPass');
           print('[POOL JOIN] this.gameId: ${this.gameId}');
@@ -1275,7 +1279,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                               context,
                               '/fight-card-grid',
                               arguments: {
-                                'gameId': this.gameId ?? widget.gameId ?? '${widget.gameTitle}_${widget.sport}'.replaceAll(' ', '_').toLowerCase(),  // Pass the real game ID!
+                                'gameId': gameId,  // Use the already initialized gameId (fixes boxing null issue)
                                 'gameTitle': widget.gameTitle,
                                 'sport': widget.sport,
                                 'poolName': poolName,
@@ -1288,7 +1292,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                               context,
                               '/bet-selection',
                               arguments: {
-                                'gameId': this.gameId ?? widget.gameId ?? '${widget.gameTitle}_${widget.sport}'.replaceAll(' ', '_').toLowerCase(),  // Pass the real game ID!
+                                'gameId': gameId,  // Use the already initialized gameId
                                 'gameTitle': widget.gameTitle,
                                 'sport': widget.sport,
                                 'poolName': poolName,
@@ -1368,24 +1372,33 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                         }
                       } catch (e) {
                         print('[POOL JOIN] ❌ Exception occurred while joining pool: $e');
+                        print('[POOL JOIN] Stack trace: ${StackTrace.current}');
+
+                        // Only proceed if widget is still mounted
+                        if (!mounted) return;
+
                         // Hide loading if still showing - Use root navigator to avoid context issues
-                        if (mounted) {
-                          try {
-                            Navigator.of(context, rootNavigator: true).pop();
-                          } catch (_) {
-                            // Dialog may already be closed
-                          }
+                        try {
+                          Navigator.of(context, rootNavigator: true).pop();
+                        } catch (_) {
+                          // Dialog may already be closed
+                        }
 
-                          // Capture ScaffoldMessenger before any async operations
+                        // Double check mounted before accessing context
+                        if (!mounted) return;
+
+                        // Try to show error message with safety check
+                        try {
                           final messenger = ScaffoldMessenger.of(context);
-
-                          // Show error message
                           messenger.showSnackBar(
                             SnackBar(
                               content: Text('Error joining pool: ${e.toString()}'),
                               backgroundColor: AppTheme.errorPink,
                             ),
                           );
+                        } catch (scaffoldError) {
+                          // If ScaffoldMessenger fails, just log it
+                          print('[POOL JOIN] Could not show error snackbar: $scaffoldError');
                         }
                       }
                     },
