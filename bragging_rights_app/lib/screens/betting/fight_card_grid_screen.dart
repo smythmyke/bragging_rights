@@ -380,7 +380,8 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
                     child: RoundSelector(
                       currentRound: pick?.round,
                       maxRounds: fight.rounds,
-                      isActive: true,
+                      isActive: pick?.method != 'DECISION',
+                      method: pick?.method,
                       onTap: () => _cycleRound(fight.id, fight.rounds),
                     ),
                   ),
@@ -413,9 +414,18 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
   void _cycleRound(String fightId, int maxRounds) {
     final currentPick = _picks[fightId];
     if (currentPick?.winnerId == null) return; // Must select fighter first
+    if (currentPick?.method == 'DECISION') return; // Cannot select round for decision
 
     setState(() {
-      int nextRound = ((currentPick?.round ?? 0) % maxRounds) + 1;
+      // Cycle through: null -> 1 -> 2 -> ... -> maxRounds -> null
+      int? nextRound;
+      if (currentPick?.round == null) {
+        nextRound = 1; // Start with round 1
+      } else if (currentPick!.round! >= maxRounds) {
+        nextRound = null; // After max round, go back to no selection
+      } else {
+        nextRound = currentPick.round! + 1; // Increment round
+      }
 
       _picks[fightId] = FightPickState(
         winnerId: currentPick!.winnerId,
@@ -453,12 +463,13 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
             round: null, // Clear round when cycling back
           );
         } else {
-          // Set specific method, preserve round selection if exists
+          // Set specific method, clear round if DECISION selected
+          final shouldClearRound = nextMethod == 'DECISION';
           _picks[fight.id] = FightPickState(
             winnerId: fighterId,
             winnerName: fighterName,
             method: nextMethod,
-            round: currentPick.round, // Preserve existing round
+            round: shouldClearRound ? null : currentPick.round, // Clear round for DECISION
           );
         }
       }

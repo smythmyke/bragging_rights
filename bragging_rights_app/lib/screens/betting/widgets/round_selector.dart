@@ -6,6 +6,7 @@ class RoundSelector extends StatelessWidget {
   final int maxRounds;
   final bool isActive;
   final VoidCallback? onTap;
+  final String? method;
 
   const RoundSelector({
     Key? key,
@@ -13,6 +14,7 @@ class RoundSelector extends StatelessWidget {
     required this.maxRounds,
     required this.isActive,
     this.onTap,
+    this.method,
   }) : super(key: key);
 
   @override
@@ -32,38 +34,29 @@ class RoundSelector extends StatelessWidget {
         const SizedBox(height: 6),
         // Round selector button
         GestureDetector(
-          onTap: isActive ? onTap : () {
-            // Visual feedback that fighter must be selected first
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Select a fighter first'),
-                duration: Duration(seconds: 1),
-                backgroundColor: AppTheme.warningAmber,
-              ),
-            );
-          },
+          onTap: isActive ? onTap : null,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: isActive && currentRound != null && currentRound! > 0
+                colors: isActive && currentRound != null
                     ? [AppTheme.primaryCyan.withOpacity(0.3), AppTheme.primaryCyan.withOpacity(0.1)]
                     : [Colors.transparent, Colors.transparent],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              color: !isActive || currentRound == null || currentRound == 0
+              color: !isActive || currentRound == null
                   ? AppTheme.surfaceBlue.withOpacity(0.3)
                   : null,
               border: Border.all(
-                color: isActive && currentRound != null && currentRound! > 0
+                color: isActive && currentRound != null
                     ? AppTheme.primaryCyan
                     : AppTheme.borderCyan.withOpacity(0.3),
-                width: isActive && currentRound != null && currentRound! > 0 ? 2 : 1,
+                width: isActive && currentRound != null ? 2 : 1,
               ),
               borderRadius: BorderRadius.circular(8),
-              boxShadow: isActive && currentRound != null && currentRound! > 0
+              boxShadow: isActive && currentRound != null
                   ? AppTheme.neonGlow(
                       color: AppTheme.primaryCyan,
                       intensity: 0.3,
@@ -77,22 +70,27 @@ class RoundSelector extends StatelessWidget {
                 Icon(
                   Icons.access_time,
                   size: 14,
-                  color: isActive && currentRound != null && currentRound! > 0
+                  color: isActive && currentRound != null
                       ? AppTheme.primaryCyan
                       : AppTheme.primaryCyan.withOpacity(0.5),
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  currentRound != null && currentRound! > 0
-                      ? 'Round $currentRound'
-                      : 'Select Round',
+                  method == 'DECISION'
+                      ? 'Goes to Decision'
+                      : currentRound != null
+                          ? 'Round $currentRound'
+                          : 'Select Round',
                   style: TextStyle(
-                    color: isActive && currentRound != null && currentRound! > 0
-                        ? AppTheme.primaryCyan
-                        : AppTheme.primaryCyan.withOpacity(0.5),
+                    color: method == 'DECISION'
+                        ? AppTheme.primaryCyan.withOpacity(0.4)
+                        : isActive && currentRound != null
+                            ? AppTheme.primaryCyan
+                            : AppTheme.primaryCyan.withOpacity(0.5),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.5,
+                    fontStyle: method == 'DECISION' ? FontStyle.italic : FontStyle.normal,
                   ),
                 ),
                 if (!isActive) ...[

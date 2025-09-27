@@ -524,19 +524,34 @@ class OptimizedGamesService {
       }
 
       // Find home and away teams - with safety checks
-      final homeTeam = competitors.firstWhere(
-        (c) => c['homeAway'] == 'home',
-        orElse: () => competitors.isNotEmpty ? competitors[0] : null,
-      );
-      final awayTeam = competitors.firstWhere(
-        (c) => c['homeAway'] == 'away',
-        orElse: () => competitors.length > 1 ? competitors[1] : null,
-      );
+      // Use try-catch to handle any potential index errors
+      dynamic homeTeam;
+      dynamic awayTeam;
+
+      try {
+        homeTeam = competitors.firstWhere(
+          (c) => c['homeAway'] == 'home',
+          orElse: () => competitors[0],
+        );
+        awayTeam = competitors.firstWhere(
+          (c) => c['homeAway'] == 'away',
+          orElse: () => competitors[1],
+        );
+      } catch (e) {
+        debugPrint('   ⚠️ Error accessing competitors: $e');
+        return null;
+      }
 
       if (homeTeam == null || awayTeam == null) {
         if (sport.toUpperCase() == 'MMA') {
           debugPrint('   ❌ Could not determine home/away teams');
         }
+        return null;
+      }
+
+      // Check if team data is valid
+      if (homeTeam['team'] == null || awayTeam['team'] == null) {
+        debugPrint('   ⚠️ Team data is incomplete or null');
         return null;
       }
       
@@ -944,6 +959,21 @@ class OptimizedGamesService {
           }
         }
 
+        // ESPN returns fights with main event LAST, so we need to reverse the order
+        // Main event should be fightOrder 1, co-main should be 2, etc.
+        final reversedIndex = espnFights.length - i;
+
+        // Determine card position based on position in the array
+        // Last 5 fights are typically main card, with last fight being main event
+        String cardPosition = 'prelim';
+        if (i >= espnFights.length - 5) {
+          cardPosition = 'main';
+        }
+        if (i < 4 && espnFights.length > 10) {
+          // First few fights might be early prelims for larger cards
+          cardPosition = 'early';
+        }
+
         allFights.add({
           'id': matchingOddsFight?.id ?? 'espn_${eventId}_$i',
           'fighter1': matchingOddsFight?.awayTeam ?? fighter1,
@@ -958,8 +988,8 @@ class OptimizedGamesService {
           'rounds': espnFight['rounds'] ?? 3,
           'time': matchingOddsFight?.gameTime.toIso8601String() ?? gameTime.toIso8601String(),
           'odds': matchingOddsFight?.odds,
-          'cardPosition': i == espnFights.length - 1 ? 'main' : (i >= espnFights.length - 5 ? 'main' : 'prelim'),
-          'fightOrder': i,
+          'cardPosition': cardPosition,
+          'fightOrder': reversedIndex,  // Main event = 1, co-main = 2, etc.
         });
       }
 

@@ -49,7 +49,8 @@ class FightCardScoring {
         }
         
         // Apply confidence multiplier (1-5 stars)
-        final confidenceMultiplier = 0.8 + (pick.confidence * 0.1);
+        final pickConfidence = pick.confidence ?? 3; // Default to 3 if null
+        final confidenceMultiplier = 0.8 + (pickConfidence * 0.1);
         score *= confidenceMultiplier;
       }
     }

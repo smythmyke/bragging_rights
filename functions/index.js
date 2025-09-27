@@ -19,6 +19,27 @@ exports.weeklyFighterUpdate = boxingFunctions.weeklyFighterUpdate;
 exports.resetBoxingApiCounter = boxingFunctions.resetBoxingApiCounter;
 exports.manualBoxingRefresh = boxingFunctions.manualBoxingRefresh;
 
+// Import combat sports settlement functions
+const combatSettlement = require('./combatSportsSettlement');
+exports.monitorCombatSportsResults = combatSettlement.monitorCombatSportsResults;
+
+// Manual trigger for testing combat sports settlement
+exports.manualCombatSettlement = functions.https.onRequest(async (req, res) => {
+  const { eventId, reason } = req.body;
+
+  if (!eventId) {
+    return res.status(400).json({ error: 'eventId is required' });
+  }
+
+  try {
+    await combatSettlement.initiateSettlement(eventId, reason || 'MANUAL_TRIGGER');
+    res.status(200).json({ message: `Settlement initiated for event ${eventId}` });
+  } catch (error) {
+    console.error('Manual settlement error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============================================
 // BET SETTLEMENT FUNCTIONS
 // ============================================

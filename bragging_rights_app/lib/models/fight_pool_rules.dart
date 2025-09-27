@@ -1,5 +1,13 @@
 import 'fight_card_model.dart';
 
+/// Scoring system types for fight pools
+enum ScoringSystem {
+  simple,      // Basic winner only
+  standard,    // Winner + method
+  advanced,    // Winner + method + round
+  tournament,  // Full tournament scoring
+}
+
 /// Rules for a fight card pool
 class FightPoolRules {
   final String poolId;
@@ -168,7 +176,7 @@ class FightPoolRules {
       'requireAdvancedPicks': requireAdvancedPicks,
       'minimumPicks': minimumPicks,
       'allowPartialEntry': allowPartialEntry,
-      'scoringSystem': scoringSystem.toMap(),
+      'scoringSystem': scoringSystem.name,
       'lockTime': lockTime?.toIso8601String(),
     };
   }
@@ -299,35 +307,44 @@ class FightCardBettingSession {
   // Calculate total potential points
   int calculatePotentialPoints() {
     int total = 0;
-    
+
+    // Point values based on scoring system
+    final int winnerPoints = 10;
+    final int methodPoints = 5;
+    final int roundPoints = 10;
+    final int perfectCardBonus = 50;
+    final int perfectMainCardBonus = 25;
+
     for (final pick in picks.values) {
       if (pick.isComplete) {
         // Base winner points
-        int potential = rules.scoringSystem.winnerPoints;
-        
+        int potential = winnerPoints;
+
         // Add method/round bonuses if picked
         if (pick.method != null) {
-          potential += rules.scoringSystem.methodPoints;
+          potential += methodPoints;
         }
         if (pick.round != null) {
-          potential += rules.scoringSystem.roundPoints;
+          potential += roundPoints;
         }
-        
-        // Apply confidence multiplier
-        final multiplier = rules.scoringSystem.confidenceMultipliers[pick.confidence - 1];
-        potential = (potential * multiplier).round();
-        
+
+        // Apply confidence multiplier if available
+        if (pick.confidence != null && pick.confidence! > 0) {
+          final multiplier = 1.0 + (pick.confidence! - 1) * 0.25; // 1x, 1.25x, 1.5x, 1.75x, 2x
+          potential = (potential * multiplier).round();
+        }
+
         total += potential;
       }
     }
-    
+
     // Add perfect card bonus potential
     if (picks.length == fights.length) {
-      total += rules.scoringSystem.perfectCardBonus;
+      total += perfectCardBonus;
     } else if (picks.length == fights.where((f) => f.isMainCard).length) {
-      total += rules.scoringSystem.perfectMainCardBonus;
+      total += perfectMainCardBonus;
     }
-    
+
     return total;
   }
   

@@ -1019,7 +1019,19 @@ class MMAService {
       print('🏗️ GameData keys: ${gameData.keys}');
 
       // Create event structure immediately with minimal fighter objects
-      final fightDataList = gameData['fights'] as List? ?? [];
+      // Handle both List and Map formats for fights data
+      List<dynamic> fightDataList = [];
+
+      if (gameData['fights'] != null) {
+        if (gameData['fights'] is List) {
+          fightDataList = gameData['fights'] as List;
+        } else if (gameData['fights'] is Map) {
+          // Convert Map to List (fights stored by ID in Firestore)
+          final fightsMap = gameData['fights'] as Map<String, dynamic>;
+          fightDataList = fightsMap.values.toList();
+        }
+      }
+
       print('🏗️ Found ${fightDataList.length} fights in data');
 
       final List<MMAFight> fights = [];
@@ -1353,7 +1365,17 @@ class MMAService {
     print('🥊 Fights data: ${gameData['fights']}');
 
     final fights = <MMAFight>[];
-    var fightDataList = gameData['fights'] as List? ?? [];
+
+    // Handle both List and Map formats for fights data
+    List<dynamic> fightDataList = [];
+    if (gameData['fights'] != null) {
+      if (gameData['fights'] is List) {
+        fightDataList = gameData['fights'] as List;
+      } else if (gameData['fights'] is Map) {
+        final fightsMap = gameData['fights'] as Map<String, dynamic>;
+        fightDataList = fightsMap.values.toList();
+      }
+    }
 
     // If no fights data, create a single main event from the game data
     if (fightDataList.isEmpty && gameData['homeTeam'] != null && gameData['awayTeam'] != null) {
