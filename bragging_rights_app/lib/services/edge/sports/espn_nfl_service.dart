@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../event_matcher.dart';
 import '../cache/edge_cache_service.dart';
+import '../../api_call_tracker.dart';
 
 /// ESPN NFL API Service
 /// Provides comprehensive NFL data including scores, stats, injuries, and odds
@@ -24,7 +25,8 @@ class EspnNflService {
       gameState: {'source': 'espn'},
       fetchFunction: () async {
         debugPrint('🏈 Fetching NFL games from ESPN...');
-        
+        APICallTracker.logAPICall('ESPN', 'NFL Scoreboard', details: 'Today\'s games');
+
         final response = await http.get(
           Uri.parse('$_baseUrl/scoreboard'),
           headers: {'Accept': 'application/json'},
@@ -55,7 +57,8 @@ class EspnNflService {
       gameState: {'source': 'espn', 'range': '$daysAhead days'},
       fetchFunction: () async {
         debugPrint('🏈 Fetching NFL games from ESPN for next $daysAhead days...');
-        
+        APICallTracker.logAPICall('ESPN', 'NFL Scoreboard Range', details: 'Next $daysAhead days');
+
         // ESPN API supports date ranges with dates parameter
         final response = await http.get(
           Uri.parse('$_baseUrl/scoreboard?dates=$startStr-$endStr'),

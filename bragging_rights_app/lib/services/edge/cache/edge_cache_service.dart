@@ -4,6 +4,7 @@ import '../sports/espn_nfl_service.dart';
 import '../sports/espn_nba_service.dart';  // EspnScoreboard class
 import '../sports/espn_nhl_service.dart';
 import '../sports/espn_mlb_service.dart';
+import '../../api_call_tracker.dart';
 
 /// Edge Cache Service - Multi-User Data Sharing
 /// Implements smart caching with sport-specific TTLs
@@ -84,6 +85,7 @@ class EdgeCacheService {
     final memoryCached = _getFromMemoryCache(cacheKey);
     if (memoryCached != null && memoryCached.data is T) {
       debugPrint('✅ Memory cache hit: $cacheKey');
+      APICallTracker.logAPICall('CACHE', 'Memory Hit', details: '$sport - $dataType', cached: true);
       return memoryCached.data as T;
     }
 
@@ -98,6 +100,8 @@ class EdgeCacheService {
     
     if (firestoreCached != null && firestoreCached['data'] != null) {
       debugPrint('✅ Firestore cache hit: $cacheKey');
+      APICallTracker.logAPICall('CACHE', 'Firestore Hit', details: '$sport - $dataType', cached: true);
+      APICallTracker.logFirestoreRead('cache', docId: documentId);
       
       // Reconstruct the typed object if needed
       dynamic reconstructedData = firestoreCached['data'];

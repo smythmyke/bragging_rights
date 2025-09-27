@@ -64,6 +64,7 @@ class PoolManagementService {
         final gameTitle = gameData['title'] ?? 'Unknown Game';
         final sport = gameData['sport'] ?? 'Unknown Sport';
         final gameTime = (gameData['gameTime'] as Timestamp).toDate();
+        final espnEventId = gameData['espnId']?.toString();
 
         // Generate pools for this game if needed
         await _poolService.generatePoolsForGame(
@@ -71,6 +72,7 @@ class PoolManagementService {
           gameTitle: gameTitle,
           sport: sport,
           gameStartTime: gameTime,
+          espnEventId: espnEventId,
         );
 
         // Monitor demand for existing pools
@@ -87,6 +89,7 @@ class PoolManagementService {
     required String gameTitle,
     required String sport,
     required DateTime gameStartTime,
+    String? espnEventId,
   }) async {
     try {
       await _poolService.generatePoolsForGame(
@@ -94,6 +97,7 @@ class PoolManagementService {
         gameTitle: gameTitle,
         sport: sport,
         gameStartTime: gameStartTime,
+        espnEventId: espnEventId,
       );
     } catch (e) {
       print('Error generating pools for new game: $e');

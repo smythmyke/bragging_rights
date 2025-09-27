@@ -262,6 +262,7 @@ class QuickPlayPoolTemplate {
     required String gameId,
     required String gameTitle,
     required String sport,
+    String? espnEventId,
   }) {
     final now = DateTime.now();
     return Pool(
@@ -287,6 +288,7 @@ class QuickPlayPoolTemplate {
       },
       tier: PoolTier.beginner,
       createdAt: now,
+      espnEventId: espnEventId,
       metadata: {
         'autoMatch': true,
         'skillLevel': 'beginner',
@@ -298,6 +300,7 @@ class QuickPlayPoolTemplate {
     required String gameId,
     required String gameTitle,
     required String sport,
+    String? espnEventId,
   }) {
     final now = DateTime.now();
     return Pool(
@@ -324,6 +327,7 @@ class QuickPlayPoolTemplate {
       },
       tier: PoolTier.standard,
       createdAt: now,
+      espnEventId: espnEventId,
       metadata: {
         'autoMatch': true,
         'skillLevel': 'intermediate',
@@ -335,6 +339,7 @@ class QuickPlayPoolTemplate {
     required String gameId,
     required String gameTitle,
     required String sport,
+    String? espnEventId,
   }) {
     final now = DateTime.now();
     return Pool(
@@ -361,6 +366,7 @@ class QuickPlayPoolTemplate {
       },
       tier: PoolTier.high,
       createdAt: now,
+      espnEventId: espnEventId,
       metadata: {
         'autoMatch': true,
         'skillLevel': 'advanced',
@@ -372,6 +378,7 @@ class QuickPlayPoolTemplate {
     required String gameId,
     required String gameTitle,
     required String sport,
+    String? espnEventId,
   }) {
     final now = DateTime.now();
     return Pool(
@@ -397,6 +404,7 @@ class QuickPlayPoolTemplate {
       },
       tier: PoolTier.vip,
       createdAt: now,
+      espnEventId: espnEventId,
       metadata: {
         'autoMatch': false,
         'skillLevel': 'expert',

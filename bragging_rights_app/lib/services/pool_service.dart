@@ -959,6 +959,7 @@ class PoolService {
     required String gameTitle,
     required String sport,
     required DateTime gameStartTime,
+    String? espnEventId,
   }) async {
     // Check if user is authenticated
     if (_auth.currentUser == null) {
@@ -967,6 +968,16 @@ class PoolService {
     }
     
     try {
+      // If espnEventId not provided, try to fetch it from the game document
+      String? actualEspnEventId = espnEventId;
+      if (actualEspnEventId == null) {
+        final gameDoc = await _firestore.collection('games').doc(gameId).get();
+        if (gameDoc.exists) {
+          actualEspnEventId = gameDoc.data()?['espnId']?.toString();
+          print('[POOL_SERVICE] Found ESPN ID for game $gameId: $actualEspnEventId');
+        }
+      }
+
       // Check existing pools for this game
       final existingPoolsQuery = await _firestore
           .collection('pools')
@@ -980,13 +991,13 @@ class PoolService {
 
       // Generate Quick Play pools if none exist
       if (existingPools.where((p) => p.type == PoolType.quick).isEmpty) {
-        await _generateQuickPlayPools(gameId, gameTitle, sport, gameStartTime);
+        await _generateQuickPlayPools(gameId, gameTitle, sport, gameStartTime, actualEspnEventId);
       }
 
       // Generate Regional pools based on user location
       // This would use user's location in production
       if (existingPools.where((p) => p.type == PoolType.regional).isEmpty) {
-        await _generateRegionalPools(gameId, gameTitle, sport, gameStartTime);
+        await _generateRegionalPools(gameId, gameTitle, sport, gameStartTime, actualEspnEventId);
       }
     } catch (e) {
       print('Error generating pools: $e');
@@ -999,12 +1010,13 @@ class PoolService {
     String gameTitle,
     String sport,
     DateTime gameStartTime,
+    String? espnEventId,
   ) async {
     final templates = [
-      QuickPlayPoolTemplate.beginner(gameId: gameId, gameTitle: gameTitle, sport: sport),
-      QuickPlayPoolTemplate.standard(gameId: gameId, gameTitle: gameTitle, sport: sport),
-      QuickPlayPoolTemplate.highStakes(gameId: gameId, gameTitle: gameTitle, sport: sport),
-      QuickPlayPoolTemplate.vip(gameId: gameId, gameTitle: gameTitle, sport: sport),
+      QuickPlayPoolTemplate.beginner(gameId: gameId, gameTitle: gameTitle, sport: sport, espnEventId: espnEventId),
+      QuickPlayPoolTemplate.standard(gameId: gameId, gameTitle: gameTitle, sport: sport, espnEventId: espnEventId),
+      QuickPlayPoolTemplate.highStakes(gameId: gameId, gameTitle: gameTitle, sport: sport, espnEventId: espnEventId),
+      QuickPlayPoolTemplate.vip(gameId: gameId, gameTitle: gameTitle, sport: sport, espnEventId: espnEventId),
     ];
 
     for (final template in templates) {
@@ -1030,6 +1042,7 @@ class PoolService {
     String gameTitle,
     String sport,
     DateTime gameStartTime,
+    String? espnEventId,
   ) async {
     // Detect user's region
     final regionInfo = await _locationService.detectRegion();
@@ -1084,6 +1097,7 @@ class PoolService {
         currentPlayers: 0,
         playerIds: [],
         startTime: gameStartTime,
+        espnEventId: espnEventId,
         closeTime: gameStartTime.subtract(const Duration(minutes: 30)),
         prizePool: 0,
         prizeStructure: {},

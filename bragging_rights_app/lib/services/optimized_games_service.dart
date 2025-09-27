@@ -15,6 +15,7 @@ import 'firestore_cache_service.dart';
 import 'live_score_update_service.dart';
 import 'mma_id_fix.dart';
 import '../utils/mma_debug_logger.dart';
+import 'api_call_tracker.dart';
 
 /// Optimized games service with intelligent loading and timeframe categorization
 class OptimizedGamesService {

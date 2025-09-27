@@ -170,13 +170,13 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         print('[BetSelection] Title does not contain expected separators');
       }
       
-      if (widget.gameId != null) {
+      if (widget.gameId != null && widget.gameId!.isNotEmpty) {
         print('[BetSelection] Fetching event odds from API...');
-        print('[BetSelection] Game ID type: ${widget.gameId} (looks like ${widget.gameId!.contains('-') ? "Odds API" : "ESPN"} format)');
-        
+        print('[BetSelection] Game ID type: ${widget.gameId} (looks like ${widget.gameId?.contains('-') == true ? "Odds API" : "ESPN"} format)');
+
         // If we have team names and ESPN ID, try to find Odds API event ID
         String eventIdToUse = widget.gameId!;
-        if (!widget.gameId!.contains('-') && _homeTeam != null && _awayTeam != null) {
+        if (widget.gameId?.contains('-') == false && _homeTeam != null && _awayTeam != null) {
           print('[BetSelection] ESPN ID detected, finding Odds API event ID for $_awayTeam @ $_homeTeam');
           final oddsApiEventId = await _oddsApiService.findOddsApiEventId(
             sport: widget.sport,
@@ -751,9 +751,9 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         
         final bet = UserBet(
           id: 'temp_${selection.id}_${DateTime.now().millisecondsSinceEpoch}',
-          poolId: widget.poolId!,
+          poolId: widget.poolId ?? '',
           poolName: widget.poolName,
-          gameId: widget.gameId!,
+          gameId: widget.gameId ?? '',
           gameTitle: widget.gameTitle,
           sport: widget.sport,
           betType: selection.type.toString().split('.').last,

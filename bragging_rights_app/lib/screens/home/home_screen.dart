@@ -35,6 +35,7 @@ import '../intel_detail_screen.dart';
 import '../../widgets/bragging_rights_logo.dart';
 import '../../widgets/standings_info_card.dart';
 import '../../services/friend_service.dart';
+import '../../services/api_call_tracker.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -99,6 +100,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    // Start API call tracking session
+    APICallTracker.startSession();
+
     _pageController = PageController(initialPage: _selectedIndex);
     _initializeCountdowns();
     _startCountdownTimer();

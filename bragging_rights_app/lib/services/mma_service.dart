@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/mma_event_model.dart';
 import '../models/mma_fighter_model.dart';
+import 'api_call_tracker.dart';
 
 class MMAService {
   static const String UFC_SCOREBOARD = 'https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard';
@@ -45,6 +46,7 @@ class MMAService {
 
       // Fetch from ESPN API
       final url = _getScoreboardUrl(promotion);
+      APICallTracker.logAPICall('ESPN', 'MMA Scoreboard', details: 'Fetching upcoming events');
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
