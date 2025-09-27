@@ -1304,9 +1304,12 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                           
                           // Show specific message for different error types
                           if (mounted) {
+                            // Capture ScaffoldMessenger before any async operations
+                            final messenger = ScaffoldMessenger.of(context);
+
                             if (errorCode == 'ALREADY_IN_POOL') {
                               // This shouldn't happen anymore due to pre-check, but keep as fallback
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              messenger.showSnackBar(
                                 SnackBar(
                                   content: Row(
                                     children: [
@@ -1328,7 +1331,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                                 ),
                               );
                             } else if (errorCode == 'POOL_FULL') {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              messenger.showSnackBar(
                                 SnackBar(
                                   content: Row(
                                     children: [
@@ -1341,7 +1344,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                                 ),
                               );
                             } else if (errorCode == 'INSUFFICIENT_BALANCE') {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              messenger.showSnackBar(
                                 SnackBar(
                                   content: Row(
                                     children: [
@@ -1353,8 +1356,8 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                                   backgroundColor: AppTheme.errorPink,
                                 ),
                               );
-                            } else if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                            } else {
+                              messenger.showSnackBar(
                                 SnackBar(
                                   content: Text(errorMessage),
                                   backgroundColor: AppTheme.errorPink,
@@ -1372,21 +1375,17 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                           } catch (_) {
                             // Dialog may already be closed
                           }
-                          
-                          // Only show snackbar if widget is still mounted
-                          // Use Future.delayed to ensure context is valid
-                          if (mounted) {
-                            Future.delayed(Duration.zero, () {
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Error joining pool: ${e.toString()}'),
-                                    backgroundColor: AppTheme.errorPink,
-                                  ),
-                                );
-                              }
-                            });
-                          }
+
+                          // Capture ScaffoldMessenger before any async operations
+                          final messenger = ScaffoldMessenger.of(context);
+
+                          // Show error message
+                          messenger.showSnackBar(
+                            SnackBar(
+                              content: Text('Error joining pool: ${e.toString()}'),
+                              backgroundColor: AppTheme.errorPink,
+                            ),
+                          );
                         }
                       }
                     },

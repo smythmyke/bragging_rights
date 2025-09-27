@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boxing Fights - Live Data from The Odds API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #00d4ff;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+
+        .header p {
+            color: #a0a0a0;
+            font-size: 1.1em;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #888;
+            text-transform: uppercase;
+        }
+
+        .fights-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            gap: 20px;
+        }
+
+        .date-group {
+            margin-bottom: 30px;
+        }
+
+        .date-header {
+            font-size: 1.3em;
+            color: #00d4ff;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(0, 212, 255, 0.1);
+            border-left: 4px solid #00d4ff;
+            border-radius: 4px;
+        }
+
+        .fight-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .fight-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .main-event {
+            border: 2px solid #ffd700;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%);
+        }
+
+        .main-event::before {
+            content: "MAIN EVENT";
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #000;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .fighter-section {
+            text-align: center;
+        }
+
+        .fighter-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin: 0 auto 10px;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5em;
+            font-weight: bold;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .fighter-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .fighter-odds {
+            background: rgba(0, 212, 255, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 1.1em;
+            color: #00d4ff;
+            border: 1px solid rgba(0, 212, 255, 0.4);
+        }
+
+        .favorite {
+            background: rgba(0, 255, 0, 0.2);
+            color: #00ff00;
+            border-color: rgba(0, 255, 0, 0.4);
+        }
+
+        .underdog {
+            background: rgba(255, 165, 0, 0.2);
+            color: #ffa500;
+            border-color: rgba(255, 165, 0, 0.4);
+        }
+
+        .vs-section {
+            text-align: center;
+        }
+
+        .vs-text {
+            font-size: 2em;
+            font-weight: bold;
+            color: #666;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        .fight-time {
+            font-size: 0.9em;
+            color: #888;
+            margin-top: 10px;
+        }
+
+        .fight-meta {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #888;
+        }
+
+        .bookmaker-count {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 12px;
+            border-radius: 12px;
+        }
+
+        .api-info {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .api-info h3 {
+            color: #00d4ff;
+            margin-bottom: 10px;
+        }
+
+        .data-field {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin: 2px;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .fight-card {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .vs-section {
+                margin: 20px 0;
+            }
+
+            .fighter-section {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🥊 Boxing Fights Dashboard</h1>
+        <p>Live Data from The Odds API</p>
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value" id="totalFights">0</div>
+                <div class="stat-label">Total Fights</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="todayFights">0</div>
+                <div class="stat-label">Today's Fights</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="avgBookmakers">0</div>
+                <div class="stat-label">Avg Bookmakers</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="api-info">
+        <h3>Available Data Fields from The Odds API</h3>
+        <div>
+            <span class="data-field">✅ Fighter Names</span>
+            <span class="data-field">✅ Event IDs</span>
+            <span class="data-field">✅ Date & Time</span>
+            <span class="data-field">✅ Live Odds</span>
+            <span class="data-field">✅ Multiple Bookmakers</span>
+            <span class="data-field">✅ Moneyline (H2H)</span>
+            <span class="data-field">✅ Totals</span>
+            <span class="data-field">❌ Fighter Images</span>
+            <span class="data-field">❌ Fighter Records</span>
+            <span class="data-field">❌ Weight Class</span>
+            <span class="data-field">❌ Fighter Stats</span>
+        </div>
+    </div>
+
+    <div class="fights-container" id="fightsContainer">
+        <!-- Fights will be inserted here -->
+    </div>
+
+    <script>
+        // This will be populated with real data from the API
+        const fightsData = [];
+
+        // Fetch the processed data
+        fetch('boxing_display_data.json')
+            .then(response => response.json())
+            .then(data => {
+                displayFights(data);
+                updateStats(data);
+            })
+            .catch(error => {
+                console.error('Error loading data:', error);
+                // Fallback to sample data for demo
+                loadSampleData();
+            });
+
+        function displayFights(fights) {
+            const container = document.getElementById('fightsContainer');
+            container.innerHTML = '';
+
+            // Group fights by date
+            const fightsByDate = {};
+            fights.forEach(fight => {
+                if (!fightsByDate[fight.date]) {
+                    fightsByDate[fight.date] = [];
+                }
+                fightsByDate[fight.date].push(fight);
+            });
+
+            // Display fights grouped by date
+            Object.entries(fightsByDate).forEach(([date, dateFights], dateIndex) => {
+                const dateGroup = document.createElement('div');
+                dateGroup.className = 'date-group';
+
+                const dateHeader = document.createElement('div');
+                dateHeader.className = 'date-header';
+                dateHeader.textContent = date;
+                dateGroup.appendChild(dateHeader);
+
+                dateFights.forEach((fight, index) => {
+                    const isMainEvent = dateIndex === 0 && index === dateFights.length - 1;
+                    const fightCard = createFightCard(fight, isMainEvent);
+                    dateGroup.appendChild(fightCard);
+                });
+
+                container.appendChild(dateGroup);
+            });
+        }
+
+        function createFightCard(fight, isMainEvent) {
+            const card = document.createElement('div');
+            card.className = 'fight-card' + (isMainEvent ? ' main-event' : '');
+
+            // Parse odds to determine favorite
+            const odds1 = parseFloat(fight.fighter1_odds) || 0;
+            const odds2 = parseFloat(fight.fighter2_odds) || 0;
+            const fighter1IsFavorite = odds1 < odds2;
+
+            card.innerHTML = `
+                <div class="fighter-section">
+                    <div class="fighter-image">${getInitials(fight.fighter1)}</div>
+                    <div class="fighter-name">${fight.fighter1}</div>
+                    <div class="fighter-odds ${fighter1IsFavorite ? 'favorite' : 'underdog'}">
+                        ${formatOdds(fight.fighter1_odds)}
+                    </div>
+                </div>
+
+                <div class="vs-section">
+                    <div class="vs-text">VS</div>
+                    <div class="fight-time">${fight.time}</div>
+                </div>
+
+                <div class="fighter-section">
+                    <div class="fighter-image">${getInitials(fight.fighter2)}</div>
+                    <div class="fighter-name">${fight.fighter2}</div>
+                    <div class="fighter-odds ${!fighter1IsFavorite ? 'favorite' : 'underdog'}">
+                        ${formatOdds(fight.fighter2_odds)}
+                    </div>
+                </div>
+
+                <div class="fight-meta">
+                    <span>Event ID: ${fight.id.substring(0, 8)}...</span>
+                    <span class="bookmaker-count">${fight.num_bookmakers} Bookmakers</span>
+                    <span>via ${fight.bookmaker}</span>
+                </div>
+            `;
+
+            return card;
+        }
+
+        function getInitials(name) {
+            if (!name) return '?';
+            const parts = name.split(' ');
+            if (parts.length >= 2) {
+                return parts[0][0] + parts[parts.length - 1][0];
+            }
+            return name.substring(0, 2).toUpperCase();
+        }
+
+        function formatOdds(odds) {
+            if (odds === 'N/A') return 'N/A';
+            const numOdds = parseFloat(odds);
+            if (numOdds < 2) {
+                // Convert decimal odds to American for favorites
+                return '-' + Math.round(100 / (numOdds - 1));
+            } else {
+                // Convert decimal odds to American for underdogs
+                return '+' + Math.round((numOdds - 1) * 100);
+            }
+        }
+
+        function updateStats(fights) {
+            document.getElementById('totalFights').textContent = fights.length;
+
+            const today = new Date().toDateString();
+            const todayFights = fights.filter(f =>
+                new Date(f.date).toDateString() === today
+            ).length;
+            document.getElementById('todayFights').textContent = todayFights;
+
+            const avgBookmakers = fights.reduce((sum, f) => sum + f.num_bookmakers, 0) / fights.length;
+            document.getElementById('avgBookmakers').textContent = avgBookmakers.toFixed(1);
+        }
+
+        function loadSampleData() {
+            // Sample data in case the JSON file isn't loaded
+            const sampleFights = [
+                {
+                    id: "af06787f8e9c52b8a6c029e64192010b",
+                    fighter1: "Guido Vianello",
+                    fighter2: "Alexis Barriere",
+                    date: "Oct 12, 2025",
+                    time: "9:00 PM",
+                    fighter1_odds: "2.4",
+                    fighter2_odds: "1.56",
+                    num_bookmakers: 7,
+                    bookmaker: "DraftKings"
+                },
+                {
+                    id: "9451b1f34055a1545bc3bb8efee59ec1",
+                    fighter1: "Jesse Hart",
+                    fighter2: "Khalil Coe",
+                    date: "Oct 12, 2025",
+                    time: "10:00 PM",
+                    fighter1_odds: "5.75",
+                    fighter2_odds: "1.13",
+                    num_bookmakers: 7,
+                    bookmaker: "DraftKings"
+                },
+                {
+                    id: "c8ca57ce6f54ed5d2fd4bed496b3ad67",
+                    fighter1: "Uisma Lima",
+                    fighter2: "Jaron Ennis",
+                    date: "Oct 12, 2025",
+                    time: "11:00 PM",
+                    fighter1_odds: "11.0",
+                    fighter2_odds: "1.04",
+                    num_bookmakers: 7,
+                    bookmaker: "DraftKings"
+                }
+            ];
+
+            displayFights(sampleFights);
+            updateStats(sampleFights);
+        }
+
+        // Load sample data immediately as fallback
+        loadSampleData();
+    </script>
+</body>
+</html>

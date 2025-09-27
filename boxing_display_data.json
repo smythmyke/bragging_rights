@@ -1,0 +1,112 @@
+[
+  {
+    "id": "7b5a019dfcde048c05ed0660a0c39794",
+    "fighter1": "Sean McComb",
+    "fighter2": "Ben Crocker",
+    "date": "Sep 27, 2025",
+    "time": "08:57 PM",
+    "num_bookmakers": 6,
+    "fighter1_odds": 1.16,
+    "fighter2_odds": 4.99,
+    "bookmaker": "LowVig.ag"
+  },
+  {
+    "id": "8022743fd3dfaeb68c48a992268fd09b",
+    "fighter1": "Federica Macri",
+    "fighter2": "Naomy Valle",
+    "date": "Sep 27, 2025",
+    "time": "09:00 PM",
+    "num_bookmakers": 5,
+    "fighter1_odds": 3.9,
+    "fighter2_odds": 1.26,
+    "bookmaker": "DraftKings"
+  },
+  {
+    "id": "abe46066afe87af5cb3d1373b24b4c49",
+    "fighter1": "Isaias Lucero",
+    "fighter2": "Joshua Kevin Anton",
+    "date": "Sep 27, 2025",
+    "time": "09:30 PM",
+    "num_bookmakers": 5,
+    "fighter1_odds": 2.0,
+    "fighter2_odds": 1.8,
+    "bookmaker": "DraftKings"
+  },
+  {
+    "id": "5dedf45d1740efc2c351908420d3703d",
+    "fighter1": "Alondra Hernandez Mendoza",
+    "fighter2": "Amanda Galle",
+    "date": "Sep 27, 2025",
+    "time": "10:00 PM",
+    "num_bookmakers": 5,
+    "fighter1_odds": 8.5,
+    "fighter2_odds": 1.07,
+    "bookmaker": "DraftKings"
+  },
+  {
+    "id": "a1c46edd5fbcb7a61d3a10e4bdd425b6",
+    "fighter1": "Anthony Cuba",
+    "fighter2": "Jorge De Jesus",
+    "date": "Sep 27, 2025",
+    "time": "11:00 PM",
+    "num_bookmakers": 6,
+    "fighter1_odds": 1.77,
+    "fighter2_odds": 2.05,
+    "bookmaker": "DraftKings"
+  },
+  {
+    "id": "8582ec1487ed3f90782d832719aa5893",
+    "fighter1": "Anthony Mora",
+    "fighter2": "Javon Walton",
+    "date": "Sep 27, 2025",
+    "time": "11:00 PM",
+    "num_bookmakers": 5,
+    "fighter1_odds": 4.8,
+    "fighter2_odds": 1.18,
+    "bookmaker": "DraftKings"
+  },
+  {
+    "id": "0d8e9cb1e409efca8559e80932576231",
+    "fighter1": "Cristian Cruz Chacon",
+    "fighter2": "Jeremy Hill",
+    "date": "Sep 28, 2025",
+    "time": "12:00 AM",
+    "num_bookmakers": 6,
+    "fighter1_odds": 3.75,
+    "fighter2_odds": 1.27,
+    "bookmaker": "DraftKings"
+  },
+  {
+    "id": "c66d2631e923e5737a4f05eb3f16a8bb",
+    "fighter1": "Ramiro Edwin Robles",
+    "fighter2": "Nelvie Tiafack",
+    "date": "Sep 28, 2025",
+    "time": "12:00 AM",
+    "num_bookmakers": 5,
+    "fighter1_odds": 16.0,
+    "fighter2_odds": 1.02,
+    "bookmaker": "DraftKings"
+  },
+  {
+    "id": "020933080ed94c5c33238c7cfb9b9ef2",
+    "fighter1": "Anthony Soto",
+    "fighter2": "Mazlum Akdeniz",
+    "date": "Sep 28, 2025",
+    "time": "12:30 AM",
+    "num_bookmakers": 6,
+    "fighter1_odds": 9.5,
+    "fighter2_odds": 1.06,
+    "bookmaker": "DraftKings"
+  },
+  {
+    "id": "8b805c89dd9dda4e7c8541579a4a0db1",
+    "fighter1": "Raul Garcia",
+    "fighter2": "Emiliano Moreno",
+    "date": "Sep 28, 2025",
+    "time": "01:00 AM",
+    "num_bookmakers": 6,
+    "fighter1_odds": 2.85,
+    "fighter2_odds": 1.42,
+    "bookmaker": "DraftKings"
+  }
+]
