@@ -369,6 +369,172 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         final summaryData = json.decode(summaryResponse.body);
         print('✅ Soccer summary data loaded');
 
+        // Extract odds if available
+        if (summaryData['odds'] != null && summaryData['odds'] is List) {
+          final oddsArray = summaryData['odds'] as List;
+          print('📊 Found ${oddsArray.length} odds providers');
+
+          // Try to find ESPN BET odds first, fallback to first available
+          Map<String, dynamic>? primaryOdds;
+          for (var odds in oddsArray) {
+            if (odds['provider']?['name'] == 'ESPN BET') {
+              primaryOdds = odds;
+              break;
+            }
+          }
+          primaryOdds ??= oddsArray.isNotEmpty ? oddsArray[0] : null;
+
+          if (primaryOdds != null) {
+            // Extract moneyline odds for soccer (home, draw, away)
+            Map<String, dynamic> extractedOdds = {};
+
+            // Check for moneyline structure (ESPN BET format)
+            if (primaryOdds != null && primaryOdds['moneyline'] != null) {
+              final moneyline = primaryOdds['moneyline'];
+
+              // Home odds
+              if (moneyline['home'] != null) {
+                final homeOdds = moneyline['home']['close']?['odds'] ??
+                                 moneyline['home']['open']?['odds'] ??
+                                 primaryOdds['homeTeamOdds']?['moneyLine']?.toString();
+                extractedOdds['home'] = homeOdds ?? 'N/A';
+              }
+
+              // Draw odds
+              if (moneyline['draw'] != null) {
+                final drawOdds = moneyline['draw']['close']?['odds'] ??
+                                moneyline['draw']['open']?['odds'] ??
+                                primaryOdds['drawOdds']?['moneyLine']?.toString();
+                extractedOdds['draw'] = drawOdds ?? 'N/A';
+              }
+
+              // Away odds
+              if (moneyline['away'] != null) {
+                final awayOdds = moneyline['away']['close']?['odds'] ??
+                                moneyline['away']['open']?['odds'] ??
+                                primaryOdds['awayTeamOdds']?['moneyLine']?.toString();
+                extractedOdds['away'] = awayOdds ?? 'N/A';
+              }
+            }
+            // Fallback to older ESPN format
+            else if (primaryOdds != null && (primaryOdds['homeTeamOdds'] != null || primaryOdds['awayTeamOdds'] != null)) {
+              extractedOdds['home'] = primaryOdds['homeTeamOdds']?['moneyLine']?.toString() ?? 'N/A';
+              extractedOdds['draw'] = primaryOdds['drawOdds']?['moneyLine']?.toString() ?? 'N/A';
+              extractedOdds['away'] = primaryOdds['awayTeamOdds']?['moneyLine']?.toString() ?? 'N/A';
+            }
+
+            // Update the game object with odds
+            if (_game != null && extractedOdds.isNotEmpty) {
+              setState(() {
+                _game = GameModel(
+                  id: _game!.id,
+                  homeTeam: _game!.homeTeam,
+                  awayTeam: _game!.awayTeam,
+                  homeScore: _game!.homeScore,
+                  awayScore: _game!.awayScore,
+                  gameTime: _game!.gameTime,
+                  status: _game!.status,
+                  sport: _game!.sport,
+                  league: _game!.league,
+                  espnId: _game!.espnId,
+                  period: _game!.period,
+                  timeRemaining: _game!.timeRemaining,
+                  odds: extractedOdds,  // Set the extracted odds
+                  venue: _game!.venue,
+                  broadcast: _game!.broadcast,
+                );
+              });
+              print('✅ Odds extracted and stored: $extractedOdds');
+            }
+          }
+        } else {
+          print('⚠️ No odds data available in summary, trying scoreboard API...');
+
+          // Fallback: Try to get odds from scoreboard API
+          try {
+            final scoreboardUrl = 'https://site.api.espn.com/apis/site/v2/sports/soccer/$league/scoreboard';
+            final scoreboardResponse = await http.get(Uri.parse(scoreboardUrl));
+
+            if (scoreboardResponse.statusCode == 200) {
+              final scoreboardData = json.decode(scoreboardResponse.body);
+              final events = scoreboardData['events'] as List?;
+
+              if (events != null) {
+                // Find our specific game
+                for (var event in events) {
+                  if (event['id'] == espnGameId) {
+                    final competitions = event['competitions'] as List?;
+                    if (competitions != null && competitions.isNotEmpty) {
+                      final oddsArray = competitions[0]['odds'] as List?;
+
+                      if (oddsArray != null && oddsArray.isNotEmpty) {
+                        print('📊 Found odds in scoreboard API');
+
+                        // Try to find ESPN BET odds first, fallback to first available
+                        Map<String, dynamic>? primaryOdds;
+                        for (var odds in oddsArray) {
+                          if (odds['provider']?['name'] == 'ESPN BET') {
+                            primaryOdds = odds;
+                            break;
+                          }
+                        }
+                        primaryOdds ??= oddsArray[0];
+
+                        // Extract moneyline odds for soccer
+                        Map<String, dynamic> extractedOdds = {};
+
+                        // Check for moneyline structure
+                        if (primaryOdds != null && primaryOdds['moneyline'] != null) {
+                          final moneyline = primaryOdds['moneyline'];
+                          extractedOdds['home'] = moneyline['home']?['close']?['odds'] ??
+                                                  moneyline['home']?['open']?['odds'] ?? 'N/A';
+                          extractedOdds['draw'] = moneyline['draw']?['close']?['odds'] ??
+                                                 moneyline['draw']?['open']?['odds'] ?? 'N/A';
+                          extractedOdds['away'] = moneyline['away']?['close']?['odds'] ??
+                                                 moneyline['away']?['open']?['odds'] ?? 'N/A';
+                        }
+                        // Fallback to older format
+                        else if (primaryOdds != null && primaryOdds['homeTeamOdds'] != null) {
+                          extractedOdds['home'] = primaryOdds['homeTeamOdds']?['moneyLine']?.toString() ?? 'N/A';
+                          extractedOdds['draw'] = primaryOdds['drawOdds']?['moneyLine']?.toString() ?? 'N/A';
+                          extractedOdds['away'] = primaryOdds['awayTeamOdds']?['moneyLine']?.toString() ?? 'N/A';
+                        }
+
+                        // Update the game object with odds
+                        if (_game != null && extractedOdds.isNotEmpty) {
+                          setState(() {
+                            _game = GameModel(
+                              id: _game!.id,
+                              homeTeam: _game!.homeTeam,
+                              awayTeam: _game!.awayTeam,
+                              homeScore: _game!.homeScore,
+                              awayScore: _game!.awayScore,
+                              gameTime: _game!.gameTime,
+                              status: _game!.status,
+                              sport: _game!.sport,
+                              league: _game!.league,
+                              espnId: _game!.espnId,
+                              period: _game!.period,
+                              timeRemaining: _game!.timeRemaining,
+                              odds: extractedOdds,  // Set the extracted odds
+                              venue: _game!.venue,
+                              broadcast: _game!.broadcast,
+                            );
+                          });
+                          print('✅ Odds extracted from scoreboard: $extractedOdds');
+                        }
+                      }
+                    }
+                    break;
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            print('⚠️ Could not fetch odds from scoreboard: $e');
+          }
+        }
+
         // Store the event details for use in tabs
         setState(() {
           _eventDetails = summaryData;
@@ -4094,6 +4260,9 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
               print('⚠️ No box score data available');
             }
           });
+
+          // Fetch real standings from the main endpoint
+          await _fetchNBAStandings(data);
         } else {
           print('❌ Failed to fetch ESPN NBA data');
           print('Status Code: ${response.statusCode}');
@@ -4103,6 +4272,77 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
     } catch (e, stackTrace) {
       print('❌ Error loading NBA details: $e');
       print('Stack trace: $stackTrace');
+    }
+  }
+
+  Future<void> _fetchNBAStandings(Map<String, dynamic> gameData) async {
+    try {
+      print('🏀 Fetching NBA standings...');
+
+      // Check if it's preseason
+      final seasonType = gameData['header']?['season']?['type'];
+      final seasonYear = gameData['header']?['season']?['year'] ?? DateTime.now().year;
+      final isPreseason = seasonType == 1; // Type 1 is preseason
+
+      print('Season Type: $seasonType (${isPreseason ? "Preseason" : "Regular/Playoffs"})');
+      print('Season Year: $seasonYear');
+
+      // Determine which season's standings to fetch
+      String standingsUrl;
+      int displayYear;
+      if (isPreseason) {
+        // For preseason, show last completed season's standings
+        displayYear = seasonYear - 1;
+        standingsUrl = 'https://site.api.espn.com/apis/v2/sports/basketball/nba/standings?season=$displayYear';
+        print('📊 Fetching last season ($displayYear) standings for preseason game');
+      } else {
+        // For regular season/playoffs, show current standings
+        displayYear = seasonYear;
+        standingsUrl = 'https://site.api.espn.com/apis/v2/sports/basketball/nba/standings?season=$displayYear';
+        print('📊 Fetching current season ($displayYear) standings');
+      }
+
+      final response = await http.get(Uri.parse(standingsUrl));
+
+      if (response.statusCode == 200) {
+        final standingsData = json.decode(response.body);
+        print('✅ Standings fetched successfully');
+
+        // Update the event details with real standings
+        setState(() {
+          if (_eventDetails != null) {
+            _eventDetails!['standings'] = {
+              'fullViewLink': {'text': 'Full Standings'},
+              'header': isPreseason
+                ? '$displayYear Season Standings (Showing last completed season)'
+                : '$displayYear Season Standings',
+              'groups': standingsData['children'] ?? [],
+              'isPreseason': isPreseason,
+            };
+          }
+        });
+
+        // Log some standings info
+        final conferences = standingsData['children'] as List?;
+        if (conferences != null) {
+          for (var conf in conferences) {
+            final confName = conf['name'];
+            final entries = conf['standings']?['entries'] as List?;
+            if (entries != null && entries.isNotEmpty) {
+              final topTeam = entries[0];
+              final teamName = topTeam['team']?['displayName'];
+              final stats = topTeam['stats'] as List?;
+              final wins = stats?.firstWhere((s) => s['name'] == 'wins', orElse: () => {'value': 0})['value'];
+              final losses = stats?.firstWhere((s) => s['name'] == 'losses', orElse: () => {'value': 0})['value'];
+              print('  $confName leader: $teamName ($wins-$losses)');
+            }
+          }
+        }
+      } else {
+        print('❌ Failed to fetch standings: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Error fetching NBA standings: $e');
     }
   }
 
@@ -7166,6 +7406,29 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
       return const Center(child: Text('Loading stats...'));
     }
 
+    // Check if game is scheduled/not started
+    final gameStatus = _eventDetails!['header']?['competitions']?[0]?['status']?['type']?['name'];
+    if (gameStatus == 'STATUS_SCHEDULED') {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.schedule, size: 48, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'Game Not Started',
+              style: TextStyle(fontSize: 18, color: Colors.grey[300]),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Stats will be available once the game begins',
+              style: TextStyle(fontSize: 14, color: Colors.grey[400]),
+            ),
+          ],
+        ),
+      );
+    }
+
     final teams = _eventDetails!['boxscore']?['teams'];
     if (teams == null) {
       return const Center(child: Text('Stats not available'));
@@ -7237,6 +7500,26 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
   }
 
   List<Widget> _buildNBAStatsRows(List teams) {
+    // Get available stats from the first team to see what's actually provided
+    final awayStats = teams[0]['statistics'] ?? [];
+    final homeStats = teams.length > 1 ? (teams[1]['statistics'] ?? []) : [];
+
+    // If no meaningful stats (only streak), show message
+    if (awayStats.length <= 1 && homeStats.length <= 1) {
+      return [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Center(
+            child: Text(
+              'Detailed stats will be available during the game',
+              style: TextStyle(color: Colors.grey[400], fontSize: 14),
+            ),
+          ),
+        ),
+      ];
+    }
+
+    // Use actual stat names from the API
     final stats = [
       {'key': 'fieldGoalsPercentage', 'label': 'FG%'},
       {'key': 'threePointFieldGoalsPercentage', 'label': '3PT%'},
@@ -7250,9 +7533,6 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
     ];
 
     return stats.map((stat) {
-      final awayStats = teams[0]['statistics'] ?? [];
-      final homeStats = teams[1]['statistics'] ?? [];
-
       final awayStat = awayStats.firstWhere(
         (s) => s['name'] == stat['key'],
         orElse: () => {'displayValue': '-'},
@@ -7321,14 +7601,46 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
       return const Center(child: Text('No standings data available'));
     }
 
+    // Check if it's preseason standings
+    final isPreseason = standings['isPreseason'] == true;
+    final header = standings['header'] ?? 'Standings';
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
-        children: standingsGroups.map((group) {
-          final groupName = group['name'] ?? 'Conference';
-          final entries = group['standings']?['entries'] ?? [];
+        children: [
+          // Show header/notice if it's preseason
+          if (isPreseason) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      header,
+                      style: TextStyle(
+                        color: Colors.orange,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          ...standingsGroups.map((group) {
+            final groupName = group['name'] ?? 'Conference';
+            final entries = group['standings']?['entries'] ?? [];
 
-          return Container(
+            return Container(
             margin: const EdgeInsets.only(bottom: 16),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -7469,6 +7781,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
             ),
           );
         }).toList(),
+        ],
       ),
     );
   }

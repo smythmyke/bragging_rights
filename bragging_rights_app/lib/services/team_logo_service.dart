@@ -402,6 +402,12 @@ class TeamLogoService {
     final n1Lower = name1.toLowerCase();
     final n2Lower = name2.toLowerCase();
 
+    // Skip partial matching if one is a very short abbreviation (3 chars or less)
+    // to avoid false matches like "LA" matching "Philadelphia"
+    if ((n1Lower.length <= 3 || n2Lower.length <= 3) && n1Lower != n2Lower) {
+      return false;
+    }
+
     if (n1Lower.contains(n2Lower) || n2Lower.contains(n1Lower)) {
       // Avoid false positives like "United" matching "Manchester United" and "Newcastle United"
       if (!n1Lower.contains('united') && !n2Lower.contains('united')) {

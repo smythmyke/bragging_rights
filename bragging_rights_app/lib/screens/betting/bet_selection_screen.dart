@@ -179,7 +179,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         if (widget.gameId?.contains('-') == false && _homeTeam != null && _awayTeam != null) {
           print('[BetSelection] ESPN ID detected, finding Odds API event ID for $_awayTeam @ $_homeTeam');
           final oddsApiEventId = await _oddsApiService.findOddsApiEventId(
-            sport: widget.sport,
+            sport: widget.sport.toLowerCase(),  // Ensure sport is lowercase for API
             homeTeam: _homeTeam!,
             awayTeam: _awayTeam!,
           );
@@ -193,7 +193,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         
         // Use OddsApiService to get event odds
         final eventOdds = await _oddsApiService.getEventOdds(
-          sport: widget.sport,
+          sport: widget.sport.toLowerCase(),  // Ensure sport is lowercase for API
           eventId: eventIdToUse,
           includeProps: true,  // Include props for complete data
           includeAlternates: true,
@@ -1763,7 +1763,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       if (_homeTeam != null && _awayTeam != null) {
         print('[BetSelection] Finding Odds API event ID for: $_homeTeam vs $_awayTeam');
         final foundEventId = await _oddsApiService.findOddsApiEventId(
-          sport: widget.sport,
+          sport: widget.sport.toLowerCase(),  // Ensure sport is lowercase for API
           homeTeam: _homeTeam!,
           awayTeam: _awayTeam!,
         );
@@ -1778,7 +1778,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       
       // Get event odds with props using the correct event ID
       final eventOdds = await _oddsApiService.getEventOdds(
-        sport: widget.sport,
+        sport: widget.sport.toLowerCase(),  // Ensure sport is lowercase for API
         eventId: oddsApiEventId!,
         includeProps: true,
         includeAlternates: true,
@@ -3895,14 +3895,34 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context); // Return to pool selection
-            },
-            child: const Text('View Other Games'),
-          ),
           ElevatedButton(
+            onPressed: _isLockingBets ? null : () {
+              Navigator.pop(context);
+              _lockInBets();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.successGreen,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.lock, size: 20),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    'Lock In All Bets (${_selectedBets.length} selections)',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
             onPressed: () {
               Navigator.pop(context);
               setState(() {

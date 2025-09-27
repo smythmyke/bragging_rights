@@ -108,6 +108,12 @@ service cloud.firestore {
       allow write: if isOwner(userId);
     }
 
+    // User bets subcollection
+    match /users/{userId}/bets/{document=**} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId);
+    }
+
     // User games with bets subcollection
     match /users/{userId}/gamesWithBets/{document=**} {
       allow read: if isOwner(userId);
