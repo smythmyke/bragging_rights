@@ -59,7 +59,12 @@ class FightCardTab extends StatelessWidget {
       itemCount: fights!.length,
       itemBuilder: (context, index) {
         final fight = fights![index];
-        return _FightCard(fight: fight);
+        // First fight in the list is the main event
+        final isMainEventPosition = index == 0;
+        return _FightCard(
+          fight: fight,
+          isMainEventPosition: isMainEventPosition,
+        );
       },
     );
   }
@@ -67,17 +72,27 @@ class FightCardTab extends StatelessWidget {
 
 class _FightCard extends StatelessWidget {
   final BoxingFight fight;
+  final bool isMainEventPosition;
 
-  const _FightCard({required this.fight});
+  const _FightCard({
+    required this.fight,
+    this.isMainEventPosition = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    // Highlight main event with special styling
+    final isMainEvent = fight.isMainEvent || isMainEventPosition;
+
     return Card(
-      color: AppTheme.surfaceBlue,
+      color: isMainEvent
+          ? AppTheme.surfaceBlue
+          : AppTheme.surfaceBlue,
       margin: const EdgeInsets.only(bottom: 12),
+      elevation: isMainEvent ? 4 : 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: fight.isMainEvent
+        side: isMainEvent
             ? const BorderSide(color: AppTheme.neonGreen, width: 2)
             : BorderSide.none,
       ),
@@ -89,7 +104,7 @@ class _FightCard extends StatelessWidget {
             // Fight header with badges
             Row(
               children: [
-                if (fight.isMainEvent) ...[
+                if (isMainEvent) ...[
                   _Badge(
                     label: 'MAIN EVENT',
                     color: AppTheme.neonGreen,
@@ -97,7 +112,7 @@ class _FightCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                 ],
-                if (fight.isTitleFight && !fight.isMainEvent) ...[
+                if (fight.isTitleFight && !isMainEvent) ...[
                   _Badge(
                     label: 'TITLE FIGHT',
                     color: AppTheme.warningAmber,
@@ -119,13 +134,55 @@ class _FightCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // Fighters
+            // Add MAIN EVENT label for first fight
+            if (isMainEvent)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    'MAIN EVENT',
+                    style: TextStyle(
+                      color: AppTheme.neonGreen,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+
+            // Fighters with images
             Row(
               children: [
                 Expanded(
-                  child: _FighterInfo(
-                    fighter: fight.fighters['fighter1']!,
-                    alignment: TextAlign.right,
+                  child: Column(
+                    children: [
+                      // Fighter 1 image
+                      if (fight.fighters['fighter1']!.imageUrl != null)
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundImage: NetworkImage(
+                            fight.fighters['fighter1']!.imageUrl!,
+                          ),
+                          backgroundColor: AppTheme.cardBlue,
+                          onBackgroundImageError: (_, __) {},
+                        )
+                      else
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundColor: AppTheme.cardBlue,
+                          child: Icon(
+                            PhosphorIcons.user(PhosphorIconsStyle.fill),
+                            color: Colors.grey,
+                            size: 24,
+                          ),
+                        ),
+                      const SizedBox(height: 8),
+                      _FighterInfo(
+                        fighter: fight.fighters['fighter1']!,
+                        alignment: TextAlign.center,
+                      ),
+                    ],
                   ),
                 ),
                 Padding(
@@ -151,9 +208,34 @@ class _FightCard extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  child: _FighterInfo(
-                    fighter: fight.fighters['fighter2']!,
-                    alignment: TextAlign.left,
+                  child: Column(
+                    children: [
+                      // Fighter 2 image
+                      if (fight.fighters['fighter2']!.imageUrl != null)
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundImage: NetworkImage(
+                            fight.fighters['fighter2']!.imageUrl!,
+                          ),
+                          backgroundColor: AppTheme.cardBlue,
+                          onBackgroundImageError: (_, __) {},
+                        )
+                      else
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundColor: AppTheme.cardBlue,
+                          child: Icon(
+                            PhosphorIcons.user(PhosphorIconsStyle.fill),
+                            color: Colors.grey,
+                            size: 24,
+                          ),
+                        ),
+                      const SizedBox(height: 8),
+                      _FighterInfo(
+                        fighter: fight.fighters['fighter2']!,
+                        alignment: TextAlign.center,
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -225,10 +307,14 @@ class _FighterInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final crossAlign = alignment == TextAlign.left
+        ? CrossAxisAlignment.start
+        : alignment == TextAlign.right
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.center;
+
     return Column(
-      crossAxisAlignment: alignment == TextAlign.left
-          ? CrossAxisAlignment.start
-          : CrossAxisAlignment.end,
+      crossAxisAlignment: crossAlign,
       children: [
         Text(
           fighter.fullName.toUpperCase(),

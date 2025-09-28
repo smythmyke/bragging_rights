@@ -166,7 +166,13 @@ class MMAService {
           competitions = competitionsData;
         } else if (competitionsData is Map) {
           if (competitionsData.containsKey('items')) {
-            competitions = competitionsData['items'] as List;
+            // Safely handle items that might be a Map or List
+            final items = competitionsData['items'];
+            if (items is List) {
+              competitions = items;
+            } else if (items is Map) {
+              competitions = [items];  // Wrap single item in list
+            }
           } else if (competitionsData.containsKey('\$ref')) {
             // Single competition with $ref - need to fetch it
             try {
@@ -182,7 +188,12 @@ class MMAService {
                 if (compData is List) {
                   competitions = compData;
                 } else if (compData is Map && compData.containsKey('items')) {
-                  competitions = compData['items'] as List;
+                  final items = compData['items'];
+                  if (items is List) {
+                    competitions = items;
+                  } else if (items is Map) {
+                    competitions = [items];  // Wrap single item in list
+                  }
                 } else if (compData is Map) {
                   // Single competition object
                   competitions = [compData];
@@ -329,8 +340,9 @@ class MMAService {
       // Cache removed due to permission issues
 
       return event;
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('Error fetching event with fights: $e');
+      print('Stack trace: $stackTrace');
       return null;
     }
   }
@@ -493,7 +505,7 @@ class MMAService {
     const batchSize = 5;
     for (int i = 0; i < fighterRefs.length; i += batchSize) {
       final batch = fighterRefs.skip(i).take(batchSize).toList();
-      final futures = batch.map((ref) => _getFighterSimple(ref));
+      final futures = batch.map((ref) => _getFighterSimple(ref)).toList();
 
       final results = await Future.wait(futures);
 
@@ -1510,7 +1522,7 @@ class MMAService {
           print('  ⚠️ Not found: $name');
           return null;
         }
-      });
+      }).toList();
 
       await Future.wait(futures);
     }

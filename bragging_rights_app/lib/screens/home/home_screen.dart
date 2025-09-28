@@ -27,6 +27,7 @@ import '../../models/intel_product.dart';
 // import '../../utils/dev_tools.dart'; // Removed for production
 import '../premium/edge_screen.dart';
 import '../cards/card_inventory_screen.dart';
+import '../watch/watch_live_screen.dart';
 import '../games/all_games_screen.dart';
 import '../games/optimized_games_screen.dart';
 import '../../services/sound_service.dart';
@@ -859,7 +860,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           _buildGamesTab(),
           _buildBetsTab(),
-          _buildPoolsTab(),
+          _buildWatchLiveTab(),
           _buildEdgeTab(),
           _buildMoreTab(),
         ],
@@ -887,8 +888,8 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Bets',
           ),
           BottomNavigationBarItem(
-            icon: Icon(PhosphorIconsRegular.trophy),
-            label: 'Pools',
+            icon: Icon(Icons.live_tv),
+            label: 'Watch Live',
           ),
           BottomNavigationBarItem(
             icon: Icon(PhosphorIconsRegular.lightning),
@@ -914,34 +915,36 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildGamesTab() {
-    return RefreshIndicator(
-      onRefresh: () async {
-        await _loadGamesData(forceRefresh: true);
-      },
-      child: _isLoadingGames
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: 16),
-                  const Text('Loading games...'),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Fetching latest data from ESPN',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+    return Stack(
+      children: [
+        RefreshIndicator(
+          onRefresh: () async {
+            await _loadGamesData(forceRefresh: true);
+          },
+          child: _isLoadingGames
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      const Text('Loading games...'),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Fetching latest data from ESPN',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                   
                   // Next Game Alert (when no games today)
                   if (_liveGames.isEmpty && _todayGames.isEmpty && _nextGame != null)
@@ -1164,64 +1167,106 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ],
-                  
-                  // Optimized Version Banner - At the bottom
-                  if (USE_OPTIMIZED_GAMES) 
-                    Container(
-                      margin: const EdgeInsets.only(top: 16),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.blue.shade600, Colors.blue.shade800],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.sports_score, color: Colors.white),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '🏆 View All Sports',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  'Browse games by sport category',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: Colors.blue.shade700,
-                            ),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const OptimizedGamesScreen(),
-                                ),
-                              );
-                            },
-                            child: const Text('Open'),
-                          ),
-                        ],
-                      ),
-                    ),
+
+                  // Add padding at bottom so content isn't hidden behind sticky button
+                  // Total height: 30 (gradient) + 16 (top padding) + ~80 (button) + 16 (bottom padding) = ~140
+                  const SizedBox(height: 110),
                 ],
               ),
             ),
+        ),
+
+        // Gradient fade effect and sticky button
+        if (USE_OPTIMIZED_GAMES && !_isLoadingGames)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Gradient fade from transparent to background
+                Container(
+                  height: 30,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Theme.of(context).scaffoldBackgroundColor.withOpacity(0),
+                        Theme.of(context).scaffoldBackgroundColor.withOpacity(0.7),
+                        Theme.of(context).scaffoldBackgroundColor,
+                      ],
+                    ),
+                  ),
+                ),
+                // Button container with solid background
+                Container(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.blue.shade600, Colors.blue.shade800],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.sports_score, color: Colors.white),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '🏆 View All Sports',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                'Browse games by sport category',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.blue.shade700,
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const OptimizedGamesScreen(),
+                              ),
+                            );
+                          },
+                          child: const Text('Open'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 
@@ -2229,6 +2274,10 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildWatchLiveTab() {
+    return const WatchLiveScreen();
   }
 
   Widget _buildPoolsTab() {

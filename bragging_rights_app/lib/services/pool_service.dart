@@ -173,7 +173,9 @@ class PoolService {
 
       // Now update the pool in a transaction
       try {
+        print('[POOL_SERVICE] Starting transaction to update pool...');
         final success = await _firestore.runTransaction((transaction) async {
+          print('[POOL_SERVICE] Transaction started, fetching current pool state...');
           // Re-fetch pool document to ensure current state
           final currentPoolDoc = await transaction.get(
             _firestore.collection('pools').doc(poolId),
@@ -183,7 +185,9 @@ class PoolService {
             throw Exception('POOL_NOT_FOUND');
           }
 
+          print('[POOL_SERVICE] Creating Pool model from current doc...');
           final currentPool = Pool.fromFirestore(currentPoolDoc);
+          print('[POOL_SERVICE] Current pool players: ${currentPool.playerIds.length}/${currentPool.maxPlayers}');
 
           // Double-check conditions haven't changed
           if (currentPool.playerIds.contains(userId)) {
@@ -199,15 +203,19 @@ class PoolService {
           }
 
           // Update pool with new player
+          print('[POOL_SERVICE] Updating pool document...');
           transaction.update(currentPoolDoc.reference, {
             'currentPlayers': FieldValue.increment(1),
             'playerIds': FieldValue.arrayUnion([userId]),
             'prizePool': FieldValue.increment(buyIn),
           });
+          print('[POOL_SERVICE] Pool update queued in transaction');
 
           // Create pool entry record for user
+          print('[POOL_SERVICE] Creating user_pools entry...');
+          final userPoolRef = _firestore.collection('user_pools').doc('${userId}_$poolId');
           transaction.set(
-            _firestore.collection('user_pools').doc('${userId}_$poolId'),
+            userPoolRef,
             {
               'userId': userId,
               'poolId': poolId,
@@ -218,12 +226,19 @@ class PoolService {
               'poolType': currentPool.type.toString().split('.').last,
             },
           );
+          print('[POOL_SERVICE] User pool entry queued in transaction');
 
+          print('[POOL_SERVICE] Transaction operations complete, returning true');
           return true;
         });
 
+        print('[POOL_SERVICE] Transaction completed successfully: $success');
+
         return {'success': true, 'message': 'Successfully joined pool', 'code': 'SUCCESS'};
-      } catch (e) {
+      } catch (e, stackTrace) {
+        print('[POOL_SERVICE] Transaction failed with error: $e');
+        print('[POOL_SERVICE] Full stack trace: $stackTrace');
+
         // If pool update fails, refund the wallet
         await _walletService.addToWallet(
           userId,

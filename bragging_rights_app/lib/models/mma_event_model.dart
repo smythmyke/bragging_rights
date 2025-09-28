@@ -127,10 +127,12 @@ class MMAEvent {
       isLive: json['status']?['type']?['state'] == 'in',
       isComplete: json['status']?['type']?['completed'] ?? false,
       espnEventId: json['id']?.toString(),
-      espnUrl: json['links']?.firstWhere(
-        (link) => link['rel']?.contains('summary') ?? false,
-        orElse: () => null,
-      )?['href'],
+      espnUrl: json['links'] != null && json['links'] is List
+          ? (json['links'] as List).firstWhere(
+              (link) => link['rel']?.contains('summary') ?? false,
+              orElse: () => {'href': null},
+            )['href']
+          : null,
       lastUpdated: DateTime.now(),
     );
   }

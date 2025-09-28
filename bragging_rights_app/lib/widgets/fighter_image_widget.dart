@@ -5,8 +5,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../services/fighter_image_cache_service.dart';
 
 /// Smart fighter image widget that uses our caching service
+/// Can use either fighterId (for ESPN lookup) or directUrl (from Boxing Data API cache)
 class FighterImageWidget extends StatefulWidget {
   final String? fighterId;
+  final String? directUrl;  // Direct URL from Boxing Data API cache
   final String? fallbackUrl;
   final double size;
   final BoxShape shape;
@@ -17,7 +19,8 @@ class FighterImageWidget extends StatefulWidget {
 
   const FighterImageWidget({
     Key? key,
-    required this.fighterId,
+    this.fighterId,  // Made optional since we can use directUrl
+    this.directUrl,   // Alternative to fighterId
     this.fallbackUrl,
     this.size = 100,
     this.shape = BoxShape.circle,
@@ -51,6 +54,16 @@ class _FighterImageWidgetState extends State<FighterImageWidget> {
   }
 
   Future<void> _loadImage() async {
+    // Priority: directUrl > fighterId lookup > fallback
+    if (widget.directUrl != null) {
+      debugPrint('🖼️ FighterImageWidget: Using direct URL from Boxing Data API');
+      setState(() {
+        _imageUrl = widget.directUrl;
+        _isLoading = false;
+      });
+      return;
+    }
+
     if (widget.fighterId == null) {
       debugPrint('🖼️ FighterImageWidget: No fighter ID provided, using fallback');
       setState(() {

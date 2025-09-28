@@ -43,7 +43,6 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
 
   // NHL-specific data
   Map<String, dynamic>? _nhlBoxScore;
-  List<dynamic>? _nhlScoringPlays;
   Map<String, dynamic>? _nhlStandings;
   List<dynamic>? _nhlGameLeaders;  // Changed from Map to List
   Map<String, dynamic>? _nhlOddsData;
@@ -62,7 +61,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         : widget.sport.toUpperCase() == 'NFL'
         ? 3  // NFL tabs: Overview, Stats, Standings
         : widget.sport.toUpperCase() == 'NHL'
-        ? 4
+        ? 3
         : 5;
     _tabController = TabController(length: tabCount, vsync: this);
     _tabController.addListener(() {
@@ -662,7 +661,6 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                   ? [
                       const Tab(text: 'Overview'),
                       const Tab(text: 'Box Score'),
-                      const Tab(text: 'Scoring'),
                       const Tab(text: 'Standings'),
                     ]
                   : [
@@ -716,7 +714,6 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                       ? [
                           _buildNHLOverviewTab(),
                           _buildNHLBoxScoreTab(),
-                          _buildNHLScoringTab(),
                           _buildNHLStandingsTab(),
                         ]
                       : [
@@ -5834,14 +5831,12 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         // Log data types before assignment for debugging
         print('🔍 NHL Data Types Check:');
         print('  boxscore type: ${summaryData['boxscore']?.runtimeType}');
-        print('  scoringPlays type: ${summaryData['scoringPlays']?.runtimeType}');
         print('  standings type: ${summaryData['standings']?.runtimeType}');
         print('  leaders type: ${summaryData['leaders']?.runtimeType}');
 
         setState(() {
           _eventDetails = summaryData;
           _nhlBoxScore = summaryData['boxscore'] as Map<String, dynamic>?;
-          _nhlScoringPlays = summaryData['scoringPlays'] as List?;
           _nhlStandings = summaryData['standings'] as Map<String, dynamic>?;
 
           // Leaders can be either List or null
@@ -5877,6 +5872,8 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         if (_nhlBoxScore != null) {
           print('✅ Box score data found');
           print('  📋 Box score keys: ${_nhlBoxScore!.keys.toList()}');
+
+          // Check for teams data
           if (_nhlBoxScore!['teams'] != null) {
             final teams = _nhlBoxScore!['teams'] as List;
             print('  👥 Teams in box score: ${teams.length}');
@@ -5886,16 +5883,30 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
               print('    Team ${i + 1} logo: ${team['team']?['logo']}');
             }
           }
+
+          // Check for players data - THIS IS WHAT'S MISSING
+          print('\n  🏒 ======== PLAYER DATA CHECK ========');
+          if (_nhlBoxScore!['players'] != null) {
+            final players = _nhlBoxScore!['players'] as List;
+            print('  ✅ Players data found: ${players.length} teams');
+            for (int i = 0; i < players.length; i++) {
+              final teamPlayers = players[i];
+              print('    Team ${i + 1}: ${teamPlayers['team']?['displayName']}');
+              final stats = teamPlayers['statistics'] as List? ?? [];
+              print('    Stat groups: ${stats.length}');
+              for (int j = 0; j < stats.length; j++) {
+                final statGroup = stats[j];
+                final athletes = statGroup['athletes'] as List? ?? [];
+                print('      ${statGroup['name']}: ${athletes.length} players');
+              }
+            }
+          } else {
+            print('  ❌ No players data in box score');
+          }
         } else {
           print('❌ Box score data is null');
         }
 
-        // Scoring Plays Analysis
-        if (_nhlScoringPlays != null) {
-          print('✅ Scoring plays found: ${_nhlScoringPlays!.length}');
-        } else {
-          print('ℹ️ No scoring plays yet');
-        }
 
         // Leaders Analysis
         print('🎯 ======== LEADERS ANALYSIS ========');
@@ -6465,6 +6476,14 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
     final teams = _nhlBoxScore!['teams'] as List? ?? [];
     final players = _nhlBoxScore!['players'] as List? ?? [];
 
+    // Debug logging
+    print('🏒 Building NHL Box Score Tab');
+    print('  Teams: ${teams.length}');
+    print('  Players: ${players.length}');
+    if (players.isEmpty) {
+      print('  ⚠️ No player data available - likely a future game or data not loaded yet');
+    }
+
     return DefaultTabController(
       length: 2,
       child: Column(
@@ -6529,7 +6548,37 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                 // Player Stats
                 SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
-                  child: Column(
+                  child: players.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.info_outline,
+                              size: 64,
+                              color: Colors.grey,
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Player stats not available',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Player statistics will be available once the game starts',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[400],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      )
+                    : Column(
                     children: [
                       for (final teamPlayers in players) ...[
                         Card(
@@ -6673,127 +6722,6 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
     );
   }
 
-  Widget _buildNHLScoringTab() {
-    if (_nhlScoringPlays == null || _nhlScoringPlays!.isEmpty) {
-      return const Center(child: Text('No scoring plays yet'));
-    }
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'GOALS (${_nhlScoringPlays!.length})',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[400],
-            ),
-          ),
-          const SizedBox(height: 8),
-          for (final play in _nhlScoringPlays!) ...[
-            Card(
-              color: AppTheme.surfaceBlue,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryCyan.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'Period ${play['period']?['number'] ?? ''}',
-                            style: const TextStyle(
-                              color: AppTheme.primaryCyan,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          play['clock']?['displayValue'] ?? '',
-                          style: TextStyle(
-                            color: Colors.grey[400],
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        if (play['team']?['logo'] != null)
-                          CachedNetworkImage(
-                            imageUrl: play['team']['logo'],
-                            width: 30,
-                            height: 30,
-                            errorWidget: (_, __, ___) => const Icon(
-                              Icons.sports_hockey,
-                              size: 30,
-                            ),
-                          ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                play['team']?['displayName'] ?? '',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                play['text'] ?? '',
-                                style: TextStyle(
-                                  color: Colors.grey[300],
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (play['scoreValue'] != null) ...[
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          play['awayScore'] != null && play['homeScore'] != null
-                              ? '${play['awayScore']} - ${play['homeScore']}'
-                              : '',
-                          style: const TextStyle(
-                            color: Colors.green,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ],
-      ),
-    );
-  }
 
   Widget _buildNHLStandingsTab() {
     if (_nhlStandings == null) {

@@ -409,20 +409,27 @@ class OptimizedGamesService {
   Future<List<GameModel>> _loadNflGamesWithRange({int daysAhead = INITIAL_DAYS_AHEAD}) async {
     final scoreboard = await _nflService.getGamesForDateRange(daysAhead: daysAhead);
     if (scoreboard == null) return [];
-    
+
     final games = <GameModel>[];
-    
+    final now = DateTime.now();
+
     for (final event in scoreboard.events) {
       try {
         final game = _convertEspnEventToGame(event, 'NFL');
         if (game != null) {
-          games.add(game);
+          // Filter out past games - only include games that haven't started yet or are currently live
+          if (game.gameTime.isAfter(now) || game.status == 'live') {
+            games.add(game);
+          } else {
+            debugPrint('🚫 Filtering out past NFL game: ${game.awayTeam} @ ${game.homeTeam} at ${game.gameTime}');
+          }
         }
       } catch (e) {
         debugPrint('Error converting NFL event: $e');
       }
     }
-    
+
+    debugPrint('✅ NFL: Kept ${games.length} future/live games from ${scoreboard.events.length} total ESPN events');
     return games;
   }
 
@@ -430,20 +437,27 @@ class OptimizedGamesService {
   Future<List<GameModel>> _loadNbaGamesWithRange({int daysAhead = INITIAL_DAYS_AHEAD}) async {
     final scoreboard = await _nbaService.getGamesForDateRange(daysAhead: daysAhead);
     if (scoreboard == null) return [];
-    
+
     final games = <GameModel>[];
-    
+    final now = DateTime.now();
+
     for (final event in scoreboard.events) {
       try {
         final game = _convertEspnEventToGame(event, 'NBA');
         if (game != null) {
-          games.add(game);
+          // Filter out past games - only include games that haven't started yet or are currently live
+          if (game.gameTime.isAfter(now) || game.status == 'live') {
+            games.add(game);
+          } else {
+            debugPrint('🚫 Filtering out past NBA game: ${game.awayTeam} @ ${game.homeTeam} at ${game.gameTime}');
+          }
         }
       } catch (e) {
         debugPrint('Error converting NBA event: $e');
       }
     }
-    
+
+    debugPrint('✅ NBA: Kept ${games.length} future/live games from ${scoreboard.events.length} total ESPN events');
     return games;
   }
 
@@ -451,20 +465,27 @@ class OptimizedGamesService {
   Future<List<GameModel>> _loadNhlGamesWithRange({int daysAhead = INITIAL_DAYS_AHEAD}) async {
     final scoreboard = await _nhlService.getGamesForDateRange(daysAhead: daysAhead);
     if (scoreboard == null) return [];
-    
+
     final games = <GameModel>[];
-    
+    final now = DateTime.now();
+
     for (final event in scoreboard.events) {
       try {
         final game = _convertEspnEventToGame(event, 'NHL');
         if (game != null) {
-          games.add(game);
+          // Filter out past games - only include games that haven't started yet or are currently live
+          if (game.gameTime.isAfter(now) || game.status == 'live') {
+            games.add(game);
+          } else {
+            debugPrint('🚫 Filtering out past NHL game: ${game.awayTeam} @ ${game.homeTeam} at ${game.gameTime}');
+          }
         }
       } catch (e) {
         debugPrint('Error converting NHL event: $e');
       }
     }
-    
+
+    debugPrint('✅ NHL: Kept ${games.length} future/live games from ${scoreboard.events.length} total ESPN events');
     return games;
   }
 
@@ -472,20 +493,27 @@ class OptimizedGamesService {
   Future<List<GameModel>> _loadMlbGamesWithRange({int daysAhead = INITIAL_DAYS_AHEAD}) async {
     final scoreboard = await _mlbService.getGamesForDateRange(daysAhead: daysAhead);
     if (scoreboard == null) return [];
-    
+
     final games = <GameModel>[];
-    
+    final now = DateTime.now();
+
     for (final event in scoreboard.events) {
       try {
         final game = _convertEspnEventToGame(event, 'MLB');
         if (game != null) {
-          games.add(game);
+          // Filter out past games - only include games that haven't started yet or are currently live
+          if (game.gameTime.isAfter(now) || game.status == 'live') {
+            games.add(game);
+          } else {
+            debugPrint('🚫 Filtering out past MLB game: ${game.awayTeam} @ ${game.homeTeam} at ${game.gameTime}');
+          }
         }
       } catch (e) {
         debugPrint('Error converting MLB event: $e');
       }
     }
-    
+
+    debugPrint('✅ MLB: Kept ${games.length} future/live games from ${scoreboard.events.length} total ESPN events');
     return games;
   }
 

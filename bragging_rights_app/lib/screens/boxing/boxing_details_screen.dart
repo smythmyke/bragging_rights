@@ -4,6 +4,7 @@ import '../../models/boxing_event_model.dart';
 import '../../models/boxing_fight_model.dart';
 import '../../models/boxing_fighter_model.dart';
 import '../../services/boxing_service.dart';
+import '../../services/boxing_odds_service.dart';
 import '../../theme/app_theme.dart';
 import 'tabs/fight_card_tab.dart';
 import 'tabs/event_info_tab.dart';
@@ -68,6 +69,17 @@ class _BoxingDetailsScreenState extends State<BoxingDetailsScreen>
 
   Future<void> _loadFightCard() async {
     try {
+      // First check if the event already has fights with enriched data
+      if (widget.event is BoxingEventWithFights) {
+        final eventWithFights = widget.event as BoxingEventWithFights;
+        setState(() {
+          _fightCard = eventWithFights.fights;
+          _isLoadingFights = false;
+        });
+        return;
+      }
+
+      // Otherwise load from Firestore (will not have images)
       final fights = await _boxingService.getFightCard(widget.event.id);
       setState(() {
         _fightCard = fights;
@@ -97,7 +109,7 @@ class _BoxingDetailsScreenState extends State<BoxingDetailsScreen>
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
             SliverAppBar(
-              expandedHeight: 200.0,
+              expandedHeight: 240.0,  // Increased from 200 to prevent overlap
               floating: false,
               pinned: true,
               backgroundColor: AppTheme.deepBlue,
@@ -106,13 +118,26 @@ class _BoxingDetailsScreenState extends State<BoxingDetailsScreen>
                 onPressed: () => Navigator.pop(context),
               ),
               flexibleSpace: FlexibleSpaceBar(
+                titlePadding: const EdgeInsets.only(
+                  left: 16.0,
+                  bottom: 60.0,  // Increased bottom padding to move title up from tabs
+                ),
                 title: Text(
                   event.title,
                   style: const TextStyle(
                     fontFamily: 'Bebas Neue',
-                    fontSize: 20,
+                    fontSize: 18,  // Slightly smaller to fit better
                     letterSpacing: 1.2,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(0, 1),
+                        blurRadius: 3,
+                        color: Colors.black54,
+                      ),
+                    ],
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 background: Stack(
                   fit: StackFit.expand,
@@ -163,8 +188,10 @@ class _BoxingDetailsScreenState extends State<BoxingDetailsScreen>
                           end: Alignment.bottomCenter,
                           colors: [
                             Colors.transparent,
-                            AppTheme.deepBlue.withOpacity(0.8),
+                            Colors.black.withOpacity(0.3),  // Lighter overlay at top
+                            AppTheme.deepBlue.withOpacity(0.9),  // Darker at bottom for text contrast
                           ],
+                          stops: const [0.0, 0.5, 1.0],
                         ),
                       ),
                     ),

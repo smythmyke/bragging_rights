@@ -275,6 +275,27 @@ class _FighterColumn extends StatelessWidget {
     return Column(
       crossAxisAlignment: alignment,
       children: [
+        // Fighter image
+        if (fighterInfo.imageUrl != null)
+          CircleAvatar(
+            radius: 35,
+            backgroundImage: NetworkImage(
+              fighterInfo.imageUrl!,
+            ),
+            backgroundColor: AppTheme.cardBlue,
+            onBackgroundImageError: (_, __) {},
+          )
+        else
+          CircleAvatar(
+            radius: 35,
+            backgroundColor: AppTheme.cardBlue,
+            child: Icon(
+              PhosphorIcons.user(PhosphorIconsStyle.fill),
+              color: Colors.grey,
+              size: 28,
+            ),
+          ),
+        const SizedBox(height: 8),
         Text(
           fighterInfo.fullName,
           style: const TextStyle(

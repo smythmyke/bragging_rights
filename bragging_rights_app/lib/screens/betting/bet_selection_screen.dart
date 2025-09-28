@@ -105,6 +105,9 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   bool _isLoadingProps = false;
   bool _hasAttemptedPropsLoad = false;
   String _propsSearchQuery = '';
+
+  // Error message for odds loading
+  String? _oddsErrorMessage;
   bool _showHomeTeamProps = true;
   bool _isBetSlipMinimized = false;
   String _currentTabName = 'Winner';
@@ -344,58 +347,61 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         }
       }
       
-      // Fallback logic
-      if (widget.sport.toUpperCase().contains('NFL') || widget.sport.toUpperCase().contains('FOOTBALL')) {
-        print('[BetSelection] Using mock football data');
-        _loadMockFootballData();
-      } else {
-        print('[BetSelection] No odds data available, creating basic game data');
-        setState(() {
-          // Create basic GameModel even without odds
-          if (_homeTeam != null && _awayTeam != null) {
-            _gameData = GameModel(
-              id: widget.gameId ?? DateTime.now().millisecondsSinceEpoch.toString(),
-              sport: widget.sport.toUpperCase(),
-              homeTeam: _homeTeam!,
-              awayTeam: _awayTeam!,
-              gameTime: DateTime.now(),
-              status: 'scheduled',
-              league: widget.sport.toUpperCase(),
-            );
-          }
-          _isLoadingData = false;
+      // Handle case when no odds data is available
+      print('[BetSelection] No odds data available for this game');
+      print('[BetSelection] This could mean:');
+      print('[BetSelection]   1. The game has already occurred');
+      print('[BetSelection]   2. The game is too far in the future');
+      print('[BetSelection]   3. The Odds API doesn\'t have this game');
 
-          // Load team logos even for basic game data
-          debugPrint('🔍 [BetSelection] Loading logos from basic game data path');
-          _loadTeamLogos();
-        });
-      }
+      setState(() {
+        // Create basic GameModel even without odds
+        if (_homeTeam != null && _awayTeam != null) {
+          _gameData = GameModel(
+            id: widget.gameId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+            sport: widget.sport.toUpperCase(),
+            homeTeam: _homeTeam!,
+            awayTeam: _awayTeam!,
+            gameTime: DateTime.now(),
+            status: 'scheduled',
+            league: widget.sport.toUpperCase(),
+          );
+        }
+        _isLoadingData = false;
+
+        // Set an error message to show to user
+        _oddsErrorMessage = 'No betting odds available for this game. The game may have already started or ended.';
+
+        // Load team logos even for basic game data
+        debugPrint('🔍 [BetSelection] Loading logos from basic game data path');
+        _loadTeamLogos();
+      });
     } catch (e, stackTrace) {
       print('[BetSelection] Error: $e');
       print('[BetSelection] Stack trace: $stackTrace');
-      if (widget.sport.toUpperCase().contains('NFL') || widget.sport.toUpperCase().contains('FOOTBALL')) {
-        _loadMockFootballData();
-      } else {
-        setState(() {
-          // Create basic GameModel even in error case
-          if (_homeTeam != null && _awayTeam != null) {
-            _gameData = GameModel(
-              id: widget.gameId ?? DateTime.now().millisecondsSinceEpoch.toString(),
-              sport: widget.sport.toUpperCase(),
-              homeTeam: _homeTeam!,
-              awayTeam: _awayTeam!,
-              gameTime: DateTime.now(),
-              status: 'scheduled',
-              league: widget.sport.toUpperCase(),
-            );
-          }
-          _isLoadingData = false;
 
-          // Load team logos even in error case
-          debugPrint('🔍 [BetSelection] Loading logos from error path');
-          _loadTeamLogos();
-        });
-      }
+      setState(() {
+        // Create basic GameModel even in error case
+        if (_homeTeam != null && _awayTeam != null) {
+          _gameData = GameModel(
+            id: widget.gameId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+            sport: widget.sport.toUpperCase(),
+            homeTeam: _homeTeam!,
+            awayTeam: _awayTeam!,
+            gameTime: DateTime.now(),
+            status: 'scheduled',
+            league: widget.sport.toUpperCase(),
+          );
+        }
+        _isLoadingData = false;
+
+        // Set an error message to show to user
+        _oddsErrorMessage = 'Unable to load betting odds. Please try again later.';
+
+        // Load team logos even in error case
+        debugPrint('🔍 [BetSelection] Loading logos from error path');
+        _loadTeamLogos();
+      });
     }
   }
   
@@ -510,26 +516,6 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     }
   }
 
-  void _loadMockFootballData() {
-    // Create mock odds data for demonstration
-    setState(() {
-      _oddsData = OddsModel(
-        homeMoneyline: -150,  // Home team favored
-        awayMoneyline: 130,   // Away team underdog
-        spread: -3.5,         // Home team favored by 3.5
-        spreadHomeOdds: -110,
-        spreadAwayOdds: -110,
-        totalPoints: 45.5,    // Over/Under 45.5 points
-        overOdds: -110,
-        underOdds: -110,
-      );
-      _isLoadingData = false;
-    });
-
-    // Load team logos for NFL
-    debugPrint('🔍 [BetSelection] Loading logos from mock football data path');
-    _loadTeamLogos();
-  }
   
   void _initializeTabPicks() {
     final tabOrder = _getTabOrder();

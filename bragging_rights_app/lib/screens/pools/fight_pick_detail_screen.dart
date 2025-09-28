@@ -34,12 +34,26 @@ class _FightPickDetailScreenState extends State<FightPickDetailScreen> {
   int? _selectedRound;
   int _confidence = 3;
   
-  // Method options
-  final List<String> _methodOptions = [
-    'KO/TKO',
-    'Submission',
-    'Decision',
-  ];
+  // Method options - determined by sport
+  List<String> get _methodOptions {
+    final sport = widget.event.sport.toUpperCase();
+
+    if (sport.contains('BOXING')) {
+      return [
+        'KO/TKO',
+        'Decision',
+        'Draw',
+        'DQ',
+      ];
+    } else {
+      // MMA/UFC
+      return [
+        'KO/TKO',
+        'Submission',
+        'Decision',
+      ];
+    }
+  }
   
   @override
   void initState() {
@@ -375,8 +389,18 @@ class _FightPickDetailScreenState extends State<FightPickDetailScreen> {
   
   Widget _buildRoundSelection() {
     if (_selectedMethod == null || _selectedMethod == 'Decision') return const SizedBox();
-    
-    final rounds = widget.fight.isMainEvent || widget.fight.isTitle ? 5 : 3;
+
+    // Determine max rounds based on sport
+    final sport = widget.event.sport.toUpperCase();
+    final int rounds;
+
+    if (sport.contains('BOXING')) {
+      // Boxing: 12 rounds for championship/main events, 10 for others
+      rounds = (widget.fight.isMainEvent || widget.fight.isTitle) ? 12 : 10;
+    } else {
+      // MMA: 5 rounds for championship/main events, 3 for others
+      rounds = (widget.fight.isMainEvent || widget.fight.isTitle) ? 5 : 3;
+    }
     
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),

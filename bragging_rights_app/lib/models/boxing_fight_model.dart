@@ -31,7 +31,10 @@ class BoxingFight {
     this.method,
     this.endingRound,
     this.date,
+    this.odds,  // Add odds field
   });
+
+  final Map<String, dynamic>? odds;  // Betting odds from Odds API
 
   bool get isMainEvent => cardPosition == 1;
   bool get isTitleFight => titles.isNotEmpty;
@@ -116,6 +119,9 @@ class BoxingFighterInfo {
   final String? record;
   final String? nationality;
   final bool? isWinner;
+  final String? imageUrl;  // From Boxing Data API cache
+  final bool? isChampion;  // From Boxing Data API cache
+  final String? ranking;    // From Boxing Data API cache (e.g., "#3")
 
   BoxingFighterInfo({
     required this.id,
@@ -124,6 +130,9 @@ class BoxingFighterInfo {
     this.record,
     this.nationality,
     this.isWinner,
+    this.imageUrl,
+    this.isChampion,
+    this.ranking,
   });
 
   factory BoxingFighterInfo.fromBoxingData(Map<String, dynamic> data) {
@@ -134,6 +143,9 @@ class BoxingFighterInfo {
       record: data['record'],
       nationality: data['nationality'],
       isWinner: data['is_winner'],
+      imageUrl: data['image_url'] ?? data['imageUrl'],
+      isChampion: data['is_champion'] ?? data['isChampion'],
+      ranking: data['ranking'],
     );
   }
 
@@ -145,6 +157,9 @@ class BoxingFighterInfo {
       'record': record,
       'nationality': nationality,
       'is_winner': isWinner,
+      'image_url': imageUrl,
+      'is_champion': isChampion,
+      'ranking': ranking,
     };
   }
 }
