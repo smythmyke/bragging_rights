@@ -888,22 +888,6 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
                 ),
               ),
             ),
-            IconButton(
-              icon: const Icon(PhosphorIconsRegular.bell),
-              onPressed: () {
-                // TODO: Show notifications
-              },
-            ),
-            IconButton(
-              icon: const Icon(PhosphorIconsRegular.gear),
-              onPressed: () async {
-                final result = await Navigator.pushNamed(context, '/preferences');
-                if (result == true) {
-                  // Refresh games if preferences were changed
-                  _loadInitialData();
-                }
-              },
-            ),
           ],
       ),
       body: _loading
