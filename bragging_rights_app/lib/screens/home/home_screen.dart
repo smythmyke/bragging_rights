@@ -832,22 +832,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          IconButton(
-            icon: const Icon(PhosphorIconsRegular.bell),
-            onPressed: () {
-              // TODO: Show notifications
-            },
-          ),
-          IconButton(
-            icon: const Icon(PhosphorIconsRegular.gear),
-            onPressed: () async {
-              final result = await Navigator.pushNamed(context, '/preferences');
-              if (result == true) {
-                // Refresh games if preferences were changed
-                _loadGamesData(forceRefresh: true);
-              }
-            },
-          ),
         ],
       ),
       body: PageView(

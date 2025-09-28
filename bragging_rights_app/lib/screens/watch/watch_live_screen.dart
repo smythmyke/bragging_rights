@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/streaming_service_model.dart';
@@ -38,17 +39,78 @@ class _WatchLiveScreenState extends State<WatchLiveScreen> {
   }
 
   Future<void> _launchURL(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
-    } else {
-      if (mounted) {
+    try {
+      final uri = Uri.parse(url);
+
+      // Try different launch modes for better compatibility
+      bool launched = false;
+
+      // First try with external application (preferred)
+      try {
+        launched = await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+          webViewConfiguration: const WebViewConfiguration(
+            enableJavaScript: true,
+            enableDomStorage: true,
+          ),
+        );
+      } catch (e) {
+        print('Failed with externalApplication mode: $e');
+      }
+
+      // If external application fails, try platform default
+      if (!launched) {
+        try {
+          launched = await launchUrl(
+            uri,
+            mode: LaunchMode.platformDefault,
+          );
+        } catch (e) {
+          print('Failed with platformDefault mode: $e');
+        }
+      }
+
+      // If still not launched, try in-app web view as last resort
+      if (!launched) {
+        try {
+          launched = await launchUrl(
+            uri,
+            mode: LaunchMode.inAppWebView,
+            webViewConfiguration: const WebViewConfiguration(
+              enableJavaScript: true,
+              enableDomStorage: true,
+            ),
+          );
+        } catch (e) {
+          print('Failed with inAppWebView mode: $e');
+        }
+      }
+
+      // If all methods fail, show error
+      if (!launched && mounted) {
+        // Try copying to clipboard as fallback
+        await Clipboard.setData(ClipboardData(text: url));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Could not open $url'),
+            content: Text('Could not open browser. URL copied to clipboard: $url'),
+            backgroundColor: AppTheme.warningAmber,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'OK',
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error launching URL $url: $e');
+      if (mounted) {
+        // Copy to clipboard as fallback
+        await Clipboard.setData(ClipboardData(text: url));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening link. URL copied to clipboard.'),
             backgroundColor: AppTheme.errorPink,
           ),
         );
