@@ -7,6 +7,7 @@ import '../../services/wallet_service.dart';
 import '../../services/bet_storage_service.dart';
 import '../../services/sports_api_service.dart';
 import '../../services/odds_api_service.dart';
+import '../../services/free_odds_service.dart';
 import '../../services/team_logo_service.dart';
 import '../../models/game_model.dart';
 import '../../models/odds_model.dart';
@@ -53,6 +54,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   final SportsApiService _sportsApiService = SportsApiService();
   final BetTrackingService _betTrackingService = BetTrackingService();
   final OddsApiService _oddsApiService = OddsApiService();
+  final FreeOddsService _freeOddsService = FreeOddsService();
   final TeamLogoService _logoService = TeamLogoService();
   
   // Selected team/fighter
@@ -347,13 +349,70 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         }
       }
       
-      // Handle case when no odds data is available
-      print('[BetSelection] No odds data available for this game');
-      print('[BetSelection] This could mean:');
-      print('[BetSelection]   1. The game has already occurred');
-      print('[BetSelection]   2. The game is too far in the future');
-      print('[BetSelection]   3. The Odds API doesn\'t have this game');
+      // Handle case when no odds data is available from The Odds API
+      print('[BetSelection] No odds data available from The Odds API');
+      print('[BetSelection] Attempting ESPN fallback...');
 
+      // Try ESPN as fallback
+      if (_homeTeam != null && _awayTeam != null) {
+        try {
+          final espnOdds = await _freeOddsService.getFreeOdds(
+            sport: widget.sport.toLowerCase(),
+            homeTeam: _homeTeam!,
+            awayTeam: _awayTeam!,
+          );
+
+          if (espnOdds != null) {
+            print('[BetSelection] ✅ ESPN odds found!');
+
+            // Parse ESPN odds format
+            double? homeML = espnOdds['moneylineHome']?.toDouble();
+            double? awayML = espnOdds['moneylineAway']?.toDouble();
+            double? spread = espnOdds['spread']?.toDouble();
+            double? total = espnOdds['total']?.toDouble();
+            double? spreadHomeOdds = espnOdds['spreadHomeOdds']?.toDouble() ?? -110;
+            double? spreadAwayOdds = espnOdds['spreadAwayOdds']?.toDouble() ?? -110;
+            double? overOdds = espnOdds['overOdds']?.toDouble() ?? -110;
+            double? underOdds = espnOdds['underOdds']?.toDouble() ?? -110;
+
+            setState(() {
+              _gameData = GameModel(
+                id: widget.gameId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+                sport: widget.sport.toUpperCase(),
+                homeTeam: _homeTeam!,
+                awayTeam: _awayTeam!,
+                gameTime: DateTime.now(),
+                status: 'scheduled',
+                league: widget.sport.toUpperCase(),
+              );
+
+              _oddsData = OddsModel(
+                homeMoneyline: homeML,
+                awayMoneyline: awayML,
+                spread: spread,
+                spreadHomeOdds: spreadHomeOdds,
+                spreadAwayOdds: spreadAwayOdds,
+                totalPoints: total,
+                overOdds: overOdds,
+                underOdds: underOdds,
+              );
+              _isLoadingData = false;
+
+              // Load team logos
+              _loadTeamLogos();
+              _updateTabAvailability();
+            });
+            return;
+          } else {
+            print('[BetSelection] ❌ ESPN also does not have odds for this game');
+          }
+        } catch (e) {
+          print('[BetSelection] ❌ Error fetching ESPN odds: $e');
+        }
+      }
+
+      // If ESPN fallback also fails, show error message
+      print('[BetSelection] No odds available from any source');
       setState(() {
         // Create basic GameModel even without odds
         if (_homeTeam != null && _awayTeam != null) {
@@ -370,7 +429,13 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         _isLoadingData = false;
 
         // Set an error message to show to user
-        _oddsErrorMessage = 'No betting odds available for this game. The game may have already started or ended.';
+        // Check if this might be a preseason/exhibition game
+        final gameTitle = widget.gameTitle.toLowerCase();
+        if (gameTitle.contains('preseason') || gameTitle.contains('exhibition')) {
+          _oddsErrorMessage = 'Betting odds are not available for preseason/exhibition games.';
+        } else {
+          _oddsErrorMessage = 'No betting odds available for this game at this time.';
+        }
 
         // Load team logos even for basic game data
         debugPrint('🔍 [BetSelection] Loading logos from basic game data path');
