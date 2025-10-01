@@ -376,6 +376,70 @@ class MMAService {
       // Reverse fights so main event is FIRST (ESPN API returns them backwards)
       final reversedFights = fights.reversed.toList();
 
+      // NOW reassign card positions based on CORRECT order (after reversal)
+      // Main event should be FIRST (index 0) after reversal
+      for (int i = 0; i < reversedFights.length; i++) {
+        String correctCardPosition;
+        bool correctIsMainEvent = false;
+        bool correctIsCoMainEvent = false;
+
+        if (i == 0) {
+          // First fight after reversal = Main Event
+          correctCardPosition = 'main';
+          correctIsMainEvent = true;
+        } else if (i == 1) {
+          // Second fight = Co-Main Event
+          correctCardPosition = 'main';
+          correctIsCoMainEvent = true;
+        } else if (i <= 4) {
+          // Fights 3-5 = Main Card
+          correctCardPosition = 'main';
+        } else if (i <= 8) {
+          // Fights 6-9 = Prelims
+          correctCardPosition = 'prelim';
+        } else {
+          // Fights 10+ = Early Prelims
+          correctCardPosition = 'early';
+        }
+
+        // Update fight with correct position
+        reversedFights[i] = MMAFight(
+          id: reversedFights[i].id,
+          fighter1: reversedFights[i].fighter1,
+          fighter2: reversedFights[i].fighter2,
+          weightClass: reversedFights[i].weightClass,
+          rounds: reversedFights[i].rounds,
+          isMainEvent: correctIsMainEvent,
+          isCoMainEvent: correctIsCoMainEvent,
+          isTitleFight: reversedFights[i].isTitleFight,
+          cardPosition: correctCardPosition,
+          fightOrder: i,  // Update to correct display order
+          fighter1Odds: reversedFights[i].fighter1Odds,
+          fighter2Odds: reversedFights[i].fighter2Odds,
+          winnerId: reversedFights[i].winnerId,
+          method: reversedFights[i].method,
+          methodDetails: reversedFights[i].methodDetails,
+          endRound: reversedFights[i].endRound,
+          endTime: reversedFights[i].endTime,
+          status: reversedFights[i].status,
+          isComplete: reversedFights[i].isComplete,
+          isCancelled: reversedFights[i].isCancelled,
+          espnCompetitionId: reversedFights[i].espnCompetitionId,
+          fighter1EspnId: reversedFights[i].fighter1EspnId,
+          fighter2EspnId: reversedFights[i].fighter2EspnId,
+        );
+      }
+
+      print('✅ Card positions reassigned after reversal:');
+      for (int i = 0; i < reversedFights.length; i++) {
+        final fight = reversedFights[i];
+        final f1 = fight.fighter1?.name ?? 'Unknown';
+        final f2 = fight.fighter2?.name ?? 'Unknown';
+        print('  ${i + 1}. $f1 vs $f2 - ${fight.cardPosition}'
+              '${fight.isMainEvent == true ? " [MAIN]" : ""}'
+              '${fight.isCoMainEvent == true ? " [CO-MAIN]" : ""}');
+      }
+
       final event = MMAEvent.fromESPN(eventData, fights: reversedFights);
       print('✅ Created MMA event with ${fights.length} fights');
 

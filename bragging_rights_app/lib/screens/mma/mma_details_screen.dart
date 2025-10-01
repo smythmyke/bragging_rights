@@ -422,6 +422,46 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
   }
 
   Widget _buildFightCard() {
+    // Log fight card display order and section assignments
+    print('=== FIGHT CARD DISPLAY ORDER ===');
+    print('Event: ${_event!.name}');
+    print('Total fights: ${_event!.fights.length}');
+
+    print('\nMAIN CARD (${_event!.mainCardFights.length} fights):');
+    for (int i = 0; i < _event!.mainCardFights.length; i++) {
+      final fight = _event!.mainCardFights[i];
+      final fighter1Name = fight.fighter1?.name ?? 'Unknown';
+      final fighter2Name = fight.fighter2?.name ?? 'Unknown';
+      final isMain = fight.isMainEvent == true;
+      final isComain = fight.isCoMainEvent == true;
+      final cardPos = fight.cardPosition ?? 'unknown';
+      print('  ${i + 1}. $fighter1Name vs $fighter2Name'
+            '${isMain ? " [MAIN EVENT]" : ""}'
+            '${isComain ? " [CO-MAIN]" : ""}'
+            ' (cardPosition: $cardPos)');
+    }
+
+    print('\nPRELIMS (${_event!.prelimFights.length} fights):');
+    for (int i = 0; i < _event!.prelimFights.length; i++) {
+      final fight = _event!.prelimFights[i];
+      final fighter1Name = fight.fighter1?.name ?? 'Unknown';
+      final fighter2Name = fight.fighter2?.name ?? 'Unknown';
+      final cardPos = fight.cardPosition ?? 'unknown';
+      print('  ${i + 1}. $fighter1Name vs $fighter2Name'
+            ' (cardPosition: $cardPos)');
+    }
+
+    print('\nEARLY PRELIMS (${_event!.earlyPrelimFights.length} fights):');
+    for (int i = 0; i < _event!.earlyPrelimFights.length; i++) {
+      final fight = _event!.earlyPrelimFights[i];
+      final fighter1Name = fight.fighter1?.name ?? 'Unknown';
+      final fighter2Name = fight.fighter2?.name ?? 'Unknown';
+      final cardPos = fight.cardPosition ?? 'unknown';
+      print('  ${i + 1}. $fighter1Name vs $fighter2Name'
+            ' (cardPosition: $cardPos)');
+    }
+    print('===============================\n');
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
