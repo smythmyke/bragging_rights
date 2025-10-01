@@ -664,28 +664,21 @@ class OptimizedGamesService {
     debugPrint('================================================');
 
     try {
-      // TEMPORARY: Clear MMA cache once to fix display issues
-      if (sport.toLowerCase() == 'mma') {
-        debugPrint('🔄 Clearing MMA cache to fix display issues...');
-        await clearSportCache('mma');
-        // Don't check cache, force fresh fetch for MMA
-      } else {
-        // CHECK FIRESTORE CACHE FIRST (30 min cache for full sport listings)
-        final cachedGames = await _getGamesFromFirestore(sport, maxAge: const Duration(minutes: 30));
-        if (cachedGames != null && cachedGames.isNotEmpty) {
-          debugPrint('✅ Using ${cachedGames.length} cached $sport games from Firestore');
+      // CHECK FIRESTORE CACHE FIRST (30 min cache for full sport listings)
+      final cachedGames = await _getGamesFromFirestore(sport, maxAge: const Duration(minutes: 30));
+      if (cachedGames != null && cachedGames.isNotEmpty) {
+        debugPrint('✅ Using ${cachedGames.length} cached $sport games from Firestore');
 
-          // Check if Canelo vs Crawford is in cached data
-          if (sport.toLowerCase() == 'boxing') {
-            for (final game in cachedGames) {
-              if (game.homeTeam.toLowerCase().contains('canelo') ||
-                  game.awayTeam.toLowerCase().contains('crawford')) {
-                debugPrint('🥊 FOUND IN CACHE: ${game.awayTeam} vs ${game.homeTeam}');
-              }
+        // Check if Canelo vs Crawford is in cached data (debugging)
+        if (sport.toLowerCase() == 'boxing') {
+          for (final game in cachedGames) {
+            if (game.homeTeam.toLowerCase().contains('canelo') ||
+                game.awayTeam.toLowerCase().contains('crawford')) {
+              debugPrint('🥊 FOUND IN CACHE: ${game.awayTeam} vs ${game.homeTeam}');
             }
           }
-          return cachedGames;
         }
+        return cachedGames;
       }
       
       // Load from Odds API without date limit if no cache
@@ -1588,32 +1581,42 @@ class OptimizedGamesService {
     return groupedEvents;
   }
 
-  /// Clear cache for a specific sport to force refresh
+  /// Clear OLD cache for a specific sport (games older than 7 days)
+  /// This preserves recent games, active pools, and user data
   Future<void> clearSportCache(String sport) async {
     try {
-      debugPrint('🗑️ Clearing cache for $sport...');
+      debugPrint('🗑️ Clearing OLD cache for $sport (games >7 days old)...');
 
       // Clear in-memory cache
       _featuredGamesCache[sport.toUpperCase()]?.clear();
 
-      // Clear Firestore cache for this sport
+      // Only clear games older than 7 days
+      final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
+
       final batch = _firestore.batch();
       final querySnapshot = await _firestore
           .collection('games')
           .where('sport', isEqualTo: sport.toUpperCase())
+          .where('gameTime', isLessThan: Timestamp.fromDate(sevenDaysAgo))
           .get();
 
+      int deleteCount = 0;
       for (final doc in querySnapshot.docs) {
         batch.delete(doc.reference);
+        deleteCount++;
       }
 
-      // Clear metadata
-      batch.delete(_firestore.collection('game_cache_meta').doc(sport.toLowerCase()));
+      // Don't clear metadata - it's useful for tracking
+      // batch.delete(_firestore.collection('game_cache_meta').doc(sport.toLowerCase()));
 
-      await batch.commit();
-      debugPrint('✅ Cache cleared for $sport');
+      if (deleteCount > 0) {
+        await batch.commit();
+        debugPrint('✅ Cleared $deleteCount old $sport games (>7 days)');
+      } else {
+        debugPrint('✅ No old $sport games to clear');
+      }
     } catch (e) {
-      debugPrint('Error clearing cache for $sport: $e');
+      debugPrint('Error clearing old cache for $sport: $e');
     }
   }
 

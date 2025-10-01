@@ -236,5 +236,78 @@ service cloud.firestore {
       allow update: if false;
       allow delete: if false; // VC transactions cannot be deleted
     }
+
+    // Challenges collection
+    match /challenges/{challengeId} {
+      // Anyone authenticated can read challenges
+      allow read: if isAuthenticated();
+
+      // Users can create challenges
+      allow create: if isAuthenticated() &&
+        request.resource.data.challengerId == request.auth.uid;
+
+      // Users can update challenges they created or are accepting
+      // Note: Simplified rule - participants array structure makes complex validation difficult
+      allow update: if isAuthenticated() && (
+        // Challenger can update their own challenge
+        resource.data.challengerId == request.auth.uid ||
+        // Any authenticated user can update to accept challenge (we validate in app code)
+        request.resource.data.status == 'accepted'
+      );
+
+      // Only the challenger can delete their own challenge if no one has accepted
+      allow delete: if isAuthenticated() &&
+        resource.data.challengerId == request.auth.uid &&
+        resource.data.get('participants', []).size() == 0;
+    }
+
+    // Challenge notifications collection
+    match /challenge_notifications/{notificationId} {
+      // Users can only read their own notifications
+      allow read: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid;
+
+      // Only the system (Cloud Functions) should create notifications
+      // For now, allow authenticated users to create (will be restricted to Cloud Functions later)
+      allow create: if isAuthenticated();
+
+      // Users can update their own notifications (e.g., mark as read)
+      allow update: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid;
+
+      // Users can delete their own notifications
+      allow delete: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid;
+    }
+
+    // Friendships collection (for head-to-head stats)
+    match /friendships/{friendshipId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+
+    // Escrow transactions collection
+    match /escrow_transactions/{escrowId} {
+      // Users can read their own escrow transactions
+      allow read: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid;
+
+      // Only authenticated users can create escrow (will be restricted to Cloud Functions later)
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.status == 'locked';
+
+      // Only system can update escrow (release/refund operations)
+      // For now, allow if user is challenger or participant
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        request.auth.uid in resource.data.get('participantIds', [])
+      );
+
+      // Escrow transactions cannot be deleted
+      allow delete: if false;
+    }
   }
 }

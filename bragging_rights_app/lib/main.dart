@@ -7,6 +7,7 @@ import 'theme/app_theme.dart';
 import 'services/notification_service.dart';
 import 'services/pool_management_service.dart';
 import 'services/game_cache_service.dart';
+import 'services/challenge_service.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/onboarding/sports_selection_screen.dart';
 import 'screens/home/home_screen.dart' as home;
@@ -34,6 +35,7 @@ import 'screens/test/espn_resolver_test_screen.dart';
 import 'screens/test/soccer_resolver_test_screen.dart';
 import 'models/fight_card_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'services/mma_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,10 +63,13 @@ void main() async {
 
   // Initialize game cache service
   await GameCacheService().initialize();
-  
+
+  // Initialize challenge service
+  ChallengeService().init();
+
   // Don't start pool management here - wait for authentication
   // PoolManagementService().startPoolManagement();
-  
+
   runApp(const BraggingRightsApp());
 }
 
@@ -248,6 +253,17 @@ class BraggingRightsApp extends StatelessWidget {
                 }
                 
                 if (snapshot.data == null) {
+                  print('⚠️ =================================================');
+                  print('⚠️ CREATING FALLBACK FIGHT CARD EVENT');
+                  print('⚠️ Reason: Event not found in Firestore');
+                  print('⚠️ Arguments received:');
+                  print('⚠️   gameId: ${args['gameId']}');
+                  print('⚠️   gameTitle: ${args['gameTitle']}');
+                  print('⚠️   sport: ${args['sport']}');
+                  print('⚠️   poolId: ${args['poolId']}');
+                  print('⚠️   poolName: ${args['poolName']}');
+                  print('⚠️ =================================================');
+
                   // Fallback - create a basic event from the args
                   final event = FightCardEventModel(
                     id: args['gameId']?.toString() ?? '',
@@ -259,7 +275,15 @@ class BraggingRightsApp extends StatelessWidget {
                     mainEventTitle: args['gameTitle']?.toString() ?? '',
                     fights: [],
                   );
-                  
+
+                  print('⚠️ Created fallback event with:');
+                  print('⚠️   ID: ${event.id}');
+                  print('⚠️   Name: ${event.eventName}');
+                  print('⚠️   Main Event: ${event.mainEventTitle}');
+                  print('⚠️   Total Fights: ${event.totalFights}');
+                  print('⚠️ NOTE: This event has NO FIGHTS - odds loading will fail');
+                  print('⚠️ =================================================');
+
                   return FightCardGridScreen(
                     event: event,
                     poolId: args['poolId']?.toString() ?? '',
@@ -284,9 +308,14 @@ class BraggingRightsApp extends StatelessWidget {
   // Helper function to load fight card event from Firestore
   static Future<FightCardEventModel?> _loadFightCardEvent(String eventId) async {
     try {
-      print('🔍 Loading fight card event for eventId: $eventId');
+      print('🔍 =================================================');
+      print('🔍 LOADING FIGHT CARD EVENT');
+      print('🔍 Event ID: $eventId');
+      print('🔍 Timestamp: ${DateTime.now().toIso8601String()}');
+      print('🔍 =================================================');
 
       // Fetch game data from Firestore which should have full fight card
+      print('📡 Attempting to fetch from Firestore games collection...');
       final gameDoc = await FirebaseFirestore.instance
           .collection('games')
           .doc(eventId)
@@ -294,17 +323,74 @@ class BraggingRightsApp extends StatelessWidget {
 
       if (!gameDoc.exists) {
         print('❌ Game not found in Firestore: $eventId');
+        print('❌ Document path: games/$eventId');
+        print('🔄 Attempting to fetch from ESPN as fallback...');
+
+        // Try to fetch from ESPN for MMA/Boxing events
+        try {
+          final mmaService = MMAService();
+          final espnEvent = await mmaService.getEventWithFights(eventId);
+
+          if (espnEvent != null) {
+            print('✅ Successfully fetched event from ESPN!');
+            print('   Event: ${espnEvent.name}');
+            print('   Fights: ${espnEvent.fights.length}');
+
+            // Get main event fighters for home/away
+            final mainEvent = espnEvent.mainEvent;
+            final homeTeam = mainEvent?.fighter2?.name ?? 'TBD';
+            final awayTeam = mainEvent?.fighter1?.name ?? 'TBD';
+
+            // Save to Firestore for future use
+            await FirebaseFirestore.instance.collection('games').doc(eventId).set({
+              'id': eventId,
+              'sport': 'MMA',
+              'gameTitle': espnEvent.name,
+              'homeTeam': homeTeam,
+              'awayTeam': awayTeam,
+              'gameTime': Timestamp.fromDate(espnEvent.date),
+              'venue': espnEvent.venue,
+              'fights': espnEvent.fights.map((f) => {
+                'id': f.id,
+                'fighter1Name': f.fighter1?.name ?? '',
+                'fighter2Name': f.fighter2?.name ?? '',
+                'fighter1Id': f.fighter1?.espnId,
+                'fighter2Id': f.fighter2?.espnId,
+                'weightClass': f.weightClass,
+                'cardPosition': f.cardPosition,
+                'fightOrder': f.fightOrder,
+              }).toList(),
+            }, SetOptions(merge: true));
+            print('💾 Saved ESPN event to Firestore for future use');
+
+            // Return null - let the fallback event be created
+            // (easier than converting MMAEvent to proper structure)
+            return null;
+          }
+        } catch (e) {
+          print('❌ ESPN fallback failed: $e');
+        }
+
+        print('❌ Will return null and use fallback event');
         return null;
       }
 
       final data = gameDoc.data()!;
-      print('📄 Game document data loaded:');
-      print('   homeTeam: ${data['homeTeam']}');
-      print('   awayTeam: ${data['awayTeam']}');
-      print('   sport: ${data['sport']}');
-      print('   league: ${data['league']}');
-      print('   fights array: ${data['fights']?.toString() ?? 'null'}');
+      print('✅ Game document found in Firestore!');
+      print('📄 Document data keys: ${data.keys.toList()}');
+      print('📄 Game details:');
+      print('   - homeTeam: ${data['homeTeam']}');
+      print('   - awayTeam: ${data['awayTeam']}');
+      print('   - sport: ${data['sport']}');
+      print('   - league: ${data['league']}');
+      print('   - gameTime: ${data['gameTime']}');
+      print('   - status: ${data['status']}');
+      print('   - venue: ${data['venue']}');
+      print('   - fights array length: ${(data['fights'] as List?)?.length ?? 0}');
+      print('   - fights array present: ${data.containsKey('fights')}');
+
       final fights = data['fights'] as List<dynamic>? ?? [];
+      print('🥊 Processing ${fights.length} fights from document...');
 
       List<Fight> fightObjects = [];
       String mainEventTitle = 'TBD vs TBD';
@@ -408,23 +494,39 @@ class BraggingRightsApp extends StatelessWidget {
         venue: data['venue'],
       );
 
-      print('✅ Created FightCardEventModel:');
-      print('   Event ID: ${eventModel.id}');
-      print('   Event name: ${eventModel.eventName}');
-      print('   Main event: ${eventModel.mainEventTitle}');
-      print('   Total fights: ${eventModel.totalFights}');
+      print('✅ =================================================');
+      print('✅ SUCCESSFULLY CREATED FightCardEventModel');
+      print('✅ Event ID: ${eventModel.id}');
+      print('✅ Event Name: ${eventModel.eventName}');
+      print('✅ Total Fights: ${eventModel.totalFights}');
+      print('✅ Main Event: ${eventModel.mainEventTitle}');
+      print('✅ Promotion: ${eventModel.promotion}');
+      print('✅ Status: ${eventModel.status}');
+      print('✅ Game Time: ${eventModel.gameTime}');
+      print('✅ Venue: ${eventModel.venue ?? 'Not specified'}');
+      print('✅ Fight Details:');
       if (eventModel.typedFights.isNotEmpty) {
-        for (var fight in eventModel.typedFights) {
-          print('   Fight: ${fight.fighter1Name} vs ${fight.fighter2Name}');
+        for (var i = 0; i < eventModel.typedFights.length; i++) {
+          var fight = eventModel.typedFights[i];
+          print('✅   Fight ${i+1}: ${fight.fighter1Name} vs ${fight.fighter2Name}');
+          print('✅     - Weight Class: ${fight.weightClass}');
+          print('✅     - Rounds: ${fight.rounds}');
+          print('✅     - Position: ${fight.cardPosition}');
         }
       } else {
-        print('   No fights in event');
+        print('✅   No fights in event - will be created empty');
       }
+      print('✅ =================================================');
 
       return eventModel;
     } catch (e, stack) {
-      print('❌ Error loading fight card from Firestore: $e');
-      print('Stack trace: $stack');
+      print('❌ =================================================');
+      print('❌ ERROR LOADING FIGHT CARD EVENT');
+      print('❌ Event ID: $eventId');
+      print('❌ Error: $e');
+      print('❌ Stack trace:');
+      print(stack.toString().split('\n').take(10).join('\n'));
+      print('❌ =================================================');
       return null;
     }
   }

@@ -1267,11 +1267,17 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                         if (result['success'] == true) {
                           print('[POOL JOIN] ✅ Successfully joined pool!');
                           print('[POOL JOIN] Navigating to bet selection screen...');
-                          
+
                           // Update balance and pool status after successful join
                           _loadBalance();
                           await _loadUserPoolStatus();
-                          
+
+                          // Check if widget is still mounted after async operation
+                          if (!mounted) {
+                            print('[POOL JOIN] Widget disposed during pool status load, aborting navigation');
+                            return;
+                          }
+
                           // Check if this is a combat sport
                           if (SportUtils.isCombatSport(widget.sport)) {
                             // Navigate to fight card grid for combat sports

@@ -667,6 +667,15 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
                             ),
                           ],
                         ] else ...[
+                          // Date for traditional sports
+                          Text(
+                            _formatDateForDisplay(game.gameTime),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 6),
                           Text(
                             game.awayTeam,
                             style: const TextStyle(

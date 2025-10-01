@@ -59,6 +59,7 @@ dependencies:
   permission_handler: ^11.3.1  # For contact permissions
   # contacts_service: ^0.6.3  # For accessing contacts - temporarily disabled due to namespace issue
   url_launcher: ^6.3.1  # For opening SMS app
+  share_plus: ^10.1.2  # For sharing challenges
   crypto: ^3.0.6  # For hashing phone numbers
   
   # UI Modernization Libraries

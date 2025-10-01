@@ -98,11 +98,20 @@ class MMAEvent {
     if (json['competitions'] != null && json['competitions'].isNotEmpty) {
       var broadcasts = json['competitions'][0]['broadcasts'];
       if (broadcasts != null) {
-        broadcasters = (broadcasts as List)
-            .map((b) => b['names']?.first ?? '')
-            .where((s) => s.isNotEmpty)
-            .toList()
-            .cast<String>();
+        if (broadcasts is List) {
+          // Handle as List
+          broadcasters = broadcasts
+              .map((b) => b['names']?.first ?? '')
+              .where((s) => s.isNotEmpty)
+              .toList()
+              .cast<String>();
+        } else if (broadcasts is Map) {
+          // Handle as Map
+          var namesList = broadcasts['names'];
+          if (namesList != null && namesList is List && namesList.isNotEmpty) {
+            broadcasters = [namesList.first.toString()];
+          }
+        }
       }
     }
 

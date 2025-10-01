@@ -115,9 +115,26 @@ class MMAService {
   Future<MMAEvent?> getEventWithFights(String eventId, {Map<String, dynamic>? gameData}) async {
     print('🥊 Loading MMA event: $eventId');
 
+    // Special logging for event 600055033
+    bool isTargetEvent = eventId == '600055033';
+    if (isTargetEvent) {
+      print('🎯 ========================================');
+      print('🎯 TRACKING EVENT 600055033 (DWCS Week 8)');
+      print('🎯 ========================================');
+    }
+
     try {
       // Check if this is a pseudo-ESPN ID (starts with '9')
       bool isPseudoId = eventId.startsWith('9');
+
+      if (isTargetEvent) {
+        print('🎯 isPseudoId: $isPseudoId');
+        print('🎯 gameData provided: ${gameData != null}');
+        if (gameData != null) {
+          print('🎯 gameData keys: ${gameData.keys.toList()}');
+          print('🎯 gameData full: ${json.encode(gameData)}');
+        }
+      }
 
       // If we have a pseudo-ID and game data with fights, use that directly
       if (isPseudoId && gameData != null && gameData['fights'] != null) {
@@ -143,15 +160,30 @@ class MMAService {
       // Fetch event details
       final eventUrl = '$EVENT_BASE$espnEventId';
       print('🌐 Fetching from ESPN API: $eventUrl');
+      if (isTargetEvent) {
+        print('🎯 Full URL: $eventUrl');
+      }
+
       final response = await http.get(Uri.parse(eventUrl));
 
       if (response.statusCode != 200) {
         print('❌ ESPN API returned status: ${response.statusCode}');
+        if (isTargetEvent) {
+          print('🎯 Response body: ${response.body}');
+        }
         return null;
       }
 
       final eventData = json.decode(response.body);
       print('✅ Received event data from ESPN');
+
+      if (isTargetEvent) {
+        print('🎯 Event name: ${eventData['name']}');
+        print('🎯 Event short name: ${eventData['shortName']}');
+        print('🎯 Event date: ${eventData['date']}');
+        print('🎯 Competitions structure: ${eventData['competitions'].runtimeType}');
+        print('🎯 Full event data: ${json.encode(eventData)}');
+      }
 
       // Fetch competitions (fights)
       final fights = <MMAFight>[];
@@ -160,11 +192,21 @@ class MMAService {
         final competitionsData = eventData['competitions'];
         print('🔍 Competitions data type: ${competitionsData.runtimeType}');
 
+        if (isTargetEvent) {
+          print('🎯 Competitions data: ${json.encode(competitionsData)}');
+        }
+
         List<dynamic> competitions = [];
 
         if (competitionsData is List) {
           competitions = competitionsData;
+          if (isTargetEvent) {
+            print('🎯 Competitions is List with ${competitions.length} items');
+          }
         } else if (competitionsData is Map) {
+          if (isTargetEvent) {
+            print('🎯 Competitions is Map with keys: ${competitionsData.keys.toList()}');
+          }
           if (competitionsData.containsKey('items')) {
             // Safely handle items that might be a Map or List
             final items = competitionsData['items'];
@@ -331,7 +373,7 @@ class MMAService {
         }
       }
 
-      // Reverse fights so main event is last
+      // Reverse fights so main event is FIRST (ESPN API returns them backwards)
       final reversedFights = fights.reversed.toList();
 
       final event = MMAEvent.fromESPN(eventData, fights: reversedFights);

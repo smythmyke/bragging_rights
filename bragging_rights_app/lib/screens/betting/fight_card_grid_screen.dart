@@ -3,8 +3,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/fight_card_model.dart';
 import '../../models/fight_card_scoring.dart';
+import '../../models/challenge.dart';
 import '../../services/fight_odds_service.dart';
+import '../../services/challenge_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/challenge/friend_selection_sheet.dart';
+import '../../widgets/challenge/challenge_share_sheet.dart';
+import '../../widgets/challenge/wager_selection_sheet.dart';
 import 'widgets/fighter_card.dart';
 import 'widgets/round_selector.dart';
 import 'widgets/event_badge.dart';
@@ -30,11 +35,13 @@ class FightCardGridScreen extends StatefulWidget {
 class _FightCardGridScreenState extends State<FightCardGridScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FightOddsService _oddsService = FightOddsService();
+  final ChallengeService _challengeService = ChallengeService();
   final Map<String, FightPickState> _picks = {};
   Map<String, FightOdds> _odds = {};
   bool _isLoading = true;
   bool _isSaving = false;
   bool _scoringExpanded = false;
+  bool _picksSaved = false;
   
   @override
   void initState() {
@@ -541,7 +548,7 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
   
   Widget _buildSubmitButton() {
     final hasAnyPicks = _picks.values.any((p) => p.winnerId != null || p.method == 'TIE');
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -563,7 +570,9 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
       ),
       child: Row(
         children: [
+          // Advanced Bets Button
           Expanded(
+            flex: 1,
             child: OutlinedButton(
               onPressed: hasAnyPicks ? _showAdvancedOptions : null,
               style: OutlinedButton.styleFrom(
@@ -575,18 +584,67 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
               ),
               child: Center(
                 child: Text(
-                  'ADVANCED BETS',
+                  'ADVANCED',
                   style: TextStyle(
                     color: hasAnyPicks ? AppTheme.warningAmber : AppTheme.warningAmber.withOpacity(0.3),
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontSize: 13,
                   ),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
+
+          // Challenge Button (NEW)
           Expanded(
+            flex: 1,
+            child: Container(
+              decoration: _picksSaved
+                  ? BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppTheme.warningAmber.withOpacity(0.8), AppTheme.warningAmber],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: AppTheme.neonGlow(
+                        color: AppTheme.warningAmber,
+                        intensity: 0.3,
+                      ),
+                    )
+                  : null,
+              child: ElevatedButton.icon(
+                onPressed: _picksSaved ? _showChallengeOptions : null,
+                icon: Icon(
+                  Icons.group,
+                  size: 16,
+                  color: _picksSaved ? Colors.white : AppTheme.warningAmber.withOpacity(0.3),
+                ),
+                label: Text(
+                  'CHALLENGE',
+                  style: TextStyle(
+                    color: _picksSaved ? Colors.white : AppTheme.warningAmber.withOpacity(0.3),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _picksSaved ? Colors.transparent : AppTheme.cardBlue,
+                  shadowColor: Colors.transparent,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Save Picks Button
+          Expanded(
+            flex: 1,
             child: Container(
               decoration: hasAnyPicks && !_isSaving
                   ? BoxDecoration(
@@ -623,10 +681,12 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
                       )
                     : Center(
                         child: Text(
-                          'SAVE PICKS (${_picks.values.where((p) => p.winnerId != null || p.method == 'TIE').length}/${widget.event.typedFights.length})',
+                          _picksSaved
+                            ? 'SAVED ✓'
+                            : 'SAVE (${_picks.values.where((p) => p.winnerId != null || p.method == 'TIE').length}/${widget.event.typedFights.length})',
                           style: TextStyle(
                             color: hasAnyPicks ? Colors.white : AppTheme.primaryCyan.withOpacity(0.3),
-                            fontSize: 14,
+                            fontSize: 13,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -677,13 +737,19 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
       }, SetOptions(merge: true));
       
       if (mounted) {
+        setState(() {
+          _picksSaved = true;
+        });
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Picks saved successfully!'),
+            content: Text('Picks saved successfully! You can now challenge friends.'),
             backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
           ),
         );
-        Navigator.pop(context);
+        // Don't navigate away immediately - let user challenge friends
+        // Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
@@ -708,6 +774,293 @@ class _FightCardGridScreenState extends State<FightCardGridScreen> {
         backgroundColor: Colors.orange,
       ),
     );
+  }
+
+  Future<void> _showChallengeOptions() async {
+    // For now, show coming soon message
+    // TODO: Implement friend selection sheet
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.4,
+        decoration: BoxDecoration(
+          color: AppTheme.cardBlue,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryCyan.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.group_add,
+                    size: 48,
+                    color: AppTheme.warningAmber,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Challenge Friends',
+                    style: AppTheme.neonText(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryCyan,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Challenge your friends to beat your picks for ${widget.event.eventName}!',
+                    style: TextStyle(
+                      color: AppTheme.primaryCyan.withOpacity(0.7),
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _shareOpenChallenge();
+                          },
+                          icon: const Icon(Icons.share),
+                          label: const Text('Share Challenge'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.primaryCyan,
+                            side: BorderSide(color: AppTheme.primaryCyan),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _selectFriendsToChallenge();
+                          },
+                          icon: const Icon(Icons.people),
+                          label: const Text('Select Friends'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.warningAmber,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(
+                      'Maybe Later',
+                      style: TextStyle(color: AppTheme.primaryCyan.withOpacity(0.5)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _shareOpenChallenge() async {
+    try {
+      // Determine sport type based on event
+      final sportType = widget.event.eventName.toLowerCase().contains('boxing') ? 'boxing' : 'mma';
+
+      // Create the challenge
+      final challenge = await _challengeService.createChallenge(
+        sportType: sportType,
+        eventId: widget.event.id,
+        eventName: widget.event.eventName,
+        eventDate: widget.event.gameTime,
+        picks: _convertPicksToMap(),
+        type: ChallengeType.open,
+        isPublic: true,
+        poolId: widget.poolId,
+      );
+
+      // Generate share link (for now, use a placeholder)
+      final shareLink = challenge.shareLink ?? 'https://braggingrights.app/challenge/${challenge.id}';
+
+      if (!mounted) return;
+
+      // Show share sheet
+      await showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (context) => ChallengeShareSheet(
+          challenge: challenge,
+          shareLink: shareLink,
+        ),
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Challenge created successfully!'),
+          backgroundColor: AppTheme.successGreen,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to create challenge: $e'),
+          backgroundColor: AppTheme.errorPink,
+        ),
+      );
+    }
+  }
+
+  Future<void> _selectFriendsToChallenge() async {
+    try {
+      // Determine sport type based on event
+      final sportType = widget.event.eventName.toLowerCase().contains('boxing') ? 'boxing' : 'mma';
+
+      // First, show wager selection sheet
+      Map<String, dynamic>? wagerInfo;
+      if (!mounted) return;
+
+      final wagerResult = await showModalBottomSheet<Map<String, dynamic>?>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (context) => WagerSelectionSheet(
+          onSkip: () {
+            // User can skip wagering
+          },
+        ),
+      );
+
+      // If user closed wager sheet, don't proceed
+      if (wagerResult == null && mounted) {
+        // User skipped or closed - ask if they want to continue without wager
+        final continueWithoutWager = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: AppTheme.cardBlue,
+            title: const Text('Continue without wager?', style: TextStyle(color: Colors.white)),
+            content: const Text(
+              'You can create a challenge with no wager, or go back to add one.',
+              style: TextStyle(color: Colors.white70),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Go Back'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryCyan,
+                  foregroundColor: AppTheme.deepBlue,
+                ),
+                child: const Text('Continue'),
+              ),
+            ],
+          ),
+        );
+
+        if (continueWithoutWager != true) return;
+      } else {
+        wagerInfo = wagerResult;
+      }
+
+      if (!mounted) return;
+
+      // Show friend selection sheet with wager info
+      final result = await showModalBottomSheet<Map<String, dynamic>>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (context) => FriendSelectionSheet(
+          sportType: sportType,
+          eventId: widget.event.id,
+          eventName: widget.event.eventName,
+          wagerInfo: wagerInfo,
+        ),
+      );
+
+      if (result == null || !mounted) return;
+
+      final challengeType = result['type'] as String;
+
+      if (challengeType == 'open') {
+        // User chose to create open challenge instead
+        await _shareOpenChallenge();
+      } else if (challengeType == 'friend') {
+        // Create friend challenge
+        final friendIds = result['friendIds'] as List<String>;
+
+        final challenge = await _challengeService.createChallenge(
+          sportType: sportType,
+          eventId: widget.event.id,
+          eventName: widget.event.eventName,
+          eventDate: widget.event.gameTime,
+          picks: _convertPicksToMap(),
+          type: friendIds.length > 1 ? ChallengeType.group : ChallengeType.friend,
+          targetFriends: friendIds,
+          poolId: widget.poolId,
+          wagerAmount: wagerInfo?['amount'],
+          wagerCurrency: wagerInfo?['currency'],
+        );
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Challenge sent to ${friendIds.length} friend${friendIds.length > 1 ? 's' : ''}!'),
+            backgroundColor: AppTheme.successGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to send challenge: $e'),
+          backgroundColor: AppTheme.errorPink,
+        ),
+      );
+    }
+  }
+
+  Map<String, dynamic> _convertPicksToMap() {
+    final picksMap = <String, dynamic>{};
+
+    _picks.forEach((fightId, pickState) {
+      picksMap[fightId] = {
+        'winnerId': pickState.winnerId,
+        'winnerName': pickState.winnerName,
+        'method': pickState.method,
+        'round': pickState.round,
+        'confidence': pickState.confidence,
+        'pickedAt': DateTime.now().toIso8601String(),
+      };
+    });
+
+    return picksMap;
   }
   
 

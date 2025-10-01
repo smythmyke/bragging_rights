@@ -220,6 +220,7 @@ class _BoxingDetailsScreenState extends State<BoxingDetailsScreen>
           children: _buildTabViews(event),
         ),
       ),
+      bottomNavigationBar: _buildEnterPoolButton(event),
     );
   }
 
@@ -261,6 +262,61 @@ class _BoxingDetailsScreenState extends State<BoxingDetailsScreen>
         ESPNPreviewTab(event: event),
       ];
     }
+  }
+
+  Widget _buildEnterPoolButton(BoxingEvent event) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceBlue,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: ElevatedButton(
+          onPressed: () => _navigateToPoolSelection(event),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.neonGreen,
+            foregroundColor: Colors.black,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(PhosphorIcons.users(PhosphorIconsStyle.regular), size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Enter Quick Pool',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _navigateToPoolSelection(BoxingEvent event) {
+    Navigator.pushNamed(
+      context,
+      '/pool-selection',
+      arguments: {
+        'gameTitle': event.title,
+        'sport': 'BOXING',
+        'gameId': event.id,
+      },
+    );
   }
 }
 

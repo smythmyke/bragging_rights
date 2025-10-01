@@ -21,8 +21,11 @@ class FightCardItem extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        height: fight.isMainEvent || fight.isCoMainEvent ? 155 : 135, // Dynamic height based on badges
+        constraints: BoxConstraints(
+          minHeight: fight.isMainEvent || fight.isCoMainEvent ? 155 : 135,
+        ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             // Event badges (Main Event, Co-Main Event)
             if (fight.isMainEvent || fight.isCoMainEvent)
@@ -91,7 +94,7 @@ class FightCardItem extends StatelessWidget {
                 ),
               ),
             // Fighters row
-            Expanded(
+            Flexible(
               child: Row(
                 children: [
                   // Fighter 1
@@ -108,6 +111,7 @@ class FightCardItem extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         // Weight Class
                         Text(
@@ -206,6 +210,7 @@ class FightCardItem extends StatelessWidget {
     if (fighter == null) {
       return Column(
         crossAxisAlignment: alignment,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             width: 48,
@@ -236,6 +241,7 @@ class FightCardItem extends StatelessWidget {
 
     return Column(
       crossAxisAlignment: alignment,
+      mainAxisSize: MainAxisSize.min,
       children: [
         _buildFighterAvatar(fighter, cornerColor),
         const SizedBox(height: 4),
@@ -289,6 +295,7 @@ class FightCardItem extends StatelessWidget {
   ) {
     return Column(
       crossAxisAlignment: alignment,
+      mainAxisSize: MainAxisSize.min,
       children: [
         // Name - now with more room
         Container(
@@ -323,9 +330,11 @@ class FightCardItem extends StatelessWidget {
 
         // Ranking & Country in compact form
         if (fighter.ranking != null || fighter.country != null)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+          Flexible(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
               if (fighter.ranking != null)
                 Container(
                   margin: const EdgeInsets.only(top: 2),
@@ -360,6 +369,7 @@ class FightCardItem extends StatelessWidget {
                 ),
             ],
           ),
+        ),
       ],
     );
   }

@@ -302,14 +302,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     try {
-      // TEMPORARY FIX: Always clear MLB cache to ensure ESPN IDs are present
-      // TODO: Remove this once ESPN IDs are confirmed working
-      print('🔄 Clearing MLB cache to ensure fresh data with ESPN IDs...');
-      await _optimizedGamesService.clearSportCache('MLB');
-
-      // TEMPORARY FIX: Clear MMA cache to ensure ESPN IDs are used
-      print('🔄 Clearing MMA cache to ensure fresh data with ESPN IDs...');
-      await _optimizedGamesService.clearSportCache('MMA');
+      // Background: Clear old games (>7 days) periodically to keep cache fresh
+      // This runs async and doesn't block the UI
+      _optimizedGamesService.clearSportCache('MLB').catchError((e) {
+        print('Error clearing old MLB cache: $e');
+      });
+      _optimizedGamesService.clearSportCache('MMA').catchError((e) {
+        print('Error clearing old MMA cache: $e');
+      });
 
       // Fetch games with caching support - this will return cached data instantly if available
       print('📱 Loading games data...');

@@ -138,97 +138,100 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
     // Store event in a local variable for nested methods
     _event = event;
 
-    return RefreshIndicator(
-      onRefresh: () async {
-        setState(() {
-          _initializeEventStream();
-        });
-      },
-      color: AppTheme.neonGreen,
-      backgroundColor: AppTheme.surfaceBlue,
-      child: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
-          // App Bar
-          SliverAppBar(
-            expandedHeight: 220.0,
-            floating: false,
-            pinned: true,
-            backgroundColor: AppTheme.deepBlue,
-            flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: 16, bottom: 16, right: 16),
-              title: Container(
-                padding: const EdgeInsets.only(top: 8),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Builder(
-                      builder: (context) {
-                        final displayName = _event!.shortName ?? _event!.name;
-                        print('📺 MMA Details Screen Display:');
-                        print('  - Event name: "${_event!.name}"');
-                        print('  - Event shortName: "${_event!.shortName}"');
-                        print('  - Event promotion: "${_event!.promotion}"');
-                        print('  - Displaying: "$displayName"');
-                        return Text(
-                          displayName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _event!.formattedDate,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.white70,
+    return Scaffold(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          setState(() {
+            _initializeEventStream();
+          });
+        },
+        color: AppTheme.neonGreen,
+        backgroundColor: AppTheme.surfaceBlue,
+        child: CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+            // App Bar
+            SliverAppBar(
+              expandedHeight: 220.0,
+              floating: false,
+              pinned: true,
+              backgroundColor: AppTheme.deepBlue,
+              flexibleSpace: FlexibleSpaceBar(
+                titlePadding: const EdgeInsets.only(left: 16, bottom: 16, right: 16),
+                title: Container(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Builder(
+                        builder: (context) {
+                          final displayName = _event!.shortName ?? _event!.name;
+                          print('📺 MMA Details Screen Display:');
+                          print('  - Event name: "${_event!.name}"');
+                          print('  - Event shortName: "${_event!.shortName}"');
+                          print('  - Event promotion: "${_event!.promotion}"');
+                          print('  - Displaying: "$displayName"');
+                          return Text(
+                            displayName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        },
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 2),
+                      Text(
+                        _event!.formattedDate,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                centerTitle: true,
+                background: _buildEventHeader(),
               ),
-              centerTitle: true,
-              background: _buildEventHeader(),
-            ),
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.share, color: Colors.white),
-                onPressed: _shareEvent,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
               ),
-            ],
-          ),
-
-          // Main Content
-          SliverToBoxAdapter(
-            child: Column(
-              children: [
-                // Main Event Tale of the Tape
-                if (_event!.mainEvent != null)
-                  _buildMainEventSection(),
-
-                // Fight Card
-                _buildFightCard(),
-
-                // Event Information
-                _buildEventInfo(),
-
-                const SizedBox(height: 100), // Bottom padding
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.share, color: Colors.white),
+                  onPressed: _shareEvent,
+                ),
               ],
             ),
-          ),
-        ],
+
+            // Main Content
+            SliverToBoxAdapter(
+              child: Column(
+                children: [
+                  // Main Event Tale of the Tape
+                  if (_event!.mainEvent != null)
+                    _buildMainEventSection(),
+
+                  // Fight Card
+                  _buildFightCard(),
+
+                  // Event Information
+                  _buildEventInfo(),
+
+                  const SizedBox(height: 100), // Bottom padding
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
+      bottomNavigationBar: _buildEnterPoolButton(),
     );
   }
 
@@ -426,11 +429,11 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
         children: [
           const SizedBox(height: 24),
 
-          // Main Card - Reverse order so main event is first
+          // Main Card - Already in correct order (main event first) from service
           if (_event!.mainCardFights.isNotEmpty) ...[
             _buildCardSection(
               title: 'MAIN CARD',
-              fights: _event!.mainCardFights.reversed.toList(),
+              fights: _event!.mainCardFights,
               color: AppTheme.neonGreen,
               broadcast: _event!.broadcastByCard?['main'] ??
                         _event!.broadcasters?.firstWhere(
@@ -441,11 +444,11 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
             const SizedBox(height: 16),
           ],
 
-          // Preliminary Card - Reverse order
+          // Preliminary Card - Already in correct order from service
           if (_event!.prelimFights.isNotEmpty) ...[
             _buildCardSection(
               title: 'PRELIMINARY CARD',
-              fights: _event!.prelimFights.reversed.toList(),
+              fights: _event!.prelimFights,
               color: AppTheme.primaryCyan,
               broadcast: _event!.broadcastByCard?['prelim'] ??
                         _event!.broadcasters?.firstWhere(
@@ -456,11 +459,11 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
             const SizedBox(height: 16),
           ],
 
-          // Early Prelims - Reverse order
+          // Early Prelims - Already in correct order from service
           if (_event!.earlyPrelimFights.isNotEmpty) ...[
             _buildCardSection(
               title: 'EARLY PRELIMS',
-              fights: _event!.earlyPrelimFights.reversed.toList(),
+              fights: _event!.earlyPrelimFights,
               color: Colors.grey,
               broadcast: _event!.broadcastByCard?['early'] ?? 'UFC Fight Pass',
             ),
@@ -904,6 +907,61 @@ class _MMADetailsScreenState extends State<MMADetailsScreen> {
         content: Text('Share functionality coming soon!'),
         backgroundColor: AppTheme.surfaceBlue,
       ),
+    );
+  }
+
+  Widget _buildEnterPoolButton() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceBlue,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: ElevatedButton(
+          onPressed: _navigateToPoolSelection,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.neonGreen,
+            foregroundColor: Colors.black,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(PhosphorIconsRegular.users, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Enter Quick Pool',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _navigateToPoolSelection() {
+    Navigator.pushNamed(
+      context,
+      '/pool-selection',
+      arguments: {
+        'gameTitle': _event!.shortName ?? _event!.name,
+        'sport': 'MMA',
+        'gameId': widget.eventId,
+      },
     );
   }
 }
