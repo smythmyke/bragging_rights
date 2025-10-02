@@ -20,6 +20,7 @@ import '../../services/props_cache_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/team_bet_card.dart' as team_card;
 import '../../services/bet_tracking_service.dart';
+import '../watch/watch_live_screen.dart';
 
 class BetSelectionScreen extends StatefulWidget {
   final String gameTitle;
@@ -965,19 +966,30 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
           const SizedBox(width: 8),
           // Timer or Live indicator
           if (_isLiveBetting)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: AppTheme.errorPink,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.live_tv, color: Colors.white, size: 16),
-                  SizedBox(width: 4),
-                  Text('LIVE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ],
+            GestureDetector(
+              onTap: () {
+                // Navigate to Watch Live screen
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const WatchLiveScreen(),
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: AppTheme.errorPink,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.live_tv, color: Colors.white, size: 16),
+                    SizedBox(width: 4),
+                    Text('LIVE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ],
+                ),
               ),
             )
           else

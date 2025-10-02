@@ -26,6 +26,10 @@ class GameModel {
   final String? espnEventId; // ESPN event ID for direct ESPN reference
   final List<String>? competitions; // Array to store bout IDs for combat sports
 
+  // Season metadata (for preseason, playoffs, etc.)
+  final String? seasonType; // 'preseason', 'regularSeason', 'playoffs', etc.
+  final String? seasonLabel; // 'PRESEASON', 'PLAYOFFS', null for regular season
+
   GameModel({
     required this.id,
     required this.sport,
@@ -51,6 +55,8 @@ class GameModel {
     this.eventName,
     this.espnEventId,
     this.competitions,
+    this.seasonType,
+    this.seasonLabel,
   });
 
   factory GameModel.fromFirestore(DocumentSnapshot doc) {
@@ -95,6 +101,8 @@ class GameModel {
       eventName: data['eventName'],
       espnEventId: data['espnEventId'],
       competitions: data['competitions'] != null ? List<String>.from(data['competitions']) : null,
+      seasonType: data['seasonType'],
+      seasonLabel: data['seasonLabel'],
     );
   }
 
@@ -143,6 +151,8 @@ class GameModel {
       'eventName': eventName,
       'espnEventId': espnEventId,
       'competitions': competitions,
+      'seasonType': seasonType,
+      'seasonLabel': seasonLabel,
     };
   }
 
@@ -175,6 +185,8 @@ class GameModel {
       'eventName': eventName,
       'espnEventId': espnEventId,
       'competitions': competitions,
+      'seasonType': seasonType,
+      'seasonLabel': seasonLabel,
     };
   }
   
@@ -216,6 +228,8 @@ class GameModel {
       eventName: map['eventName'],
       espnEventId: map['espnEventId'],
       competitions: map['competitions'] != null ? List<String>.from(map['competitions']) : null,
+      seasonType: map['seasonType'],
+      seasonLabel: map['seasonLabel'],
     );
   }
   

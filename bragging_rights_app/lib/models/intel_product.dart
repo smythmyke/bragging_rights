@@ -77,18 +77,20 @@ class IntelProducts {
     ),
     const IntelProduct(
       id: 'injury_reports',
-      name: 'Injury Reports',
+      name: 'Game Injury Intel',
       icon: PhosphorIconsRegular.firstAid,
-      description: 'Latest updates',
-      detailedDescription: 'Real-time injury updates, player availability status, and impact analysis on game outcomes.',
-      price: 100,
+      description: 'BR-Purchasable Intel Card',
+      detailedDescription: 'Complete injury reports for both teams including player status (OUT, QUESTIONABLE, DOUBTFUL), injury details, expected return dates, and betting impact analysis. Purchase with BR to unlock for specific games.',
+      price: 50, // BR cost per game
       imagePath: 'assets/images/cards/injury_reports.png',
       color: Colors.red,
       features: [
-        'Real-time injury updates',
-        'Player availability status',
-        'Impact analysis',
-        'Recovery timelines',
+        'Complete injury status for both teams',
+        'Player-by-player breakdown',
+        'Expected return dates',
+        'Injury Impact Score',
+        'Betting recommendations',
+        'Team advantage analysis',
       ],
     ),
     const IntelProduct(

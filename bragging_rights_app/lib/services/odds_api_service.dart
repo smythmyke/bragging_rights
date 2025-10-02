@@ -5,10 +5,57 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'odds_quota_manager.dart';
 import '../models/game_model.dart';
 
+/// Season type for sports (preseason, regular season, playoffs, etc.)
+enum SportSeasonType {
+  preseason,
+  regularSeason,
+  playoffs,
+  postseason,
+  futures,
+}
+
+/// Date range for determining which endpoint to use
+class DateRange {
+  final DateTime start;
+  final DateTime end;
+
+  const DateRange({required this.start, required this.end});
+
+  /// Check if a date falls within this range
+  bool contains(DateTime date) {
+    return date.isAfter(start) && date.isBefore(end);
+  }
+}
+
+/// Sport endpoint configuration for multi-endpoint support
+/// Allows different API endpoints for preseason, regular season, etc.
+class SportEndpoint {
+  final String key;
+  final SportSeasonType type;
+  final int priority; // Lower number = checked first
+  final String? label; // UI badge text (null = no badge)
+  final DateRange? dateRange;
+
+  const SportEndpoint({
+    required this.key,
+    required this.type,
+    required this.priority,
+    this.label,
+    this.dateRange,
+  });
+
+  /// Check if this endpoint applies to a given date
+  bool appliesToDate(DateTime date) {
+    if (dateRange == null) return true; // No date restriction
+    return dateRange!.contains(date);
+  }
+}
+
 /// The Odds API Service
 /// Provides betting odds for all supported sports
 /// API Key from .env file (500 requests/month initially, upgradeable)
 /// Now integrated with quota management system
+/// Supports multi-endpoint queries for preseason/regular season/playoffs
 class OddsApiService {
   static const String _baseUrl = 'https://api.the-odds-api.com/v4';
   static String _apiKey = dotenv.env['ODDS_API_KEY'] ?? '';
@@ -34,10 +81,51 @@ class OddsApiService {
       await _initialize();
     }
   }
-  
-  // Sport keys mapping
+
+  /// Get all applicable endpoints for a sport
+  /// Returns endpoints sorted by priority (preseason first, then regular season)
+  /// If gameDate is provided, filters to only endpoints applicable to that date
+  List<SportEndpoint> _getEndpointsForSport(String sport, {DateTime? gameDate}) {
+    final endpoints = _sportEndpoints[sport.toLowerCase()];
+
+    if (endpoints == null || endpoints.isEmpty) {
+      // Fallback to legacy single-endpoint mapping
+      final legacyKey = _sportKeys[sport.toLowerCase()];
+      if (legacyKey != null) {
+        return [
+          SportEndpoint(
+            key: legacyKey,
+            type: SportSeasonType.regularSeason,
+            priority: 1,
+            label: null,
+            dateRange: null,
+          ),
+        ];
+      }
+      return [];
+    }
+
+    // Filter by date if provided
+    if (gameDate != null) {
+      final filtered = endpoints.where((e) => e.appliesToDate(gameDate)).toList();
+      if (filtered.isNotEmpty) {
+        // Sort by priority
+        filtered.sort((a, b) => a.priority.compareTo(b.priority));
+        debugPrint('📅 Filtered endpoints for ${sport} on ${gameDate.toIso8601String()}: ${filtered.map((e) => e.key).join(", ")}');
+        return filtered;
+      }
+    }
+
+    // Return all endpoints sorted by priority
+    final sorted = List<SportEndpoint>.from(endpoints);
+    sorted.sort((a, b) => a.priority.compareTo(b.priority));
+    return sorted;
+  }
+
+  // Legacy sport keys mapping (single endpoint per sport)
+  // Kept for backward compatibility with sports not yet configured for multi-endpoint
   static const Map<String, String> _sportKeys = {
-    'nba': 'basketball_nba',
+    'nba': 'basketball_nba', // Legacy - will use _sportEndpoints instead
     'nfl': 'americanfootball_nfl',
     'nhl': 'icehockey_nhl',
     'mlb': 'baseball_mlb',
@@ -54,7 +142,34 @@ class OddsApiService {
     'ncaab': 'basketball_ncaab',
     'ncaaf': 'americanfootball_ncaaf',
   };
-  
+
+  // Multi-endpoint sport configurations
+  // Sports with preseason, playoffs, or multiple seasons
+  static final Map<String, List<SportEndpoint>> _sportEndpoints = {
+    'nba': [
+      SportEndpoint(
+        key: 'basketball_nba_preseason',
+        type: SportSeasonType.preseason,
+        priority: 1, // Check preseason first
+        label: 'PRESEASON',
+        dateRange: DateRange(
+          start: DateTime(2025, 10, 1),
+          end: DateTime(2025, 10, 15),
+        ),
+      ),
+      SportEndpoint(
+        key: 'basketball_nba',
+        type: SportSeasonType.regularSeason,
+        priority: 2, // Check regular season second
+        label: null, // No badge for regular season
+        dateRange: DateRange(
+          start: DateTime(2025, 10, 15),
+          end: DateTime(2026, 6, 30),
+        ),
+      ),
+    ],
+  };
+
   // Tennis tournament keys
   static const Map<String, String> _tennisTournaments = {
     'australian_open': 'tennis_atp_aus_open',

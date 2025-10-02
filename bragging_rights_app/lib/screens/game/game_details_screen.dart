@@ -649,7 +649,6 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                       const Tab(text: 'Stats'),
                       const Tab(text: 'Standings'),
                       const Tab(text: 'H2H'),
-                      const Tab(text: 'Injuries'),
                     ]
                   : widget.sport.toUpperCase() == 'NFL'
                   ? [
@@ -702,7 +701,6 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                           _buildNBAStatsTab(),
                           _buildNBAStandingsTab(),
                           _buildNBAH2HTab(),
-                          _buildNBAInjuriesTab(),
                         ]
                       : widget.sport.toUpperCase() == 'NFL'
                       ? [
@@ -5733,47 +5731,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
   }
 
 
-  Widget _buildNFLInjuriesTab() {
-    final injuries = _eventDetails?['injuries'];
-
-    if (injuries == null) {
-      return const Center(child: Text('Injury report not available'));
-    }
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          // Injury reports for both teams
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceBlue,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'INJURY REPORT',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryCyan,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Injury list would go here
-                Text('Player injury status and updates'),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // REMOVED: Free injury display - now available only via Intel Cards
 
   Future<void> _loadNHLDetails() async {
     try {
@@ -7792,129 +7750,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
     );
   }
 
-  Widget _buildNBAInjuriesTab() {
-    if (_eventDetails == null) {
-      return const Center(child: Text('Loading injuries...'));
-    }
-
-    final injuries = _eventDetails!['injuries'];
-    if (injuries == null || injuries.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.check_circle, size: 64, color: AppTheme.successGreen),
-            SizedBox(height: 16),
-            Text(
-              'No injuries reported',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: (injuries as List).map((teamInjuries) {
-          final teamName = teamInjuries['team']?['displayName'] ?? 'Team';
-          final injuryList = teamInjuries['injuries'] ?? [];
-
-          if (injuryList.isEmpty) return const SizedBox.shrink();
-
-          return Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceBlue,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  teamName.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ...(injuryList as List).map((injury) {
-                  final status = injury['status'] ?? 'Unknown';
-                  Color statusColor = Colors.grey;
-
-                  if (status.toLowerCase().contains('out')) {
-                    statusColor = AppTheme.errorPink;
-                  } else if (status.toLowerCase().contains('questionable')) {
-                    statusColor = AppTheme.warningAmber;
-                  } else if (status.toLowerCase().contains('probable')) {
-                    statusColor = AppTheme.successGreen;
-                  }
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                injury['athlete']?['displayName'] ?? 'Unknown Player',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              if (injury['athlete']?['position']?['abbreviation'] != null)
-                                Text(
-                                  injury['athlete']['position']['abbreviation'],
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[400],
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            injury['details']?['detail'] ?? injury['details']?['type'] ?? 'Unknown',
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: statusColor.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            status.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: statusColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
+  // REMOVED: Free NBA injury display - now available only via Intel Cards
 }
 
 // Custom delegate for pinned tab bar

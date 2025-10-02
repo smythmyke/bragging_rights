@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bragging Rights - Injury Intel Card Preview</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a1929 0%, #1a2332 100%);
+            color: #ffffff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 24px;
+            color: #00d9ff;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        /* Intel Card */
+        .intel-card {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2a4a6f 100%);
+            border: 2px solid #00d9ff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 16px rgba(0, 217, 255, 0.3);
+        }
+
+        .intel-card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .intel-icon {
+            font-size: 28px;
+            margin-right: 12px;
+        }
+
+        .intel-card-title {
+            font-size: 20px;
+            font-weight: bold;
+            flex: 1;
+        }
+
+        .owned-badge {
+            background: #00ff88;
+            color: #000;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .intel-description {
+            color: #bbb;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        .intel-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .price-tag {
+            background: linear-gradient(90deg, #00d9ff, #0099cc);
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: bold;
+        }
+
+        .expires-tag {
+            color: #999;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .unlock-btn {
+            background: #ffab00;
+            color: #000;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .unlock-btn:hover {
+            background: #ffbb33;
+        }
+
+        /* Injury Report */
+        .injury-report {
+            background: linear-gradient(135deg, #1a2a3f 0%, #243447 100%);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .report-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .report-header-icon {
+            font-size: 24px;
+            margin-right: 10px;
+            color: #ffab00;
+        }
+
+        .report-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .team-section {
+            margin-bottom: 24px;
+        }
+
+        .team-name {
+            font-size: 14px;
+            font-weight: bold;
+            color: #00d9ff;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .team-logo {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+        }
+
+        .no-injuries {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .no-injuries-icon {
+            color: #00ff88;
+            font-size: 20px;
+        }
+
+        .no-injuries-text {
+            color: #00ff88;
+            font-size: 14px;
+        }
+
+        .injury-item {
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+
+        .injury-item.questionable {
+            background: rgba(255, 171, 0, 0.1);
+            border-color: rgba(255, 171, 0, 0.3);
+        }
+
+        .injury-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .injury-player {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .injury-icon {
+            font-size: 20px;
+        }
+
+        .injury-icon.out {
+            color: #ff4444;
+        }
+
+        .injury-icon.questionable {
+            color: #ffab00;
+        }
+
+        .player-name {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .status-badge.out {
+            background: #ff4444;
+        }
+
+        .status-badge.questionable {
+            background: #ffab00;
+            color: #000;
+        }
+
+        .injury-details {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #bbb;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .injury-details-icon {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .injury-comment {
+            color: #999;
+            font-size: 12px;
+            font-style: italic;
+            margin-top: 8px;
+        }
+
+        /* Intel Insight */
+        .intel-insight {
+            background: linear-gradient(135deg, rgba(255, 171, 0, 0.2), rgba(255, 171, 0, 0.1));
+            border: 1px solid rgba(255, 171, 0, 0.3);
+            border-radius: 8px;
+            padding: 14px;
+        }
+
+        .insight-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .insight-icon {
+            color: #ffab00;
+            font-size: 20px;
+        }
+
+        .insight-title {
+            color: #ffab00;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .insight-text {
+            color: #fff;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+
+        .impact-scores {
+            display: flex;
+            gap: 10px;
+            font-size: 12px;
+        }
+
+        .impact-label {
+            color: #bbb;
+        }
+
+        .impact-score {
+            font-weight: bold;
+        }
+
+        .impact-score.high {
+            color: #ff4444;
+        }
+
+        .impact-score.low {
+            color: #00ff88;
+        }
+
+        .divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 20px 0;
+        }
+
+        .api-note {
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 30px;
+            font-size: 12px;
+            color: #bbb;
+        }
+
+        .api-note strong {
+            color: #00d9ff;
+            display: block;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏀 Injury Intel Card Preview</h1>
+        <p class="subtitle">Based on Real ESPN API Data Structure</p>
+
+        <!-- Intel Card (Locked State) -->
+        <div class="intel-card">
+            <div class="intel-card-header">
+                <span class="intel-icon">💔</span>
+                <span class="intel-card-title">Game Injury Intel</span>
+            </div>
+
+            <p class="intel-description">
+                Complete injury reports for both teams including player status, injury details, and expected return dates.
+            </p>
+
+            <div class="intel-footer">
+                <div class="price-tag">
+                    <span>💰</span>
+                    <span>50 BR</span>
+                </div>
+
+                <div class="expires-tag">
+                    <span>⏱️</span>
+                    <span>Expires: 3h 45m</span>
+                </div>
+            </div>
+
+            <button class="unlock-btn">💰 GET INTEL - 50 BR</button>
+        </div>
+
+        <!-- Intel Card (Unlocked State with Data) -->
+        <div class="intel-card" style="border-color: #00ff88;">
+            <div class="intel-card-header">
+                <span class="intel-icon">💔</span>
+                <span class="intel-card-title">Game Injury Intel</span>
+                <span class="owned-badge">OWNED</span>
+            </div>
+
+            <p class="intel-description">
+                Lakers vs Warriors • January 15, 2025
+            </p>
+
+            <!-- Injury Report Content -->
+            <div class="injury-report">
+                <div class="report-header">
+                    <span class="report-header-icon">🏥</span>
+                    <span class="report-title">INJURY REPORT</span>
+                </div>
+
+                <!-- Away Team -->
+                <div class="team-section">
+                    <div class="team-name">
+                        <img src="https://a.espncdn.com/i/teamlogos/nba/500/lal.png" alt="Lakers" class="team-logo">
+                        <span>LOS ANGELES LAKERS INJURY REPORT</span>
+                    </div>
+
+                    <!-- Injury 1: OUT -->
+                    <div class="injury-item">
+                        <div class="injury-header">
+                            <div class="injury-player">
+                                <span class="injury-icon out">❌</span>
+                                <span class="player-name">Max Strus</span>
+                            </div>
+                            <span class="status-badge out">OUT</span>
+                        </div>
+
+                        <div class="injury-details">
+                            <span class="injury-details-icon">🏥</span>
+                            <span>Foot - Surgery</span>
+                        </div>
+
+                        <div class="injury-details">
+                            <span class="injury-details-icon">📅</span>
+                            <span>Expected Return: December 1, 2025</span>
+                        </div>
+
+                        <div class="injury-comment">
+                            Strus (foot) is no longer wearing a walking boot on Tuesday, but still has a lengthy recovery process ahead, Chris Fedor of The Cleveland Plain Dealer reports.
+                        </div>
+                    </div>
+
+                    <!-- Injury 2: QUESTIONABLE -->
+                    <div class="injury-item questionable">
+                        <div class="injury-header">
+                            <div class="injury-player">
+                                <span class="injury-icon questionable">⚠️</span>
+                                <span class="player-name">Anthony Davis</span>
+                            </div>
+                            <span class="status-badge questionable">QUESTIONABLE</span>
+                        </div>
+
+                        <div class="injury-details">
+                            <span class="injury-details-icon">🏥</span>
+                            <span>Back - Soreness</span>
+                        </div>
+
+                        <div class="injury-details">
+                            <span class="injury-details-icon">📅</span>
+                            <span>Game-Time Decision</span>
+                        </div>
+
+                        <div class="injury-comment">
+                            Davis (back) is listed as questionable for Wednesday's game against Golden State. He has played through similar issues in 3 of the last 5 games.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- Home Team -->
+                <div class="team-section">
+                    <div class="team-name">
+                        <img src="https://a.espncdn.com/i/teamlogos/nba/500/gs.png" alt="Warriors" class="team-logo">
+                        <span>GOLDEN STATE WARRIORS INJURY REPORT</span>
+                    </div>
+
+                    <div class="no-injuries">
+                        <span class="no-injuries-icon">✅</span>
+                        <span class="no-injuries-text">No injuries reported</span>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- Intel Insight -->
+                <div class="intel-insight">
+                    <div class="insight-header">
+                        <span class="insight-icon">💡</span>
+                        <span class="insight-title">INTEL INSIGHT</span>
+                    </div>
+
+                    <div class="insight-text">
+                        Warriors have the health advantage. Consider this in your betting decision. Lakers are 2-8 without LeBron this season and spread has moved from LAL -3.5 to GSW -1.5.
+                    </div>
+
+                    <div class="impact-scores">
+                        <span class="impact-label">Injury Impact Score:</span>
+                        <span class="impact-score high">Home: 17.0</span>
+                        <span>|</span>
+                        <span class="impact-score low">Away: 0.0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Data Note -->
+        <div class="api-note">
+            <strong>📊 Data Available from ESPN API:</strong>
+            ✅ Player Status (Out, Questionable, Doubtful, Day-to-Day)<br>
+            ✅ Injury Type (Knee, Ankle, Foot, Back, etc.)<br>
+            ✅ Injury Detail (Surgery, Sprain, Soreness, etc.)<br>
+            ✅ Affected Side (Left, Right)<br>
+            ✅ Expected Return Date<br>
+            ✅ Short Comment (Brief update)<br>
+            ✅ Long Comment (Detailed report with context)<br>
+            ✅ Last Updated Timestamp<br>
+            ✅ Fantasy Status (OUT, Q, D)<br>
+            <br>
+            <strong>🎮 Impact Scoring Algorithm:</strong><br>
+            • OUT = 10 points (Major impact)<br>
+            • DOUBTFUL = 7 points (High impact)<br>
+            • QUESTIONABLE = 4 points (Moderate impact)<br>
+            • DAY-TO-DAY = 1 point (Minor impact)<br>
+            <br>
+            Team with higher injury impact score is at disadvantage.
+        </div>
+    </div>
+</body>
+</html>

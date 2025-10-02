@@ -9,6 +9,12 @@ import '../../services/edge/edge_intelligence_service.dart';
 import '../../services/wallet_service.dart';
 import '../../widgets/loading_video_overlay.dart';
 import 'edge_detail_screen_v2.dart';
+import '../../models/intel_card_model.dart';
+import '../../models/injury_model.dart';
+import '../../services/injury_service.dart';
+import '../../services/intel_card_service.dart';
+import '../../widgets/injury_intel_card_widget.dart';
+import '../../widgets/injury_report_widget.dart';
 
 /// Enhanced Edge Screen with new Edge Cards UI System
 class EdgeScreenV2 extends StatefulWidget {
@@ -36,14 +42,21 @@ class _EdgeScreenV2State extends State<EdgeScreenV2> with TickerProviderStateMix
   final EdgeIntelligenceService _intelligenceService = EdgeIntelligenceService();
   final WalletService _walletService = WalletService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  
+  final InjuryService _injuryService = InjuryService();
+  final IntelCardService _intelCardService = IntelCardService();
+
   // Data
   EdgeIntelligence? _intelligence;
   List<EdgeCardData> _cards = [];
   int _userBRBalance = 0;
   bool _isLoading = true;
   String? _error;
-  
+
+  // Injury Intel Cards
+  List<IntelCard> _availableIntelCards = [];
+  Map<String, UserIntelCard> _ownedIntelCards = {};
+  Map<String, GameInjuryReport> _injuryReports = {};
+
   // UI State
   final Set<String> _unlockedCardIds = {};
   EdgeCardCategory? _selectedCategory;
@@ -91,7 +104,43 @@ class _EdgeScreenV2State extends State<EdgeScreenV2> with TickerProviderStateMix
       if (_cards.length < 6) {
         _addDemoCards();
       }
-      
+
+      // Load Injury Intel Cards if sport supports it
+      if (_injuryService.sportSupportsInjuries(widget.sport)) {
+        // Generate cards (only if injuries exist)
+        _availableIntelCards = await _intelCardService.generateGameIntelCards(
+          gameId: widget.gameId ?? widget.eventId ?? '',
+          sport: widget.sport,
+          gameTime: widget.gameTime ?? DateTime.now(),
+          homeTeamId: widget.gameId ?? '', // TODO: Extract real team IDs
+          awayTeamId: widget.eventId ?? '', // TODO: Extract real team IDs
+        );
+
+        // Check user ownership for each card (only if cards were generated)
+        if (_availableIntelCards.isNotEmpty && user != null) {
+          for (final card in _availableIntelCards) {
+            final userCard = await _intelCardService.getUserIntelCard(
+              userId: user.uid,
+              cardId: card.id,
+            );
+
+            if (userCard != null) {
+              _ownedIntelCards[card.id] = userCard;
+
+              // Fetch injury data if owned
+              if (userCard.injuryData == null) {
+                final report = await _loadInjuryReport(card, homeTeam, awayTeam);
+                if (report != null) {
+                  _injuryReports[card.id] = report;
+                }
+              } else {
+                _injuryReports[card.id] = userCard.injuryData!;
+              }
+            }
+          }
+        }
+      }
+
       setState(() {
         _isLoading = false;
       });
@@ -486,7 +535,157 @@ class _EdgeScreenV2State extends State<EdgeScreenV2> with TickerProviderStateMix
       );
     }
   }
-  
+
+  Future<GameInjuryReport?> _loadInjuryReport(
+    IntelCard card,
+    String homeTeam,
+    String awayTeam,
+  ) async {
+    try {
+      // TODO: Extract team IDs from ESPN event data
+      // For now, pass team names and let the service handle team ID lookup
+      final report = await _injuryService.getGameInjuries(
+        sport: widget.sport.toLowerCase(),
+        homeTeamId: widget.gameId ?? '', // Placeholder - needs team ID extraction
+        homeTeamName: homeTeam,
+        homeTeamLogo: null, // Will be fetched by service if available
+        awayTeamId: widget.eventId ?? '', // Placeholder - needs team ID extraction
+        awayTeamName: awayTeam,
+        awayTeamLogo: null, // Will be fetched by service if available
+      );
+
+      return report;
+    } catch (e) {
+      debugPrint('Error loading injury report: $e');
+      return null;
+    }
+  }
+
+  Future<void> _purchaseIntelCard(IntelCard card) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      _showError('Please sign in to purchase Intel Cards');
+      return;
+    }
+
+    // Check BR balance
+    if (_userBRBalance < card.brCost) {
+      _showInsufficientBRDialog(card.brCost);
+      return;
+    }
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text(
+          'Purchase Injury Intel',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.healing, color: Colors.red, size: 48),
+            const SizedBox(height: 16),
+            Text(
+              'Purchase complete injury reports for both teams?',
+              style: const TextStyle(color: Colors.white),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Cost: ${card.brCost} BR',
+              style: const TextStyle(
+                color: Colors.amber,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your balance: $_userBRBalance BR',
+              style: const TextStyle(color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber,
+              foregroundColor: Colors.black,
+            ),
+            child: Text('Buy for ${card.brCost} BR'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    // Purchase
+    final result = await _intelCardService.purchaseIntelCard(
+      userId: user.uid,
+      card: card,
+    );
+
+    // Close loading
+    Navigator.pop(context);
+
+    if (result.success) {
+      // Load injury data
+      final teams = widget.gameTitle.split(' vs ');
+      String homeTeam = teams.length > 0 ? teams[0].trim() : 'Team 1';
+      String awayTeam = teams.length > 1 ? teams[1].trim() : 'Team 2';
+
+      final report = await _loadInjuryReport(card, homeTeam, awayTeam);
+
+      setState(() {
+        _ownedIntelCards[card.id] = result.userCard!;
+        if (report != null) {
+          _injuryReports[card.id] = report;
+        }
+        _userBRBalance -= card.brCost;
+      });
+
+      _showSuccess('Injury Intel unlocked! 🏥');
+    } else {
+      _showError(result.message);
+    }
+  }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
   void _showInsufficientBRDialog(int requiredBR) {
     showDialog(
       context: context,
@@ -789,7 +988,71 @@ class _EdgeScreenV2State extends State<EdgeScreenV2> with TickerProviderStateMix
                           sportFilter: widget.sport,
                         ),
             ),
-            
+
+            // Injury Intel Cards Section
+            if (_availableIntelCards.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'INJURY INTELLIGENCE',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Complete injury reports for both teams',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Render each Intel Card
+                    ..._availableIntelCards.map((card) {
+                      final owned = _ownedIntelCards.containsKey(card.id);
+
+                      return Column(
+                        children: [
+                          // Intel Card Widget
+                          InjuryIntelCardWidget(
+                            card: card,
+                            owned: owned,
+                            onPurchase: () => _purchaseIntelCard(card),
+                            onView: owned ? () {
+                              // Scroll to report or show in modal
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Scroll down to view your Injury Report'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            } : null,
+                          ),
+
+                          // Injury Report (if owned)
+                          if (owned && _injuryReports.containsKey(card.id)) ...[
+                            const SizedBox(height: 16),
+                            InjuryReportWidget(
+                              report: _injuryReports[card.id]!,
+                            ),
+                          ],
+
+                          const SizedBox(height: 16),
+                        ],
+                      );
+                    }).toList(),
+                  ],
+                ),
+              ),
+
             // Bundle offer (if applicable)
             if (_cards.length >= 4 && _unlockedCardIds.length < 2)
               Container(
