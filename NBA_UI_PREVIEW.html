@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NBA Game Cards - UI Preview</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #1e1e2e 0%, #2a2a3e 100%);
+            padding: 40px 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #999;
+            font-size: 1.1em;
+        }
+
+        .section {
+            margin-bottom: 50px;
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #444;
+        }
+
+        .section-description {
+            color: #aaa;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        /* Game Card Styles */
+        .game-card {
+            background: #2a2a3e;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .game-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .game-card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        /* Badge Styles */
+        .badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+
+        .badge-sport {
+            background: rgba(255, 149, 0, 0.2);
+            border: 1px solid #FF9500;
+            color: #FF9500;
+        }
+
+        .badge-preseason {
+            background: rgba(255, 149, 0, 0.2);
+            border: 1px solid #FF9500;
+            color: #FF9500;
+        }
+
+        .badge-playoffs {
+            background: rgba(255, 215, 0, 0.2);
+            border: 1px solid #FFD700;
+            color: #FFD700;
+        }
+
+        .badge-exhibition {
+            background: rgba(155, 89, 182, 0.2);
+            border: 1px solid #9B59B6;
+            color: #9B59B6;
+        }
+
+        .badge-simple-pick {
+            background: rgba(52, 152, 219, 0.2);
+            border: 1px solid #3498DB;
+            color: #3498DB;
+        }
+
+        .badge-live {
+            background: #e74c3c;
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        /* Game Info */
+        .game-matchup {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .vs {
+            color: #666;
+            font-size: 0.9em;
+            display: block;
+            text-align: center;
+            margin: 4px 0;
+        }
+
+        .game-time {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .game-footer {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #444;
+        }
+
+        .pools-available {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .pool-chip {
+            background: rgba(52, 152, 219, 0.15);
+            border: 1px solid #3498DB;
+            color: #3498DB;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .pool-chip-simple {
+            background: rgba(52, 152, 219, 0.15);
+            border: 1px solid #3498DB;
+            color: #3498DB;
+        }
+
+        .info-banner {
+            background: rgba(52, 152, 219, 0.1);
+            border: 1px solid #3498DB;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .info-icon {
+            color: #3498DB;
+            font-size: 20px;
+        }
+
+        .info-text {
+            color: #3498DB;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        /* Comparison Section */
+        .comparison {
+            background: #2a2a3e;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .comparison-title {
+            font-size: 1.2em;
+            margin-bottom: 16px;
+            color: #fff;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .comparison-item h4 {
+            color: #e74c3c;
+            margin-bottom: 8px;
+        }
+
+        .comparison-item.after h4 {
+            color: #2ecc71;
+        }
+
+        .comparison-item ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .comparison-item li {
+            padding: 6px 0;
+            color: #ccc;
+            line-height: 1.6;
+        }
+
+        .comparison-item li:before {
+            content: "• ";
+            color: #666;
+            margin-right: 8px;
+        }
+
+        /* Legend */
+        .legend {
+            background: #2a2a3e;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+
+        .legend-title {
+            font-size: 1.2em;
+            margin-bottom: 16px;
+        }
+
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .legend-badge {
+            flex-shrink: 0;
+        }
+
+        .legend-desc {
+            font-size: 13px;
+            color: #aaa;
+        }
+
+        /* Note boxes */
+        .note {
+            background: rgba(241, 196, 15, 0.1);
+            border-left: 4px solid #f1c40f;
+            padding: 16px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .note-title {
+            color: #f1c40f;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .note-text {
+            color: #ddd;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏀 NBA Game Cards - UI Preview</h1>
+        <p class="subtitle">Visual preview of badge system and game classification</p>
+
+        <!-- Legend -->
+        <div class="legend">
+            <h3 class="legend-title">🎨 Badge Legend</h3>
+            <div class="legend-grid">
+                <div class="legend-item">
+                    <span class="badge badge-sport legend-badge">NBA</span>
+                    <span class="legend-desc">Sport indicator (always shown)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="badge badge-preseason legend-badge">PRESEASON</span>
+                    <span class="legend-desc">Preseason games</span>
+                </div>
+                <div class="legend-item">
+                    <span class="badge badge-playoffs legend-badge">PLAYOFFS</span>
+                    <span class="legend-desc">Playoff games</span>
+                </div>
+                <div class="legend-item">
+                    <span class="badge badge-exhibition legend-badge">🌍 EXHIBITION</span>
+                    <span class="legend-desc">International/Global games</span>
+                </div>
+                <div class="legend-item">
+                    <span class="badge badge-simple-pick legend-badge">🎯 SIMPLE PICK</span>
+                    <span class="legend-desc">No odds - simple pick mode</span>
+                </div>
+                <div class="legend-item">
+                    <span class="badge badge-live legend-badge"><span class="live-dot"></span> LIVE</span>
+                    <span class="legend-desc">Game in progress</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Before/After Comparison -->
+        <div class="comparison">
+            <h3 class="comparison-title">📊 Before vs After</h3>
+            <div class="comparison-grid">
+                <div class="comparison-item before">
+                    <h4>❌ Before (Current)</h4>
+                    <ul>
+                        <li>Exhibition games shown with no indication</li>
+                        <li>User clicks game, tries to bet</li>
+                        <li>Error: "No odds available"</li>
+                        <li>Dead end - user frustrated</li>
+                        <li>No way to distinguish game types</li>
+                    </ul>
+                </div>
+                <div class="comparison-item after">
+                    <h4>✅ After (New System)</h4>
+                    <ul>
+                        <li>Clear badges show game type</li>
+                        <li>Exhibition badge immediately visible</li>
+                        <li>Simple Pick badge shows alternative</li>
+                        <li>User can still place picks</li>
+                        <li>Full transparency on betting options</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 1: Exhibition Game -->
+        <div class="section">
+            <h2 class="section-title">1. Exhibition Game (No Odds)</h2>
+            <p class="section-description">
+                International exhibition games like "NBA Abu Dhabi Games" feature non-NBA teams (e.g., Melbourne United).
+                These games don't have betting odds but users can still participate via Simple Pick pools.
+            </p>
+            <div class="cards-grid">
+                <div class="game-card">
+                    <div class="game-card-header">
+                        <span class="badge badge-sport">🏀 NBA</span>
+                        <span class="badge badge-preseason">PRESEASON</span>
+                        <span class="badge badge-exhibition">🌍 EXHIBITION</span>
+                        <span class="spacer"></span>
+                        <span class="badge badge-simple-pick">🎯 SIMPLE PICK</span>
+                    </div>
+                    <div class="game-matchup">
+                        Melbourne United
+                        <span class="vs">@</span>
+                        New Orleans Pelicans
+                    </div>
+                    <div class="game-time">Oct 2, 2025 • 4:00 PM</div>
+                    <div class="info-banner">
+                        <span class="info-icon">ℹ️</span>
+                        <span class="info-text">Simple Pick Mode: Choose the winning team. 1 point per correct pick. Optional confidence multipliers available (1-5 stars).</span>
+                    </div>
+                    <div class="game-footer">
+                        <div class="pools-available">
+                            <span class="pool-chip pool-chip-simple">Simple Pick - 5 BR</span>
+                            <span class="pool-chip pool-chip-simple">Simple Pick - 10 BR</span>
+                            <span class="pool-chip pool-chip-simple">Simple Pick - 25 BR</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Preseason NBA Game (with odds) -->
+        <div class="section">
+            <h2 class="section-title">2. Preseason NBA Game (With Odds)</h2>
+            <p class="section-description">
+                Preseason games between two NBA teams may have betting odds available.
+                These function like regular games but are clearly labeled as preseason.
+            </p>
+            <div class="cards-grid">
+                <div class="game-card">
+                    <div class="game-card-header">
+                        <span class="badge badge-sport">🏀 NBA</span>
+                        <span class="badge badge-preseason">PRESEASON</span>
+                    </div>
+                    <div class="game-matchup">
+                        Philadelphia 76ers
+                        <span class="vs">@</span>
+                        New York Knicks
+                    </div>
+                    <div class="game-time">Oct 2, 2025 • 4:00 PM</div>
+                    <div class="game-footer">
+                        <div class="pools-available">
+                            <span class="pool-chip">Pick Winner - 10 BR</span>
+                            <span class="pool-chip">Against Spread - 10 BR</span>
+                            <span class="pool-chip">Over/Under - 10 BR</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live version -->
+                <div class="game-card">
+                    <div class="game-card-header">
+                        <span class="badge badge-sport">🏀 NBA</span>
+                        <span class="badge badge-preseason">PRESEASON</span>
+                        <span class="spacer"></span>
+                        <span class="badge badge-live"><span class="live-dot"></span> LIVE</span>
+                    </div>
+                    <div class="game-matchup">
+                        Boston Celtics 78
+                        <span class="vs">@</span>
+                        Denver Nuggets 82
+                    </div>
+                    <div class="game-time">Q3 • 5:24 remaining</div>
+                    <div class="game-footer">
+                        <div class="pools-available">
+                            <span class="pool-chip">Pick Winner - 10 BR</span>
+                            <span class="pool-chip">Against Spread - 10 BR</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Regular Season Game -->
+        <div class="section">
+            <h2 class="section-title">3. Regular Season Game</h2>
+            <p class="section-description">
+                Regular season games have no special badge (clean look). Full betting options available with odds.
+            </p>
+            <div class="cards-grid">
+                <div class="game-card">
+                    <div class="game-card-header">
+                        <span class="badge badge-sport">🏀 NBA</span>
+                    </div>
+                    <div class="game-matchup">
+                        Los Angeles Lakers
+                        <span class="vs">@</span>
+                        Boston Celtics
+                    </div>
+                    <div class="game-time">Oct 22, 2025 • 7:30 PM EST</div>
+                    <div class="game-footer">
+                        <div class="pools-available">
+                            <span class="pool-chip">Pick Winner - 10 BR</span>
+                            <span class="pool-chip">Against Spread - 25 BR</span>
+                            <span class="pool-chip">Over/Under - 10 BR</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="game-card">
+                    <div class="game-card-header">
+                        <span class="badge badge-sport">🏀 NBA</span>
+                        <span class="spacer"></span>
+                        <span class="badge badge-live"><span class="live-dot"></span> LIVE</span>
+                    </div>
+                    <div class="game-matchup">
+                        Golden State Warriors 105
+                        <span class="vs">@</span>
+                        Miami Heat 98
+                    </div>
+                    <div class="game-time">Q4 • 2:15 remaining</div>
+                    <div class="game-footer">
+                        <div class="pools-available">
+                            <span class="pool-chip">Pick Winner - 50 BR</span>
+                            <span class="pool-chip">Against Spread - 25 BR</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 4: Playoffs Game -->
+        <div class="section">
+            <h2 class="section-title">4. Playoffs Game</h2>
+            <p class="section-description">
+                Playoff games are highlighted with a gold "PLAYOFFS" badge to emphasize importance.
+                Full betting options with odds available.
+            </p>
+            <div class="cards-grid">
+                <div class="game-card">
+                    <div class="game-card-header">
+                        <span class="badge badge-sport">🏀 NBA</span>
+                        <span class="badge badge-playoffs">PLAYOFFS</span>
+                    </div>
+                    <div class="game-matchup">
+                        Miami Heat
+                        <span class="vs">@</span>
+                        Denver Nuggets
+                    </div>
+                    <div class="game-time">Game 5 • Jun 5, 2026 • 9:00 PM EST</div>
+                    <div class="game-footer">
+                        <div class="pools-available">
+                            <span class="pool-chip">Pick Winner - 100 BR</span>
+                            <span class="pool-chip">Against Spread - 50 BR</span>
+                            <span class="pool-chip">Over/Under - 25 BR</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="game-card">
+                    <div class="game-card-header">
+                        <span class="badge badge-sport">🏀 NBA</span>
+                        <span class="badge badge-playoffs">PLAYOFFS</span>
+                        <span class="spacer"></span>
+                        <span class="badge badge-live"><span class="live-dot"></span> LIVE</span>
+                    </div>
+                    <div class="game-matchup">
+                        Phoenix Suns 88
+                        <span class="vs">@</span>
+                        Milwaukee Bucks 92
+                    </div>
+                    <div class="game-time">Game 7 • Q4 • 0:45 remaining</div>
+                    <div class="game-footer">
+                        <div class="pools-available">
+                            <span class="pool-chip">Pick Winner - 100 BR</span>
+                            <span class="pool-chip">Against Spread - 50 BR</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Implementation Notes -->
+        <div class="note">
+            <div class="note-title">📝 Implementation Notes</div>
+            <div class="note-text">
+                <strong>Badge Priority (Left to Right):</strong><br>
+                1. Sport badge (always shown)<br>
+                2. Season type (PRESEASON/PLAYOFFS only, no badge for regular season)<br>
+                3. Exhibition badge (if applicable)<br>
+                4. Simple Pick badge (if no odds available)<br>
+                5. Live status (if game in progress)<br><br>
+
+                <strong>Color Scheme:</strong><br>
+                • Orange (#FF9500) - Preseason<br>
+                • Gold (#FFD700) - Playoffs<br>
+                • Purple (#9B59B6) - Exhibition<br>
+                • Blue (#3498DB) - Simple Pick<br>
+                • Red (#e74c3c) - Live
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; margin-top: 60px; padding: 20px; color: #666; border-top: 1px solid #444;">
+            <p>NBA Season Classification System - UI Preview</p>
+            <p style="font-size: 0.9em; margin-top: 8px;">Created: October 2, 2025</p>
+        </div>
+    </div>
+</body>
+</html>
