@@ -106,7 +106,17 @@ class _EdgeScreenV2State extends State<EdgeScreenV2> with TickerProviderStateMix
       }
 
       // Load Injury Intel Cards if sport supports it
+      debugPrint('🏥 [EdgeScreen] Checking Injury Intel Cards...');
+      debugPrint('   Sport: ${widget.sport}');
+      debugPrint('   Supports injuries: ${_injuryService.sportSupportsInjuries(widget.sport)}');
+
       if (_injuryService.sportSupportsInjuries(widget.sport)) {
+        debugPrint('   ✅ Sport supports injuries, generating cards...');
+        debugPrint('   GameID: ${widget.gameId ?? widget.eventId ?? ""}');
+        debugPrint('   Game Time: ${widget.gameTime?.toIso8601String() ?? "unknown"}');
+        debugPrint('   Home Team ID: ${widget.gameId ?? ""}');
+        debugPrint('   Away Team ID: ${widget.eventId ?? ""}');
+
         // Generate cards (only if injuries exist)
         _availableIntelCards = await _intelCardService.generateGameIntelCards(
           gameId: widget.gameId ?? widget.eventId ?? '',
@@ -116,8 +126,19 @@ class _EdgeScreenV2State extends State<EdgeScreenV2> with TickerProviderStateMix
           awayTeamId: widget.eventId ?? '', // TODO: Extract real team IDs
         );
 
+        debugPrint('   📊 Generated ${_availableIntelCards.length} Intel Cards');
+        if (_availableIntelCards.isEmpty) {
+          debugPrint('   ⚠️ No Intel Cards generated (likely no injuries for this game)');
+        } else {
+          for (final card in _availableIntelCards) {
+            debugPrint('      - ${card.title} (${card.brCost} BR)');
+          }
+        }
+
         // Check user ownership for each card (only if cards were generated)
         if (_availableIntelCards.isNotEmpty && user != null) {
+          debugPrint('   🔍 Checking user ownership for ${_availableIntelCards.length} cards...');
+
           for (final card in _availableIntelCards) {
             final userCard = await _intelCardService.getUserIntelCard(
               userId: user.uid,
@@ -125,20 +146,32 @@ class _EdgeScreenV2State extends State<EdgeScreenV2> with TickerProviderStateMix
             );
 
             if (userCard != null) {
+              debugPrint('      ✅ User owns card: ${card.title}');
               _ownedIntelCards[card.id] = userCard;
 
               // Fetch injury data if owned
               if (userCard.injuryData == null) {
+                debugPrint('      📥 Fetching injury data for owned card...');
                 final report = await _loadInjuryReport(card, homeTeam, awayTeam);
                 if (report != null) {
+                  debugPrint('      ✅ Injury report loaded');
                   _injuryReports[card.id] = report;
+                } else {
+                  debugPrint('      ❌ Failed to load injury report');
                 }
               } else {
+                debugPrint('      ✅ Using cached injury data');
                 _injuryReports[card.id] = userCard.injuryData!;
               }
+            } else {
+              debugPrint('      🔒 User does not own card: ${card.title}');
             }
           }
+        } else if (_availableIntelCards.isNotEmpty && user == null) {
+          debugPrint('   ⚠️ User not logged in, cannot check ownership');
         }
+      } else {
+        debugPrint('   ❌ Sport does not support injuries');
       }
 
       setState(() {

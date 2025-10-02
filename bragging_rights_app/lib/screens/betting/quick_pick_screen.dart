@@ -198,14 +198,14 @@ class _QuickPickScreenState extends State<QuickPickScreen>
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              
-              // Navigate to success screen or pool screen
+
+              // Navigate back to home screen (Games page)
               Navigator.pushNamedAndRemoveUntil(
                 context,
-                '/my-pools',
-                (route) => route.isFirst,
+                '/home',
+                (route) => false,
               );
-              
+
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Picks submitted successfully!'),

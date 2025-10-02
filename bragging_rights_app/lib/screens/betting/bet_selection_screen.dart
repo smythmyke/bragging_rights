@@ -28,7 +28,8 @@ class BetSelectionScreen extends StatefulWidget {
   final String poolName;
   final String? poolId;
   final String? gameId;
-  
+  final DateTime? gameTime;
+
   const BetSelectionScreen({
     super.key,
     required this.gameTitle,
@@ -36,6 +37,7 @@ class BetSelectionScreen extends StatefulWidget {
     required this.poolName,
     this.poolId,
     this.gameId,
+    this.gameTime,
   });
 
   @override
@@ -184,10 +186,12 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         String eventIdToUse = widget.gameId!;
         if (widget.gameId?.contains('-') == false && _homeTeam != null && _awayTeam != null) {
           print('[BetSelection] ESPN ID detected, finding Odds API event ID for $_awayTeam @ $_homeTeam');
+          print('[BetSelection] Game date: ${widget.gameTime?.toIso8601String() ?? "unknown"}');
           final oddsApiEventId = await _oddsApiService.findOddsApiEventId(
             sport: widget.sport.toLowerCase(),  // Ensure sport is lowercase for API
             homeTeam: _homeTeam!,
             awayTeam: _awayTeam!,
+            gameDate: widget.gameTime,  // Pass game date for multi-endpoint support
           );
           if (oddsApiEventId != null) {
             eventIdToUse = oddsApiEventId;
@@ -3699,9 +3703,9 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
             backgroundColor: AppTheme.neonGreen,
           ),
         );
-        
-        // Navigate back to home screen
-        Navigator.of(context).popUntil((route) => route.isFirst);
+
+        // Navigate back to home screen (Games page)
+        Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
       }
     } catch (e) {
       debugPrint('Error locking in bets: $e');

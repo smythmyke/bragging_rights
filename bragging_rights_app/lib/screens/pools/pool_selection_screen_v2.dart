@@ -927,6 +927,7 @@ class _PoolSelectionScreenV2State extends State<PoolSelectionScreenV2> with Sing
       'sport': widget.sport,
       'poolName': pool.name,
       'poolId': pool.id,
+      'gameTime': pool.startTime,  // Pass game start time for multi-endpoint odds support
     };
     
     showDialog(

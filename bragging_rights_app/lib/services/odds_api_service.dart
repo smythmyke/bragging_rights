@@ -310,88 +310,127 @@ class OddsApiService {
   }
 
   /// Get odds for any match by team names
+  /// Now supports multi-endpoint search for preseason, regular season, etc.
   Future<Map<String, dynamic>?> getMatchOdds({
     required String sport,
     required String homeTeam,
     required String awayTeam,
+    DateTime? gameDate, // NEW: Helps determine which endpoint to check
   }) async {
     try {
       // Ensure initialization
       await ensureInitialized();
-      
+
       debugPrint('🎯 OddsApiService.getMatchOdds called');
       debugPrint('   Sport: $sport');
-      debugPrint('   Looking for: $awayTeam @ $homeTeam');
-      
-      // Get all events for the sport
-      final events = await getSportOdds(sport: sport);
-      
-      if (events == null || events.isEmpty) {
-        debugPrint('❌ No events found for $sport');
+      debugPrint('   Game: $awayTeam @ $homeTeam');
+      debugPrint('   Date: ${gameDate?.toIso8601String() ?? "unknown"}');
+
+      // Get applicable endpoints for this sport
+      final endpoints = _getEndpointsForSport(sport, gameDate: gameDate);
+
+      if (endpoints.isEmpty) {
+        debugPrint('❌ No endpoints found for sport: $sport');
         return null;
       }
-      
-      debugPrint('✅ Found ${events.length} $sport events from API');
-      
-      // Log all available games for debugging
-      debugPrint('📋 Available $sport games from API:');
-      for (int i = 0; i < events.length && i < 5; i++) {
-        final e = events[i];
-        debugPrint('   ${i+1}. ${e['away_team']} @ ${e['home_team']}');
+
+      debugPrint('📍 Will check ${endpoints.length} endpoint(s):');
+      for (final endpoint in endpoints) {
+        debugPrint('   - ${endpoint.key} (${endpoint.type.name})${endpoint.label != null ? " [${endpoint.label}]" : ""}');
       }
-      
-      // Find matching event
-      for (final event in events) {
-        final eventHome = event['home_team']?.toString() ?? '';
-        final eventAway = event['away_team']?.toString() ?? '';
-        
-        final eventHomeLower = eventHome.toLowerCase();
-        final eventAwayLower = eventAway.toLowerCase();
-        
-        final homeNormalized = _normalizeTeamName(homeTeam);
-        final awayNormalized = _normalizeTeamName(awayTeam);
-        
-        // Debug each comparison
-        debugPrint('🔍 Comparing:');
-        debugPrint('   API: $eventAway @ $eventHome');
-        debugPrint('   Looking for: $awayTeam @ $homeTeam');
-        debugPrint('   Normalized API: $eventAwayLower @ $eventHomeLower');
-        debugPrint('   Normalized search: $awayNormalized @ $homeNormalized');
-        
-        // Check if this is our match
-        final homeMatches = _teamsMatch(eventHomeLower, homeNormalized, sport);
-        final awayMatches = _teamsMatch(eventAwayLower, awayNormalized, sport);
-        
-        debugPrint('   Home match: $homeMatches, Away match: $awayMatches');
-        
-        if (homeMatches && awayMatches) {
-          debugPrint('✅ MATCH FOUND!');
-          
-          // Extract odds data
-          final bookmakers = event['bookmakers'] ?? [];
-          final odds = _extractBestOdds(bookmakers);
-          
-          return {
-            'eventId': event['id'],
-            'commence_time': event['commence_time'],
-            'home_team': event['home_team'],
-            'away_team': event['away_team'],
-            'odds': odds,
-            'bookmaker_count': bookmakers.length,
-            'sport_title': event['sport_title'],
-            'sport_key': event['sport_key'],
-          };
+
+      // Try each endpoint in priority order
+      for (final endpoint in endpoints) {
+        debugPrint('🔍 Checking endpoint: ${endpoint.key}');
+
+        final events = await _getSportOddsForEndpoint(endpoint.key);
+
+        if (events == null || events.isEmpty) {
+          debugPrint('   ⚠️ No events found in ${endpoint.key}');
+          continue;
         }
+
+        debugPrint('   ✅ Found ${events.length} events in ${endpoint.key}');
+
+        // Log first few games for debugging
+        debugPrint('   📋 Sample games:');
+        for (int i = 0; i < events.length && i < 3; i++) {
+          final e = events[i];
+          debugPrint('      ${i+1}. ${e['away_team']} @ ${e['home_team']}');
+        }
+
+        // Search for matching game
+        for (final event in events) {
+          final eventHome = event['home_team']?.toString() ?? '';
+          final eventAway = event['away_team']?.toString() ?? '';
+
+          final homeMatches = _teamsMatch(
+            eventHome.toLowerCase(),
+            _normalizeTeamName(homeTeam),
+            sport
+          );
+          final awayMatches = _teamsMatch(
+            eventAway.toLowerCase(),
+            _normalizeTeamName(awayTeam),
+            sport
+          );
+
+          if (homeMatches && awayMatches) {
+            debugPrint('   ✅ MATCH FOUND in ${endpoint.key}!');
+            debugPrint('      Game: ${eventAway} @ ${eventHome}');
+
+            // Extract odds
+            final bookmakers = event['bookmakers'] ?? [];
+            final odds = _extractBestOdds(bookmakers);
+
+            return {
+              'eventId': event['id'],
+              'commence_time': event['commence_time'],
+              'home_team': event['home_team'],
+              'away_team': event['away_team'],
+              'odds': odds,
+              'bookmaker_count': bookmakers.length,
+              'sport_title': event['sport_title'],
+              'sport_key': event['sport_key'],
+              // NEW: Season type metadata
+              'season_type': endpoint.type.name,
+              'season_label': endpoint.label,
+              'endpoint_used': endpoint.key,
+            };
+          }
+        }
+
+        debugPrint('   ❌ No match in ${endpoint.key}');
       }
-      
-      debugPrint('❌ No matching event found');
-      debugPrint('   Was looking for: $awayTeam @ $homeTeam');
-      debugPrint('   Sport: $sport');
-      debugPrint('   Total events checked: ${events.length}');
+
+      debugPrint('❌ No match found in any endpoint for $awayTeam @ $homeTeam');
       return null;
-      
+
     } catch (e) {
       debugPrint('Error fetching match odds: $e');
+      return null;
+    }
+  }
+
+  /// Helper method to fetch odds from a specific endpoint
+  Future<List<Map<String, dynamic>>?> _getSportOddsForEndpoint(String sportKey) async {
+    try {
+      final url = '$_baseUrl/sports/$sportKey/odds/?'
+          'apiKey=$_apiKey'
+          '&regions=us'
+          '&markets=h2h,spreads,totals'
+          '&oddsFormat=american';
+
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as List;
+        return data.cast<Map<String, dynamic>>();
+      }
+
+      return null;
+    } catch (e) {
+      debugPrint('Error fetching from $sportKey: $e');
       return null;
     }
   }
@@ -916,56 +955,70 @@ class OddsApiService {
   }
   
   /// Find The Odds API event ID by matching team names
+  /// Now supports multi-endpoint search for preseason, regular season, etc.
   Future<String?> findOddsApiEventId({
     required String sport,
     required String homeTeam,
     required String awayTeam,
+    DateTime? gameDate, // NEW: Optional date for smart endpoint selection
   }) async {
     try {
       debugPrint('🔎 findOddsApiEventId called with:');
       debugPrint('   Sport: $sport');
       debugPrint('   Home Team: "$homeTeam"');
       debugPrint('   Away Team: "$awayTeam"');
-      
-      final events = await getSportEvents(sport);
-      if (events == null || events.isEmpty) {
-        debugPrint('❌ No events found for sport: $sport');
+      debugPrint('   Date: ${gameDate?.toIso8601String() ?? "unknown"}');
+
+      // Get applicable endpoints for this sport
+      final endpoints = _getEndpointsForSport(sport, gameDate: gameDate);
+
+      if (endpoints.isEmpty) {
+        debugPrint('❌ No endpoints found for sport: $sport');
         return null;
       }
-      
-      debugPrint('📋 Found ${events.length} events for $sport');
-      
-      // Normalize team names for comparison
-      final normalizedHome = _normalizeTeamName(homeTeam);
-      final normalizedAway = _normalizeTeamName(awayTeam);
-      
-      debugPrint('🔍 Looking for match:');
-      debugPrint('   Normalized Home: "$normalizedHome"');
-      debugPrint('   Normalized Away: "$normalizedAway"');
-      
-      for (final event in events) {
-        final apiHome = event['home_team'] ?? '';
-        final apiAway = event['away_team'] ?? '';
-        final eventHome = _normalizeTeamName(apiHome);
-        final eventAway = _normalizeTeamName(apiAway);
-        
-        debugPrint('   Checking event: ${event['id']}');
-        debugPrint('     API Teams: "$apiAway" @ "$apiHome"');
-        debugPrint('     Normalized: "$eventAway" @ "$eventHome"');
-        
-        // Check if teams match (in either order)
-        final homeMatches = eventHome.contains(normalizedHome) || normalizedHome.contains(eventHome);
-        final awayMatches = eventAway.contains(normalizedAway) || normalizedAway.contains(eventAway);
-        
-        debugPrint('     Home match: $homeMatches, Away match: $awayMatches');
-        
-        if (homeMatches && awayMatches) {
-          debugPrint('✅ Found matching event: ${event['id']} - $apiHome vs $apiAway');
-          return event['id'];
+
+      debugPrint('📍 Will check ${endpoints.length} endpoint(s) for event ID');
+
+      // Try each endpoint in priority order
+      for (final endpoint in endpoints) {
+        debugPrint('🔍 Checking endpoint: ${endpoint.key}');
+
+        final events = await _getSportOddsForEndpoint(endpoint.key);
+
+        if (events == null || events.isEmpty) {
+          debugPrint('   ⚠️ No events in ${endpoint.key}');
+          continue;
         }
+
+        debugPrint('   ✅ Found ${events.length} events in ${endpoint.key}');
+
+        // Normalize team names for comparison
+        final normalizedHome = _normalizeTeamName(homeTeam);
+        final normalizedAway = _normalizeTeamName(awayTeam);
+
+        // Search for matching game
+        for (final event in events) {
+          final apiHome = event['home_team'] ?? '';
+          final apiAway = event['away_team'] ?? '';
+          final eventHome = _normalizeTeamName(apiHome);
+          final eventAway = _normalizeTeamName(apiAway);
+
+          // Check if teams match
+          final homeMatches = _teamsMatch(eventHome, normalizedHome, sport);
+          final awayMatches = _teamsMatch(eventAway, normalizedAway, sport);
+
+          if (homeMatches && awayMatches) {
+            debugPrint('   ✅ Found matching event in ${endpoint.key}!');
+            debugPrint('      Event ID: ${event['id']}');
+            debugPrint('      Teams: $apiAway @ $apiHome');
+            return event['id'];
+          }
+        }
+
+        debugPrint('   ❌ No match in ${endpoint.key}');
       }
-      
-      debugPrint('❌ No matching event found for "$awayTeam" @ "$homeTeam"');
+
+      debugPrint('❌ No matching event found in any endpoint for "$awayTeam" @ "$homeTeam"');
       return null;
     } catch (e) {
       debugPrint('❌ Error finding event ID: $e');
