@@ -19,13 +19,6 @@ class ApiGateway {
   
   // API configurations
   final Map<String, ApiConfig> _apiConfigs = {
-    'nba_stats': ApiConfig(
-      baseUrl: 'https://stats.nba.com',
-      rateLimit: 100,
-      rateLimitWindow: const Duration(minutes: 1),
-      timeout: const Duration(seconds: 30), // NBA API can be slow
-      cacheDuration: const Duration(minutes: 5),
-    ),
     'nhl_api': ApiConfig(
       baseUrl: 'https://statsapi.web.nhl.com/api/v1',
       rateLimit: 100,

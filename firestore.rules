@@ -132,6 +132,18 @@ service cloud.firestore {
       allow write: if true;  // Allow public writes for caching
     }
 
+    // Props cache for odds and betting props
+    match /props_cache/{document=**} {
+      allow read: if true;
+      allow write: if true;  // Allow public writes for caching
+    }
+
+    // Team logos cache
+    match /team_logos/{document=**} {
+      allow read: if true;
+      allow write: if true;  // Allow public writes for caching
+    }
+
     // User pools collection - tracks user participation in pools
     match /user_pools/{documentId} {
       allow read: if isAuthenticated();

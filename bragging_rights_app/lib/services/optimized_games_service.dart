@@ -99,21 +99,27 @@ class OptimizedGamesService {
     // Load games from ALL sports with reduced date range for faster startup
     final allGamesMap = <String, List<GameModel>>{};
     
-    // Optimization: Load all sports in parallel instead of sequentially
+    // Optimization: Load all sports in parallel with slight delays to avoid rate limits
     final sportFutures = <Future<MapEntry<String, List<GameModel>>>>[];
-    
-    for (final sport in ALL_SPORTS) {
+
+    for (int i = 0; i < ALL_SPORTS.length; i++) {
+      final sport = ALL_SPORTS[i];
+      // Add 100ms delay between each sport start to reduce API pressure
+      final delay = Duration(milliseconds: i * 100);
+
       sportFutures.add(
-        _loadSportGamesWithRange(sport: sport, daysAhead: INITIAL_DAYS_AHEAD)
-          .then((games) => MapEntry(sport, games))
-          .catchError((e) {
-            debugPrint('❌ Error loading $sport games: $e');
-            return MapEntry(sport, <GameModel>[]);
-          })
+        Future.delayed(delay).then((_) =>
+          _loadSportGamesWithRange(sport: sport, daysAhead: INITIAL_DAYS_AHEAD)
+            .then((games) => MapEntry(sport, games))
+            .catchError((e) {
+              debugPrint('❌ Error loading $sport games: $e');
+              return MapEntry(sport, <GameModel>[]);
+            })
+        )
       );
     }
-    
-    // Wait for all sports to load in parallel
+
+    // Wait for all sports to load in parallel (with staggered starts)
     final results = await Future.wait(sportFutures);
     
     // Process results
@@ -137,11 +143,6 @@ class OptimizedGamesService {
     
     debugPrint('🏆 Loaded ${categorizedGames.length} total featured games across all timeframes');
 
-    // Save to Firestore for offline access (save all games, not just categorized)
-    for (final entry in allGamesMap.entries) {
-      await _saveGamesToFirestore(entry.value, sport: entry.key);
-    }
-
     // Get list of all sports that have games (not just featured)
     final allAvailableSports = allGamesMap.keys
         .where((sport) => allGamesMap[sport]!.isNotEmpty)
@@ -155,12 +156,35 @@ class OptimizedGamesService {
       allGamesFlat.addAll(games);
     });
 
+    // Save to Firestore in parallel WITHOUT blocking the return
+    // This allows UI to update while caching happens in background
+    _saveAllGamesInParallel(allGamesMap);
+
     return {
       'games': categorizedGames,  // Limited featured games for display
       'allGames': allGamesFlat,    // ALL games within 14-day window
       'allGamesMap': allGamesMap,  // Games organized by sport for counting
       'allSports': allAvailableSports,
     };
+  }
+
+  /// Save all sports' games to Firestore in parallel without blocking
+  Future<void> _saveAllGamesInParallel(Map<String, List<GameModel>> allGamesMap) async {
+    if (allGamesMap.isEmpty) return;
+
+    debugPrint('💾 Starting parallel Firestore save for ${allGamesMap.length} sports...');
+
+    // Create futures for all sports
+    final saveFutures = allGamesMap.entries.map((entry) {
+      return _saveGamesToFirestore(entry.value, sport: entry.key)
+          .catchError((e) {
+            debugPrint('❌ Error saving ${entry.key} to Firestore: $e');
+          });
+    }).toList();
+
+    // Wait for all saves to complete in parallel
+    await Future.wait(saveFutures);
+    debugPrint('✅ Parallel Firestore save completed for ${allGamesMap.length} sports');
   }
   
   /// Categorize games by timeframe with user preferences prioritized
@@ -415,7 +439,7 @@ class OptimizedGamesService {
 
     for (final event in scoreboard.events) {
       try {
-        final game = _convertEspnEventToGame(event, 'NFL');
+        final game = await _convertEspnEventToGame(event, 'NFL');
         if (game != null) {
           // Filter out past games - only include games that haven't started yet or are currently live
           if (game.gameTime.isAfter(now) || game.status == 'live') {
@@ -443,7 +467,7 @@ class OptimizedGamesService {
 
     for (final event in scoreboard.events) {
       try {
-        final game = _convertEspnEventToGame(event, 'NBA');
+        final game = await _convertEspnEventToGame(event, 'NBA');
         if (game != null) {
           // Filter out past games - only include games that haven't started yet or are currently live
           if (game.gameTime.isAfter(now) || game.status == 'live') {
@@ -471,7 +495,7 @@ class OptimizedGamesService {
 
     for (final event in scoreboard.events) {
       try {
-        final game = _convertEspnEventToGame(event, 'NHL');
+        final game = await _convertEspnEventToGame(event, 'NHL');
         if (game != null) {
           // Filter out past games - only include games that haven't started yet or are currently live
           if (game.gameTime.isAfter(now) || game.status == 'live') {
@@ -489,6 +513,154 @@ class OptimizedGamesService {
     return games;
   }
 
+  /// NBA game classification result
+  /// Holds classification details for NBA games
+  ({
+    String seasonType,
+    String? seasonLabel,
+    String? exhibitionType,
+  })? _classifyNbaGame(Map<String, dynamic> event, Map<String, dynamic> competition) {
+    try {
+      debugPrint('🏀 [NBA CLASSIFICATION] Starting classification...');
+
+      // Extract season data from ESPN - it's at the EVENT level, not competition
+      final season = event['season'];
+      if (season == null) {
+        debugPrint('🏀 [NBA CLASSIFICATION] ⚠️ No season data found in event');
+        return null;
+      }
+
+      final seasonType = season['type'];
+      debugPrint('🏀 [NBA CLASSIFICATION] ESPN season.type = $seasonType');
+
+      // Default classification
+      String gameSeasonType = 'regularSeason';
+      String? gameSeasonLabel;
+      String? gameExhibitionType;
+
+      // Classify based on ESPN season.type
+      // 1 = Preseason, 2 = Regular Season, 3 = Playoffs
+      if (seasonType == 1) {
+        debugPrint('🏀 [NBA CLASSIFICATION] Detected PRESEASON game');
+        gameSeasonType = 'preseason';
+
+        // Check if this is an exhibition game (non-NBA teams)
+        final competitors = competition['competitors'] ?? [];
+        debugPrint('🏀 [NBA CLASSIFICATION] Checking ${competitors.length} competitors for exhibition status');
+
+        if (competitors.length >= 2) {
+          // Safely find home/away competitors
+          final homeCompetitor = competitors.firstWhere(
+            (c) => c['homeAway'] == 'home',
+            orElse: () => null,
+          );
+          final awayCompetitor = competitors.firstWhere(
+            (c) => c['homeAway'] == 'away',
+            orElse: () => null,
+          );
+
+          // If we couldn't find home/away, skip classification
+          if (homeCompetitor == null || awayCompetitor == null) {
+            debugPrint('🏀 [NBA CLASSIFICATION] ⚠️ Could not determine home/away competitors');
+            return null;
+          }
+
+          final homeTeamId = homeCompetitor['team']?['id'];
+          final awayTeamId = awayCompetitor['team']?['id'];
+
+          // NBA team IDs are in range 1-30
+          // International/G-League teams have IDs > 100000
+          final homeId = int.tryParse(homeTeamId?.toString() ?? '0') ?? 0;
+          final awayId = int.tryParse(awayTeamId?.toString() ?? '0') ?? 0;
+
+          debugPrint('🏀 [NBA CLASSIFICATION] Team IDs - Home: $homeId, Away: $awayId');
+
+          if (homeId > 30 || awayId > 30) {
+            // This is an exhibition game
+            gameExhibitionType = 'International';
+            gameSeasonLabel = 'PRESEASON EXHIBITION';
+            debugPrint('🏀 [NBA CLASSIFICATION] ✨ EXHIBITION game detected (non-NBA team)');
+
+            // Check competition notes for more specific type
+            final notes = competition['notes']?.toString().toLowerCase() ?? '';
+            if (notes.contains('global games')) {
+              gameExhibitionType = 'Global Games';
+              debugPrint('🏀 [NBA CLASSIFICATION] 🌍 Global Games detected');
+            }
+          } else {
+            // Regular NBA preseason game
+            gameSeasonLabel = 'PRESEASON';
+            debugPrint('🏀 [NBA CLASSIFICATION] 🔶 Regular NBA preseason game');
+          }
+        }
+      } else if (seasonType == 3) {
+        debugPrint('🏀 [NBA CLASSIFICATION] Detected PLAYOFFS game');
+        gameSeasonType = 'playoffs';
+        gameSeasonLabel = 'PLAYOFFS';
+      } else if (seasonType == 2) {
+        debugPrint('🏀 [NBA CLASSIFICATION] Detected REGULAR SEASON game');
+        gameSeasonType = 'regularSeason';
+        // No label for regular season (default)
+      }
+
+      debugPrint('🏀 [NBA CLASSIFICATION] ✅ FINAL: seasonType="$gameSeasonType", seasonLabel="$gameSeasonLabel", exhibitionType="$gameExhibitionType"');
+
+      return (
+        seasonType: gameSeasonType,
+        seasonLabel: gameSeasonLabel,
+        exhibitionType: gameExhibitionType,
+      );
+    } catch (e) {
+      debugPrint('🏀 [NBA CLASSIFICATION] ❌ Error: $e');
+      debugPrint('🏀 [NBA CLASSIFICATION] Stack trace: ${StackTrace.current}');
+      return null;
+    }
+  }
+
+  /// Check if odds are available for an NBA game
+  /// Tries both preseason and regular season endpoints
+  /// Returns a Map with 'hasOdds' (bool) and 'sportKey' (String?) or null
+  Future<Map<String, dynamic>?> _checkNbaOddsAvailability({
+    required String homeTeam,
+    required String awayTeam,
+    required DateTime gameDate,
+  }) async {
+    try {
+      debugPrint('🎲 [NBA ODDS CHECK] Starting odds availability check...');
+      debugPrint('🎲 [NBA ODDS CHECK] Game: $awayTeam @ $homeTeam');
+      debugPrint('🎲 [NBA ODDS CHECK] Date: ${gameDate.toLocal()}');
+
+      // Use existing OddsApiService method which checks multiple endpoints
+      final oddsResult = await _oddsApiService.findOddsApiEventId(
+        sport: 'nba',
+        homeTeam: homeTeam,
+        awayTeam: awayTeam,
+        gameDate: gameDate,
+      );
+
+      final hasOdds = oddsResult != null;
+      final sportKey = oddsResult?['sportKey'];
+
+      if (hasOdds) {
+        debugPrint('🎲 [NBA ODDS CHECK] ✅ ODDS AVAILABLE - Event ID: ${oddsResult!['eventId']}, Sport Key: $sportKey');
+      } else {
+        debugPrint('🎲 [NBA ODDS CHECK] ❌ NO ODDS AVAILABLE');
+        debugPrint('🎲 [NBA ODDS CHECK] This likely means:');
+        debugPrint('🎲 [NBA ODDS CHECK]   - Game is too far in the future (>2 weeks)');
+        debugPrint('🎲 [NBA ODDS CHECK]   - Or this is an exhibition game with no betting lines');
+      }
+
+      return {
+        'hasOdds': hasOdds,
+        'sportKey': sportKey,
+      };
+    } catch (e) {
+      debugPrint('🎲 [NBA ODDS CHECK] ❌ Error checking odds: $e');
+      debugPrint('🎲 [NBA ODDS CHECK] Stack trace: ${StackTrace.current}');
+      return null;
+    }
+  }
+
   /// Load MLB games with configurable date range
   Future<List<GameModel>> _loadMlbGamesWithRange({int daysAhead = INITIAL_DAYS_AHEAD}) async {
     final scoreboard = await _mlbService.getGamesForDateRange(daysAhead: daysAhead);
@@ -499,7 +671,7 @@ class OptimizedGamesService {
 
     for (final event in scoreboard.events) {
       try {
-        final game = _convertEspnEventToGame(event, 'MLB');
+        final game = await _convertEspnEventToGame(event, 'MLB');
         if (game != null) {
           // Filter out past games - only include games that haven't started yet or are currently live
           if (game.gameTime.isAfter(now) || game.status == 'live') {
@@ -518,7 +690,7 @@ class OptimizedGamesService {
   }
 
   /// Convert ESPN event to GameModel
-  GameModel? _convertEspnEventToGame(Map<String, dynamic> event, String sport) {
+  Future<GameModel?> _convertEspnEventToGame(Map<String, dynamic> event, String sport) async {
     try {
       // Add detailed logging for MMA events
       if (sport.toUpperCase() == 'MMA') {
@@ -609,6 +781,34 @@ class OptimizedGamesService {
         debugPrint('   Teams: ${awayTeam['team']?['displayName']} @ ${homeTeam['team']?['displayName']}');
       }
 
+      // NBA-specific classification and odds checking
+      String? seasonType;
+      String? seasonLabel;
+      String? exhibitionType;
+      bool? hasOdds;
+      String? oddsApiSportKey; // Declare at function level so it's accessible
+
+      if (sport.toUpperCase() == 'NBA') {
+        final classification = _classifyNbaGame(event, competition);
+        if (classification != null) {
+          seasonType = classification.seasonType;
+          seasonLabel = classification.seasonLabel;
+          exhibitionType = classification.exhibitionType;
+        }
+
+        // Check odds availability for NBA games
+        // Only check for scheduled games (not live or final)
+        if (!isLive && !isFinal) {
+          final oddsCheckResult = await _checkNbaOddsAvailability(
+            homeTeam: homeTeam['team']?['displayName'] ?? 'Home Team',
+            awayTeam: awayTeam['team']?['displayName'] ?? 'Away Team',
+            gameDate: gameTime,
+          );
+          hasOdds = oddsCheckResult?['hasOdds'] ?? false;
+          oddsApiSportKey = oddsCheckResult?['sportKey'];
+        }
+      }
+
       return GameModel(
         id: internalId,
         espnId: espnId, // Store the ESPN ID separately
@@ -625,6 +825,11 @@ class OptimizedGamesService {
         broadcast: competition['broadcasts']?[0]?['names']?[0],
         league: event['league']?['abbreviation'] ?? sport,
         odds: null, // Will be enriched on demand
+        seasonType: seasonType,
+        seasonLabel: seasonLabel,
+        exhibitionType: exhibitionType,
+        hasOdds: hasOdds,
+        oddsApiSportKey: oddsApiSportKey,
       );
     } catch (e, stackTrace) {
       debugPrint('❌ Error converting ESPN event: $e');
@@ -1150,6 +1355,12 @@ class OptimizedGamesService {
       // TEMPORARY: Force cache refresh for MMA to get ESPN IDs
       if (sport.toUpperCase() == 'MMA') {
         debugPrint('⚠️ Bypassing cache for MMA to fetch fresh data with ESPN IDs');
+        return null;
+      }
+
+      // TEMPORARY: Force cache refresh for NBA to enable classification system
+      if (sport.toUpperCase() == 'NBA') {
+        debugPrint('🏀 [NBA CACHE] ⚠️ Bypassing cache to fetch fresh data with season classification');
         return null;
       }
 

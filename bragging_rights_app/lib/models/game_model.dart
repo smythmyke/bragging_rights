@@ -29,6 +29,9 @@ class GameModel {
   // Season metadata (for preseason, playoffs, etc.)
   final String? seasonType; // 'preseason', 'regularSeason', 'playoffs', etc.
   final String? seasonLabel; // 'PRESEASON', 'PLAYOFFS', null for regular season
+  final bool? hasOdds; // true/false - odds available from betting APIs
+  final String? exhibitionType; // 'Global Games', 'International', null for regular games
+  final String? oddsApiSportKey; // The Odds API sport key where event was found (e.g., 'basketball_nba_preseason')
 
   GameModel({
     required this.id,
@@ -57,6 +60,9 @@ class GameModel {
     this.competitions,
     this.seasonType,
     this.seasonLabel,
+    this.hasOdds,
+    this.exhibitionType,
+    this.oddsApiSportKey,
   });
 
   factory GameModel.fromFirestore(DocumentSnapshot doc) {
@@ -103,6 +109,9 @@ class GameModel {
       competitions: data['competitions'] != null ? List<String>.from(data['competitions']) : null,
       seasonType: data['seasonType'],
       seasonLabel: data['seasonLabel'],
+      hasOdds: data['hasOdds'],
+      exhibitionType: data['exhibitionType'],
+      oddsApiSportKey: data['oddsApiSportKey'],
     );
   }
 
@@ -153,6 +162,9 @@ class GameModel {
       'competitions': competitions,
       'seasonType': seasonType,
       'seasonLabel': seasonLabel,
+      'hasOdds': hasOdds,
+      'exhibitionType': exhibitionType,
+      'oddsApiSportKey': oddsApiSportKey,
     };
   }
 
@@ -187,9 +199,12 @@ class GameModel {
       'competitions': competitions,
       'seasonType': seasonType,
       'seasonLabel': seasonLabel,
+      'hasOdds': hasOdds,
+      'exhibitionType': exhibitionType,
+      'oddsApiSportKey': oddsApiSportKey,
     };
   }
-  
+
   factory GameModel.fromMap(Map<String, dynamic> map) {
     // Handle gameTime which could be Timestamp or milliseconds
     DateTime gameTime;
@@ -230,6 +245,9 @@ class GameModel {
       competitions: map['competitions'] != null ? List<String>.from(map['competitions']) : null,
       seasonType: map['seasonType'],
       seasonLabel: map['seasonLabel'],
+      hasOdds: map['hasOdds'],
+      exhibitionType: map['exhibitionType'],
+      oddsApiSportKey: map['oddsApiSportKey'],
     );
   }
   

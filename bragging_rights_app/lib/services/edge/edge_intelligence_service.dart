@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'sports/nba_service.dart';
+import 'sports/espn_nba_service.dart';
 import 'sports/nhl_api_service.dart';
 import 'sports/espn_nhl_service.dart';
 import 'sports/espn_nfl_service.dart';
@@ -17,9 +17,9 @@ import 'event_matcher.dart';
 class EdgeIntelligenceService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final EventMatcher _matcher = EventMatcher();
-  
+
   // Sport-specific services
-  final NbaService _nbaService = NbaService();
+  final EspnNbaService _nbaService = EspnNbaService();
   final NhlApiService _nhlApiService = NhlApiService();
   final EspnNhlService _espnNhlService = EspnNhlService();
   final EspnNflService _espnNflService = EspnNflService();

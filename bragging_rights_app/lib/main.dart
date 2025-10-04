@@ -117,6 +117,7 @@ class BraggingRightsApp extends StatelessWidget {
               poolId: args['poolId']?.toString(),
               gameId: args['gameId']?.toString(),
               gameTime: args['gameTime'] as DateTime?,
+              oddsApiSportKey: args['oddsApiSportKey']?.toString(),
             ),
           );
         } else if (settings.name == '/quick-pick') {

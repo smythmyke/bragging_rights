@@ -21,6 +21,12 @@ class EnhancedGameModel {
   final String? round; // For tournament sports
   final Map<String, dynamic>? metadata; // Sport-specific data
 
+  // NBA season classification fields
+  final String? seasonType; // 'preseason', 'regularSeason', 'playoffs'
+  final String? seasonLabel; // 'PRESEASON', 'PLAYOFFS', 'PRESEASON EXHIBITION', null for regular
+  final String? exhibitionType; // 'International', 'Global Games', null for normal games
+  final bool? hasOdds; // true/false - odds available from betting APIs
+
   EnhancedGameModel({
     required this.id,
     required this.sport,
@@ -39,6 +45,10 @@ class EnhancedGameModel {
     this.tournament,
     this.round,
     this.metadata,
+    this.seasonType,
+    this.seasonLabel,
+    this.exhibitionType,
+    this.hasOdds,
   });
 
   /// Create from legacy GameModel
@@ -99,7 +109,7 @@ class EnhancedGameModel {
       sport: sport,
       homeParticipant: homeParticipant,
       awayParticipant: awayParticipant,
-      gameTime: data['gameTime'] is Timestamp 
+      gameTime: data['gameTime'] is Timestamp
         ? (data['gameTime'] as Timestamp).toDate()
         : DateTime.parse(data['gameTime'].toString()),
       status: data['status'] ?? 'scheduled',
@@ -114,6 +124,10 @@ class EnhancedGameModel {
       tournament: data['tournament'],
       round: data['round'],
       metadata: data['metadata'],
+      seasonType: data['seasonType'],
+      seasonLabel: data['seasonLabel'],
+      exhibitionType: data['exhibitionType'],
+      hasOdds: data['hasOdds'],
     );
   }
 

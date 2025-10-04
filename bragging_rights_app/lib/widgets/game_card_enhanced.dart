@@ -95,10 +95,10 @@ class GameCardEnhanced extends StatelessWidget {
 
   Widget _buildHeader(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Row(
       children: [
-        // Sport badge
+        // 1. Sport badge
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -116,8 +116,20 @@ class GameCardEnhanced extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        
-        // Competition info
+
+        // 2. Season badge (NEW)
+        if (game.seasonLabel != null) ...[
+          _buildSeasonBadge(game.seasonLabel!),
+          const SizedBox(width: 8),
+        ],
+
+        // 3. Exhibition badge (NEW)
+        if (game.exhibitionType != null) ...[
+          _buildExhibitionBadge(),
+          const SizedBox(width: 8),
+        ],
+
+        // Competition info (Spacer)
         if (game.competitionDisplay != null) ...[
           Expanded(
             child: Text(
@@ -127,8 +139,14 @@ class GameCardEnhanced extends StatelessWidget {
             ),
           ),
         ],
-        
-        // Status badge
+
+        // 4. Betting type badge (NEW)
+        if (game.hasOdds != null) ...[
+          _buildBettingTypeBadge(),
+          const SizedBox(width: 8),
+        ],
+
+        // 5. Status badge (LIVE)
         if (game.isLive) ...[
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -520,5 +538,101 @@ class GameCardEnhanced extends StatelessWidget {
     } else {
       return DateFormat('MMM d, h:mm a').format(time);
     }
+  }
+
+  /// Build season badge (PRESEASON, PLAYOFFS, etc.)
+  Widget _buildSeasonBadge(String label) {
+    final color = _getSeasonColor(label);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  /// Get color for season label
+  Color _getSeasonColor(String label) {
+    switch (label.toUpperCase()) {
+      case 'PRESEASON':
+        return const Color(0xFFFF9500); // Orange
+      case 'PRESEASON EXHIBITION':
+        return const Color(0xFF9B59B6); // Purple
+      case 'PLAYOFFS':
+        return const Color(0xFFFFD700); // Gold
+      default:
+        return Colors.grey;
+    }
+  }
+
+  /// Build exhibition badge
+  Widget _buildExhibitionBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF9B59B6).withOpacity(0.2), // Purple
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFF9B59B6)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          Icon(Icons.public, size: 12, color: Color(0xFF9B59B6)),
+          SizedBox(width: 4),
+          Text(
+            'EXHIBITION',
+            style: TextStyle(
+              color: Color(0xFF9B59B6),
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build betting type badge (Simple Pick vs normal odds)
+  Widget _buildBettingTypeBadge() {
+    if (game.hasOdds == false) {
+      // Simple Pick mode
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFF3498DB).withOpacity(0.2), // Blue
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFF3498DB)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.check_circle_outline, size: 12, color: Color(0xFF3498DB)),
+            SizedBox(width: 4),
+            Text(
+              'SIMPLE PICK',
+              style: TextStyle(
+                color: Color(0xFF3498DB),
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Don't show badge for normal odds-based games
+    return const SizedBox.shrink();
   }
 }

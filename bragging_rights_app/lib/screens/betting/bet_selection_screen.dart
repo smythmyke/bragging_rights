@@ -29,6 +29,7 @@ class BetSelectionScreen extends StatefulWidget {
   final String? poolId;
   final String? gameId;
   final DateTime? gameTime;
+  final String? oddsApiSportKey; // The Odds API sport key where event was found
 
   const BetSelectionScreen({
     super.key,
@@ -38,6 +39,7 @@ class BetSelectionScreen extends StatefulWidget {
     this.poolId,
     this.gameId,
     this.gameTime,
+    this.oddsApiSportKey,
   });
 
   @override
@@ -124,11 +126,13 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     super.initState();
     try {
       print('=== BET SELECTION SCREEN INIT ===');
-      print('Game Title: ${widget.gameTitle}');
-      print('Sport: ${widget.sport}');
-      print('Pool Name: ${widget.poolName}');
-      print('Pool ID: ${widget.poolId}');
-      print('Game ID: ${widget.gameId}');
+      print('🔍 Received Arguments:');
+      print('   - Game Title: ${widget.gameTitle} (type: ${widget.gameTitle.runtimeType})');
+      print('   - Sport: ${widget.sport} (type: ${widget.sport.runtimeType})');
+      print('   - Pool Name: ${widget.poolName} (type: ${widget.poolName.runtimeType})');
+      print('   - Pool ID: ${widget.poolId} (type: ${widget.poolId.runtimeType}, isNull: ${widget.poolId == null})');
+      print('   - Game ID: ${widget.gameId} (type: ${widget.gameId.runtimeType}, isNull: ${widget.gameId == null})');
+      print('   - Game Time: ${widget.gameTime} (type: ${widget.gameTime.runtimeType}, isNull: ${widget.gameTime == null})');
       print('================================');
 
       _betTypeController = _getSportSpecificTabController();
@@ -187,14 +191,14 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         if (widget.gameId?.contains('-') == false && _homeTeam != null && _awayTeam != null) {
           print('[BetSelection] ESPN ID detected, finding Odds API event ID for $_awayTeam @ $_homeTeam');
           print('[BetSelection] Game date: ${widget.gameTime?.toIso8601String() ?? "unknown"}');
-          final oddsApiEventId = await _oddsApiService.findOddsApiEventId(
+          final oddsApiResult = await _oddsApiService.findOddsApiEventId(
             sport: widget.sport.toLowerCase(),  // Ensure sport is lowercase for API
             homeTeam: _homeTeam!,
             awayTeam: _awayTeam!,
             gameDate: widget.gameTime,  // Pass game date for multi-endpoint support
           );
-          if (oddsApiEventId != null) {
-            eventIdToUse = oddsApiEventId;
+          if (oddsApiResult != null) {
+            eventIdToUse = oddsApiResult['eventId']!;
             print('[BetSelection] Found Odds API event ID: $eventIdToUse');
           } else {
             print('[BetSelection] WARNING: Could not find matching Odds API event ID, will try with ESPN ID');
@@ -207,6 +211,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
           eventId: eventIdToUse,
           includeProps: true,  // Include props for complete data
           includeAlternates: true,
+          sportKey: widget.oddsApiSportKey, // Use stored sport key if available
         );
         
         print('[BetSelection] API Response: ${eventOdds != null ? "Success" : "Null"}');
@@ -1829,14 +1834,14 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       
       if (_homeTeam != null && _awayTeam != null) {
         print('[BetSelection] Finding Odds API event ID for: $_homeTeam vs $_awayTeam');
-        final foundEventId = await _oddsApiService.findOddsApiEventId(
+        final foundEventResult = await _oddsApiService.findOddsApiEventId(
           sport: widget.sport.toLowerCase(),  // Ensure sport is lowercase for API
           homeTeam: _homeTeam!,
           awayTeam: _awayTeam!,
         );
-        
-        if (foundEventId != null) {
-          oddsApiEventId = foundEventId;
+
+        if (foundEventResult != null) {
+          oddsApiEventId = foundEventResult['eventId'];
           print('[BetSelection] Using Odds API event ID: $oddsApiEventId');
         } else {
           print('[BetSelection] Could not find matching Odds API event');
@@ -1849,6 +1854,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         eventId: oddsApiEventId!,
         includeProps: true,
         includeAlternates: true,
+        sportKey: widget.oddsApiSportKey, // Use stored sport key if available
       );
       
       print('[BetSelection] Props response: ${eventOdds != null ? "Success" : "Null"}');

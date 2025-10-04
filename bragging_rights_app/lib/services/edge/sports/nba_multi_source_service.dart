@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'nba_service.dart';
 import 'espn_nba_service.dart';
 import 'balldontlie_service.dart';
 import '../api_gateway.dart';
@@ -11,18 +10,16 @@ import '../event_matcher.dart';
 class NbaMultiSourceService {
   final EdgeCacheService _cache = EdgeCacheService();
   final EventMatcher _matcher = EventMatcher();
-  
-  // Primary sources (unlimited/high limit)
+
+  // Primary source (unlimited/high limit)
   final EspnNbaService _espnService = EspnNbaService();
-  final NbaService _officialNbaService = NbaService(); // NBA Stats API
-  
+
   // Secondary source (rate limited: 60 req/min)
   final BalldontlieService _balldontlieService = BalldontlieService();
-  
+
   // Track API health and failures
   final Map<String, ApiHealth> _apiHealth = {
     'espn': ApiHealth('ESPN NBA'),
-    'official': ApiHealth('NBA Stats API'),
     'balldontlie': ApiHealth('Balldontlie', rateLimit: 60),
   };
   
@@ -41,10 +38,10 @@ class NbaMultiSourceService {
         return cached;
       }
     }
-    
-    // Priority order: ESPN > Official NBA > Balldontlie
+
+    // Priority order: ESPN > Balldontlie
     Map<String, dynamic>? gameData;
-    
+
     // Try ESPN first (most reliable, unlimited)
     if (_apiHealth['espn']!.isHealthy) {
       gameData = await _tryEspnData(gameId, homeTeam, awayTeam);
@@ -53,18 +50,9 @@ class NbaMultiSourceService {
         return gameData;
       }
     }
-    
-    // Try Official NBA API (unlimited, authoritative)
-    if (_apiHealth['official']!.isHealthy) {
-      gameData = await _tryOfficialNbaData(gameId, homeTeam, awayTeam);
-      if (gameData != null) {
-        await _cacheGameData(gameId, gameData, 'official');
-        return gameData;
-      }
-    }
-    
-    // Try Balldontlie as last resort (rate limited)
-    if (_apiHealth['balldontlie']!.isHealthy && 
+
+    // Try Balldontlie as fallback (rate limited)
+    if (_apiHealth['balldontlie']!.isHealthy &&
         _apiHealth['balldontlie']!.canMakeRequest()) {
       gameData = await _tryBalldontlieData(gameId);
       if (gameData != null) {
@@ -72,7 +60,7 @@ class NbaMultiSourceService {
         return gameData;
       }
     }
-    
+
     debugPrint('❌ All NBA data sources failed');
     return null;
   }
@@ -82,27 +70,8 @@ class NbaMultiSourceService {
     required String playerId,
     String? season,
   }) async {
-    // Try Official NBA API first (most detailed)
-    if (_apiHealth['official']!.isHealthy) {
-      try {
-        // NBA Stats API returns all players, need to filter
-        final allStats = await _officialNbaService.getPlayerStats(
-          season: season ?? '2024-25',
-        );
-        // For now, return null as we'd need to filter by player
-        final stats = null;
-        if (stats != null) {
-          _apiHealth['official']!.recordSuccess();
-          return stats;
-        }
-      } catch (e) {
-        _apiHealth['official']!.recordFailure();
-        debugPrint('Official NBA API failed: $e');
-      }
-    }
-    
-    // Try Balldontlie
-    if (_apiHealth['balldontlie']!.isHealthy && 
+    // Try Balldontlie (only source for player stats now)
+    if (_apiHealth['balldontlie']!.isHealthy &&
         _apiHealth['balldontlie']!.canMakeRequest()) {
       try {
         final averages = await _balldontlieService.getSeasonAverages(
@@ -119,7 +88,7 @@ class NbaMultiSourceService {
         debugPrint('Balldontlie API failed: $e');
       }
     }
-    
+
     return null;
   }
   
@@ -159,24 +128,10 @@ class NbaMultiSourceService {
   
   /// Get team statistics with fallback
   Future<Map<String, dynamic>?> getTeamStats(String teamId) async {
-    // Try Official NBA API
-    if (_apiHealth['official']!.isHealthy) {
-      try {
-        // NBA Stats API doesn't have team-specific method
-        final stats = null;
-        if (stats != null) {
-          _apiHealth['official']!.recordSuccess();
-          return stats;
-        }
-      } catch (e) {
-        _apiHealth['official']!.recordFailure();
-      }
-    }
-    
     // Try ESPN
     if (_apiHealth['espn']!.isHealthy) {
       try {
-        // ESPN NBA Service doesn't have getTeamStatistics method
+        // ESPN NBA Service doesn't have getTeamStatistics method yet
         final stats = null;
         if (stats != null) {
           _apiHealth['espn']!.recordSuccess();
@@ -186,7 +141,7 @@ class NbaMultiSourceService {
         _apiHealth['espn']!.recordFailure();
       }
     }
-    
+
     return null;
   }
   
@@ -242,30 +197,6 @@ class NbaMultiSourceService {
     } catch (e) {
       _apiHealth['espn']!.recordFailure();
       debugPrint('ESPN NBA error: $e');
-      return null;
-    }
-  }
-  
-  Future<Map<String, dynamic>?> _tryOfficialNbaData(
-    String gameId,
-    String homeTeam,
-    String awayTeam,
-  ) async {
-    try {
-      debugPrint('🏀 Trying Official NBA Stats API...');
-      // NBA Stats API doesn't have game details method
-      final gameData = null;
-      
-      if (gameData != null) {
-        _apiHealth['official']!.recordSuccess();
-        return gameData;
-      }
-      
-      _apiHealth['official']!.recordFailure();
-      return null;
-    } catch (e) {
-      _apiHealth['official']!.recordFailure();
-      debugPrint('Official NBA API error: $e');
       return null;
     }
   }

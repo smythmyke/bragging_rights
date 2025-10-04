@@ -84,7 +84,7 @@ class OddsApiService {
 
   /// Get all applicable endpoints for a sport
   /// Returns endpoints sorted by priority (preseason first, then regular season)
-  /// If gameDate is provided, filters to only endpoints applicable to that date
+  /// For NBA, always checks both preseason and regular season endpoints
   List<SportEndpoint> _getEndpointsForSport(String sport, {DateTime? gameDate}) {
     final endpoints = _sportEndpoints[sport.toLowerCase()];
 
@@ -105,7 +105,19 @@ class OddsApiService {
       return [];
     }
 
-    // Filter by date if provided
+    // For NBA and sports with null dateRange, check all endpoints
+    // This handles preseason/regular season transitions without hard-coded dates
+    final hasDateRanges = endpoints.any((e) => e.dateRange != null);
+
+    if (!hasDateRanges || gameDate == null) {
+      // Return all endpoints sorted by priority
+      final sorted = List<SportEndpoint>.from(endpoints);
+      sorted.sort((a, b) => a.priority.compareTo(b.priority));
+      debugPrint('📅 Checking all ${sorted.length} endpoints for $sport: ${sorted.map((e) => e.key).join(", ")}');
+      return sorted;
+    }
+
+    // Filter by date if date ranges are configured
     if (gameDate != null) {
       final filtered = endpoints.where((e) => e.appliesToDate(gameDate)).toList();
       if (filtered.isNotEmpty) {
@@ -152,20 +164,14 @@ class OddsApiService {
         type: SportSeasonType.preseason,
         priority: 1, // Check preseason first
         label: 'PRESEASON',
-        dateRange: DateRange(
-          start: DateTime(2025, 10, 1),
-          end: DateTime(2025, 10, 15),
-        ),
+        dateRange: null, // No date filtering - check both endpoints
       ),
       SportEndpoint(
         key: 'basketball_nba',
         type: SportSeasonType.regularSeason,
         priority: 2, // Check regular season second
         label: null, // No badge for regular season
-        dateRange: DateRange(
-          start: DateTime(2025, 10, 15),
-          end: DateTime(2026, 6, 30),
-        ),
+        dateRange: null, // No date filtering - check both endpoints
       ),
     ],
   };
@@ -621,6 +627,7 @@ class OddsApiService {
     required String eventId,
     bool includeProps = true,
     bool includeAlternates = true,
+    String? sportKey, // Optional: Override sport key (e.g., 'basketball_nba_preseason')
   }) async {
     // Ensure initialization
     await ensureInitialized();
@@ -687,11 +694,11 @@ class OddsApiService {
         markets.addAll(['alternate_spreads', 'alternate_totals']);
       }
       
-      // Get sport key
-      String sportKey = _sportKeys[sport.toLowerCase()] ?? sport;
+      // Get sport key - use provided sportKey or lookup from sport name
+      String finalSportKey = sportKey ?? _sportKeys[sport.toLowerCase()] ?? sport;
       
       // Build URL for event-specific endpoint
-      final url = '$_baseUrl/sports/$sportKey/events/$eventId/odds?'
+      final url = '$_baseUrl/sports/$finalSportKey/events/$eventId/odds?'
           'apiKey=$_apiKey'
           '&regions=us'
           '&markets=${markets.join(',')}'
@@ -818,7 +825,17 @@ class OddsApiService {
 
         return data.cast<Map<String, dynamic>>();
       }
-      
+
+      // Handle rate limiting (422 or 429)
+      if (response.statusCode == 422 || response.statusCode == 429) {
+        debugPrint('⚠️ Rate limit or invalid request for $sportKey (${response.statusCode})');
+        debugPrint('   This usually means:');
+        debugPrint('   - 422: Too many requests or invalid sport key');
+        debugPrint('   - 429: Rate limit exceeded');
+        debugPrint('   Returning null to trigger fallback to ESPN');
+        return null;
+      }
+
       debugPrint('❌ Failed to get events: ${response.statusCode}');
       return null;
       
@@ -956,7 +973,9 @@ class OddsApiService {
   
   /// Find The Odds API event ID by matching team names
   /// Now supports multi-endpoint search for preseason, regular season, etc.
-  Future<String?> findOddsApiEventId({
+  /// Find The Odds API event ID for a game
+  /// Returns a Map with 'eventId' and 'sportKey' or null if not found
+  Future<Map<String, String>?> findOddsApiEventId({
     required String sport,
     required String homeTeam,
     required String awayTeam,
@@ -996,6 +1015,14 @@ class OddsApiService {
         final normalizedHome = _normalizeTeamName(homeTeam);
         final normalizedAway = _normalizeTeamName(awayTeam);
 
+        debugPrint('   🔍 Looking for: "$normalizedAway" (away) @ "$normalizedHome" (home)');
+        debugPrint('   📋 Sample events in ${endpoint.key}:');
+        for (int i = 0; i < events.length.clamp(0, 3); i++) {
+          final sampleHome = events[i]['home_team'] ?? '';
+          final sampleAway = events[i]['away_team'] ?? '';
+          debugPrint('      ${i + 1}. $sampleAway @ $sampleHome');
+        }
+
         // Search for matching game
         for (final event in events) {
           final apiHome = event['home_team'] ?? '';
@@ -1007,11 +1034,18 @@ class OddsApiService {
           final homeMatches = _teamsMatch(eventHome, normalizedHome, sport);
           final awayMatches = _teamsMatch(eventAway, normalizedAway, sport);
 
+          debugPrint('   🔎 Comparing: "$eventAway" @ "$eventHome" vs "$normalizedAway" @ "$normalizedHome"');
+          debugPrint('      Home match: $homeMatches, Away match: $awayMatches');
+
           if (homeMatches && awayMatches) {
             debugPrint('   ✅ Found matching event in ${endpoint.key}!');
             debugPrint('      Event ID: ${event['id']}');
+            debugPrint('      Sport Key: ${endpoint.key}');
             debugPrint('      Teams: $apiAway @ $apiHome');
-            return event['id'];
+            return {
+              'eventId': event['id'],
+              'sportKey': endpoint.key,
+            };
           }
         }
 

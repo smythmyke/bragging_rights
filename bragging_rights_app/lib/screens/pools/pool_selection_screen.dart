@@ -36,6 +36,8 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
   Duration _poolCloseCountdown = const Duration(minutes: 15, seconds: 30);
   late String gameId;
   bool _isLoadingOdds = false;
+  String? _oddsApiSportKey; // Store the odds API sport key from Firestore
+  DateTime? _gameTime; // Store the game time from Firestore
   
   // Cache wallet balance to prevent flickering
   int? _cachedBalance;
@@ -150,13 +152,36 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
   dynamic _reconstructGameModel(DocumentSnapshot doc) {
     try {
       final data = doc.data() as Map<String, dynamic>;
+
+      // Store oddsApiSportKey and gameTime if available
+      if (data['oddsApiSportKey'] != null) {
+        setState(() {
+          _oddsApiSportKey = data['oddsApiSportKey'] as String?;
+        });
+        debugPrint('📍 Loaded oddsApiSportKey from Firestore: $_oddsApiSportKey');
+      }
+
+      // Store gameTime
+      final gameTime = data['gameTime'] is Timestamp
+          ? (data['gameTime'] as Timestamp).toDate()
+          : data['gameTime'] is int
+            ? DateTime.fromMillisecondsSinceEpoch(data['gameTime'])
+            : null;
+
+      if (gameTime != null) {
+        setState(() {
+          _gameTime = gameTime;
+        });
+        debugPrint('📍 Loaded gameTime from Firestore: $_gameTime');
+      }
+
       // Import GameModel if needed
       return GameModel(
         id: doc.id,
         sport: data['sport'] ?? widget.sport,
         homeTeam: data['homeTeam'] ?? '',
         awayTeam: data['awayTeam'] ?? '',
-        gameTime: data['gameTime'] is Timestamp 
+        gameTime: data['gameTime'] is Timestamp
           ? (data['gameTime'] as Timestamp).toDate()
           : data['gameTime'] is int
             ? DateTime.fromMillisecondsSinceEpoch(data['gameTime'])
@@ -165,6 +190,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
         homeScore: data['homeScore'],
         awayScore: data['awayScore'],
         venue: data['venue'],
+        oddsApiSportKey: data['oddsApiSportKey'] as String?,
       );
     } catch (e) {
       debugPrint('Error reconstructing game model: $e');
@@ -238,15 +264,16 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
   @override
   void dispose() {
     debugPrint('=== POOL SELECTION SCREEN DISPOSING ===');
-    debugPrint('Tab controller: ${_tabController}');
-    debugPrint('Countdown timer: ${_countdownTimer}');
-    debugPrint('Balance subscription: ${_balanceSubscription}');
-    
+    debugPrint('    Called from: ${StackTrace.current}');
+    debugPrint('    Tab controller: ${_tabController}');
+    debugPrint('    Countdown timer: ${_countdownTimer}');
+    debugPrint('    Balance subscription: ${_balanceSubscription}');
+
     _tabController.dispose();
     _countdownTimer?.cancel();
     _balanceSubscription?.cancel();
     super.dispose();
-    
+
     debugPrint('=== POOL SELECTION SCREEN DISPOSED ===');
   }
 
@@ -1121,6 +1148,8 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
           'gameTitle': widget.gameTitle,
           'sport': widget.sport,
           'poolId': poolId,
+          'gameTime': _gameTime,
+          'oddsApiSportKey': _oddsApiSportKey,
         },
       );
     }
@@ -1175,6 +1204,8 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
               'sport': widget.sport,
               'poolName': poolName,
               'poolId': poolId,
+              'gameTime': _gameTime,
+              'oddsApiSportKey': _oddsApiSportKey,
             },
           );
         }
@@ -1253,59 +1284,121 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
                         // Actually join the pool
                         print('[POOL JOIN] Calling pool service to join pool ID: $poolId');
                         final result = await _poolService.joinPoolWithResult(poolId, buyIn);
-                        
-                        // Hide loading - Use root navigator to ensure we pop the dialog
-                        if (mounted) {
-                          Navigator.of(context, rootNavigator: true).pop();
+
+                        print('[POOL JOIN] Got result from pool service: $result');
+                        print('[POOL JOIN] Result type: ${result.runtimeType}');
+                        print('[POOL JOIN] Result success value: ${result['success']}');
+
+                        // Check if widget is still mounted before continuing
+                        if (!mounted) {
+                          print('[POOL JOIN] Widget unmounted after pool join, aborting');
+                          return;
                         }
-                        
+
+                        // Hide loading - Use root navigator to ensure we pop the dialog
+                        Navigator.of(context, rootNavigator: true).pop();
+
+                        print('[POOL JOIN] Dialog popped, checking result...');
+
                         // Check if result is null
                         if (result == null) {
                           throw Exception('Failed to get response from pool service');
                         }
-                        
+
+                        print('[POOL JOIN] Result is not null, checking success field...');
+
                         if (result['success'] == true) {
                           print('[POOL JOIN] ✅ Successfully joined pool!');
-                          print('[POOL JOIN] Navigating to bet selection screen...');
+                          print('[POOL JOIN] mounted before _loadBalance: $mounted');
 
                           // Update balance and pool status after successful join
                           _loadBalance();
+                          print('[POOL JOIN] mounted after _loadBalance: $mounted');
+
                           await _loadUserPoolStatus();
+                          print('[POOL JOIN] mounted after _loadUserPoolStatus: $mounted');
 
                           // Check if widget is still mounted after async operation
                           if (!mounted) {
-                            print('[POOL JOIN] Widget disposed during pool status load, aborting navigation');
+                            print('[POOL JOIN] ⚠️ Widget was DISPOSED during _loadUserPoolStatus!');
+                            print('[POOL JOIN] This means another navigation/disposal occurred');
                             return;
                           }
 
+                          print('[POOL JOIN] ✅ Widget still mounted, proceeding with navigation...');
+                          print('[POOL JOIN] DEBUG - widget.gameId: ${widget.gameId}');
+                          print('[POOL JOIN] DEBUG - this.gameId: $gameId');
+                          print('[POOL JOIN] DEBUG - widget.sport: ${widget.sport}');
+                          print('[POOL JOIN] DEBUG - widget.gameTitle: ${widget.gameTitle}');
+                          print('[POOL JOIN] DEBUG - poolName: $poolName');
+                          print('[POOL JOIN] DEBUG - poolId: $poolId');
+
+                          print('[POOL JOIN] About to check combat sport type...');
+                          print('[POOL JOIN] 🔍 Pre-navigation variable check:');
+                          print('[POOL JOIN]    - gameId: $gameId (type: ${gameId.runtimeType})');
+                          print('[POOL JOIN]    - widget.gameTitle: ${widget.gameTitle} (type: ${widget.gameTitle.runtimeType})');
+                          print('[POOL JOIN]    - widget.sport: ${widget.sport} (type: ${widget.sport.runtimeType})');
+                          print('[POOL JOIN]    - poolName: $poolName (type: ${poolName.runtimeType})');
+                          print('[POOL JOIN]    - poolId: $poolId (type: ${poolId.runtimeType})');
+                          print('[POOL JOIN]    - context mounted: $mounted');
+
                           // Check if this is a combat sport
                           if (SportUtils.isCombatSport(widget.sport)) {
+                            print('[POOL JOIN] Combat sport detected, preparing navigation arguments...');
+
+                            final fightCardArgs = {
+                              'gameId': gameId,
+                              'gameTitle': widget.gameTitle,
+                              'sport': widget.sport,
+                              'poolName': poolName,
+                              'poolId': poolId,
+                            };
+                            print('[POOL JOIN] 📦 Fight card arguments prepared: $fightCardArgs');
+
                             // Navigate to fight card grid for combat sports
-                            Navigator.pushNamed(
-                              context,
-                              '/fight-card-grid',
-                              arguments: {
-                                'gameId': gameId,  // Use the already initialized gameId (fixes boxing null issue)
-                                'gameTitle': widget.gameTitle,
-                                'sport': widget.sport,
-                                'poolName': poolName,
-                                'poolId': poolId,
-                              },
-                            );
+                            print('[POOL JOIN] 🚀 About to navigate to /fight-card-grid...');
+                            try {
+                              Navigator.pushNamed(
+                                context,
+                                '/fight-card-grid',
+                                arguments: fightCardArgs,
+                              );
+                              print('[POOL JOIN] ✅ Navigator.pushNamed called for fight-card-grid');
+                            } catch (navError, navStack) {
+                              print('[POOL JOIN] ❌ Error during navigation to fight-card-grid: $navError');
+                              print('[POOL JOIN] Navigation stack: $navStack');
+                              rethrow;
+                            }
                           } else {
+                            print('[POOL JOIN] Team sport detected, preparing navigation arguments...');
+
+                            final betSelectionArgs = {
+                              'gameId': gameId,
+                              'gameTitle': widget.gameTitle,
+                              'sport': widget.sport,
+                              'poolName': poolName,
+                              'poolId': poolId,
+                              'gameTime': _gameTime,
+                              'oddsApiSportKey': _oddsApiSportKey,
+                            };
+                            print('[POOL JOIN] 📦 Bet selection arguments prepared: $betSelectionArgs');
+
                             // Navigate to standard bet selection for team sports
-                            Navigator.pushNamed(
-                              context,
-                              '/bet-selection',
-                              arguments: {
-                                'gameId': gameId,  // Use the already initialized gameId
-                                'gameTitle': widget.gameTitle,
-                                'sport': widget.sport,
-                                'poolName': poolName,
-                                'poolId': poolId,
-                              },
-                            );
+                            print('[POOL JOIN] 🚀 About to navigate to /bet-selection...');
+                            try {
+                              Navigator.pushNamed(
+                                context,
+                                '/bet-selection',
+                                arguments: betSelectionArgs,
+                              );
+                              print('[POOL JOIN] ✅ Navigator.pushNamed called for bet-selection');
+                            } catch (navError, navStack) {
+                              print('[POOL JOIN] ❌ Error during navigation to bet-selection: $navError');
+                              print('[POOL JOIN] Navigation stack: $navStack');
+                              rethrow;
+                            }
                           }
+                          print('[POOL JOIN] Navigation completed successfully');
                         } else {
                           final errorCode = result['code'] ?? 'UNKNOWN_ERROR';
                           final errorMessage = result['message'] ?? 'Failed to join pool';
