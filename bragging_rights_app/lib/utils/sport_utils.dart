@@ -21,7 +21,9 @@ class SportUtils {
   /// All supported team sports
   static const List<String> teamSports = [
     'NFL',
-    'NBA', 
+    'NCAAF',
+    'NBA',
+    'NCAAB',
     'NHL',
     'MLB',
     'FOOTBALL',

@@ -174,6 +174,22 @@ class OddsApiService {
         dateRange: null, // No date filtering - check both endpoints
       ),
     ],
+    'nhl': [
+      SportEndpoint(
+        key: 'icehockey_nhl_preseason',
+        type: SportSeasonType.preseason,
+        priority: 1, // Check preseason first
+        label: 'PRESEASON',
+        dateRange: null, // No date filtering - check both endpoints
+      ),
+      SportEndpoint(
+        key: 'icehockey_nhl',
+        type: SportSeasonType.regularSeason,
+        priority: 2, // Check regular season second
+        label: null, // No badge for regular season
+        dateRange: null, // No date filtering - check both endpoints
+      ),
+    ],
   };
 
   // Tennis tournament keys

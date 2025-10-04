@@ -115,14 +115,28 @@ class GameModel {
     );
   }
 
+  // Check if this is a college sport
+  bool get isCollegeSport => sport.toUpperCase() == 'NCAAF' || sport.toUpperCase() == 'NCAAB';
+
+  // Get the parent sport category (NCAAF -> NFL, NCAAB -> NBA)
+  String get sportCategory {
+    final sportUpper = sport.toUpperCase();
+    if (sportUpper == 'NCAAF') return 'NFL';
+    if (sportUpper == 'NCAAB') return 'NBA';
+    return sportUpper;
+  }
+
+  // Get display name for the sport
+  String get sportDisplayName => isCollegeSport ? 'COLLEGE' : sport.toUpperCase();
+
   // Check if this is an individual sport
   bool get isIndividualSport => isCombatSport || ['UFC', 'BELLATOR', 'PFL', 'BOXING', 'TENNIS', 'GOLF'].contains(sport.toUpperCase());
-  
+
   String get gameTitle => isIndividualSport ? '$awayTeam vs $homeTeam' : '$awayTeam @ $homeTeam';
-  String get shortTitle => isIndividualSport 
+  String get shortTitle => isIndividualSport
     ? '${_getNameAbbr(awayTeam)} vs ${_getNameAbbr(homeTeam)}'
     : '${_getTeamAbbr(awayTeam)} @ ${_getTeamAbbr(homeTeam)}';
-  
+
   bool get isLive => status == 'live';
   bool get isFinal => status == 'final';
   bool get isScheduled => status == 'scheduled';

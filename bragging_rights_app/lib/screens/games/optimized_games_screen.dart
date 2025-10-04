@@ -97,6 +97,7 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
 
       // Always show ALL supported sports, regardless of whether they have games
       // This ensures Boxing and other sports are always visible
+      // Note: NCAAF and NCAAB are merged with NFL/NBA respectively, so don't show them separately
       _availableSports = ['nfl', 'nba', 'nhl', 'mlb', 'boxing', 'mma', 'soccer'];
       debugPrint('OptimizedGamesScreen: Available sports: $_availableSports (showing all supported sports)');
       
@@ -183,13 +184,31 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
     try {
       debugPrint('Loading ALL games for $sport...');
 
+      // Determine if we need to load college games too
+      String? collegeSport;
+      if (sport.toLowerCase() == 'nfl') {
+        collegeSport = 'ncaaf';
+      } else if (sport.toLowerCase() == 'nba') {
+        collegeSport = 'ncaab';
+      }
+
       // First check if we have the full list in _allGamesBySport
       if (_allGamesBySport[sport] != null && _allGamesBySport[sport]!.isNotEmpty) {
         // Use the cached full list from initial load
         debugPrint('Using cached full list for $sport: ${_allGamesBySport[sport]!.length} games');
+
+        // Also check for college games cache
+        List<GameModel> mergedGames = List.from(_allGamesBySport[sport]!);
+        if (collegeSport != null && _allGamesBySport[collegeSport] != null) {
+          debugPrint('Merging ${_allGamesBySport[collegeSport]!.length} $collegeSport games with $sport');
+          mergedGames.addAll(_allGamesBySport[collegeSport]!);
+          // Sort by game time
+          mergedGames.sort((a, b) => a.gameTime.compareTo(b.gameTime));
+        }
+
         if (mounted) {
           setState(() {
-            _gamesBySport[sport] = _allGamesBySport[sport]!;
+            _gamesBySport[sport] = mergedGames;
             _loadingMore = false;
           });
         }
@@ -199,14 +218,35 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
       // Otherwise load ALL games for this sport (still within 14-day window from the service)
       final allGames = await _gamesService.loadAllGamesForSport(sport);
 
+      // Load college games if applicable
+      List<GameModel> mergedGames = List.from(allGames);
+      if (collegeSport != null) {
+        try {
+          debugPrint('Loading college games for $collegeSport...');
+          final collegeGames = await _gamesService.loadAllGamesForSport(collegeSport);
+          debugPrint('Loaded ${collegeGames.length} $collegeSport games');
+          mergedGames.addAll(collegeGames);
+          // Sort by game time
+          mergedGames.sort((a, b) => a.gameTime.compareTo(b.gameTime));
+        } catch (e) {
+          debugPrint('Error loading college games for $collegeSport: $e');
+          // Continue with just professional games
+        }
+      }
+
       if (mounted) {
         setState(() {
-          _gamesBySport[sport] = allGames;
-          _allGamesBySport[sport] = allGames;  // Also update the full list
+          _gamesBySport[sport] = mergedGames;
+          _allGamesBySport[sport] = allGames;  // Store pro games only in cache
+          if (collegeSport != null) {
+            // Also cache college games separately
+            final collegeGamesOnly = mergedGames.where((g) => g.sport.toLowerCase() == collegeSport).toList();
+            _allGamesBySport[collegeSport] = collegeGamesOnly;
+          }
           _loadingMore = false;
         });
 
-        debugPrint('Loaded ${allGames.length} $sport games');
+        debugPrint('Loaded ${mergedGames.length} total games for $sport (${allGames.length} pro + ${mergedGames.length - allGames.length} college)');
 
         // Check if Canelo vs Crawford is in the list
         if (sport.toLowerCase() == 'boxing') {
@@ -320,8 +360,10 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
     debugPrint('Getting icon for sport: "$sport"');
     switch (sport.toUpperCase()) {
       case 'NFL':
+      case 'NCAAF':
         return Icons.sports_football;
       case 'NBA':
+      case 'NCAAB':
         return Icons.sports_basketball;
       case 'MLB':
         return Icons.sports_baseball;
@@ -347,8 +389,10 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
   Color _getSportColor(String sport) {
     switch (sport.toUpperCase()) {
       case 'NFL':
+      case 'NCAAF':
         return Colors.blue;
       case 'NBA':
+      case 'NCAAB':
         return Colors.orange;
       case 'NHL':
         return Colors.cyan;
@@ -458,6 +502,26 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
     );
   }
 
+  Widget _buildCollegeBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.amber.shade700,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: Colors.amber.shade900, width: 1),
+      ),
+      child: const Text(
+        'COLLEGE',
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
   Widget _buildSportSelectionGrid() {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -528,31 +592,40 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _getSportColor(game.sport).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _getSportIcon(game.sport),
-                          size: 16,
-                          color: _getSportColor(game.sport),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _getSportColor(game.sport).withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          game.sport.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: _getSportColor(game.sport),
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _getSportIcon(game.sport),
+                              size: 16,
+                              color: _getSportColor(game.sport),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              game.sportCategory.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: _getSportColor(game.sport),
+                              ),
+                            ),
+                          ],
                         ),
+                      ),
+                      if (game.isCollegeSport) ...[
+                        const SizedBox(width: 6),
+                        _buildCollegeBadge(),
                       ],
-                    ),
+                    ],
                   ),
                   if (isLive)
                     Container(
@@ -777,22 +850,22 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: const Align(
+          automaticallyImplyLeading: false,
+          title: Align(
             alignment: Alignment.centerLeft,
-            child: BraggingRightsLogo(
-              height: 40,
-              showUnderline: false,
+            child: GestureDetector(
+              onTap: () {
+                debugPrint('OptimizedGamesScreen: Logo tapped - going back');
+                Navigator.of(context).pop();
+              },
+              child: const BraggingRightsLogo(
+                height: 100,
+                showUnderline: true,
+              ),
             ),
           ),
           centerTitle: false,
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              debugPrint('OptimizedGamesScreen: Back arrow pressed - going back');
-              Navigator.of(context).pop();
-            },
-          ),
           actions: [
             // Victory Coins Display
             InkWell(

@@ -18,7 +18,7 @@ class _PreferencesSettingsScreenState extends State<PreferencesSettingsScreen> {
   
   // Available sports
   final List<String> _availableSports = [
-    'NFL', 'NBA', 'NHL', 'MLB', 'MMA', 'Boxing', 'Tennis', 'Soccer'
+    'NFL', 'NCAAF', 'NBA', 'NCAAB', 'NHL', 'MLB', 'MMA', 'Boxing', 'Tennis', 'Soccer'
   ];
   
   // Selected sports

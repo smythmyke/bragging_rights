@@ -181,6 +181,20 @@ class EnhancedGameModel {
   /// Get appropriate versus text
   String get versusText => sport.versusText;
 
+  /// Check if this is a college sport
+  bool get isCollegeSport => sport.toUpperCase() == 'NCAAF' || sport.toUpperCase() == 'NCAAB';
+
+  /// Get the parent sport category (NCAAF -> NFL, NCAAB -> NBA)
+  String get sportCategory {
+    final sportUpper = sport.toUpperCase();
+    if (sportUpper == 'NCAAF') return 'NFL';
+    if (sportUpper == 'NCAAB') return 'NBA';
+    return sportUpper;
+  }
+
+  /// Get display name for the sport
+  String get sportDisplayName => isCollegeSport ? 'COLLEGE' : sport.toUpperCase();
+
   /// Check game status
   bool get isLive => status == 'live' || status == 'in_progress';
   bool get isFinal => status == 'final' || status == 'completed';
