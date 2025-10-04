@@ -9,6 +9,7 @@ import '../../services/sports_api_service.dart';
 import '../../services/odds_api_service.dart';
 import '../../services/free_odds_service.dart';
 import '../../services/team_logo_service.dart';
+import '../../services/injury_service.dart';
 import '../../models/game_model.dart';
 import '../../models/odds_model.dart';
 import '../../widgets/info_edge_carousel.dart';
@@ -95,7 +96,11 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   
   // Available intel (for pulsing indicators) - populated from real data
   final Map<String, String> _availableIntel = {};
-  
+
+  // Injury detection
+  bool _isCheckingInjuries = false;
+  bool _hasInjuries = false;
+
   // Game and odds data
   GameModel? _gameData;
   OddsModel? _oddsData;
@@ -152,6 +157,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       _startCountdownTimer();
       _loadExistingBets();
       _loadGameAndOddsData();
+      _checkForInjuries(); // Check for NBA injuries
     } catch (e, stackTrace) {
       print('[BOXING ERROR] Failed to initialize bet selection screen: $e');
       print('[BOXING ERROR] Stack trace: $stackTrace');
@@ -708,8 +714,8 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
     print('Getting tab controller for sport: "$sportUpper"');
     
     // Check for NBA, NFL, NHL, MLB - Now 5 tabs WITH Props
-    if (sportUpper.contains('NBA') || sportUpper.contains('BASKETBALL') ||
-        sportUpper.contains('NFL') || sportUpper.contains('FOOTBALL') ||
+    if (sportUpper.contains('NBA') || sportUpper.contains('NCAAB') || sportUpper.contains('BASKETBALL') ||
+        sportUpper.contains('NFL') || sportUpper.contains('NCAAF') || sportUpper.contains('FOOTBALL') ||
         sportUpper.contains('NHL') || sportUpper.contains('HOCKEY') ||
         sportUpper.contains('MLB') || sportUpper.contains('BASEBALL')) {
       print('Creating 5-tab controller for team sports with props');
@@ -1061,8 +1067,8 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       );
     }
 
-    if (sportUpper.contains('NBA') || sportUpper.contains('BASKETBALL') ||
-        sportUpper.contains('NFL') || sportUpper.contains('FOOTBALL') ||
+    if (sportUpper.contains('NBA') || sportUpper.contains('NCAAB') || sportUpper.contains('BASKETBALL') ||
+        sportUpper.contains('NFL') || sportUpper.contains('NCAAF') || sportUpper.contains('FOOTBALL') ||
         sportUpper.contains('MLB') || sportUpper.contains('BASEBALL')) {
       return TabBar(
         controller: _betTypeController,
@@ -1148,8 +1154,8 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   List<Widget> _buildSportSpecificTabs() {
     final sportUpper = widget.sport.toUpperCase().trim();
     
-    if (sportUpper.contains('NBA') || sportUpper.contains('BASKETBALL') ||
-        sportUpper.contains('NFL') || sportUpper.contains('FOOTBALL') ||
+    if (sportUpper.contains('NBA') || sportUpper.contains('NCAAB') || sportUpper.contains('BASKETBALL') ||
+        sportUpper.contains('NFL') || sportUpper.contains('NCAAF') || sportUpper.contains('FOOTBALL') ||
         sportUpper.contains('NHL') || sportUpper.contains('HOCKEY') ||
         sportUpper.contains('MLB') || sportUpper.contains('BASEBALL')) {
       return [
@@ -2406,19 +2412,172 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       ],
     );
   }
-  
+
+  /// Check for NBA injuries on page load
+  Future<void> _checkForInjuries() async {
+    // Only check for NBA games
+    if (widget.sport.toLowerCase() != 'basketball') {
+      print('[InjuryCheck] Skipping - not NBA (sport: ${widget.sport})');
+      return;
+    }
+
+    // Need ESPN team IDs to check injuries
+    if (_gameData == null) {
+      print('[InjuryCheck] Waiting for game data to load...');
+      // Wait a bit for game data to load, then try again
+      await Future.delayed(Duration(seconds: 2));
+      if (_gameData == null) {
+        print('[InjuryCheck] No game data available, skipping injury check');
+        return;
+      }
+    }
+
+    setState(() => _isCheckingInjuries = true);
+
+    try {
+      final injuryService = InjuryService();
+
+      // For now, we'll use team names to derive ESPN IDs
+      // This is a temporary solution - ideally we'd have ESPN team IDs in GameModel
+      final homeTeamId = _extractEspnTeamId(_gameData!.homeTeam);
+      final awayTeamId = _extractEspnTeamId(_gameData!.awayTeam);
+
+      if (homeTeamId == null || awayTeamId == null) {
+        print('[InjuryCheck] Could not extract ESPN team IDs for: ${_gameData!.homeTeam} vs ${_gameData!.awayTeam}');
+        setState(() => _isCheckingInjuries = false);
+        return;
+      }
+
+      print('[InjuryCheck] Checking injuries for teams: $homeTeamId vs $awayTeamId');
+
+      final hasInjuries = await injuryService.gameHasInjuries(
+        sport: 'basketball',
+        homeTeamId: homeTeamId,
+        awayTeamId: awayTeamId,
+      );
+
+      print('[InjuryCheck] Result: hasInjuries=$hasInjuries');
+
+      setState(() {
+        _hasInjuries = hasInjuries;
+        _isCheckingInjuries = false;
+        if (hasInjuries) {
+          _availableIntel['injury'] = 'available';
+          print('[InjuryCheck] ✅ Injuries detected - showing Get The Edge button');
+        } else {
+          print('[InjuryCheck] ❌ No injuries - hiding Get The Edge button');
+        }
+      });
+    } catch (e) {
+      print('[InjuryCheck] Error checking injuries: $e');
+      setState(() => _isCheckingInjuries = false);
+    }
+  }
+
+  /// Extract ESPN team ID from team name (temporary solution)
+  String? _extractEspnTeamId(String teamName) {
+    // NBA team name to ESPN ID mapping
+    final Map<String, String> nbaTeamIds = {
+      'Atlanta Hawks': '1',
+      'Boston Celtics': '2',
+      'Brooklyn Nets': '17',
+      'Charlotte Hornets': '30',
+      'Chicago Bulls': '4',
+      'Cleveland Cavaliers': '5',
+      'Dallas Mavericks': '6',
+      'Denver Nuggets': '7',
+      'Detroit Pistons': '8',
+      'Golden State Warriors': '9',
+      'Houston Rockets': '10',
+      'Indiana Pacers': '11',
+      'LA Clippers': '12',
+      'Los Angeles Lakers': '13',
+      'Memphis Grizzlies': '29',
+      'Miami Heat': '14',
+      'Milwaukee Bucks': '15',
+      'Minnesota Timberwolves': '16',
+      'New Orleans Pelicans': '3',
+      'New York Knicks': '18',
+      'Oklahoma City Thunder': '25',
+      'Orlando Magic': '19',
+      'Philadelphia 76ers': '20',
+      'Phoenix Suns': '21',
+      'Portland Trail Blazers': '22',
+      'Sacramento Kings': '23',
+      'San Antonio Spurs': '24',
+      'Toronto Raptors': '28',
+      'Utah Jazz': '26',
+      'Washington Wizards': '27',
+    };
+
+    return nbaTeamIds[teamName];
+  }
+
   void _navigateToEdge() {
+    final homeTeamId = _extractEspnTeamId(_gameData?.homeTeam ?? _homeTeam ?? '');
+    final awayTeamId = _extractEspnTeamId(_gameData?.awayTeam ?? _awayTeam ?? '');
+
     Navigator.pushNamed(
       context,
-      '/edge',
+      '/intel_types',
       arguments: {
+        'gameId': _gameData?.id ?? widget.gameId,
         'gameTitle': widget.gameTitle,
         'sport': widget.sport,
+        'homeTeamId': homeTeamId,
+        'awayTeamId': awayTeamId,
+        'homeTeamName': _homeTeam ?? 'Home',
+        'awayTeamName': _awayTeam ?? 'Away',
+        'gameTime': widget.gameTime ?? _gameData?.gameTime,
       },
     );
   }
   
   Widget _buildEdgeButton() {
+    // Don't show button if no intel available
+    if (_availableIntel.isEmpty && !_isCheckingInjuries) {
+      return const SizedBox.shrink();
+    }
+
+    // Show loading state while checking
+    if (_isCheckingInjuries) {
+      return Container(
+        height: 80,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.surfaceBlue.withOpacity(0.5),
+              AppTheme.surfaceBlue.withOpacity(0.3),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryCyan),
+                ),
+              ),
+              SizedBox(width: 12),
+              Text(
+                'Checking for intel...',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return AnimatedBuilder(
       animation: _pulseAnimation,
       builder: (context, child) {
@@ -2449,7 +2608,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.bolt, color: Colors.white, size: 32),
+                        const Icon(Icons.healing, color: Colors.white, size: 32), // Changed to medical icon
                         const SizedBox(width: 12),
                         const Column(
                           mainAxisAlignment: MainAxisAlignment.center,

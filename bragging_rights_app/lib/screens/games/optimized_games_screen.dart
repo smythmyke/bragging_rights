@@ -432,6 +432,18 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
   Widget _buildSportCard(String sport, {bool isAllSports = false}) {
     final sportUpper = sport.toUpperCase();
 
+    // Get display name with college sports merged
+    String displayName;
+    if (isAllSports) {
+      displayName = 'ALL SPORTS';
+    } else if (sportUpper == 'NBA') {
+      displayName = 'NBA/NCAAB';
+    } else if (sportUpper == 'NFL') {
+      displayName = 'NFL/NCAAF';
+    } else {
+      displayName = sportUpper;
+    }
+
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(
@@ -482,7 +494,7 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
                 const SizedBox(height: 8),
                 Flexible(
                   child: Text(
-                    isAllSports ? 'ALL SPORTS' : sportUpper,
+                    displayName,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -490,7 +502,7 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
                       letterSpacing: 0.5,
                     ),
                     textAlign: TextAlign.center,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
