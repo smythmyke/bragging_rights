@@ -853,7 +853,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
             // Event Name
             Text(
@@ -861,12 +861,14 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                   ? _game!.league ?? '${_game!.awayTeam} vs ${_game!.homeTeam}'
                   : '${_game!.awayTeam} @ ${_game!.homeTeam}',
               style: const TextStyle(
-                fontSize: 24,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
 
             // Time and Venue
             Row(

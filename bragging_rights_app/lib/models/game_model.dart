@@ -121,9 +121,21 @@ class GameModel {
   // Get the parent sport category (NCAAF -> NFL, NCAAB -> NBA)
   String get sportCategory {
     final sportUpper = sport.toUpperCase();
-    if (sportUpper == 'NCAAF') return 'NFL';
-    if (sportUpper == 'NCAAB') return 'NBA';
-    return sportUpper;
+    print('🔍 sportCategory getter - Input sport: "$sport" -> Upper: "$sportUpper"');
+
+    String category;
+    if (sportUpper == 'NCAAF') {
+      category = 'NFL';
+      print('🔍 sportCategory -> Mapped NCAAF to NFL');
+    } else if (sportUpper == 'NCAAB') {
+      category = 'NBA';
+      print('🔍 sportCategory -> Mapped NCAAB to NBA');
+    } else {
+      category = sportUpper;
+      print('🔍 sportCategory -> Using sport as-is: "$category"');
+    }
+
+    return category;
   }
 
   // Get display name for the sport

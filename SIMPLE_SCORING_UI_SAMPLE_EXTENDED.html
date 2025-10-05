@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bragging Rights - Simple Scoring Extended (Moneyline, Spread, Totals)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+        }
+
+        .game-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .preseason-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff9500 0%, #ffb340 100%);
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-top: 8px;
+        }
+
+        .simple-scoring-label {
+            color: #8e9aaf;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+
+        /* Tabs */
+        .tabs-container {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 4px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,0.5);
+            font-weight: 600;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab:hover {
+            background: rgba(255,255,255,0.05);
+            color: rgba(255,255,255,0.7);
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #00d9ff 0%, #00a8cc 100%);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(0, 217, 255, 0.3);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Pool Info Card */
+        .pool-info {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .pool-info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .pool-info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .pool-info-label {
+            color: #8e9aaf;
+            font-size: 14px;
+        }
+
+        .pool-info-value {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        /* Section Header */
+        .section-header {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #fff;
+        }
+
+        /* Team Selection */
+        .team-selection {
+            margin-bottom: 32px;
+        }
+
+        .team-button {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .team-button:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+
+        .team-button.selected {
+            background: linear-gradient(135deg, #00d9ff 0%, #00a8cc 100%);
+            border-color: #00d9ff;
+            box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
+        }
+
+        .team-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .team-logo {
+            width: 48px;
+            height: 48px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .team-details {
+            text-align: left;
+        }
+
+        .team-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .team-record {
+            font-size: 12px;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .selected-indicator {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #fff;
+            color: #00d9ff;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .team-button.selected .selected-indicator {
+            display: flex;
+        }
+
+        /* Option Button (for Over/Under, Cover/Not Cover) */
+        .option-button {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .option-button:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+
+        .option-button.selected {
+            background: linear-gradient(135deg, #00d9ff 0%, #00a8cc 100%);
+            border-color: #00d9ff;
+            box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
+        }
+
+        .option-info {
+            text-align: left;
+        }
+
+        .option-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .option-desc {
+            font-size: 12px;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .option-button.selected .selected-indicator {
+            display: flex;
+        }
+
+        /* Confidence Selector */
+        .confidence-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 32px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .confidence-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .confidence-label {
+            font-size: 14px;
+            color: #8e9aaf;
+        }
+
+        .confidence-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #00d9ff;
+        }
+
+        .stars-container {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .star {
+            width: 48px;
+            height: 48px;
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .star:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.2);
+            transform: scale(1.1);
+        }
+
+        .star.selected {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            border-color: #ffd700;
+            box-shadow: 0 4px 8px rgba(255, 215, 0, 0.3);
+        }
+
+        .star-number {
+            font-size: 12px;
+            font-weight: 600;
+            color: #8e9aaf;
+            margin-top: 4px;
+        }
+
+        .star.selected .star-number {
+            color: #000;
+        }
+
+        .multiplier-info {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 12px;
+            color: #8e9aaf;
+        }
+
+        .multiplier-value {
+            color: #00d9ff;
+            font-weight: 600;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: rgba(0, 217, 255, 0.1);
+            border-left: 3px solid #00d9ff;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 24px;
+        }
+
+        .info-box-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #00d9ff;
+            margin-bottom: 4px;
+        }
+
+        .info-box-text {
+            font-size: 12px;
+            color: rgba(255,255,255,0.7);
+            line-height: 1.5;
+        }
+
+        /* Submit Button */
+        .submit-button {
+            width: 100%;
+            background: linear-gradient(135deg, #00ff88 0%, #00d96f 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 18px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #0a0e27;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
+        }
+
+        .submit-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 255, 136, 0.4);
+        }
+
+        .submit-button:disabled {
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.3);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* League Average Badge */
+        .league-avg-badge {
+            display: inline-block;
+            background: rgba(255, 215, 0, 0.2);
+            color: #ffd700;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="game-title">Sacramento Kings @ Los Angeles Lakers</div>
+            <div class="preseason-badge">🏀 PRESEASON</div>
+            <div class="simple-scoring-label">Simple Pick - No Odds Required</div>
+        </div>
+
+        <!-- Pool Info -->
+        <div class="pool-info">
+            <div class="pool-info-row">
+                <span class="pool-info-label">Pool</span>
+                <span class="pool-info-value">Lakers vs Kings - QUICK</span>
+            </div>
+            <div class="pool-info-row">
+                <span class="pool-info-label">Buy-in</span>
+                <span class="pool-info-value">25 BR</span>
+            </div>
+            <div class="pool-info-row">
+                <span class="pool-info-label">Scoring Type</span>
+                <span class="pool-info-value">Skill-Based</span>
+            </div>
+            <div class="pool-info-row">
+                <span class="pool-info-label">Players</span>
+                <span class="pool-info-value">3/10</span>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs-container">
+            <button class="tab active" onclick="switchTab('moneyline')">Moneyline</button>
+            <button class="tab" onclick="switchTab('spread')">Spread</button>
+            <button class="tab" onclick="switchTab('totals')">Totals</button>
+        </div>
+
+        <!-- MONEYLINE TAB -->
+        <div id="moneyline-content" class="tab-content active">
+            <!-- Info Box -->
+            <div class="info-box">
+                <div class="info-box-title">ℹ️ How Moneyline Works</div>
+                <div class="info-box-text">
+                    Pick the team you think will win. Earn 1 point for each correct pick. Confidence stars multiply your score (0.9x to 1.3x).
+                </div>
+            </div>
+
+            <!-- Team Selection -->
+            <div class="team-selection">
+                <div class="section-header">Who will win?</div>
+
+                <div class="team-button" id="ml-awayTeam" onclick="selectMLTeam('away')">
+                    <div class="team-info">
+                        <div class="team-logo">👑</div>
+                        <div class="team-details">
+                            <div class="team-name">Sacramento Kings</div>
+                            <div class="team-record">0-0 (Preseason)</div>
+                        </div>
+                    </div>
+                    <div class="selected-indicator">✓</div>
+                </div>
+
+                <div class="team-button selected" id="ml-homeTeam" onclick="selectMLTeam('home')">
+                    <div class="team-info">
+                        <div class="team-logo">🏆</div>
+                        <div class="team-details">
+                            <div class="team-name">Los Angeles Lakers</div>
+                            <div class="team-record">0-0 (Preseason)</div>
+                        </div>
+                    </div>
+                    <div class="selected-indicator">✓</div>
+                </div>
+            </div>
+
+            <!-- Confidence Selector -->
+            <div class="confidence-section">
+                <div class="confidence-header">
+                    <span class="confidence-label">Confidence Level (Optional)</span>
+                    <span class="confidence-value" id="ml-confidenceValue">3 Stars</span>
+                </div>
+
+                <div class="stars-container">
+                    <div class="star" data-value="1" onclick="setMLConfidence(1)">
+                        ⭐
+                        <div class="star-number">1</div>
+                    </div>
+                    <div class="star" data-value="2" onclick="setMLConfidence(2)">
+                        ⭐
+                        <div class="star-number">2</div>
+                    </div>
+                    <div class="star selected" data-value="3" onclick="setMLConfidence(3)">
+                        ⭐
+                        <div class="star-number">3</div>
+                    </div>
+                    <div class="star" data-value="4" onclick="setMLConfidence(4)">
+                        ⭐
+                        <div class="star-number">4</div>
+                    </div>
+                    <div class="star" data-value="5" onclick="setMLConfidence(5)">
+                        ⭐
+                        <div class="star-number">5</div>
+                    </div>
+                </div>
+
+                <div class="multiplier-info">
+                    Score Multiplier: <span class="multiplier-value" id="ml-multiplierValue">1.1x</span>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button class="submit-button" onclick="submitMLPick()">
+                Submit Moneyline Pick
+            </button>
+        </div>
+
+        <!-- SPREAD TAB -->
+        <div id="spread-content" class="tab-content">
+            <!-- Info Box -->
+            <div class="info-box">
+                <div class="info-box-title">ℹ️ How Simple Spread Works</div>
+                <div class="info-box-text">
+                    Will the game be a blowout or close? Pick if your team will dominate (win by 7+) or if it'll be a close game. Earn 1 point for correct picks.
+                </div>
+            </div>
+
+            <!-- Team Selection -->
+            <div class="team-selection">
+                <div class="section-header">Pick a team and margin</div>
+
+                <div class="team-button" id="spread-awayTeam" onclick="selectSpreadTeam('away')">
+                    <div class="team-info">
+                        <div class="team-logo">👑</div>
+                        <div class="team-details">
+                            <div class="team-name">Sacramento Kings</div>
+                            <div class="team-record">0-0 (Preseason)</div>
+                        </div>
+                    </div>
+                    <div class="selected-indicator">✓</div>
+                </div>
+
+                <div class="team-button selected" id="spread-homeTeam" onclick="selectSpreadTeam('home')">
+                    <div class="team-info">
+                        <div class="team-logo">🏆</div>
+                        <div class="team-details">
+                            <div class="team-name">Los Angeles Lakers</div>
+                            <div class="team-record">0-0 (Preseason)</div>
+                        </div>
+                    </div>
+                    <div class="selected-indicator">✓</div>
+                </div>
+            </div>
+
+            <!-- Margin Selection -->
+            <div class="team-selection">
+                <div class="section-header">Win margin prediction</div>
+
+                <div class="option-button selected" id="spread-dominate" onclick="selectSpreadMargin('dominate')">
+                    <div class="option-info">
+                        <div class="option-title">🔥 Dominate (Win by 7+)</div>
+                        <div class="option-desc">Your team wins by 7 or more points</div>
+                    </div>
+                    <div class="selected-indicator">✓</div>
+                </div>
+
+                <div class="option-button" id="spread-close" onclick="selectSpreadMargin('close')">
+                    <div class="option-info">
+                        <div class="option-title">⚖️ Close Game (Within 7)</div>
+                        <div class="option-desc">Your team wins by 6 or fewer points</div>
+                    </div>
+                    <div class="selected-indicator">✓</div>
+                </div>
+            </div>
+
+            <!-- Confidence Selector -->
+            <div class="confidence-section">
+                <div class="confidence-header">
+                    <span class="confidence-label">Confidence Level (Optional)</span>
+                    <span class="confidence-value" id="spread-confidenceValue">3 Stars</span>
+                </div>
+
+                <div class="stars-container">
+                    <div class="star" data-value="1" onclick="setSpreadConfidence(1)">⭐<div class="star-number">1</div></div>
+                    <div class="star" data-value="2" onclick="setSpreadConfidence(2)">⭐<div class="star-number">2</div></div>
+                    <div class="star selected" data-value="3" onclick="setSpreadConfidence(3)">⭐<div class="star-number">3</div></div>
+                    <div class="star" data-value="4" onclick="setSpreadConfidence(4)">⭐<div class="star-number">4</div></div>
+                    <div class="star" data-value="5" onclick="setSpreadConfidence(5)">⭐<div class="star-number">5</div></div>
+                </div>
+
+                <div class="multiplier-info">
+                    Score Multiplier: <span class="multiplier-value" id="spread-multiplierValue">1.1x</span>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button class="submit-button" onclick="submitSpreadPick()">
+                Submit Spread Pick
+            </button>
+        </div>
+
+        <!-- TOTALS TAB -->
+        <div id="totals-content" class="tab-content">
+            <!-- Info Box -->
+            <div class="info-box">
+                <div class="info-box-title">ℹ️ How Simple Totals Works</div>
+                <div class="info-box-text">
+                    Will the total score be high or low? NBA league average is ~220 points. Pick Over (220+) or Under (<220). Earn 1 point for correct picks.
+                </div>
+            </div>
+
+            <!-- Total Selection -->
+            <div class="team-selection">
+                <div class="section-header">
+                    Total score prediction
+                    <span class="league-avg-badge">NBA Avg: 220 pts</span>
+                </div>
+
+                <div class="option-button selected" id="totals-over" onclick="selectTotals('over')">
+                    <div class="option-info">
+                        <div class="option-title">📈 Over 220</div>
+                        <div class="option-desc">Combined score will be 220+ points</div>
+                    </div>
+                    <div class="selected-indicator">✓</div>
+                </div>
+
+                <div class="option-button" id="totals-under" onclick="selectTotals('under')">
+                    <div class="option-info">
+                        <div class="option-title">📉 Under 220</div>
+                        <div class="option-desc">Combined score will be under 220 points</div>
+                    </div>
+                    <div class="selected-indicator">✓</div>
+                </div>
+            </div>
+
+            <!-- Confidence Selector -->
+            <div class="confidence-section">
+                <div class="confidence-header">
+                    <span class="confidence-label">Confidence Level (Optional)</span>
+                    <span class="confidence-value" id="totals-confidenceValue">3 Stars</span>
+                </div>
+
+                <div class="stars-container">
+                    <div class="star" data-value="1" onclick="setTotalsConfidence(1)">⭐<div class="star-number">1</div></div>
+                    <div class="star" data-value="2" onclick="setTotalsConfidence(2)">⭐<div class="star-number">2</div></div>
+                    <div class="star selected" data-value="3" onclick="setTotalsConfidence(3)">⭐<div class="star-number">3</div></div>
+                    <div class="star" data-value="4" onclick="setTotalsConfidence(4)">⭐<div class="star-number">4</div></div>
+                    <div class="star" data-value="5" onclick="setTotalsConfidence(5)">⭐<div class="star-number">5</div></div>
+                </div>
+
+                <div class="multiplier-info">
+                    Score Multiplier: <span class="multiplier-value" id="totals-multiplierValue">1.1x</span>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button class="submit-button" onclick="submitTotalsPick()">
+                Submit Totals Pick
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let currentTab = 'moneyline';
+
+        // Moneyline state
+        let mlTeam = 'home';
+        let mlConfidence = 3;
+
+        // Spread state
+        let spreadTeam = 'home';
+        let spreadMargin = 'dominate'; // 'dominate' or 'close'
+        let spreadConfidence = 3;
+
+        // Totals state
+        let totalsChoice = 'over'; // 'over' or 'under'
+        let totalsConfidence = 3;
+
+        // Tab switching
+        function switchTab(tab) {
+            currentTab = tab;
+
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update content
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(tab + '-content').classList.add('active');
+        }
+
+        // MONEYLINE FUNCTIONS
+        function selectMLTeam(team) {
+            mlTeam = team;
+            document.getElementById('ml-awayTeam').classList.remove('selected');
+            document.getElementById('ml-homeTeam').classList.remove('selected');
+            document.getElementById(`ml-${team}Team`).classList.add('selected');
+        }
+
+        function setMLConfidence(value) {
+            mlConfidence = value;
+            updateConfidenceStars('moneyline', value);
+            document.getElementById('ml-confidenceValue').textContent = `${value} Star${value !== 1 ? 's' : ''}`;
+            document.getElementById('ml-multiplierValue').textContent = `${(0.8 + value * 0.1).toFixed(1)}x`;
+        }
+
+        function submitMLPick() {
+            const teamName = mlTeam === 'home' ? 'Los Angeles Lakers' : 'Sacramento Kings';
+            const multiplier = (0.8 + mlConfidence * 0.1).toFixed(1);
+            alert(`Moneyline Pick Submitted!\n\nTeam: ${teamName}\nConfidence: ${mlConfidence} stars\nMultiplier: ${multiplier}x\n\nYour pick has been recorded!`);
+        }
+
+        // SPREAD FUNCTIONS
+        function selectSpreadTeam(team) {
+            spreadTeam = team;
+            document.getElementById('spread-awayTeam').classList.remove('selected');
+            document.getElementById('spread-homeTeam').classList.remove('selected');
+            document.getElementById(`spread-${team}Team`).classList.add('selected');
+        }
+
+        function selectSpreadMargin(margin) {
+            spreadMargin = margin;
+            document.getElementById('spread-dominate').classList.remove('selected');
+            document.getElementById('spread-close').classList.remove('selected');
+            document.getElementById(`spread-${margin}`).classList.add('selected');
+        }
+
+        function setSpreadConfidence(value) {
+            spreadConfidence = value;
+            updateConfidenceStars('spread', value);
+            document.getElementById('spread-confidenceValue').textContent = `${value} Star${value !== 1 ? 's' : ''}`;
+            document.getElementById('spread-multiplierValue').textContent = `${(0.8 + value * 0.1).toFixed(1)}x`;
+        }
+
+        function submitSpreadPick() {
+            const teamName = spreadTeam === 'home' ? 'Los Angeles Lakers' : 'Sacramento Kings';
+            const marginText = spreadMargin === 'dominate' ? 'Win by 7+' : 'Win within 7';
+            const multiplier = (0.8 + spreadConfidence * 0.1).toFixed(1);
+            alert(`Spread Pick Submitted!\n\nTeam: ${teamName}\nMargin: ${marginText}\nConfidence: ${spreadConfidence} stars\nMultiplier: ${multiplier}x\n\nYour pick has been recorded!`);
+        }
+
+        // TOTALS FUNCTIONS
+        function selectTotals(choice) {
+            totalsChoice = choice;
+            document.getElementById('totals-over').classList.remove('selected');
+            document.getElementById('totals-under').classList.remove('selected');
+            document.getElementById(`totals-${choice}`).classList.add('selected');
+        }
+
+        function setTotalsConfidence(value) {
+            totalsConfidence = value;
+            updateConfidenceStars('totals', value);
+            document.getElementById('totals-confidenceValue').textContent = `${value} Star${value !== 1 ? 's' : ''}`;
+            document.getElementById('totals-multiplierValue').textContent = `${(0.8 + value * 0.1).toFixed(1)}x`;
+        }
+
+        function submitTotalsPick() {
+            const choiceText = totalsChoice === 'over' ? 'Over 220' : 'Under 220';
+            const multiplier = (0.8 + totalsConfidence * 0.1).toFixed(1);
+            alert(`Totals Pick Submitted!\n\nChoice: ${choiceText}\nConfidence: ${totalsConfidence} stars\nMultiplier: ${multiplier}x\n\nYour pick has been recorded!`);
+        }
+
+        // HELPER FUNCTIONS
+        function updateConfidenceStars(tabName, value) {
+            const container = document.getElementById(`${tabName}-content`);
+            container.querySelectorAll('.star').forEach(star => {
+                const starValue = parseInt(star.getAttribute('data-value'));
+                if (starValue <= value) {
+                    star.classList.add('selected');
+                } else {
+                    star.classList.remove('selected');
+                }
+            });
+        }
+
+        // Initialize confidence displays
+        setMLConfidence(3);
+        setSpreadConfidence(3);
+        setTotalsConfidence(3);
+    </script>
+</body>
+</html>

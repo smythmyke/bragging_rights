@@ -36,6 +36,7 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
   String? _selectedSport;
   TabController? _tabController;
   List<String> _availableSports = [];
+  String _leagueFilter = 'both'; // 'pro', 'college', or 'both'
   
   @override
   void initState() {
@@ -276,7 +277,33 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
     if (_selectedSport == 'all') {
       return _featuredGames;  // All sports selected
     }
-    return _gamesBySport[_selectedSport] ?? [];
+
+    final games = _gamesBySport[_selectedSport] ?? [];
+
+    // Apply league filter for NBA/NFL
+    if (_selectedSport == 'nba' || _selectedSport == 'nfl') {
+      if (_leagueFilter == 'both') {
+        return games;  // Show all games
+      } else if (_leagueFilter == 'pro') {
+        // Show only professional games (NBA or NFL)
+        return games.where((game) {
+          final sportLower = game.sport.toLowerCase();
+          return sportLower == _selectedSport;
+        }).toList();
+      } else if (_leagueFilter == 'college') {
+        // Show only college games (NCAAB or NCAAF)
+        return games.where((game) {
+          final sportLower = game.sport.toLowerCase();
+          if (_selectedSport == 'nba') {
+            return sportLower == 'ncaab';
+          } else {
+            return sportLower == 'ncaaf';
+          }
+        }).toList();
+      }
+    }
+
+    return games;
   }
   
   Future<void> _onGameTap(GameModel game) async {
@@ -357,33 +384,55 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
   }
   
   IconData _getSportIcon(String sport) {
-    debugPrint('Getting icon for sport: "$sport"');
-    switch (sport.toUpperCase()) {
+    debugPrint('🎯 _getSportIcon called with sport: "$sport" (type: ${sport.runtimeType})');
+    final sportUpper = sport.toUpperCase();
+    debugPrint('🎯 After toUpperCase: "$sportUpper"');
+
+    IconData icon;
+    switch (sportUpper) {
       case 'NFL':
       case 'NCAAF':
-        return Icons.sports_football;
+        debugPrint('🎯 -> Matched NFL/NCAAF, returning football icon');
+        icon = Icons.sports_football;
+        break;
       case 'NBA':
       case 'NCAAB':
-        return Icons.sports_basketball;
+        debugPrint('🎯 -> Matched NBA/NCAAB, returning basketball icon');
+        icon = Icons.sports_basketball;
+        break;
       case 'MLB':
-        return Icons.sports_baseball;
+        debugPrint('🎯 -> Matched MLB, returning baseball icon');
+        icon = Icons.sports_baseball;
+        break;
       case 'NHL':
-        return Icons.sports_hockey;
+        debugPrint('🎯 -> Matched NHL, returning hockey icon');
+        icon = Icons.sports_hockey;
+        break;
       case 'MMA':
       case 'UFC':
-        debugPrint('  -> MMA/UFC detected, using sports_mma icon');
-        return Icons.sports_mma;
+        debugPrint('🎯 -> Matched MMA/UFC, returning sports_mma icon');
+        icon = Icons.sports_mma;
+        break;
       case 'BOXING':
-        debugPrint('  -> Boxing detected, using sports_mma icon');
-        return Icons.sports_mma;
+        debugPrint('🎯 -> Matched Boxing, returning sports_mma icon');
+        icon = Icons.sports_mma;
+        break;
       case 'TENNIS':
-        return Icons.sports_tennis;
+        debugPrint('🎯 -> Matched Tennis, returning tennis icon');
+        icon = Icons.sports_tennis;
+        break;
       case 'SOCCER':
-        return Icons.sports_soccer;
+        debugPrint('🎯 -> Matched Soccer, returning soccer icon');
+        icon = Icons.sports_soccer;
+        break;
       default:
-        debugPrint('  -> Unknown sport, using sports icon');
-        return Icons.sports;
+        debugPrint('🎯 -> NO MATCH for "$sportUpper", using default sports icon');
+        icon = Icons.sports;
+        break;
     }
+
+    debugPrint('🎯 Final icon for sport "$sport": ${icon.codePoint}');
+    return icon;
   }
   
   Color _getSportColor(String sport) {
@@ -454,11 +503,13 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
           if (isAllSports) {
             setState(() {
               _selectedSport = 'all';  // Set to 'all' instead of null for All Sports
+              _leagueFilter = 'both';  // Reset filter when changing sport
             });
           } else {
             setState(() {
               _selectedSport = sport.toLowerCase();
               _loadingMore = true;
+              _leagueFilter = 'both';  // Reset filter when changing sport
             });
             await _loadAllGamesForSport(sport.toLowerCase());
           }
@@ -616,10 +667,19 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              _getSportIcon(game.sportCategory),
-                              size: 16,
-                              color: _getSportColor(game.sportCategory),
+                            Builder(
+                              builder: (context) {
+                                debugPrint('🏈 BUILDING ICON FOR GAME CARD:');
+                                debugPrint('   Game: ${game.awayTeam} vs ${game.homeTeam}');
+                                debugPrint('   game.sport: "${game.sport}"');
+                                debugPrint('   game.sportCategory: "${game.sportCategory}"');
+                                debugPrint('   game.isCollegeSport: ${game.isCollegeSport}');
+                                return Icon(
+                                  _getSportIcon(game.sportCategory),
+                                  size: 16,
+                                  color: _getSportColor(game.sportCategory),
+                                );
+                              },
                             ),
                             const SizedBox(width: 4),
                             Text(
@@ -1012,6 +1072,7 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
                               onPressed: () {
                                 setState(() {
                                   _selectedSport = null;
+                                  _leagueFilter = 'both';  // Reset filter when going back
                                 });
                               },
                             ),
@@ -1059,6 +1120,50 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
                           ],
                         ),
                       ),
+                      // League filter (only show for NBA/NFL)
+                      if (_selectedSport == 'nba' || _selectedSport == 'nfl')
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: SegmentedButton<String>(
+                                  segments: [
+                                    ButtonSegment(
+                                      value: 'pro',
+                                      label: Text(_selectedSport == 'nba' ? 'NBA' : 'NFL'),
+                                      icon: const Icon(Icons.star, size: 16),
+                                    ),
+                                    ButtonSegment(
+                                      value: 'college',
+                                      label: Text(_selectedSport == 'nba' ? 'NCAAB' : 'NCAAF'),
+                                      icon: const Icon(Icons.school, size: 16),
+                                    ),
+                                    const ButtonSegment(
+                                      value: 'both',
+                                      label: Text('Both'),
+                                      icon: Icon(Icons.sports, size: 16),
+                                    ),
+                                  ],
+                                  selected: {_leagueFilter},
+                                  onSelectionChanged: (Set<String> selected) {
+                                    setState(() {
+                                      _leagueFilter = selected.first;
+                                    });
+                                  },
+                                  style: ButtonStyle(
+                                    backgroundColor: MaterialStateProperty.resolveWith((states) {
+                                      if (states.contains(MaterialState.selected)) {
+                                        return _getSportColor(_selectedSport!.toUpperCase());
+                                      }
+                                      return null;
+                                    }),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       // Games list
                       Expanded(
                         child: _getFilteredGames().isEmpty

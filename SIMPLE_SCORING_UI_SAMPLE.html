@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bragging Rights - Simple Scoring UI Sample</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+        }
+
+        .game-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .preseason-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff9500 0%, #ffb340 100%);
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-top: 8px;
+        }
+
+        .simple-scoring-label {
+            color: #8e9aaf;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+
+        /* Pool Info Card */
+        .pool-info {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .pool-info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .pool-info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .pool-info-label {
+            color: #8e9aaf;
+            font-size: 14px;
+        }
+
+        .pool-info-value {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        /* Section Header */
+        .section-header {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #fff;
+        }
+
+        /* Team Selection */
+        .team-selection {
+            margin-bottom: 32px;
+        }
+
+        .team-button {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .team-button:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+
+        .team-button.selected {
+            background: linear-gradient(135deg, #00d9ff 0%, #00a8cc 100%);
+            border-color: #00d9ff;
+            box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
+        }
+
+        .team-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .team-logo {
+            width: 48px;
+            height: 48px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .team-details {
+            text-align: left;
+        }
+
+        .team-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .team-record {
+            font-size: 12px;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .selected-indicator {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #fff;
+            color: #00d9ff;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .team-button.selected .selected-indicator {
+            display: flex;
+        }
+
+        /* Confidence Selector */
+        .confidence-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 32px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .confidence-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .confidence-label {
+            font-size: 14px;
+            color: #8e9aaf;
+        }
+
+        .confidence-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #00d9ff;
+        }
+
+        .stars-container {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .star {
+            width: 48px;
+            height: 48px;
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .star:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.2);
+            transform: scale(1.1);
+        }
+
+        .star.selected {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            border-color: #ffd700;
+            box-shadow: 0 4px 8px rgba(255, 215, 0, 0.3);
+        }
+
+        .star-number {
+            font-size: 12px;
+            font-weight: 600;
+            color: #8e9aaf;
+            margin-top: 4px;
+        }
+
+        .star.selected .star-number {
+            color: #000;
+        }
+
+        .multiplier-info {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 12px;
+            color: #8e9aaf;
+        }
+
+        .multiplier-value {
+            color: #00d9ff;
+            font-weight: 600;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: rgba(0, 217, 255, 0.1);
+            border-left: 3px solid #00d9ff;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 24px;
+        }
+
+        .info-box-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #00d9ff;
+            margin-bottom: 4px;
+        }
+
+        .info-box-text {
+            font-size: 12px;
+            color: rgba(255,255,255,0.7);
+            line-height: 1.5;
+        }
+
+        /* Submit Button */
+        .submit-button {
+            width: 100%;
+            background: linear-gradient(135deg, #00ff88 0%, #00d96f 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 18px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #0a0e27;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
+        }
+
+        .submit-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 255, 136, 0.4);
+        }
+
+        .submit-button:disabled {
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.3);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Comparison: Odds-Based vs Simple */
+        .comparison-section {
+            margin-top: 40px;
+            padding-top: 40px;
+            border-top: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .comparison-header {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .comparison-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .comparison-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .comparison-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
+        .regular-season {
+            background: rgba(0, 217, 255, 0.2);
+            color: #00d9ff;
+        }
+
+        .preseason-tag {
+            background: rgba(255, 149, 0, 0.2);
+            color: #ff9500;
+        }
+
+        .comparison-item {
+            font-size: 12px;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 8px;
+            padding-left: 16px;
+            position: relative;
+        }
+
+        .comparison-item:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #00d9ff;
+        }
+
+        .comparison-item:last-child {
+            margin-bottom: 0;
+        }
+
+        /* JavaScript Demo */
+        .demo-controls {
+            text-align: center;
+            margin-top: 24px;
+        }
+
+        .demo-button {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            padding: 8px 16px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 12px;
+            margin: 0 4px;
+        }
+
+        .demo-button:hover {
+            background: rgba(255,255,255,0.15);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="game-title">Sacramento Kings @ Los Angeles Lakers</div>
+            <div class="preseason-badge">🏀 PRESEASON</div>
+            <div class="simple-scoring-label">Simple Pick - No Odds Required</div>
+        </div>
+
+        <!-- Pool Info -->
+        <div class="pool-info">
+            <div class="pool-info-row">
+                <span class="pool-info-label">Pool</span>
+                <span class="pool-info-value">Lakers vs Kings - QUICK</span>
+            </div>
+            <div class="pool-info-row">
+                <span class="pool-info-label">Buy-in</span>
+                <span class="pool-info-value">25 BR</span>
+            </div>
+            <div class="pool-info-row">
+                <span class="pool-info-label">Scoring Type</span>
+                <span class="pool-info-value">Skill-Based</span>
+            </div>
+            <div class="pool-info-row">
+                <span class="pool-info-label">Players</span>
+                <span class="pool-info-value">3/10</span>
+            </div>
+        </div>
+
+        <!-- Info Box -->
+        <div class="info-box">
+            <div class="info-box-title">ℹ️ How Simple Scoring Works</div>
+            <div class="info-box-text">
+                Pick the team you think will win. Earn 1 point for each correct pick. Confidence stars multiply your score (0.9x to 1.3x).
+            </div>
+        </div>
+
+        <!-- Team Selection -->
+        <div class="team-selection">
+            <div class="section-header">Who will win?</div>
+
+            <div class="team-button" id="awayTeam">
+                <div class="team-info">
+                    <div class="team-logo">👑</div>
+                    <div class="team-details">
+                        <div class="team-name">Sacramento Kings</div>
+                        <div class="team-record">0-0 (Preseason)</div>
+                    </div>
+                </div>
+                <div class="selected-indicator">✓</div>
+            </div>
+
+            <div class="team-button selected" id="homeTeam">
+                <div class="team-info">
+                    <div class="team-logo">🏆</div>
+                    <div class="team-details">
+                        <div class="team-name">Los Angeles Lakers</div>
+                        <div class="team-record">0-0 (Preseason)</div>
+                    </div>
+                </div>
+                <div class="selected-indicator">✓</div>
+            </div>
+        </div>
+
+        <!-- Confidence Selector -->
+        <div class="confidence-section">
+            <div class="confidence-header">
+                <span class="confidence-label">Confidence Level (Optional)</span>
+                <span class="confidence-value" id="confidenceValue">3 Stars</span>
+            </div>
+
+            <div class="stars-container">
+                <div class="star" data-value="1">
+                    ⭐
+                    <div class="star-number">1</div>
+                </div>
+                <div class="star" data-value="2">
+                    ⭐
+                    <div class="star-number">2</div>
+                </div>
+                <div class="star selected" data-value="3">
+                    ⭐
+                    <div class="star-number">3</div>
+                </div>
+                <div class="star" data-value="4">
+                    ⭐
+                    <div class="star-number">4</div>
+                </div>
+                <div class="star" data-value="5">
+                    ⭐
+                    <div class="star-number">5</div>
+                </div>
+            </div>
+
+            <div class="multiplier-info">
+                Score Multiplier: <span class="multiplier-value" id="multiplierValue">1.1x</span>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button class="submit-button" id="submitButton">
+            Submit Pick
+        </button>
+
+        <!-- Comparison Section -->
+        <div class="comparison-section">
+            <div class="comparison-header">
+                Regular Season vs Preseason Betting
+            </div>
+
+            <div class="comparison-grid">
+                <!-- Regular Season Card -->
+                <div class="comparison-card">
+                    <div class="comparison-title">
+                        Regular Season
+                        <span class="comparison-badge regular-season">ODDS-BASED</span>
+                    </div>
+                    <div class="comparison-item">Requires live betting odds</div>
+                    <div class="comparison-item">Moneyline, Spread, Totals</div>
+                    <div class="comparison-item">Odds API required</div>
+                    <div class="comparison-item">Score based on odds value</div>
+                    <div class="comparison-item">Complex calculations</div>
+                </div>
+
+                <!-- Preseason Card -->
+                <div class="comparison-card">
+                    <div class="comparison-title">
+                        Preseason
+                        <span class="comparison-badge preseason-tag">SIMPLE</span>
+                    </div>
+                    <div class="comparison-item">No odds required</div>
+                    <div class="comparison-item">Pick winner only</div>
+                    <div class="comparison-item">No API calls needed</div>
+                    <div class="comparison-item">1 point per correct pick</div>
+                    <div class="comparison-item">Easy to understand</div>
+                </div>
+            </div>
+
+            <div class="demo-controls">
+                <button class="demo-button" onclick="selectTeam('away')">Select Away</button>
+                <button class="demo-button" onclick="selectTeam('home')">Select Home</button>
+                <button class="demo-button" onclick="setConfidence(5)">Max Confidence</button>
+                <button class="demo-button" onclick="resetForm()">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedTeam = 'home';
+        let selectedConfidence = 3;
+
+        // Team Selection
+        document.getElementById('awayTeam').addEventListener('click', () => selectTeam('away'));
+        document.getElementById('homeTeam').addEventListener('click', () => selectTeam('home'));
+
+        function selectTeam(team) {
+            selectedTeam = team;
+            document.getElementById('awayTeam').classList.remove('selected');
+            document.getElementById('homeTeam').classList.remove('selected');
+
+            if (team === 'away') {
+                document.getElementById('awayTeam').classList.add('selected');
+            } else {
+                document.getElementById('homeTeam').classList.add('selected');
+            }
+        }
+
+        // Confidence Selection
+        document.querySelectorAll('.star').forEach(star => {
+            star.addEventListener('click', function() {
+                const value = parseInt(this.getAttribute('data-value'));
+                setConfidence(value);
+            });
+        });
+
+        function setConfidence(value) {
+            selectedConfidence = value;
+
+            // Update star visuals
+            document.querySelectorAll('.star').forEach(star => {
+                const starValue = parseInt(star.getAttribute('data-value'));
+                if (starValue <= value) {
+                    star.classList.add('selected');
+                } else {
+                    star.classList.remove('selected');
+                }
+            });
+
+            // Update text
+            document.getElementById('confidenceValue').textContent = `${value} Star${value !== 1 ? 's' : ''}`;
+
+            // Update multiplier
+            const multiplier = (0.8 + (value * 0.1)).toFixed(1);
+            document.getElementById('multiplierValue').textContent = `${multiplier}x`;
+        }
+
+        // Submit Button
+        document.getElementById('submitButton').addEventListener('click', function() {
+            const teamName = selectedTeam === 'home' ? 'Los Angeles Lakers' : 'Sacramento Kings';
+            const multiplier = (0.8 + (selectedConfidence * 0.1)).toFixed(1);
+
+            alert(`Pick Submitted!\n\nTeam: ${teamName}\nConfidence: ${selectedConfidence} stars\nMultiplier: ${multiplier}x\n\nYour pick has been recorded!`);
+        });
+
+        function resetForm() {
+            selectTeam('home');
+            setConfidence(3);
+        }
+    </script>
+</body>
+</html>

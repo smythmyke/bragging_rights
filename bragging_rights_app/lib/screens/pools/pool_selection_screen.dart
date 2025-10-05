@@ -51,6 +51,9 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
   Set<String> _userJoinedPools = {};
   Map<String, bool> _userPoolSubmissions = {};
 
+  // Track if auto-create has been attempted
+  bool _hasAttemptedAutoCreate = false;
+
   @override
   void initState() {
     super.initState();
@@ -413,8 +416,21 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
               }
 
               final pools = snapshot.data ?? [];
-              
+
               if (pools.isEmpty) {
+                // Trigger auto-create if not already attempted
+                if (!_hasAttemptedAutoCreate) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _autoCreateAndJoinPool();
+                  });
+
+                  // Show loading indicator while auto-creating
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+
+                // If auto-create was attempted but failed, show manual option
                 return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1614,6 +1630,164 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
     }
   }
 
+  void _autoCreateAndJoinPool() async {
+    print('[AUTO-CREATE] Starting auto-create and join process');
+
+    // Mark that we've attempted auto-create to prevent loops
+    if (_hasAttemptedAutoCreate) {
+      print('[AUTO-CREATE] Already attempted, skipping');
+      return;
+    }
+
+    setState(() {
+      _hasAttemptedAutoCreate = true;
+    });
+
+    // Check if user has sufficient balance
+    final balance = _cachedBalance ?? 0;
+    if (balance < 25) {
+      print('[AUTO-CREATE] Insufficient balance: $balance BR (need 25 BR)');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Insufficient balance to join pool. You need 25 BR.'),
+            backgroundColor: AppTheme.errorPink,
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      print('[AUTO-CREATE] Creating pool with default settings...');
+
+      // Create pool with default settings
+      final poolId = await _poolService.createPool(
+        gameId: gameId ?? '',
+        gameTitle: widget.gameTitle,
+        sport: widget.sport,
+        type: PoolType.quick,
+        name: '${widget.gameTitle} - QUICK',
+        buyIn: 25,
+        maxPlayers: 10,
+        minPlayers: 2,
+      );
+
+      if (poolId != null) {
+        print('[AUTO-CREATE] ✅ Pool created successfully with ID: $poolId');
+
+        // Immediately auto-join the user to the pool
+        await _autoJoinAndNavigate(poolId, '${widget.gameTitle} - QUICK', 25);
+      } else {
+        print('[AUTO-CREATE] ❌ Pool creation returned null');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to create pool. Please try manual creation.'),
+              backgroundColor: AppTheme.errorPink,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('[AUTO-CREATE] ❌ Error creating pool: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error creating pool: $e'),
+            backgroundColor: AppTheme.errorPink,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _autoJoinAndNavigate(String poolId, String poolName, int buyIn) async {
+    print('[AUTO-JOIN] Starting auto-join process for pool: $poolId');
+
+    try {
+      // Join the pool
+      final result = await _poolService.joinPoolWithResult(poolId, buyIn);
+
+      print('[AUTO-JOIN] DEBUG - result: $result');
+      print('[AUTO-JOIN] DEBUG - result type: ${result.runtimeType}');
+      print('[AUTO-JOIN] DEBUG - result == null: ${result == null}');
+      print('[AUTO-JOIN] DEBUG - result[\'success\']: ${result?['success']}');
+
+      if (!mounted) {
+        print('[AUTO-JOIN] Widget unmounted, aborting navigation');
+        return;
+      }
+
+      if (result == null || result['success'] != true) {
+        print('[AUTO-JOIN] ❌ Failed to join pool');
+        print('[AUTO-JOIN] ❌ Failure reason - code: ${result?['code']}, message: ${result?['message']}');
+
+        final errorMessage = result?['message'] ?? 'Failed to join pool. Please try again.';
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: AppTheme.errorPink,
+          ),
+        );
+        return;
+      }
+
+      print('[AUTO-JOIN] ✅ Successfully joined pool, navigating to bet selection...');
+
+      // Update balance and pool status
+      _loadBalance();
+      await _loadUserPoolStatus();
+
+      if (!mounted) {
+        print('[AUTO-JOIN] Widget unmounted after status update, aborting navigation');
+        return;
+      }
+
+      // Navigate to appropriate screen based on sport type
+      if (SportUtils.isCombatSport(widget.sport)) {
+        print('[AUTO-JOIN] Combat sport detected, navigating to fight card grid');
+        Navigator.pushNamed(
+          context,
+          '/fight-card-grid',
+          arguments: {
+            'gameId': gameId,
+            'gameTitle': widget.gameTitle,
+            'sport': widget.sport,
+            'poolName': poolName,
+            'poolId': poolId,
+          },
+        );
+      } else {
+        print('[AUTO-JOIN] Team sport detected, navigating to bet selection');
+        Navigator.pushNamed(
+          context,
+          '/bet-selection',
+          arguments: {
+            'gameId': gameId,
+            'gameTitle': widget.gameTitle,
+            'sport': widget.sport,
+            'poolName': poolName,
+            'poolId': poolId,
+            'gameTime': _gameTime,
+            'oddsApiSportKey': _oddsApiSportKey,
+          },
+        );
+      }
+    } catch (e) {
+      print('[AUTO-JOIN] ❌ Error joining pool: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error joining pool: $e'),
+            backgroundColor: AppTheme.errorPink,
+          ),
+        );
+      }
+    }
+  }
+
   void _createPoolForGame(PoolType type) async {
     // Show loading indicator
     showDialog(
@@ -1647,7 +1821,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
             backgroundColor: AppTheme.neonGreen,
           ),
         );
-        
+
         // Refresh the pools list
         setState(() {});
       } else {
@@ -1661,7 +1835,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
     } catch (e) {
       // Close loading dialog
       if (mounted) Navigator.of(context, rootNavigator: true).pop();
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error creating pool: $e'),

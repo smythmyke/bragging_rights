@@ -28,6 +28,8 @@ class EspnIdResolverService {
     'BOXING': 'boxing',
     'SOCCER': 'soccer',
     'TENNIS': 'tennis',
+    'NCAAF': 'football/college-football',
+    'NCAAB': 'basketball/mens-college-basketball',
   };
 
   /// Main method to resolve ESPN ID for a game
