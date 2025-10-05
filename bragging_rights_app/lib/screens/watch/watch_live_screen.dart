@@ -144,6 +144,44 @@ class _WatchLiveScreenState extends State<WatchLiveScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Official Streaming Services
+            const Text(
+              'OFFICIAL STREAMING SERVICES',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'We recommend using these legal streaming options:',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Official Services Grid
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 1.5,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemCount: StreamingServiceData.officialServices.length,
+              itemBuilder: (context, index) {
+                final service = StreamingServiceData.officialServices[index];
+                return _buildOfficialServiceCard(service);
+              },
+            ),
+
+            const SizedBox(height: 30),
+
             // Warning Banner
             Container(
               decoration: BoxDecoration(
@@ -234,44 +272,6 @@ class _WatchLiveScreenState extends State<WatchLiveScreen> {
             ),
 
             const SizedBox(height: 20),
-
-            // Official Streaming Services
-            const Text(
-              'OFFICIAL STREAMING SERVICES',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1,
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'We recommend using these legal streaming options:',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Official Services Grid
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 1.5,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: StreamingServiceData.officialServices.length,
-              itemBuilder: (context, index) {
-                final service = StreamingServiceData.officialServices[index];
-                return _buildOfficialServiceCard(service);
-              },
-            ),
-
-            const SizedBox(height: 30),
 
             // Acceptance Checkbox
             Container(
