@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intel Cards Navigation - UI Preview</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0A1628 0%, #1a2332 100%);
+            color: white;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .preview-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .preview-title {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .preview-title h1 {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #42E6FF 0%, #00D4FF 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+        }
+
+        .preview-title p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 16px;
+        }
+
+        .level-separator {
+            text-align: center;
+            margin: 60px 0 40px;
+            padding: 20px;
+            background: rgba(255, 165, 0, 0.1);
+            border-top: 2px solid rgba(255, 165, 0, 0.3);
+            border-bottom: 2px solid rgba(255, 165, 0, 0.3);
+        }
+
+        .level-separator h2 {
+            font-size: 24px;
+            color: #FFA500;
+            margin-bottom: 8px;
+        }
+
+        .level-separator p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+        }
+
+        .flow-diagram {
+            background: rgba(15, 20, 25, 0.5);
+            border: 1px solid rgba(66, 230, 255, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .flow-diagram h3 {
+            font-size: 18px;
+            color: #42E6FF;
+            margin-bottom: 20px;
+        }
+
+        .flow-step {
+            display: inline-block;
+            margin: 0 8px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+        }
+
+        .flow-arrow {
+            display: inline-block;
+            margin: 0 12px;
+            color: #FFA500;
+            font-size: 20px;
+        }
+
+        .screens-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(390px, 1fr));
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+
+        .phone-frame {
+            background: #0F1419;
+            border-radius: 40px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            margin: 0 auto;
+        }
+
+        .screen-label {
+            text-align: center;
+            margin-bottom: 16px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #42E6FF;
+        }
+
+        .screen {
+            background: linear-gradient(180deg, #0A1628 0%, #151d2e 100%);
+            min-height: 844px;
+            position: relative;
+            overflow-y: auto;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(15, 20, 25, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid rgba(66, 230, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .back-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(66, 230, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(66, 230, 255, 0.2);
+            cursor: pointer;
+        }
+
+        .back-button:hover {
+            background: rgba(66, 230, 255, 0.2);
+        }
+
+        .header-title {
+            flex: 1;
+            text-align: center;
+            margin-right: 40px;
+        }
+
+        .header-title h1 {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #42E6FF 0%, #00D4FF 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-subtitle {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 2px;
+        }
+
+        /* Game Context Bar */
+        .game-context {
+            background: rgba(255, 165, 0, 0.05);
+            border: 1px solid rgba(255, 165, 0, 0.2);
+            border-radius: 16px;
+            padding: 16px;
+            margin: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .game-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .game-info h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 4px;
+        }
+
+        .game-info p {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Content Container */
+        .content-container {
+            padding: 0 16px 80px 16px;
+        }
+
+        .section-header {
+            margin-bottom: 16px;
+        }
+
+        .section-header h2 {
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Intel Type Grid (Level 1) */
+        .intel-type-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .intel-type-tile {
+            background: linear-gradient(135deg, rgba(26, 35, 50, 0.8) 0%, rgba(15, 20, 25, 0.8) 100%);
+            border: 2px solid rgba(66, 230, 255, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .intel-type-tile:hover {
+            transform: translateY(-4px);
+            border-color: rgba(66, 230, 255, 0.5);
+            box-shadow: 0 8px 32px rgba(66, 230, 255, 0.2);
+        }
+
+        .intel-type-tile.active {
+            border-color: #FFA500;
+            background: linear-gradient(135deg, rgba(255, 165, 0, 0.1) 0%, rgba(255, 140, 0, 0.05) 100%);
+        }
+
+        .intel-type-tile.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .intel-type-tile.disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .tile-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .tile-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .tile-icon.injury {
+            background: linear-gradient(135deg, rgba(255, 75, 75, 0.2) 0%, rgba(255, 45, 85, 0.2) 100%);
+            border: 1px solid rgba(255, 75, 75, 0.3);
+        }
+
+        .tile-icon.analytics {
+            background: linear-gradient(135deg, rgba(66, 230, 255, 0.2) 0%, rgba(0, 212, 255, 0.2) 100%);
+            border: 1px solid rgba(66, 230, 255, 0.3);
+        }
+
+        .tile-icon.betting {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.2) 0%, rgba(0, 204, 106, 0.2) 100%);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .tile-title h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 4px;
+        }
+
+        .tile-title p {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .tile-badge {
+            margin-left: auto;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-available {
+            background: linear-gradient(135deg, #00FF88 0%, #00CC6A 100%);
+            color: #0A1628;
+        }
+
+        .badge-coming-soon {
+            background: rgba(66, 230, 255, 0.2);
+            color: #42E6FF;
+        }
+
+        .tile-description {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.5;
+        }
+
+        .tile-stats {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(66, 230, 255, 0.1);
+        }
+
+        .tile-stat {
+            flex: 1;
+            text-align: center;
+            padding: 8px;
+            background: rgba(66, 230, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .tile-stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #42E6FF;
+            margin-bottom: 4px;
+        }
+
+        .tile-stat-label {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+        }
+
+        /* Purchase Cards (Level 2) */
+        .purchase-card {
+            background: linear-gradient(135deg, rgba(26, 35, 50, 0.8) 0%, rgba(15, 20, 25, 0.8) 100%);
+            border: 1px solid rgba(66, 230, 255, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 12px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .purchase-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(66, 230, 255, 0.4);
+            box-shadow: 0 8px 24px rgba(66, 230, 255, 0.1);
+        }
+
+        .purchase-card.bundle {
+            border: 2px solid rgba(255, 165, 0, 0.4);
+            background: linear-gradient(135deg, rgba(255, 165, 0, 0.05) 0%, rgba(255, 140, 0, 0.05) 100%);
+        }
+
+        .purchase-card.bundle::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 165, 0, 0.1) 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .card-title-section {
+            flex: 1;
+        }
+
+        .card-team-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 4px;
+        }
+
+        .card-subtitle {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .card-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-save {
+            background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
+            color: white;
+        }
+
+        .card-preview {
+            background: rgba(255, 75, 75, 0.1);
+            border: 1px solid rgba(255, 75, 75, 0.2);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+        }
+
+        .card-preview strong {
+            color: white;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .purchase-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .price-tag {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            background: rgba(66, 230, 255, 0.1);
+            border: 1px solid rgba(66, 230, 255, 0.3);
+            border-radius: 12px;
+        }
+
+        .price-tag svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .price-amount {
+            font-size: 16px;
+            font-weight: 700;
+            color: #42E6FF;
+        }
+
+        .price-original {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            text-decoration: line-through;
+            margin-left: 4px;
+        }
+
+        .unlock-button {
+            flex: 1;
+            padding: 14px 24px;
+            background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(255, 165, 0, 0.3);
+        }
+
+        .unlock-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(255, 165, 0, 0.4);
+        }
+
+        /* Level 3 - Injury Report View */
+        .injury-report-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .injury-report-header h4 {
+            font-size: 14px;
+            font-weight: 700;
+            color: #FF4B4B;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .team-injuries {
+            margin-bottom: 20px;
+        }
+
+        .team-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #42E6FF;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .injury-item {
+            background: rgba(255, 75, 75, 0.1);
+            border: 1px solid rgba(255, 75, 75, 0.2);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .injury-item-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .player-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .injury-status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-out {
+            background: #FF4B4B;
+            color: white;
+        }
+
+        .status-questionable {
+            background: #FFA500;
+            color: white;
+        }
+
+        .status-day-to-day {
+            background: #42E6FF;
+            color: #0A1628;
+        }
+
+        .injury-details {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+        }
+
+        .injury-detail-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+
+        .intel-insight {
+            background: linear-gradient(135deg, rgba(255, 165, 0, 0.1) 0%, rgba(255, 140, 0, 0.1) 100%);
+            border: 1px solid rgba(255, 165, 0, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .insight-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .insight-header h4 {
+            font-size: 13px;
+            font-weight: 700;
+            color: #FFA500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .insight-text {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .impact-scores {
+            display: flex;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .impact-scores span {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .impact-high {
+            color: #FF4B4B;
+            font-weight: 700;
+        }
+
+        .impact-low {
+            color: #00FF88;
+            font-weight: 700;
+        }
+
+        .ownership-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #00FF88 0%, #00CC6A 100%);
+            color: #0A1628;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="preview-container">
+        <div class="preview-title">
+            <h1>Intel Cards Navigation - Three-Level System</h1>
+            <p>Complete user flow from selection to detailed injury report view</p>
+        </div>
+
+        <div class="flow-diagram">
+            <h3>User Navigation Flow</h3>
+            <div>
+                <span class="flow-step">Bet Selection</span>
+                <span class="flow-arrow">→</span>
+                <span class="flow-step">Tap "Get The Edge"</span>
+                <span class="flow-arrow">→</span>
+                <span class="flow-step"><strong>Level 1: Select Intel Type</strong></span>
+                <span class="flow-arrow">→</span>
+                <span class="flow-step"><strong>Level 2: Choose Team/Bundle</strong></span>
+                <span class="flow-arrow">→</span>
+                <span class="flow-step"><strong>Level 3: View Injury Report</strong></span>
+            </div>
+        </div>
+
+        <div class="screens-grid">
+            <!-- LEVEL 1: Intel Type Selection -->
+            <div>
+                <div class="screen-label">📱 LEVEL 1: Intel Type Selection</div>
+                <div class="phone-frame">
+                    <div class="screen">
+                        <!-- Header -->
+                        <div class="header">
+                            <div class="back-button">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#42E6FF" stroke-width="2">
+                                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                                </svg>
+                            </div>
+                            <div class="header-title">
+                                <h1>Game Intelligence</h1>
+                                <div class="header-subtitle">Select Intelligence Type</div>
+                            </div>
+                        </div>
+
+                        <!-- Game Context Bar -->
+                        <div class="game-context">
+                            <div class="game-icon">🏀</div>
+                            <div class="game-info">
+                                <h3>Lakers vs Warriors</h3>
+                                <p>Today at 7:30 PM • NBA</p>
+                            </div>
+                        </div>
+
+                        <!-- Intel Type Grid -->
+                        <div class="content-container">
+                            <div class="section-header">
+                                <h2>Available Intelligence</h2>
+                            </div>
+
+                            <div class="intel-type-grid">
+                                <!-- Injury Intel Tile (Available) -->
+                                <div class="intel-type-tile active">
+                                    <div class="tile-header">
+                                        <div class="tile-icon injury">🏥</div>
+                                        <div class="tile-title">
+                                            <h3>Injury Intel</h3>
+                                            <p>Complete injury reports</p>
+                                        </div>
+                                        <div class="tile-badge badge-available">Available</div>
+                                    </div>
+                                    <div class="tile-description">
+                                        Get detailed injury reports for both teams including player status, injury type, expected return dates, and game impact analysis.
+                                    </div>
+                                    <div class="tile-stats">
+                                        <div class="tile-stat">
+                                            <div class="tile-stat-value">5</div>
+                                            <div class="tile-stat-label">Total</div>
+                                        </div>
+                                        <div class="tile-stat">
+                                            <div class="tile-stat-value">3</div>
+                                            <div class="tile-stat-label">Lakers</div>
+                                        </div>
+                                        <div class="tile-stat">
+                                            <div class="tile-stat-value">2</div>
+                                            <div class="tile-stat-label">Warriors</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Advanced Analytics Tile (Coming Soon) -->
+                                <div class="intel-type-tile disabled">
+                                    <div class="tile-header">
+                                        <div class="tile-icon analytics">📊</div>
+                                        <div class="tile-title">
+                                            <h3>Advanced Analytics</h3>
+                                            <p>Win probability & momentum</p>
+                                        </div>
+                                        <div class="tile-badge badge-coming-soon">Coming Soon</div>
+                                    </div>
+                                    <div class="tile-description">
+                                        Real-time win probability charts, momentum tracking, and advanced team efficiency ratings for deeper game analysis.
+                                    </div>
+                                </div>
+
+                                <!-- Betting Insights Tile (Coming Soon) -->
+                                <div class="intel-type-tile disabled">
+                                    <div class="tile-header">
+                                        <div class="tile-icon betting">🎯</div>
+                                        <div class="tile-title">
+                                            <h3>Betting Insights</h3>
+                                            <p>ATS records & trends</p>
+                                        </div>
+                                        <div class="tile-badge badge-coming-soon">Coming Soon</div>
+                                    </div>
+                                    <div class="tile-description">
+                                        Against the spread performance, over/under trends, and historical betting outcomes to inform your picks.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LEVEL 2: Team Purchase Options -->
+            <div>
+                <div class="screen-label">📱 LEVEL 2: Team Purchase Options</div>
+                <div class="phone-frame">
+                    <div class="screen">
+                        <!-- Header -->
+                        <div class="header">
+                            <div class="back-button">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#42E6FF" stroke-width="2">
+                                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                                </svg>
+                            </div>
+                            <div class="header-title">
+                                <h1>Injury Intel</h1>
+                                <div class="header-subtitle">Choose Your Coverage</div>
+                            </div>
+                        </div>
+
+                        <!-- Game Context Bar -->
+                        <div class="game-context">
+                            <div class="game-icon">🏀</div>
+                            <div class="game-info">
+                                <h3>Lakers vs Warriors</h3>
+                                <p>Today at 7:30 PM • NBA</p>
+                            </div>
+                        </div>
+
+                        <!-- Purchase Cards -->
+                        <div class="content-container">
+                            <div class="section-header">
+                                <h2>Select Team or Bundle</h2>
+                            </div>
+
+                            <!-- Lakers Card -->
+                            <div class="purchase-card">
+                                <div class="card-header">
+                                    <div class="card-title-section">
+                                        <div class="card-team-name">🟣 Los Angeles Lakers</div>
+                                        <div class="card-subtitle">Lakers injury report only</div>
+                                    </div>
+                                </div>
+                                <div class="card-preview">
+                                    <strong>Preview:</strong>
+                                    • 2 players OUT<br>
+                                    • 1 player QUESTIONABLE<br>
+                                    • High impact on offensive efficiency
+                                </div>
+                                <div class="purchase-section">
+                                    <div class="price-tag">
+                                        <svg viewBox="0 0 24 24" fill="#42E6FF">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <text x="12" y="16" text-anchor="middle" fill="#0A1628" font-size="12" font-weight="700">BR</text>
+                                        </svg>
+                                        <span class="price-amount">30</span>
+                                    </div>
+                                    <button class="unlock-button">Unlock Lakers Intel</button>
+                                </div>
+                            </div>
+
+                            <!-- Warriors Card -->
+                            <div class="purchase-card">
+                                <div class="card-header">
+                                    <div class="card-title-section">
+                                        <div class="card-team-name">🔵 Golden State Warriors</div>
+                                        <div class="card-subtitle">Warriors injury report only</div>
+                                    </div>
+                                </div>
+                                <div class="card-preview">
+                                    <strong>Preview:</strong>
+                                    • 2 players DAY-TO-DAY<br>
+                                    • Minor injuries with minimal impact<br>
+                                    • Full strength expected
+                                </div>
+                                <div class="purchase-section">
+                                    <div class="price-tag">
+                                        <svg viewBox="0 0 24 24" fill="#42E6FF">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <text x="12" y="16" text-anchor="middle" fill="#0A1628" font-size="12" font-weight="700">BR</text>
+                                        </svg>
+                                        <span class="price-amount">30</span>
+                                    </div>
+                                    <button class="unlock-button">Unlock Warriors Intel</button>
+                                </div>
+                            </div>
+
+                            <!-- Bundle Card (Best Value) -->
+                            <div class="purchase-card bundle">
+                                <div class="card-header">
+                                    <div class="card-title-section">
+                                        <div class="card-team-name">⭐ Full Game Bundle</div>
+                                        <div class="card-subtitle">Both teams + comparative analysis</div>
+                                    </div>
+                                    <div class="card-badge badge-save">Save 10 BR</div>
+                                </div>
+                                <div class="card-preview">
+                                    <strong>Includes:</strong>
+                                    • Complete injury reports for both teams<br>
+                                    • Head-to-head injury comparison<br>
+                                    • Game-level intel insight & betting impact<br>
+                                    • Impact scoring for both sides
+                                </div>
+                                <div class="purchase-section">
+                                    <div class="price-tag">
+                                        <svg viewBox="0 0 24 24" fill="#42E6FF">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <text x="12" y="16" text-anchor="middle" fill="#0A1628" font-size="12" font-weight="700">BR</text>
+                                        </svg>
+                                        <span class="price-amount">50</span>
+                                        <span class="price-original">60</span>
+                                    </div>
+                                    <button class="unlock-button">🔥 Unlock Bundle</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Level Separator -->
+        <div class="level-separator">
+            <h2>⬇️ LEVEL 3: Injury Report View</h2>
+            <p>After user purchases Bundle Card (50 BR) - Full injury intel displayed</p>
+        </div>
+
+        <!-- Level 3 Screen -->
+        <div class="screens-grid">
+            <div style="grid-column: 1 / -1; max-width: 390px; margin: 0 auto;">
+                <div class="screen-label">📱 LEVEL 3: Full Injury Report (Purchased)</div>
+                <div class="phone-frame">
+                    <div class="screen">
+                        <!-- Header -->
+                        <div class="header">
+                            <div class="back-button">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#42E6FF" stroke-width="2">
+                                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                                </svg>
+                            </div>
+                            <div class="header-title">
+                                <h1>Full Game Injury Intel</h1>
+                                <div class="header-subtitle">Complete Report</div>
+                            </div>
+                        </div>
+
+                        <!-- Game Context Bar -->
+                        <div class="game-context">
+                            <div class="game-icon">🏀</div>
+                            <div class="game-info">
+                                <h3>Lakers vs Warriors</h3>
+                                <p>Today at 7:30 PM • NBA</p>
+                            </div>
+                        </div>
+
+                        <!-- Report Content -->
+                        <div class="content-container">
+                            <!-- Ownership Badge -->
+                            <div class="ownership-badge">
+                                <span>✅</span>
+                                <span>Owned - Purchased for 50 BR</span>
+                            </div>
+
+                            <!-- Injury Report Header -->
+                            <div class="injury-report-header">
+                                <span>🏥</span>
+                                <h4>Complete Injury Report</h4>
+                            </div>
+
+                            <!-- Lakers Injuries -->
+                            <div class="team-injuries">
+                                <div class="team-name">🟣 Los Angeles Lakers</div>
+
+                                <div class="injury-item">
+                                    <div class="injury-item-header">
+                                        <div class="player-name">LeBron James</div>
+                                        <div class="injury-status status-out">OUT</div>
+                                    </div>
+                                    <div class="injury-details">
+                                        <div class="injury-detail-row">
+                                            <span>💊</span>
+                                            <span>Left Ankle • Surgery</span>
+                                        </div>
+                                        <div class="injury-detail-row">
+                                            <span>📅</span>
+                                            <span>Expected Return: Dec 15, 2025</span>
+                                        </div>
+                                        <div style="margin-top: 8px; font-style: italic;">
+                                            "James underwent surgery on his fractured left ankle. Expected recovery time is 3-4 months."
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="injury-item">
+                                    <div class="injury-item-header">
+                                        <div class="player-name">Anthony Davis</div>
+                                        <div class="injury-status status-questionable">QUESTIONABLE</div>
+                                    </div>
+                                    <div class="injury-details">
+                                        <div class="injury-detail-row">
+                                            <span>💊</span>
+                                            <span>Back • Spasm</span>
+                                        </div>
+                                        <div class="injury-detail-row">
+                                            <span>📅</span>
+                                            <span>Game-Time Decision</span>
+                                        </div>
+                                        <div style="margin-top: 8px; font-style: italic;">
+                                            "Davis is dealing with back spasms and is questionable for tonight's game."
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="injury-item">
+                                    <div class="injury-item-header">
+                                        <div class="player-name">D'Angelo Russell</div>
+                                        <div class="injury-status status-out">OUT</div>
+                                    </div>
+                                    <div class="injury-details">
+                                        <div class="injury-detail-row">
+                                            <span>💊</span>
+                                            <span>Knee • Rest</span>
+                                        </div>
+                                        <div class="injury-detail-row">
+                                            <span>📅</span>
+                                            <span>Expected Return: Oct 10, 2025</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Warriors Injuries -->
+                            <div class="team-injuries">
+                                <div class="team-name">🔵 Golden State Warriors</div>
+
+                                <div class="injury-item">
+                                    <div class="injury-item-header">
+                                        <div class="player-name">Trayce Jackson-Davis</div>
+                                        <div class="injury-status status-day-to-day">DAY-TO-DAY</div>
+                                    </div>
+                                    <div class="injury-details">
+                                        <div class="injury-detail-row">
+                                            <span>💊</span>
+                                            <span>Right Thumb • Not Specified</span>
+                                        </div>
+                                        <div class="injury-detail-row">
+                                            <span>📅</span>
+                                            <span>Expected Return: Oct 5, 2025</span>
+                                        </div>
+                                        <div style="margin-top: 8px; font-style: italic;">
+                                            "Jackson-Davis is dealing with a thumb injury but could play Sunday."
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="injury-item">
+                                    <div class="injury-item-header">
+                                        <div class="player-name">Kyle Anderson</div>
+                                        <div class="injury-status status-day-to-day">DAY-TO-DAY</div>
+                                    </div>
+                                    <div class="injury-details">
+                                        <div class="injury-detail-row">
+                                            <span>💊</span>
+                                            <span>Ankle • Not Specified</span>
+                                        </div>
+                                        <div class="injury-detail-row">
+                                            <span>📅</span>
+                                            <span>Expected Return: Oct 5, 2025</span>
+                                        </div>
+                                        <div style="margin-top: 8px; font-style: italic;">
+                                            "Anderson tweaked his ankle during practice and is day-to-day."
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Intel Insight -->
+                            <div class="intel-insight">
+                                <div class="insight-header">
+                                    <span>💡</span>
+                                    <h4>Intel Insight</h4>
+                                </div>
+                                <div class="insight-text">
+                                    Lakers are significantly impacted by injuries. Without LeBron James and potentially Anthony Davis, their offensive efficiency drops by 22%. Warriors have minor day-to-day injuries with minimal impact. This gives Golden State a significant advantage in this matchup.
+                                </div>
+                                <div class="impact-scores">
+                                    <span>Injury Impact Score:</span>
+                                    <span class="impact-high">Lakers: 24.0</span>
+                                    <span>|</span>
+                                    <span class="impact-low">Warriors: 2.0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Explanation -->
+        <div style="text-align: center; margin-top: 40px; color: rgba(255, 255, 255, 0.5); font-size: 14px; max-width: 800px; margin-left: auto; margin-right: auto;">
+            <h3 style="color: #42E6FF; font-size: 20px; margin-bottom: 16px;">Three-Level Navigation System</h3>
+
+            <div style="text-align: left; line-height: 1.8;">
+                <p style="margin-bottom: 12px;"><strong style="color: white;">Level 1 - Intel Type Selection:</strong></p>
+                <ul style="margin-bottom: 20px; padding-left: 20px;">
+                    <li>User taps "Get The Edge" from bet selection page</li>
+                    <li>Presented with grid of available intel types (Injury, Analytics, Betting, etc.)</li>
+                    <li>Only shows types that have available data for this game</li>
+                    <li>Each tile shows preview stats (e.g., injury counts)</li>
+                    <li>User selects which intel type they want (e.g., taps "Injury Intel")</li>
+                </ul>
+
+                <p style="margin-bottom: 12px;"><strong style="color: white;">Level 2 - Team Purchase Options:</strong></p>
+                <ul style="margin-bottom: 20px; padding-left: 20px;">
+                    <li>After selecting intel type, user sees 3 purchase options</li>
+                    <li><strong>Team A Card</strong> - 30 BR (Lakers only)</li>
+                    <li><strong>Team B Card</strong> - 30 BR (Warriors only)</li>
+                    <li><strong>Bundle Card</strong> - 50 BR (Both teams, save 10 BR)</li>
+                    <li>Each card shows preview of what's included</li>
+                    <li>Bundle highlighted as best value</li>
+                    <li>User selects and purchases one option</li>
+                </ul>
+
+                <p style="margin-bottom: 12px;"><strong style="color: white;">Level 3 - Injury Report View:</strong></p>
+                <ul style="margin-bottom: 20px; padding-left: 20px;">
+                    <li>After purchase, user immediately sees full injury report</li>
+                    <li>Shows "Owned" badge confirming purchase</li>
+                    <li>Displays detailed injury information for purchased team(s)</li>
+                    <li><strong>For each injured player:</strong> Status badge, injury type/location, expected return, ESPN commentary</li>
+                    <li><strong>Intel Insight section:</strong> Game impact analysis, injury impact scores, betting recommendations</li>
+                    <li>Report is saved and accessible anytime before game starts</li>
+                </ul>
+
+                <p style="margin-bottom: 12px;"><strong style="color: white;">Use Cases:</strong></p>
+                <ul style="padding-left: 20px;">
+                    <li>Betting on Lakers player props → Buy Lakers card only (30 BR) → See Lakers injuries</li>
+                    <li>Betting on Warriors ML → Buy Warriors card only (30 BR) → See Warriors injuries</li>
+                    <li>Betting on game total/spread → Buy bundle (50 BR) → See both teams + comparison</li>
+                    <li>Want maximum intel → Buy bundle (50 BR) → Get complete injury intel + impact analysis</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

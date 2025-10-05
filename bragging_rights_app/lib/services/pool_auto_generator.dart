@@ -290,7 +290,7 @@ class PoolAutoGenerator {
   }) async {
     try {
       // Clean up old-style pools for sports we've updated to unified pools
-      final unifiedPoolSports = ['MLB', 'NFL', 'NBA', 'NHL', 'SOCCER', 'BOXING', 'MMA', 'UFC'];
+      final unifiedPoolSports = ['MLB', 'NFL', 'NCAAF', 'NBA', 'NCAAB', 'NHL', 'SOCCER', 'BOXING', 'MMA', 'UFC'];
       final sportUpper = game.sport.toUpperCase();
 
       if (unifiedPoolSports.contains(sportUpper)) {
@@ -355,10 +355,12 @@ class PoolAutoGenerator {
       }
 
       for (final buyIn in quickPlayBuyIns) {
-        // For MLB, NFL, NBA, NHL, Soccer, Boxing, and MMA, create a single pool that allows all available bet types
+        // For MLB, NFL, NCAAF, NBA, NCAAB, NHL, Soccer, Boxing, and MMA, create a single pool that allows all available bet types
         if (game.sport.toUpperCase() == 'MLB' ||
             game.sport.toUpperCase() == 'NFL' ||
+            game.sport.toUpperCase() == 'NCAAF' ||
             game.sport.toUpperCase() == 'NBA' ||
+            game.sport.toUpperCase() == 'NCAAB' ||
             game.sport.toUpperCase() == 'NHL' ||
             game.sport.toUpperCase() == 'SOCCER' ||
             game.sport.toUpperCase() == 'BOXING' ||

@@ -2,7 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'injury_model.dart';
 
 enum IntelCardType {
-  gameInjuryReport, // Single game, both teams
+  gameInjuryReport, // Single game, both teams (bundle)
+  teamInjuryReport, // Single team injury report
   teamWeeklyInjury, // One team, week of games
   starPlayerDeepDive, // Individual player analysis
   leagueDaily, // All games for one day

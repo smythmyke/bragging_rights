@@ -610,16 +610,16 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: _getSportColor(game.sport).withOpacity(0.2),
+                          color: _getSportColor(game.sportCategory).withOpacity(0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              _getSportIcon(game.sport),
+                              _getSportIcon(game.sportCategory),
                               size: 16,
-                              color: _getSportColor(game.sport),
+                              color: _getSportColor(game.sportCategory),
                             ),
                             const SizedBox(width: 4),
                             Text(
@@ -627,7 +627,7 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                color: _getSportColor(game.sport),
+                                color: _getSportColor(game.sportCategory),
                               ),
                             ),
                           ],

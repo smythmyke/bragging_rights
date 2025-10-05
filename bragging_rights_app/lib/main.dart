@@ -33,6 +33,9 @@ import 'screens/friends/invite_friends_screen.dart';
 import 'screens/test/mlb_debug_screen.dart';
 import 'screens/test/espn_resolver_test_screen.dart';
 import 'screens/test/soccer_resolver_test_screen.dart';
+import 'screens/intel/intel_type_selection_screen.dart';
+import 'screens/intel/injury_intel_purchase_screen.dart';
+import 'screens/intel/injury_report_view_screen.dart';
 import 'models/fight_card_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'services/mma_service.dart';
@@ -129,6 +132,49 @@ class BraggingRightsApp extends StatelessWidget {
               poolName: args['poolName']?.toString() ?? 'Pool',
               poolId: args['poolId']?.toString() ?? '',
               gameId: args['gameId']?.toString(),
+            ),
+          );
+        } else if (settings.name == '/intel_types') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => IntelTypeSelectionScreen(
+              gameId: args['gameId']?.toString(),
+              gameTitle: args['gameTitle']?.toString() ?? 'Game',
+              sport: args['sport']?.toString() ?? 'basketball',
+              homeTeamId: args['homeTeamId']?.toString(),
+              awayTeamId: args['awayTeamId']?.toString(),
+              homeTeamName: args['homeTeamName']?.toString() ?? 'Home',
+              awayTeamName: args['awayTeamName']?.toString() ?? 'Away',
+              gameTime: args['gameTime'] as DateTime?,
+            ),
+          );
+        } else if (settings.name == '/injury_intel_purchase') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => InjuryIntelPurchaseScreen(
+              gameId: args['gameId']?.toString(),
+              gameTitle: args['gameTitle']?.toString() ?? 'Game',
+              sport: args['sport']?.toString() ?? 'basketball',
+              homeTeamId: args['homeTeamId']?.toString(),
+              awayTeamId: args['awayTeamId']?.toString(),
+              homeTeamName: args['homeTeamName']?.toString() ?? 'Home',
+              awayTeamName: args['awayTeamName']?.toString() ?? 'Away',
+              gameTime: args['gameTime'] as DateTime?,
+              homeInjuryCount: args['homeInjuryCount'] as int? ?? 0,
+              awayInjuryCount: args['awayInjuryCount'] as int? ?? 0,
+            ),
+          );
+        } else if (settings.name == '/injury_report_view') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => InjuryReportViewScreen(
+              userCard: args['userCard'],
+              cardType: args['cardType']?.toString() ?? 'bundle',
+              homeTeamId: args['homeTeamId']?.toString(),
+              awayTeamId: args['awayTeamId']?.toString(),
+              homeTeamName: args['homeTeamName']?.toString() ?? 'Home',
+              awayTeamName: args['awayTeamName']?.toString() ?? 'Away',
+              sport: args['sport']?.toString() ?? 'basketball',
             ),
           );
         } else if (settings.name == '/edge') {

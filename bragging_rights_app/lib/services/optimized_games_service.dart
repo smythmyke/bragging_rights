@@ -323,6 +323,8 @@ class OptimizedGamesService {
         } else {
           final scores = await _oddsApiService.getSportScores(sport);
           final updatedGames = <GameModel>[];
+          final now = DateTime.now();
+
           for (final game in oddsApiGames) {
             final scoreData = scores[game.id];
           if (scoreData != null && scoreData['scores'] != null) {
@@ -368,7 +370,7 @@ class OptimizedGamesService {
             }
 
             // Create updated game with score data
-            updatedGames.add(GameModel(
+            final updatedGame = GameModel(
               id: game.id,
               sport: game.sport,
               homeTeam: game.homeTeam,
@@ -382,8 +384,21 @@ class OptimizedGamesService {
               broadcast: game.broadcast,
               homeTeamLogo: game.homeTeamLogo,
               awayTeamLogo: game.awayTeamLogo,
-            ));
+            );
+
+            // Filter out completed games (similar to NFL/NBA filtering)
+            if (updatedGame.status == 'final') {
+              debugPrint('🚫 Filtering out completed $sport game: ${game.awayTeam} @ ${game.homeTeam} at ${game.gameTime}');
+              continue; // Skip this game
+            }
+
+            updatedGames.add(updatedGame);
           } else {
+            // No score data - check if game is in the past
+            if (game.gameTime.isBefore(now) && game.status != 'live') {
+              debugPrint('🚫 Filtering out past $sport game: ${game.awayTeam} @ ${game.homeTeam} at ${game.gameTime}');
+              continue; // Skip past games without scores
+            }
             updatedGames.add(game);
           }
           }
@@ -464,14 +479,18 @@ class OptimizedGamesService {
 
     final games = <GameModel>[];
     final now = DateTime.now();
+    final cutoffDate = now.add(Duration(days: daysAhead));
 
     for (final event in scoreboard.events) {
       try {
         final game = await _convertEspnEventToGame(event, 'NBA');
         if (game != null) {
-          // Filter out past games - only include games that haven't started yet or are currently live
-          if (game.gameTime.isAfter(now) || game.status == 'live') {
+          // Filter: only include games that are (1) not in the past AND (2) within the date range
+          if ((game.gameTime.isAfter(now) || game.status == 'live') &&
+              game.gameTime.isBefore(cutoffDate)) {
             games.add(game);
+          } else if (game.gameTime.isAfter(cutoffDate)) {
+            debugPrint('🚫 Filtering out NBA game beyond ${daysAhead}-day window: ${game.awayTeam} @ ${game.homeTeam} at ${game.gameTime}');
           } else {
             debugPrint('🚫 Filtering out past NBA game: ${game.awayTeam} @ ${game.homeTeam} at ${game.gameTime}');
           }
@@ -481,7 +500,7 @@ class OptimizedGamesService {
       }
     }
 
-    debugPrint('✅ NBA: Kept ${games.length} future/live games from ${scoreboard.events.length} total ESPN events');
+    debugPrint('✅ NBA: Kept ${games.length} future/live games within $daysAhead days from ${scoreboard.events.length} total ESPN events');
     return games;
   }
 

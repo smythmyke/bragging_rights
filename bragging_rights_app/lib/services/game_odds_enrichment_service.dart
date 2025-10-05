@@ -22,9 +22,21 @@ class GameOddsEnrichmentService {
   /// Enrich a game with odds data and create pools
   Future<void> enrichGameWithOdds(GameModel game) async {
     try {
+      debugPrint('🎲 ========== ENRICH GAME WITH ODDS CALLED ==========');
+      debugPrint('🎲 Game: ${game.awayTeam} @ ${game.homeTeam}');
+      debugPrint('🎲 Sport: ${game.sport}');
+      debugPrint('🎲 Status: ${game.status}');
+      debugPrint('🎲 Days until game: ${game.gameTime.difference(DateTime.now()).inDays}');
+
       // Skip if game is not scheduled or too far in future
-      if (game.status != 'scheduled') return;
-      if (game.gameTime.difference(DateTime.now()).inDays > 7) return;
+      if (game.status != 'scheduled') {
+        debugPrint('🎲 ❌ Skipping - game status is not scheduled: ${game.status}');
+        return;
+      }
+      if (game.gameTime.difference(DateTime.now()).inDays > 7) {
+        debugPrint('🎲 ❌ Skipping - game is more than 7 days away');
+        return;
+      }
       
       // Check if there's already an ongoing fetch for this game
       if (_ongoingFetches.containsKey(game.id)) {
@@ -83,6 +95,12 @@ class GameOddsEnrichmentService {
         debugPrint('✅ Added odds to game ${game.id}: ${game.awayTeam} @ ${game.homeTeam}');
         debugPrint('   Available: ML=$hasMoneyline, Spread=$hasSpread, Total=$hasTotal');
       } else {
+        debugPrint('📊 ❌ No odds returned from API');
+        debugPrint('📊 This could mean:');
+        debugPrint('📊   1. No matching game found');
+        debugPrint('📊   2. Sport key not recognized');
+        debugPrint('📊   3. Team name mismatch');
+
         // No odds at all - still save the game but mark odds as unavailable
         await _firestore.collection('games').doc(game.id).update({
           'oddsAvailable': {
@@ -92,9 +110,11 @@ class GameOddsEnrichmentService {
           },
           'oddsLastUpdated': FieldValue.serverTimestamp(),
         });
-        
-        debugPrint('⚠️ No odds available for game ${game.id}: ${game.awayTeam} @ ${game.homeTeam}');
+
+        debugPrint('📊 ⚠️ Marked game as having no odds: ${game.awayTeam} @ ${game.homeTeam}');
       }
+
+      debugPrint('📊 ========== ODDS FETCH END ==========');
       
       // Auto-create pools for this game
       await _poolGenerator.generateGamePools(
@@ -110,28 +130,37 @@ class GameOddsEnrichmentService {
   Future<Map<String, dynamic>?> _fetchOddsForGame(GameModel game) async {
     try {
       // Try The Odds API first (now with correct API key from .env)
-      debugPrint('📊 Attempting to fetch odds from The Odds API for ${game.awayTeam} @ ${game.homeTeam}');
+      debugPrint('📊 ========== ODDS FETCH START ==========');
+      debugPrint('📊 Game: ${game.awayTeam} @ ${game.homeTeam}');
+      debugPrint('📊 Sport: ${game.sport} (will be lowercased to: ${game.sport.toLowerCase()})');
+      debugPrint('📊 Game ID: ${game.id}');
+      debugPrint('📊 Game Time: ${game.gameTime}');
+      debugPrint('📊 Attempting to fetch odds from The Odds API...');
+
       final odds = await _oddsService.getMatchOdds(
         sport: game.sport.toLowerCase(),
         homeTeam: game.homeTeam,
         awayTeam: game.awayTeam,
       );
+
+      debugPrint('📊 Odds API response received: ${odds != null ? "SUCCESS" : "NULL"}');
       
       if (odds != null && odds.isNotEmpty) {
-        debugPrint('✅ Got odds from The Odds API');
-        debugPrint('   Raw odds response: $odds');
+        debugPrint('📊 ✅ Got odds from The Odds API');
+        debugPrint('📊 Raw odds response keys: ${odds.keys.toList()}');
+        debugPrint('📊 Full odds response: $odds');
 
         // Extract the odds from the response and convert to standard format
         final oddsData = odds['odds'] ?? {};
-        debugPrint('   Extracted odds data: $oddsData');
+        debugPrint('📊 Extracted odds data: $oddsData');
 
         final h2h = oddsData['h2h'] ?? {};
         final spreads = oddsData['spreads'] ?? {};
         final totals = oddsData['totals'] ?? {};
 
-        debugPrint('   h2h: $h2h');
-        debugPrint('   spreads: $spreads');
-        debugPrint('   totals: $totals');
+        debugPrint('📊 h2h (moneyline): $h2h');
+        debugPrint('📊 spreads: $spreads');
+        debugPrint('📊 totals: $totals');
 
         final standardOdds = <String, dynamic>{};
 
