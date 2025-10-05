@@ -57,9 +57,13 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         : widget.sport.toUpperCase() == 'SOCCER'
         ? 4
         : widget.sport.toUpperCase() == 'NBA'
-        ? 5
+        ? 4
+        : widget.sport.toUpperCase() == 'NCAAB'
+        ? 4  // NCAAB tabs: Overview, Stats, Standings, H2H
         : widget.sport.toUpperCase() == 'NFL'
         ? 3  // NFL tabs: Overview, Stats, Standings
+        : widget.sport.toUpperCase() == 'NCAAF'
+        ? 3  // NCAAF tabs: Overview, Stats, Standings
         : widget.sport.toUpperCase() == 'NHL'
         ? 3
         : 5;
@@ -99,6 +103,10 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         await _loadNFLDetails();
       } else if (widget.sport.toUpperCase() == 'NHL') {
         await _loadNHLDetails();
+      } else if (widget.sport.toUpperCase() == 'NCAAF') {
+        await _loadNCAAfDetails();
+      } else if (widget.sport.toUpperCase() == 'NCAAB') {
+        await _loadNCAABDetails();
       } else {
         // TODO: Implement for other sports
       }
@@ -656,6 +664,19 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                       const Tab(text: 'Stats'),
                       const Tab(text: 'Standings'),
                     ]
+                  : widget.sport.toUpperCase() == 'NCAAF'
+                  ? [
+                      const Tab(text: 'Overview'),
+                      const Tab(text: 'Stats'),
+                      const Tab(text: 'Standings'),
+                    ]
+                  : widget.sport.toUpperCase() == 'NCAAB'
+                  ? [
+                      const Tab(text: 'Overview'),
+                      const Tab(text: 'Stats'),
+                      const Tab(text: 'Standings'),
+                      const Tab(text: 'H2H'),
+                    ]
                   : widget.sport.toUpperCase() == 'NHL'
                   ? [
                       const Tab(text: 'Overview'),
@@ -707,6 +728,19 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                           _buildNFLOverviewTab(),
                           _buildNFLStatsTab(),
                           _buildNFLStandingsTab(),
+                        ]
+                      : widget.sport.toUpperCase() == 'NCAAF'
+                      ? [
+                          _buildNFLOverviewTab(),  // Reuse NFL widgets
+                          _buildNFLStatsTab(),
+                          _buildNFLStandingsTab(),
+                        ]
+                      : widget.sport.toUpperCase() == 'NCAAB'
+                      ? [
+                          _buildNBAOverviewTab(),  // Reuse NBA widgets
+                          _buildNBAStatsTab(),
+                          _buildNBAStandingsTab(),
+                          _buildNBAH2HTab(),
                         ]
                       : widget.sport.toUpperCase() == 'NHL'
                       ? [
@@ -4267,6 +4301,103 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
     }
   }
 
+  /// Load NCAAB game details from ESPN API
+  Future<void> _loadNCAABDetails() async {
+    try {
+      print('=== LOADING NCAAB DETAILS ===');
+      print('Game ID: ${widget.gameId}');
+      print('Game Data Available: ${_game != null}');
+      print('Teams: ${_game?.awayTeam} vs ${_game?.homeTeam}');
+
+      // Use the ESPN ID resolver service
+      final resolver = EspnIdResolverService();
+
+      // Check if game already has ESPN ID
+      var espnGameId = _game?.espnId;
+
+      // If no ESPN ID, resolve it
+      if (espnGameId == null && _game != null) {
+        print('🔍 No ESPN ID found, attempting to resolve...');
+        espnGameId = await resolver.resolveEspnId(_game!);
+
+        if (espnGameId != null) {
+          print('✅ ESPN ID resolved successfully: $espnGameId');
+        } else {
+          print('❌ Could not resolve ESPN ID');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Game details are temporarily unavailable'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+          return;
+        }
+      } else if (espnGameId == null) {
+        print('❌ No game data available to resolve ESPN ID');
+        return;
+      } else {
+        print('✅ Using existing ESPN ID: $espnGameId');
+      }
+
+      print('🌐 Fetching NCAAB game summary from ESPN...');
+      final espnUrl = 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/summary?event=$espnGameId';
+      print('ESPN URL: $espnUrl');
+
+      final response = await http.get(Uri.parse(espnUrl));
+      print('ESPN Response Status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('✅ ESPN NCAAB data received successfully');
+        print('Data keys: ${data.keys.toList()}');
+        print('🏀 NCAAB boxscore data: ${data['boxscore'] != null ? 'Found' : 'Not found'}');
+        print('🏀 NCAAB leaders data: ${data['leaders'] != null ? 'EXISTS' : 'NULL'}');
+        print('🏀 NCAAB standings data: ${data['standings'] != null ? 'EXISTS' : 'NULL'}');
+        print('🏀 NCAAB lastFiveGames data: ${data['lastFiveGames'] != null ? 'EXISTS' : 'NULL'}');
+
+        setState(() {
+          _eventDetails = data;
+          _boxScore = data['boxscore'];
+        });
+
+        // Fetch conference standings
+        await _fetchNCAABStandings(data);
+
+        print('✅ NCAAB details loaded successfully');
+      } else {
+        print('❌ Failed to fetch ESPN NCAAB data: ${response.statusCode}');
+      }
+    } catch (e, stackTrace) {
+      print('❌ Error loading NCAAB details: $e');
+      print('Stack trace: $stackTrace');
+    }
+  }
+
+  /// Fetch NCAAB standings (conference standings)
+  Future<void> _fetchNCAABStandings(Map<String, dynamic> gameData) async {
+    try {
+      print('🏀 Fetching NCAAB standings...');
+
+      // NCAAB standings are typically in the summary response
+      final standingsData = gameData['standings'];
+
+      if (standingsData != null && standingsData['groups'] != null) {
+        setState(() {
+          if (_eventDetails != null) {
+            _eventDetails!['standings'] = standingsData;
+          }
+        });
+        print('✅ NCAAB standings loaded from summary');
+      } else {
+        print('⚠️ No standings data available in summary');
+      }
+    } catch (e) {
+      print('❌ Error loading NCAAB standings: $e');
+    }
+  }
+
   Future<void> _loadNFLDetails() async {
     try {
       print('=== LOADING NFL DETAILS ===');
@@ -4410,6 +4541,134 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
 
       final dateString = '${gameDate.year}${gameDate.month.toString().padLeft(2, '0')}${gameDate.day.toString().padLeft(2, '0')}';
       final scoreboardUrl = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=$dateString';
+
+      print('Checking scoreboard for weather: $scoreboardUrl');
+      final response = await http.get(Uri.parse(scoreboardUrl));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final events = data['events'] as List? ?? [];
+
+        for (final event in events) {
+          if (event['id'] == espnGameId) {
+            final weather = event['competitions']?[0]?['weather'];
+            if (weather != null) {
+              print('✅ Weather data found: ${weather['displayValue']}');
+              setState(() {
+                _eventDetails!['weather'] = weather;
+              });
+            }
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      print('Error fetching weather data: $e');
+    }
+  }
+
+  /// Load NCAAF game details from ESPN API
+  Future<void> _loadNCAAfDetails() async {
+    try {
+      print('=== LOADING NCAAF DETAILS ===');
+      print('Game ID: ${widget.gameId}');
+      print('Teams: ${_game?.awayTeam} vs ${_game?.homeTeam}');
+
+      // Use the ESPN ID resolver service
+      final resolver = EspnIdResolverService();
+
+      // Check if game already has ESPN ID
+      var espnGameId = _game?.espnId;
+
+      // If no ESPN ID, resolve it
+      if (espnGameId == null && _game != null) {
+        print('Resolving ESPN ID using resolver service...');
+        espnGameId = await resolver.resolveEspnId(_game!);
+
+        if (espnGameId != null) {
+          print('✅ ESPN ID resolved: $espnGameId');
+        } else {
+          print('❌ Could not resolve ESPN ID');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Game details are temporarily unavailable'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+          return;
+        }
+      } else if (espnGameId == null) {
+        print('❌ No game data available to resolve ESPN ID');
+        return;
+      }
+
+      print('Using ESPN ID: $espnGameId');
+
+      // Fetch game summary data from ESPN college-football endpoint
+      final summaryUrl = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/summary?event=$espnGameId';
+      print('Fetching summary from: $summaryUrl');
+
+      final summaryResponse = await http.get(Uri.parse(summaryUrl));
+      print('Summary response status: ${summaryResponse.statusCode}');
+
+      if (summaryResponse.statusCode == 200) {
+        final summaryData = json.decode(summaryResponse.body);
+
+        // Log available data sections
+        print('Summary data keys: ${summaryData.keys.toList()}');
+        print('🏈 NCAAF boxscore data: ${summaryData['boxscore'] != null ? 'Found' : 'Not found'}');
+        print('🏈 NCAAF leaders data: ${summaryData['leaders'] != null ? 'EXISTS' : 'NULL'}');
+        print('🏈 NCAAF drives data: ${summaryData['drives'] != null ? 'EXISTS' : 'NULL'}');
+        print('🏈 NCAAF standings data: ${summaryData['standings'] != null ? 'EXISTS' : 'NULL'}');
+
+        setState(() {
+          _boxScore = summaryData['boxscore'];
+          _gameData = summaryData;
+          // Use header.competitions for event details
+          if (summaryData['header']?['competitions'] != null &&
+              (summaryData['header']['competitions'] as List).isNotEmpty) {
+            _eventDetails = {
+              ...summaryData,
+              'competitions': summaryData['header']['competitions'],
+            };
+          } else {
+            _eventDetails = summaryData;
+          }
+        });
+
+        print('✅ NCAAF details loaded successfully');
+
+        // Check for weather data if outdoor venue
+        if (summaryData['header']?['competitions']?[0]?['venue']?['indoor'] == false) {
+          print('Outdoor venue detected, checking for weather data...');
+          await _loadNCAAfWeatherData(espnGameId);
+        }
+      } else {
+        print('❌ Summary API failed with status ${summaryResponse.statusCode}');
+      }
+    } catch (e, stackTrace) {
+      print('❌ Error loading NCAAF details: $e');
+      print('Stack trace: $stackTrace');
+    }
+  }
+
+  Future<void> _loadNCAAfWeatherData(String espnGameId) async {
+    try {
+      // Get current date or game date
+      DateTime? gameDate;
+      if (_eventDetails?['header']?['competitions']?[0]?['date'] != null) {
+        try {
+          gameDate = DateTime.parse(_eventDetails!['header']['competitions'][0]['date']);
+        } catch (e) {
+          print('Error parsing date from header: $e');
+        }
+      }
+      gameDate ??= _game?.gameTime ?? DateTime.now();
+
+      final dateString = '${gameDate.year}${gameDate.month.toString().padLeft(2, '0')}${gameDate.day.toString().padLeft(2, '0')}';
+      final scoreboardUrl = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=$dateString';
 
       print('Checking scoreboard for weather: $scoreboardUrl');
       final response = await http.get(Uri.parse(scoreboardUrl));
