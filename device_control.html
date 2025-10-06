@@ -323,6 +323,32 @@
 
         <div class="divider"></div>
 
+        <div class="section-title">🔧 Admin Tier Control (smythmyke)</div>
+        <div style="background: #fff3cd; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 4px solid #ffc107;">
+            <div style="font-size: 14px; color: #856404; margin-bottom: 10px;">
+                <strong>Current Tier:</strong> <span id="currentTier">Free Tier</span>
+            </div>
+            <div style="font-size: 12px; color: #856404;">
+                Toggle between free and premium experiences for testing
+            </div>
+        </div>
+        <div class="button-grid">
+            <button class="btn btn-success" onclick="setFreeTier()">
+                🆓 Force Free Tier
+            </button>
+            <button class="btn btn-warning" onclick="setPremiumTier()">
+                💎 Force Premium Tier
+            </button>
+            <button class="btn btn-info" onclick="setActualTier()">
+                ⚙️ Use Actual Status
+            </button>
+            <button class="btn btn-secondary" onclick="checkTierStatus()">
+                🔍 Check Current
+            </button>
+        </div>
+
+        <div class="divider"></div>
+
         <div class="section-title">Bragging Rights App</div>
         <div class="button-grid">
             <button class="btn btn-success" onclick="launchApp()">
@@ -817,6 +843,146 @@ The server will run on http://localhost:5000
             console.scrollTop = console.scrollHeight;
         };
 
+        // Admin Tier Control Functions
+        const ADMIN_USER_ID = 'JLl6AoOXHHUhIIW4t7xWDyqWsPm2'; // smythmyke@gmail.com
+
+        async function setFreeTier() {
+            setLoading(true);
+            log('Setting tier to FREE (no odds, simple picks only)...');
+            try {
+                const response = await fetch('http://localhost:5000/admin/set-tier', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: ADMIN_USER_ID,
+                        tier: 'free'
+                    })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    log('✅ Tier set to FREE');
+                    document.getElementById('currentTier').textContent = 'Free Tier (Simple Picks)';
+                    document.getElementById('currentTier').style.color = '#10b981';
+                    showToast('Now viewing as FREE user - restart app to see changes', 'success');
+                } else {
+                    log('Failed to set tier: ' + result.error, true);
+                    showToast('Failed to set tier', 'error');
+                }
+            } catch (error) {
+                log('Error: ' + error.message, true);
+                showToast('Server offline - run: python scripts/update_admin_tier.py free', 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function setPremiumTier() {
+            setLoading(true);
+            log('Setting tier to PREMIUM (with odds)...');
+            try {
+                const response = await fetch('http://localhost:5000/admin/set-tier', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: ADMIN_USER_ID,
+                        tier: 'premium'
+                    })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    log('✅ Tier set to PREMIUM');
+                    document.getElementById('currentTier').textContent = 'Premium Tier (With Odds)';
+                    document.getElementById('currentTier').style.color = '#f59e0b';
+                    showToast('Now viewing as PREMIUM user - restart app to see changes', 'success');
+                } else {
+                    log('Failed to set tier: ' + result.error, true);
+                    showToast('Failed to set tier', 'error');
+                }
+            } catch (error) {
+                log('Error: ' + error.message, true);
+                showToast('Server offline - run: python scripts/update_admin_tier.py premium', 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function setActualTier() {
+            setLoading(true);
+            log('Disabling admin override...');
+            try {
+                const response = await fetch('http://localhost:5000/admin/set-tier', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: ADMIN_USER_ID,
+                        tier: 'actual'
+                    })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    log('✅ Using actual isPremium status');
+                    document.getElementById('currentTier').textContent = 'Actual Status (Currently: Free)';
+                    document.getElementById('currentTier').style.color = '#6b7280';
+                    showToast('Using actual subscription status - restart app', 'success');
+                } else {
+                    log('Failed to disable override: ' + result.error, true);
+                    showToast('Failed to disable override', 'error');
+                }
+            } catch (error) {
+                log('Error: ' + error.message, true);
+                showToast('Server offline - run: python scripts/update_admin_tier.py actual', 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function checkTierStatus() {
+            setLoading(true);
+            log('Checking current tier status...');
+            try {
+                const response = await fetch(`http://localhost:5000/admin/tier-status?userId=${ADMIN_USER_ID}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    const override = result.adminOverride;
+                    const actual = result.actualStatus;
+
+                    log(`Admin Override: ${override.enabled ? 'ENABLED' : 'DISABLED'}`);
+                    log(`  Force Free: ${override.forceFreeTier}`);
+                    log(`  Force Premium: ${override.forcePremiumTier}`);
+                    log(`Actual Status: isPremium=${actual.isPremium}`);
+
+                    let tierText = '';
+                    let color = '';
+
+                    if (override.enabled && override.forceFreeTier) {
+                        tierText = 'Free Tier (Forced)';
+                        color = '#10b981';
+                    } else if (override.enabled && override.forcePremiumTier) {
+                        tierText = 'Premium Tier (Forced)';
+                        color = '#f59e0b';
+                    } else {
+                        tierText = `Actual Status (${actual.isPremium ? 'Premium' : 'Free'})`;
+                        color = '#6b7280';
+                    }
+
+                    document.getElementById('currentTier').textContent = tierText;
+                    document.getElementById('currentTier').style.color = color;
+                    showToast('Status updated', 'success');
+                } else {
+                    log('Failed to get status: ' + result.error, true);
+                    showToast('Failed to get status', 'error');
+                }
+            } catch (error) {
+                log('Error: ' + error.message, true);
+                showToast('Server offline - cannot check status', 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.ctrlKey || e.metaKey) {
@@ -832,6 +998,18 @@ The server will run on http://localhost:5000
                     case 's':
                         e.preventDefault();
                         checkStatus();
+                        break;
+                    case '1':
+                        e.preventDefault();
+                        setFreeTier();
+                        break;
+                    case '2':
+                        e.preventDefault();
+                        setPremiumTier();
+                        break;
+                    case '0':
+                        e.preventDefault();
+                        setActualTier();
                         break;
                 }
             }

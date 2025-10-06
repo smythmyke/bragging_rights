@@ -133,9 +133,29 @@ class _NeonGameCardState extends State<NeonGameCard>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildTeamName(widget.game.homeTeam),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildTeamName(widget.game.homeTeam),
+                                  ),
+                                  if (_isUnderdog('home'))
+                                    _buildUnderdogBadge(),
+                                  if (widget.game.homeTeamRecord != null)
+                                    _buildRecordBadge(widget.game.homeTeamRecord!),
+                                ],
+                              ),
                               const SizedBox(height: 4),
-                              _buildTeamName(widget.game.awayTeam),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildTeamName(widget.game.awayTeam),
+                                  ),
+                                  if (_isUnderdog('away'))
+                                    _buildUnderdogBadge(),
+                                  if (widget.game.awayTeamRecord != null)
+                                    _buildRecordBadge(widget.game.awayTeamRecord!),
+                                ],
+                              ),
                             ],
                           ),
                         ),
@@ -305,7 +325,7 @@ class _NeonGameCardState extends State<NeonGameCard>
   String _formatGameTime(DateTime gameTime) {
     final now = DateTime.now();
     final difference = gameTime.difference(now);
-    
+
     if (difference.inMinutes < 0) {
       return 'In Progress';
     } else if (difference.inHours < 1) {
@@ -315,5 +335,95 @@ class _NeonGameCardState extends State<NeonGameCard>
     } else {
       return '${gameTime.month}/${gameTime.day} ${gameTime.hour}:${gameTime.minute.toString().padLeft(2, '0')}';
     }
+  }
+
+  bool _isUnderdog(String team) {
+    // Determine underdog status based on record win percentage
+    // This mirrors the logic in simple_pick_scoring.dart
+
+    if (widget.game.homeTeamRecord == null || widget.game.awayTeamRecord == null) {
+      return false;
+    }
+
+    final homeWinPct = _parseWinPercentage(widget.game.homeTeamRecord!);
+    final awayWinPct = _parseWinPercentage(widget.game.awayTeamRecord!);
+
+    if (homeWinPct == null || awayWinPct == null) {
+      return false;
+    }
+
+    // Team with lower win percentage is the underdog
+    if (team == 'home') {
+      return homeWinPct < awayWinPct;
+    } else {
+      return awayWinPct < homeWinPct;
+    }
+  }
+
+  double? _parseWinPercentage(String record) {
+    // Parse record like "10-5" or "8-3-2" (wins-losses-ties)
+    final parts = record.split('-');
+    if (parts.isEmpty) return null;
+
+    try {
+      final wins = int.parse(parts[0]);
+      final losses = parts.length > 1 ? int.parse(parts[1]) : 0;
+      final ties = parts.length > 2 ? int.parse(parts[2]) : 0;
+
+      final totalGames = wins + losses + ties;
+      if (totalGames == 0) return null;
+
+      // Ties count as 0.5 wins
+      final adjustedWins = wins + (ties * 0.5);
+      return adjustedWins / totalGames;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Widget _buildUnderdogBadge() {
+    return Container(
+      margin: const EdgeInsets.only(left: 4, right: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppTheme.accentPurple.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: AppTheme.accentPurple.withOpacity(0.6),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        'UNDERDOG',
+        style: TextStyle(
+          color: AppTheme.accentPurple,
+          fontSize: 8,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecordBadge(String record) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceBlue.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        record,
+        style: TextStyle(
+          color: Colors.white.withOpacity(0.7),
+          fontSize: 9,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
   }
 }

@@ -52,3 +52,6 @@ bragging_rights_app/ios/Pods/
 # Firebase (if added later)
 google-services.json
 GoogleService-Info.plist
+service-account-key.json
+# Firebase credentials
+service-account-key.json

@@ -582,4 +582,70 @@ class BRTransaction {
         return source;
     }
   }
+
+  /// Get daily bonus status for UI display
+  Future<Map<String, dynamic>> getDailyBonusStatus(String userId) async {
+    try {
+      final doc = await _firestore.collection('users').doc(userId).get();
+
+      if (!doc.exists) {
+        return {
+          'canClaim': true,
+          'currentStreak': 0,
+          'longestStreak': 0,
+          'nextBonusAt': null,
+        };
+      }
+
+      final data = doc.data()!;
+      final lastBonus = data['lastDailyBonus'] as Timestamp?;
+      final currentStreak = (data['loginStreak'] ?? 0) as int;
+      final longestStreak = (data['longestLoginStreak'] ?? 0) as int;
+
+      bool canClaim = true;
+      DateTime? nextBonusAt;
+
+      if (lastBonus != null) {
+        final today = _getTodayDateString();
+        final lastBonusDate = _getDateString(lastBonus.toDate());
+
+        if (today == lastBonusDate) {
+          // Already claimed today
+          canClaim = false;
+          // Next bonus is tomorrow at midnight
+          final now = DateTime.now();
+          nextBonusAt = DateTime(now.year, now.month, now.day + 1);
+        }
+      }
+
+      return {
+        'canClaim': canClaim,
+        'currentStreak': currentStreak,
+        'longestStreak': longestStreak,
+        'nextBonusAt': nextBonusAt,
+      };
+    } catch (e) {
+      debugPrint('Error getting daily bonus status: $e');
+      return {
+        'canClaim': false,
+        'currentStreak': 0,
+        'longestStreak': 0,
+        'nextBonusAt': null,
+      };
+    }
+  }
+
+  /// Claim daily bonus with simplified map return (for UI convenience)
+  Future<Map<String, dynamic>> claimDailyBonusAsMap(String userId) async {
+    final result = await claimDailyBonus(userId);
+
+    return {
+      'success': result.success,
+      'message': result.message,
+      'amount': result.amount ?? 0,
+      'newBalance': result.newBalance ?? 0,
+      'streakBonus': result.metadata?['streakBonusEarned'] ?? false,
+      'newStreak': result.metadata?['streak'] ?? 1,
+    };
+  }
 }
