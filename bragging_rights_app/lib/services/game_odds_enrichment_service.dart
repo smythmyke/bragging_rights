@@ -11,7 +11,12 @@ class GameOddsEnrichmentService {
   final OddsApiService _oddsService = OddsApiService();
   final PoolAutoGenerator _poolGenerator = PoolAutoGenerator();
   final FreeOddsService _freeOddsService = FreeOddsService();
-  
+
+  // TEMPORARY KILL SWITCH - Set to false to stop ALL odds fetching
+  // Phase 1: false (save quota, build free tier)
+  // Phase 2: true (re-enable for premium users with subscription check)
+  static const bool ODDS_ENABLED_GLOBALLY = false;
+
   // Cache for tracking last odds fetch time per game
   static final Map<String, DateTime> _lastOddsFetchTime = {};
   static const Duration _oddsFetchDebounce = Duration(seconds: 30);
@@ -22,6 +27,12 @@ class GameOddsEnrichmentService {
   /// Enrich a game with odds data and create pools
   Future<void> enrichGameWithOdds(GameModel game) async {
     try {
+      // KILL SWITCH - Exit immediately if odds are disabled globally
+      if (!ODDS_ENABLED_GLOBALLY) {
+        debugPrint('⏸️ Odds fetching disabled globally (quota protection)');
+        return;
+      }
+
       debugPrint('🎲 ========== ENRICH GAME WITH ODDS CALLED ==========');
       debugPrint('🎲 Game: ${game.awayTeam} @ ${game.homeTeam}');
       debugPrint('🎲 Sport: ${game.sport}');
