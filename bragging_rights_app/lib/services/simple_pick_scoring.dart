@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
+import '../models/game_model.dart';
 
 /// Simple pick scoring system for games without odds
-/// Similar to MMA fight card scoring but adapted for team sports
+/// Uses team records to calculate underdog bonuses for free tier
 class SimplePickScoring {
   /// Calculate user's score for simple picks
   static double calculateScore({
@@ -30,6 +31,11 @@ class SimplePickScoring {
           // 1 star = 0.9x, 2 = 1.0x, 3 = 1.1x, 4 = 1.2x, 5 = 1.3x
           final confidenceMultiplier = 0.8 + (pick.confidence! * 0.1);
           score *= confidenceMultiplier;
+        }
+
+        // Apply underdog bonus (NEW for free tier)
+        if (result.underdogBonus != null) {
+          score += result.underdogBonus!;
         }
 
         totalScore += score;
@@ -65,6 +71,52 @@ class SimplePickScoring {
     }
 
     return payouts;
+  }
+
+  /// Calculate underdog bonus from team records
+  /// Formula: (opponentWins - pickedWins) / 20
+  /// Example: Picking 3-7 team over 8-2 team = (8 - 3) / 20 = 0.25 bonus
+  static double calculateUnderdogBonus({
+    required String pickedTeam,
+    required String opponentTeam,
+    required GameModel game,
+  }) {
+    // Determine which team was picked
+    final pickedHome = pickedTeam == game.homeTeam;
+
+    // Get team records (wins-losses)
+    final pickedRecord = pickedHome ? game.homeTeamRecord : game.awayTeamRecord;
+    final opponentRecord = pickedHome ? game.awayTeamRecord : game.homeTeamRecord;
+
+    if (pickedRecord == null || opponentRecord == null) {
+      return 0.0; // No record data available
+    }
+
+    // Parse records (e.g., "10-5" -> 10 wins, 5 losses)
+    final pickedWins = _parseWins(pickedRecord);
+    final opponentWins = _parseWins(opponentRecord);
+
+    if (pickedWins == null || opponentWins == null) {
+      return 0.0; // Couldn't parse records
+    }
+
+    // Underdog bonus formula: (opponentWins - pickedWins) / 20
+    final bonus = (opponentWins - pickedWins) / 20.0;
+
+    // Cap bonus at 0 (no penalty for picking favorite)
+    return bonus > 0 ? bonus : 0.0;
+  }
+
+  /// Parse win count from record string (e.g., "10-5" -> 10)
+  static int? _parseWins(String record) {
+    try {
+      final parts = record.split('-');
+      if (parts.isEmpty) return null;
+      return int.parse(parts[0].trim());
+    } catch (e) {
+      debugPrint('Error parsing record: $record');
+      return null;
+    }
   }
 }
 
@@ -106,11 +158,13 @@ class GameResult {
   final String gameId;
   final String? winningTeam;
   final bool isCompleted;
+  final double? underdogBonus; // Bonus points for picking underdog (free tier)
 
   GameResult({
     required this.gameId,
     this.winningTeam,
     required this.isCompleted,
+    this.underdogBonus,
   });
 
   factory GameResult.empty() => GameResult(
@@ -118,7 +172,7 @@ class GameResult {
     isCompleted: false,
   );
 
-  factory GameResult.fromGameModel(dynamic game) {
+  factory GameResult.fromGameModel(dynamic game, {String? pickedTeam}) {
     // Determine winner based on scores
     String? winner;
     if (game.homeScore != null && game.awayScore != null) {
@@ -130,10 +184,22 @@ class GameResult {
       // If tied, winner stays null
     }
 
+    // Calculate underdog bonus if picked team is provided
+    double? underdogBonus;
+    if (pickedTeam != null && winner == pickedTeam && game is GameModel) {
+      final opponentTeam = pickedTeam == game.homeTeam ? game.awayTeam : game.homeTeam;
+      underdogBonus = SimplePickScoring.calculateUnderdogBonus(
+        pickedTeam: pickedTeam,
+        opponentTeam: opponentTeam,
+        game: game,
+      );
+    }
+
     return GameResult(
       gameId: game.id,
       winningTeam: winner,
       isCompleted: game.status == 'final',
+      underdogBonus: underdogBonus,
     );
   }
 }
