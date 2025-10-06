@@ -340,108 +340,46 @@
 
 ## Phase 1: Free Tier Implementation
 
-### 1.1 Disable Odds API Calls Immediately (Without Changing Implementation)
-
-⚠️ **CRITICAL:** Do NOT modify how odds work - only add kill switch to stop calls
+### 1.1 Gate Odds Behind Subscription Status (Permanent Implementation)
 
 **File:** `lib/services/game_odds_enrichment_service.dart`
 
 ```dart
-// At the top of the file, add ONE feature flag
+import 'subscription_service.dart'; // Add this import
+
 class GameOddsEnrichmentService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final OddsApiService _oddsService = OddsApiService();
   final PoolAutoGenerator _poolGenerator = PoolAutoGenerator();
   final FreeOddsService _freeOddsService = FreeOddsService();
+  final SubscriptionService _subscriptionService = SubscriptionService(); // Add this
 
-  // TEMPORARY KILL SWITCH - flip to false to stop ALL odds fetching
-  // When ready for premium tier, we'll check subscription status instead
-  static const bool ODDS_ENABLED_GLOBALLY = false;
-
-  // Cache for tracking last odds fetch time per game
-  static final Map<String, DateTime> _lastOddsFetchTime = {};
-  // ... rest of existing code UNCHANGED
+  // ... existing code
 
   /// Enrich a game with odds data and create pools
-  Future<void> enrichGameWithOdds(GameModel game) async {
+  /// Only premium/prize users get odds
+  Future<void> enrichGameWithOdds(GameModel game, {String? userId}) async {
     try {
-      // KILL SWITCH - add this ONE check at the very beginning
-      if (!ODDS_ENABLED_GLOBALLY) {
-        debugPrint('⏸️ Odds fetching disabled globally (quota protection)');
-        return; // Exit early, don't call API
+      // PREMIUM GATE - Only premium users get odds
+      if (userId != null) {
+        final isPremium = await _subscriptionService.isPremium(userId);
+        if (!isPremium) {
+          debugPrint('⏸️ User not premium - odds restricted to premium tier');
+          return;
+        }
       }
 
-      // ALL EXISTING CODE BELOW STAYS EXACTLY THE SAME
+      // ALL EXISTING ODDS CODE UNCHANGED
       debugPrint('🎲 ========== ENRICH GAME WITH ODDS CALLED ==========');
-      debugPrint('🎲 Game: ${game.awayTeam} @ ${game.homeTeam}');
-      // ... rest of existing code unchanged ...
+      // ... rest stays the same
     } catch (e) {
       debugPrint('Error enriching game with odds: $e');
     }
   }
-
-  // ALL OTHER METHODS STAY EXACTLY THE SAME
-  // DO NOT MODIFY _fetchOddsForGame, _performOddsFetch, etc.
 }
 ```
 
-**File:** `lib/services/optimized_games_service.dart`
-
-```dart
-// Line ~308-320: Add ONE check before Odds API call
-Future<List<GameModel>> _loadSportGamesWithRange({
-  required String sport,
-  int daysAhead = INITIAL_DAYS_AHEAD,
-}) async {
-  try {
-    // Check Firestore cache first
-    if (!forceRefresh) {
-      final cachedGames = await _firestore
-          .collection('games')
-          .where('sport', isEqualTo: sport.toUpperCase())
-          // ... existing cache code
-    }
-
-    // ADD THIS ONE CHECK before calling Odds API
-    if (GameOddsEnrichmentService.ODDS_ENABLED_GLOBALLY) {
-      // TRY ODDS API IF NO CACHE (Primary source)
-      debugPrint('🎯 Attempting to load $sport games from Odds API...');
-      final oddsApiGames = await _oddsApiService.getSportGames(
-        sport,
-        daysAhead: daysAhead
-      );
-
-      if (oddsApiGames.isNotEmpty) {
-        debugPrint('✅ Loaded ${oddsApiGames.length} $sport games from Odds API');
-        // ... existing code to process games
-        return finalGames;
-      }
-
-      debugPrint('⚠️ No games from Odds API, falling back to ESPN...');
-    } else {
-      debugPrint('⏸️ Skipping Odds API (globally disabled for quota protection)');
-    }
-
-    // FALL BACK TO ESPN (all existing code stays the same)
-    switch (sport.toLowerCase()) {
-      case 'nfl':
-      case 'football':
-        return _loadNflGamesWithRange(daysAhead: daysAhead);
-      // ... rest of existing cases unchanged
-    }
-  } catch (e) {
-    debugPrint('❌ Error in _loadSportGamesWithRange: $e');
-    // ... existing error handling
-  }
-}
-```
-
-**WHAT WE'RE NOT CHANGING:**
-- ❌ OddsApiService methods (leave them alone)
-- ❌ Caching logic (leave it alone)
-- ❌ How odds are fetched or processed (leave it alone)
-- ❌ Pool generation logic (leave it alone)
-- ✅ ONLY adding kill switch checks at entry points
+**Note:** Build SubscriptionService first (Phase 2), then add this gate.
 
 ---
 
@@ -1309,86 +1247,11 @@ class SubscriptionStatus {
 
 ---
 
-### 2.2 Re-enable Odds API for Premium Users Only (No Changes to Odds Logic)
+### 2.2 Odds Already Gated (Done in Phase 1)
 
-⚠️ **IMPORTANT:** Keep all odds fetching logic exactly as it is. Only change WHO can trigger it.
+**Already implemented in Phase 1.1** - Odds are gated behind `isPremium()` check.
 
-**File:** `lib/services/game_odds_enrichment_service.dart`
-
-```dart
-import 'subscription_service.dart'; // Add this import
-
-class GameOddsEnrichmentService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final OddsApiService _oddsService = OddsApiService();
-  final PoolAutoGenerator _poolGenerator = PoolAutoGenerator();
-  final FreeOddsService _freeOddsService = FreeOddsService();
-  final SubscriptionService _subscriptionService = SubscriptionService(); // Add this
-
-  // PHASE 1: Kill switch (set to false during development)
-  // PHASE 2: Premium gate (flip to true, add subscription check)
-  static const bool ODDS_ENABLED_GLOBALLY = true; // Change false → true in Phase 2
-
-  // ... rest of existing code UNCHANGED
-
-  /// Enrich a game with odds data and create pools
-  Future<void> enrichGameWithOdds(GameModel game, {String? userId}) async {
-    try {
-      // PHASE 1 CHECK: Global kill switch
-      if (!ODDS_ENABLED_GLOBALLY) {
-        debugPrint('⏸️ Odds fetching disabled globally (quota protection)');
-        return;
-      }
-
-      // PHASE 2 CHECK: Subscription status (add this in Phase 2 only)
-      if (userId != null) {
-        final isPremium = await _subscriptionService.isPremium(userId);
-        if (!isPremium) {
-          debugPrint('⏸️ User not premium - odds fetching restricted');
-          return;
-        }
-        debugPrint('✅ Premium user - proceeding with odds fetch');
-      }
-
-      // ALL EXISTING ODDS FETCHING CODE STAYS EXACTLY THE SAME
-      debugPrint('🎲 ========== ENRICH GAME WITH ODDS CALLED ==========');
-      debugPrint('🎲 Game: ${game.awayTeam} @ ${game.homeTeam}');
-      // ... rest of 200+ lines of existing code UNCHANGED ...
-
-    } catch (e) {
-      debugPrint('Error enriching game with odds: $e');
-    }
-  }
-
-  // ALL OTHER METHODS STAY EXACTLY THE SAME
-  // _fetchOddsForGame - NO CHANGES
-  // _performOddsFetch - NO CHANGES
-  // Everything else - NO CHANGES
-}
-```
-
-**What happens in each phase:**
-
-**Phase 1 (Now - Week 6):**
-```dart
-ODDS_ENABLED_GLOBALLY = false;  // No odds for anyone
-// Saves quota, lets us build free tier
-```
-
-**Phase 2 (Weeks 7-12):**
-```dart
-ODDS_ENABLED_GLOBALLY = true;   // Enable odds system
-// But now checks isPremium() before fetching
-// Free users: Blocked at gate
-// Premium users: Gets through to existing odds code
-```
-
-**Key Points:**
-- ✅ All existing odds code stays 100% the same
-- ✅ Only add gates at entry points
-- ✅ When premium user passes gate, everything works as before
-- ✅ No need to test odds changes (nothing changed!)
-- ✅ Can flip switch when ready
+Premium/prize users get odds automatically once SubscriptionService is working.
 
 **Update pool generation to create both free and premium pools:**
 

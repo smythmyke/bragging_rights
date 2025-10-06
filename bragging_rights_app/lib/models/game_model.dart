@@ -33,6 +33,12 @@ class GameModel {
   final String? exhibitionType; // 'Global Games', 'International', null for regular games
   final String? oddsApiSportKey; // The Odds API sport key where event was found (e.g., 'basketball_nba_preseason')
 
+  // Team records (for simple scoring underdog calculation)
+  final String? homeTeamRecord; // e.g., "10-5" or "8-3-2" for ties
+  final String? awayTeamRecord; // e.g., "7-8" or "5-6-1"
+  final int? homeTeamRanking;   // Optional: AP/Coach poll ranking (1-25)
+  final int? awayTeamRanking;
+
   GameModel({
     required this.id,
     required this.sport,
@@ -63,6 +69,10 @@ class GameModel {
     this.hasOdds,
     this.exhibitionType,
     this.oddsApiSportKey,
+    this.homeTeamRecord,
+    this.awayTeamRecord,
+    this.homeTeamRanking,
+    this.awayTeamRanking,
   });
 
   factory GameModel.fromFirestore(DocumentSnapshot doc) {
@@ -112,6 +122,10 @@ class GameModel {
       hasOdds: data['hasOdds'],
       exhibitionType: data['exhibitionType'],
       oddsApiSportKey: data['oddsApiSportKey'],
+      homeTeamRecord: data['homeTeamRecord'],
+      awayTeamRecord: data['awayTeamRecord'],
+      homeTeamRanking: data['homeTeamRanking'],
+      awayTeamRanking: data['awayTeamRanking'],
     );
   }
 
@@ -191,6 +205,10 @@ class GameModel {
       'hasOdds': hasOdds,
       'exhibitionType': exhibitionType,
       'oddsApiSportKey': oddsApiSportKey,
+      'homeTeamRecord': homeTeamRecord,
+      'awayTeamRecord': awayTeamRecord,
+      'homeTeamRanking': homeTeamRanking,
+      'awayTeamRanking': awayTeamRanking,
     };
   }
 
@@ -228,6 +246,10 @@ class GameModel {
       'hasOdds': hasOdds,
       'exhibitionType': exhibitionType,
       'oddsApiSportKey': oddsApiSportKey,
+      'homeTeamRecord': homeTeamRecord,
+      'awayTeamRecord': awayTeamRecord,
+      'homeTeamRanking': homeTeamRanking,
+      'awayTeamRanking': awayTeamRanking,
     };
   }
 
@@ -274,6 +296,10 @@ class GameModel {
       hasOdds: map['hasOdds'],
       exhibitionType: map['exhibitionType'],
       oddsApiSportKey: map['oddsApiSportKey'],
+      homeTeamRecord: map['homeTeamRecord'],
+      awayTeamRecord: map['awayTeamRecord'],
+      homeTeamRanking: map['homeTeamRanking'],
+      awayTeamRanking: map['awayTeamRanking'],
     );
   }
   
