@@ -544,7 +544,11 @@ class _AllGamesScreenState extends State<AllGamesScreen> with WidgetsBindingObse
                       )
                     else
                       Text(
-                        DateFormat('MMM d • h:mm a').format(game.gameTime),
+                        // Hide time if source is ESPN (midnight issue)
+                        // Only show time if from Odds API or if no source specified
+                        game.gameTimeSource == 'espn'
+                            ? DateFormat('MMM d').format(game.gameTime) // Date only
+                            : DateFormat('MMM d • h:mm a').format(game.gameTime), // Date + time
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[600],

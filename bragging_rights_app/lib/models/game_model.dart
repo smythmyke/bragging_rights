@@ -39,6 +39,9 @@ class GameModel {
   final int? homeTeamRanking;   // Optional: AP/Coach poll ranking (1-25)
   final int? awayTeamRanking;
 
+  // Game time source tracking (for odds caching)
+  final String? gameTimeSource; // 'odds_api', 'espn', null
+
   GameModel({
     required this.id,
     required this.sport,
@@ -73,6 +76,7 @@ class GameModel {
     this.awayTeamRecord,
     this.homeTeamRanking,
     this.awayTeamRanking,
+    this.gameTimeSource,
   });
 
   factory GameModel.fromFirestore(DocumentSnapshot doc) {
@@ -126,6 +130,7 @@ class GameModel {
       awayTeamRecord: data['awayTeamRecord'],
       homeTeamRanking: data['homeTeamRanking'],
       awayTeamRanking: data['awayTeamRanking'],
+      gameTimeSource: data['gameTimeSource'],
     );
   }
 
@@ -209,6 +214,7 @@ class GameModel {
       'awayTeamRecord': awayTeamRecord,
       'homeTeamRanking': homeTeamRanking,
       'awayTeamRanking': awayTeamRanking,
+      'gameTimeSource': gameTimeSource,
     };
   }
 
@@ -250,6 +256,7 @@ class GameModel {
       'awayTeamRecord': awayTeamRecord,
       'homeTeamRanking': homeTeamRanking,
       'awayTeamRanking': awayTeamRanking,
+      'gameTimeSource': gameTimeSource,
     };
   }
 
@@ -300,9 +307,10 @@ class GameModel {
       awayTeamRecord: map['awayTeamRecord'],
       homeTeamRanking: map['homeTeamRanking'],
       awayTeamRanking: map['awayTeamRanking'],
+      gameTimeSource: map['gameTimeSource'],
     );
   }
-  
+
   String _getNameAbbr(String name) {
     // For individual sports, use last name if available
     if (name.contains(' ')) {
