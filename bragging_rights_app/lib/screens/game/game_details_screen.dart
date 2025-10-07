@@ -3378,6 +3378,28 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
           }
         }
       }
+
+      // Final fallback: construct logo URL from team abbreviation
+      if (homeTeamLogo == null || awayTeamLogo == null) {
+        final competitors = _eventDetails!['header']?['competitions']?[0]?['competitors'];
+        if (competitors != null && competitors is List) {
+          for (var competitor in competitors) {
+            final abbreviation = competitor['team']?['abbreviation'];
+            if (abbreviation != null) {
+              final sport = widget.sport.toLowerCase();
+              final constructedUrl = 'https://a.espncdn.com/i/teamlogos/$sport/500/${abbreviation.toLowerCase()}.png';
+
+              if (competitor['homeAway'] == 'home' && homeTeamLogo == null) {
+                homeTeamLogo = constructedUrl;
+                print('🔧 Constructed home logo: $constructedUrl');
+              } else if (competitor['homeAway'] == 'away' && awayTeamLogo == null) {
+                awayTeamLogo = constructedUrl;
+                print('🔧 Constructed away logo: $constructedUrl');
+              }
+            }
+          }
+        }
+      }
     } catch (e) {
       print('Error extracting team logos: $e');
     }
@@ -6313,7 +6335,20 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                         Column(
                           children: [
                             () {
-                              final logoUrl = team['team']?['logo'] ?? '';
+                              // Try multiple sources for logo URL
+                              var logoUrl = team['team']?['logo'];
+
+                              // Fallback: construct from abbreviation if logo is null
+                              if (logoUrl == null || logoUrl.isEmpty) {
+                                final abbreviation = team['team']?['abbreviation'];
+                                if (abbreviation != null) {
+                                  final sport = widget.sport.toLowerCase();
+                                  logoUrl = 'https://a.espncdn.com/i/teamlogos/$sport/500/${abbreviation.toLowerCase()}.png';
+                                  print('🔧 Constructed logo for ${team['team']?['displayName']}: $logoUrl');
+                                }
+                              }
+
+                              logoUrl = logoUrl ?? '';
                               print('🖼️ Loading logo for ${team['team']?['displayName']}: $logoUrl');
                               return CachedNetworkImage(
                                 imageUrl: logoUrl,

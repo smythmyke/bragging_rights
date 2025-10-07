@@ -487,6 +487,95 @@ app.post('/device/screenshot', async (req, res) => {
     }
 });
 
+// Admin Tier Control Endpoints (for testing)
+// These run Python scripts to update Firebase Firestore directly
+app.post('/admin/set-tier', async (req, res) => {
+    const { userId, tier } = req.body;
+
+    if (!userId) {
+        return res.status(400).json({ success: false, error: 'userId is required' });
+    }
+
+    if (!['free', 'premium', 'actual'].includes(tier)) {
+        return res.status(400).json({ success: false, error: 'tier must be free, premium, or actual' });
+    }
+
+    console.log(`Setting tier for user ${userId} to ${tier}...`);
+
+    try {
+        // Change to project directory first, then run the Python script
+        const projectDir = __dirname;
+        const scriptPath = path.join('scripts', 'update_admin_tier.py');
+        const command = `cd /d "${projectDir}" && python ${scriptPath} ${tier}`;
+
+        console.log('Executing:', command);
+        const result = await executeCommand(command);
+
+        console.log('Tier updated successfully:', result.output);
+        res.json({
+            success: true,
+            action: `Tier set to ${tier}`,
+            tier: tier,
+            output: result.output,
+            message: 'Tier updated! Please restart the app on your device to see changes.'
+        });
+    } catch (error) {
+        console.error('Failed to update tier:', error);
+        res.json({
+            success: false,
+            error: error.message || 'Failed to update tier',
+            stderr: error.stderr,
+            suggestion: `Try running manually: python scripts/update_admin_tier.py ${tier}`
+        });
+    }
+});
+
+app.get('/admin/tier-status', async (req, res) => {
+    const { userId } = req.query;
+
+    if (!userId) {
+        return res.status(400).json({ success: false, error: 'userId query parameter is required' });
+    }
+
+    console.log(`Checking tier status for user ${userId}...`);
+
+    try {
+        // Run the Python script to check status
+        const scriptPath = path.join(__dirname, 'scripts', 'check_admin_tier.py');
+        const result = await executeCommand(`python "${scriptPath}"`);
+
+        // Parse the output (expecting JSON from Python script)
+        try {
+            const status = JSON.parse(result.output);
+            res.json({
+                success: true,
+                adminOverride: status.adminOverride || { enabled: false, forceFreeTier: false, forcePremiumTier: false },
+                actualStatus: status.actualStatus || { isPremium: false }
+            });
+        } catch (parseError) {
+            // If parsing fails, return the raw output
+            res.json({
+                success: true,
+                adminOverride: {
+                    enabled: false,
+                    forceFreeTier: false,
+                    forcePremiumTier: false
+                },
+                actualStatus: {
+                    isPremium: false
+                },
+                rawOutput: result.output
+            });
+        }
+    } catch (error) {
+        console.error('Failed to check tier status:', error);
+        res.json({
+            success: false,
+            error: error.message || 'Failed to check tier status'
+        });
+    }
+});
+
 // Start server
 app.listen(PORT, async () => {
     console.log(`\n🚀 Device Control Server running on http://localhost:${PORT}`);

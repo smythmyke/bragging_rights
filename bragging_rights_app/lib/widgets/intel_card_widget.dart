@@ -155,19 +155,24 @@ class _IntelCardWidgetState extends State<IntelCardWidget>
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              widget.intel.description,
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
-                                fontSize: 11,
-                                shadows: const [
-                                  Shadow(
-                                    color: AppTheme.deepBlue,
-                                    blurRadius: 4,
-                                  ),
-                                ],
+                            Expanded(
+                              child: Text(
+                                widget.intel.description,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontSize: 11,
+                                  shadows: const [
+                                    Shadow(
+                                      color: AppTheme.deepBlue,
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
