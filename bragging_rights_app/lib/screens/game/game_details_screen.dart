@@ -3,6 +3,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../models/game_model.dart';
 import '../../theme/app_theme.dart';
 import '../../services/odds_api_service.dart';
+import '../../services/odds_cache_service.dart';
 import '../../services/team_logo_service.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -31,6 +32,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final OddsApiService _oddsService = OddsApiService();
+  final OddsCacheService _oddsCacheService = OddsCacheService();
   final TeamLogoService _logoService = TeamLogoService();
 
   GameModel? _game;
@@ -6240,17 +6242,22 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
     try {
       if (_game == null) return;
 
-      final oddsData = await _oddsService.getMatchOdds(
+      // Use OddsCacheService instead of direct API call
+      final odds = await _oddsCacheService.getOddsForGame(
+        gameId: widget.gameId,
         sport: 'nhl',
         homeTeam: _game!.homeTeam,
         awayTeam: _game!.awayTeam,
+        gameTime: _game!.gameTime,
+        status: _game!.status,
       );
 
-      if (oddsData != null) {
+      if (odds != null) {
         setState(() {
-          _nhlOddsData = oddsData;
+          // Wrap in same format as before for compatibility
+          _nhlOddsData = {'odds': odds};
         });
-        print('✅ NHL odds data loaded');
+        print('✅ NHL odds data loaded (via cache)');
       }
     } catch (e) {
       print('Error loading NHL odds: $e');
