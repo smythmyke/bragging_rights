@@ -88,67 +88,152 @@ async function settleBetsForGame(gameId, gameData) {
   }
   
   console.log(`Found ${betsSnapshot.size} pending bets to settle`);
-  
+
   const batch = db.batch();
   const payouts = [];
-  
-  // Process each bet
+  const refunds = [];
+  const betResults = [];
+
+  // First pass: Determine all bet outcomes
   for (const betDoc of betsSnapshot.docs) {
     const bet = betDoc.data();
     const betResult = determineBetOutcome(bet, gameData);
-    
+
+    betResults.push({
+      betDoc,
+      bet,
+      betResult
+    });
+  }
+
+  // Group bets by outcome for tie-splitting
+  const wonBets = betResults.filter(b => b.betResult.status === 'won');
+  const tiedCount = wonBets.length;
+
+  // Process each bet with tie-splitting logic
+  for (const { betDoc, bet, betResult } of betResults) {
+    let finalWinAmount = betResult.winAmount || 0;
+    let finalNote = betResult.note || '';
+
+    // Split winnings if multiple winners (tie)
+    if (betResult.status === 'won' && tiedCount > 1) {
+      finalWinAmount = Math.floor(betResult.winAmount / tiedCount);
+      finalNote = `${betResult.note} - Split ${tiedCount} ways: ${finalWinAmount} BR each`;
+      console.log(`🔀 Tie detected: ${tiedCount} winners splitting pot`);
+    }
+
     // Update bet status
     batch.update(betDoc.ref, {
       status: betResult.status,
       settledAt: FieldValue.serverTimestamp(),
-      winAmount: betResult.winAmount || 0,
-      settlementNote: betResult.note || ''
+      winAmount: finalWinAmount,
+      settlementNote: finalNote
     });
-    
-    // If bet won, prepare payout
+
+    // Prepare payout for winners
     if (betResult.status === 'won') {
       payouts.push({
         userId: bet.userId,
-        amount: betResult.winAmount,
+        amount: finalWinAmount,
         betId: betDoc.id,
         betData: bet
       });
     }
-    
+
+    // Prepare refund for push or cancelled bets
+    if (betResult.status === 'push' || betResult.status === 'cancelled') {
+      refunds.push({
+        userId: bet.userId,
+        amount: bet.wagerAmount,
+        betId: betDoc.id,
+        reason: betResult.status === 'push' ? 'Push (tie)' : 'Game cancelled'
+      });
+    }
+
     // Log the settlement
-    console.log(`Bet ${betDoc.id}: ${betResult.status} - ${betResult.note}`);
+    console.log(`Bet ${betDoc.id}: ${betResult.status} - ${finalNote}`);
   }
-  
+
   // Commit all bet status updates
   await batch.commit();
-  
+
   // Process payouts
   for (const payout of payouts) {
     await processPayout(payout.userId, payout.amount, payout.betId, gameId, payout.betData);
   }
-  
-  console.log(`Settled ${betsSnapshot.size} bets, ${payouts.length} winners`);
+
+  // Process refunds
+  for (const refund of refunds) {
+    await processRefund(refund.userId, refund.amount, refund.betId, refund.reason);
+  }
+
+  console.log(`Settled ${betsSnapshot.size} bets, ${payouts.length} winners, ${refunds.length} refunds`);
 }
 
 /**
  * Determines if a bet won or lost based on game results
  */
 function determineBetOutcome(bet, gameData) {
-  const { betType, selection, odds, wagerAmount } = bet;
-  const { result } = gameData;
-  
-  // Ensure we have results
-  if (!result || !result.winner) {
-    return { 
-      status: 'cancelled', 
-      note: 'Game cancelled or no result available' 
+  // Support new Flutter app structure with bets[] array
+  let betType, selection, odds, wagerAmount, line;
+
+  if (bet.bets && Array.isArray(bet.bets) && bet.bets.length > 0) {
+    // New structure: bet details in bets[] array
+    const betDetail = bet.bets[0]; // For single bets (non-parlays)
+    betType = betDetail.type;
+    selection = betDetail.selection;
+    odds = parseFloat(betDetail.odds) || 0;
+    line = betDetail.line ? parseFloat(betDetail.line) : 0;
+    wagerAmount = bet.wagerAmount;
+
+    console.log(`📊 Bet structure (new): type=${betType}, selection=${selection}, odds=${odds}`);
+  } else {
+    // Old structure: fields at root level (backward compatibility)
+    betType = bet.betType;
+    selection = bet.selection;
+    odds = bet.odds;
+    wagerAmount = bet.wagerAmount;
+    line = bet.line || 0;
+
+    console.log(`📊 Bet structure (old): type=${betType}, selection=${selection}, odds=${odds}`);
+  }
+
+  // Validate we have bet details
+  if (!betType || !selection) {
+    console.error(`❌ Missing bet details: betType=${betType}, selection=${selection}`);
+    return {
+      status: 'error',
+      note: 'Invalid bet structure - missing type or selection'
     };
   }
-  
+
+  // Build result object from game data (support both old and new structures)
+  let result = gameData.result;
+
+  if (!result || !result.winner) {
+    // Calculate result from scores if not present
+    const homeScore = gameData.homeScore;
+    const awayScore = gameData.awayScore;
+
+    if (homeScore == null || awayScore == null) {
+      console.error(`❌ Missing scores: home=${homeScore}, away=${awayScore}`);
+      return {
+        status: 'cancelled',
+        note: 'Game cancelled or no scores available'
+      };
+    }
+
+    // Calculate winner
+    const winner = homeScore > awayScore ? 'home' : (awayScore > homeScore ? 'away' : 'tie');
+    result = { winner, homeScore, awayScore };
+
+    console.log(`✅ Calculated result: winner=${winner}, ${homeScore}-${awayScore}`);
+  }
+
   let won = false;
   let winAmount = 0;
   let note = '';
-  
+
   switch (betType) {
     case 'moneyline':
       won = (selection === 'home' && result.winner === 'home') ||
@@ -157,11 +242,11 @@ function determineBetOutcome(bet, gameData) {
       break;
       
     case 'spread':
-      const spread = bet.line || 0;
+      const spread = line || 0;
       const homeScore = result.homeScore || 0;
       const awayScore = result.awayScore || 0;
       const adjustedHomeScore = homeScore + spread;
-      
+
       if (selection === 'home') {
         won = adjustedHomeScore > awayScore;
       } else {
@@ -169,9 +254,9 @@ function determineBetOutcome(bet, gameData) {
       }
       note = `Spread ${spread}, Final: ${homeScore}-${awayScore}`;
       break;
-      
+
     case 'total':
-      const totalLine = bet.line || 0;
+      const totalLine = line || 0;
       const totalScore = (result.homeScore || 0) + (result.awayScore || 0);
       
       if (selection === 'over') {
@@ -411,6 +496,53 @@ async function processPayout(userId, amount, betId, gameId, betData = null) {
     }
   } catch (error) {
     console.error(`Failed to process payout for user ${userId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Process refund for push or cancelled bets
+ */
+async function processRefund(userId, amount, betId, reason) {
+  const walletRef = db.collection('users').doc(userId)
+    .collection('wallet').doc('current');
+
+  const transactionRef = db.collection('transactions').doc();
+
+  try {
+    await db.runTransaction(async (transaction) => {
+      const walletDoc = await transaction.get(walletRef);
+
+      if (!walletDoc.exists) {
+        throw new Error(`Wallet not found for user ${userId}`);
+      }
+
+      const currentBalance = walletDoc.data().balance || 0;
+      const newBalance = currentBalance + amount;
+
+      // Refund wager to wallet
+      transaction.update(walletRef, {
+        balance: newBalance,
+        lastTransaction: FieldValue.serverTimestamp()
+      });
+
+      // Create refund transaction record
+      transaction.set(transactionRef, {
+        userId: userId,
+        type: 'refund',
+        amount: amount,
+        description: `Bet refund - ${reason}`,
+        balanceBefore: currentBalance,
+        balanceAfter: newBalance,
+        timestamp: FieldValue.serverTimestamp(),
+        relatedId: betId,
+        status: 'completed'
+      });
+    });
+
+    console.log(`💰 Refunded ${amount} BR to user ${userId} for bet ${betId} - ${reason}`);
+  } catch (error) {
+    console.error(`Failed to process refund for user ${userId}:`, error);
     throw error;
   }
 }

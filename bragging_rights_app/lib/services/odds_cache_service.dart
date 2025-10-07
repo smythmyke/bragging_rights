@@ -355,7 +355,6 @@ class OddsCacheService {
       final now = DateTime.now();
       final snapshot = await _firestore
           .collection('games')
-          .where('oddsLastFetched', isNotNull: true)
           .get();
 
       int clearedCount = 0;
