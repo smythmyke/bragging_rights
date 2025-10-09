@@ -814,6 +814,129 @@ exports.manualSettleGame = functions.https.onCall(async (data, context) => {
 });
 
 /**
+ * Cleanup expired bets (user request)
+ * Expires all pending bets older than 30 days and refunds the wager
+ */
+exports.cleanupExpiredBets = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      'unauthenticated',
+      'User must be authenticated'
+    );
+  }
+
+  const userId = context.auth.uid;
+  const thirtyDaysAgo = admin.firestore.Timestamp.fromDate(
+    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+  );
+
+  console.log(`🧹 Starting cleanup of expired bets for user ${userId}`);
+
+  try {
+    // Get all pending bets older than 30 days for this user
+    const snapshot = await db.collection('bets')
+      .where('userId', '==', userId)
+      .where('status', '==', 'pending')
+      .where('placedAt', '<', thirtyDaysAgo)
+      .get();
+
+    if (snapshot.empty) {
+      console.log(`No expired bets found for user ${userId}`);
+      return {
+        success: true,
+        total: 0,
+        expired: 0,
+        refunded: 0,
+        totalRefundAmount: 0,
+        errors: 0
+      };
+    }
+
+    const results = {
+      success: true,
+      total: snapshot.docs.length,
+      expired: 0,
+      refunded: 0,
+      totalRefundAmount: 0,
+      errors: 0,
+      bets: []
+    };
+
+    // Process in batches of 500 (Firestore batch limit)
+    const BATCH_SIZE = 500;
+    for (let i = 0; i < snapshot.docs.length; i += BATCH_SIZE) {
+      const batch = db.batch();
+      const batchDocs = snapshot.docs.slice(i, i + BATCH_SIZE);
+
+      for (const betDoc of batchDocs) {
+        const bet = betDoc.data();
+
+        try {
+          // Mark bet as expired
+          batch.update(betDoc.ref, {
+            status: 'expired',
+            settledAt: FieldValue.serverTimestamp(),
+            settlementNote: 'Auto-expired: Bet older than 30 days - game not found or already completed'
+          });
+
+          // Refund the wager
+          const walletRef = db.collection('users').doc(userId)
+            .collection('wallet').doc('current');
+
+          batch.update(walletRef, {
+            balance: FieldValue.increment(bet.wagerAmount),
+            lastTransaction: FieldValue.serverTimestamp()
+          });
+
+          // Create refund transaction
+          const transactionRef = db.collection('transactions').doc();
+          batch.set(transactionRef, {
+            userId: userId,
+            type: 'refund',
+            amount: bet.wagerAmount,
+            description: 'Expired bet refund (30+ days old)',
+            timestamp: FieldValue.serverTimestamp(),
+            relatedId: betDoc.id,
+            status: 'completed'
+          });
+
+          results.expired++;
+          results.refunded++;
+          results.totalRefundAmount += bet.wagerAmount;
+
+          results.bets.push({
+            id: betDoc.id,
+            gameId: bet.gameId,
+            amount: bet.wagerAmount,
+            placedAt: bet.placedAt?.toDate()
+          });
+
+          console.log(`✅ Expired bet ${betDoc.id}: Refunded ${bet.wagerAmount} BR`);
+        } catch (error) {
+          console.error(`❌ Error processing bet ${betDoc.id}:`, error);
+          results.errors++;
+        }
+      }
+
+      // Commit batch
+      await batch.commit();
+      console.log(`📦 Committed batch ${Math.floor(i / BATCH_SIZE) + 1}`);
+    }
+
+    console.log(`🎉 Cleanup complete for user ${userId}: ${results.expired} bets expired, ${results.totalRefundAmount} BR refunded`);
+
+    return results;
+  } catch (error) {
+    console.error(`Fatal error during cleanup for user ${userId}:`, error);
+    throw new functions.https.HttpsError(
+      'internal',
+      'Failed to cleanup expired bets',
+      error.message
+    );
+  }
+});
+
+/**
  * Cancel a bet (user request)
  */
 exports.cancelBet = functions.https.onCall(async (data, context) => {
@@ -823,7 +946,7 @@ exports.cancelBet = functions.https.onCall(async (data, context) => {
       'User must be authenticated'
     );
   }
-  
+
   const userId = context.auth.uid;
   const { betId } = data;
   

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'wallet_service.dart';
 
 class BetService {
@@ -214,6 +215,27 @@ class BetService {
       'status': 'cancelled',
       'cancelledAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  // Cleanup expired bets (older than 30 days)
+  Future<Map<String, dynamic>> cleanupExpiredBets() async {
+    if (_userId == null) throw Exception('User not logged in');
+
+    try {
+      print('🧹 Calling cleanupExpiredBets Cloud Function...');
+
+      final callable = FirebaseFunctions.instance.httpsCallable('cleanupExpiredBets');
+      final result = await callable.call();
+
+      final data = result.data as Map<String, dynamic>;
+
+      print('✅ Cleanup complete: ${data['expired']} bets expired, ${data['totalRefundAmount']} BR refunded');
+
+      return data;
+    } catch (e) {
+      print('❌ Error calling cleanupExpiredBets: $e');
+      throw Exception('Failed to cleanup expired bets: $e');
+    }
   }
 }
 

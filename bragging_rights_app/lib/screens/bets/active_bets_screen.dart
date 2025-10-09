@@ -53,9 +53,42 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
       });
 
       debugPrint('[ActiveBetsScreen] Firestore streams initialized for user: ${user.uid}');
+
+      // Run one-time cleanup of expired bets (30+ days old)
+      _runOneTimeCleanup();
     } else {
       debugPrint('[ActiveBetsScreen] No user logged in');
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _runOneTimeCleanup() async {
+    try {
+      debugPrint('🧹 Running one-time cleanup of expired bets...');
+
+      final result = await _betService.cleanupExpiredBets();
+
+      debugPrint('✅ Cleanup complete:');
+      debugPrint('   Total old bets found: ${result['total']}');
+      debugPrint('   Expired: ${result['expired']}');
+      debugPrint('   Refunded: ${result['totalRefundAmount']} BR');
+      debugPrint('   Errors: ${result['errors']}');
+
+      // Show a brief snackbar if bets were cleaned up
+      if (result['expired'] > 0 && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Cleaned up ${result['expired']} old bets. Refunded ${result['totalRefundAmount']} BR',
+            ),
+            backgroundColor: AppTheme.neonGreen,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Cleanup failed: $e');
+      // Silent fail - don't show error to user since this is automatic
     }
   }
   
