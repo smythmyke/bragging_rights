@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bragging Rights - App Icon Options</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .option-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .option-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .option-card.recommended {
+            border: 3px solid #10b981;
+            position: relative;
+        }
+
+        .recommended-badge {
+            position: absolute;
+            top: -15px;
+            right: 20px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
+        }
+
+        .option-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .option-title {
+            font-size: 1.5rem;
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+
+        .icon-preview {
+            width: 100%;
+            max-width: 300px;
+            height: 300px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .icon-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 15px;
+        }
+
+        .icon-specs {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .spec-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .spec-row:last-child {
+            border-bottom: none;
+        }
+
+        .spec-label {
+            font-weight: 600;
+            color: #6b7280;
+        }
+
+        .spec-value {
+            color: #1f2937;
+            font-weight: 500;
+        }
+
+        .pros-cons {
+            margin-top: 15px;
+        }
+
+        .pros, .cons {
+            margin-bottom: 15px;
+        }
+
+        .pros h4 {
+            color: #10b981;
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+
+        .cons h4 {
+            color: #ef4444;
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+
+        .pros ul, .cons ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .pros li, .cons li {
+            padding: 4px 0;
+            padding-left: 24px;
+            position: relative;
+            color: #4b5563;
+            font-size: 0.95rem;
+        }
+
+        .pros li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        .cons li:before {
+            content: "✗";
+            position: absolute;
+            left: 0;
+            color: #ef4444;
+            font-weight: bold;
+        }
+
+        .preview-sizes {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .preview-sizes h4 {
+            color: #4b5563;
+            margin-bottom: 15px;
+            font-size: 1rem;
+        }
+
+        .size-examples {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .size-example {
+            text-align: center;
+        }
+
+        .size-example img {
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            margin-bottom: 5px;
+        }
+
+        .size-label {
+            font-size: 0.85rem;
+            color: #6b7280;
+        }
+
+        .recommendation-box {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+        }
+
+        .recommendation-box h2 {
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+
+        .recommendation-box p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .note {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin-top: 30px;
+            border-radius: 8px;
+        }
+
+        .note strong {
+            color: #92400e;
+        }
+
+        .note p {
+            color: #78350f;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏆 Bragging Rights App Icon Options</h1>
+        <p class="subtitle">Choose the perfect icon for your sports betting app</p>
+
+        <div class="options-grid">
+            <!-- Option 1: Original Logo -->
+            <div class="option-card recommended">
+                <div class="recommended-badge">⭐ RECOMMENDED</div>
+                <div class="option-header">
+                    <h2 class="option-title">Option 1: Bragging Rights Logo</h2>
+                </div>
+
+                <div class="icon-preview">
+                    <img src="bragging_rights_app/assets/images/bragging_rights_logo.png" alt="Bragging Rights Logo">
+                </div>
+
+                <div class="icon-specs">
+                    <div class="spec-row">
+                        <span class="spec-label">Size:</span>
+                        <span class="spec-value">1024 x 1024 px</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Format:</span>
+                        <span class="spec-value">PNG (RGBA)</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Transparency:</span>
+                        <span class="spec-value">Yes ✓</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Location:</span>
+                        <span class="spec-value">assets/images/</span>
+                    </div>
+                </div>
+
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h4>✓ Pros</h4>
+                        <ul>
+                            <li>Highest resolution (1024x1024)</li>
+                            <li>Perfect square format</li>
+                            <li>Has transparency channel</li>
+                            <li>Clean, professional look</li>
+                            <li>Gold coin matches BR currency theme</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h4>✗ Considerations</h4>
+                        <ul>
+                            <li>None - This is ideal!</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="preview-sizes">
+                    <h4>How it looks at different sizes:</h4>
+                    <div class="size-examples">
+                        <div class="size-example">
+                            <img src="bragging_rights_app/assets/images/bragging_rights_logo.png" width="96" height="96" alt="96px">
+                            <div class="size-label">96px (xxxhdpi)</div>
+                        </div>
+                        <div class="size-example">
+                            <img src="bragging_rights_app/assets/images/bragging_rights_logo.png" width="72" height="72" alt="72px">
+                            <div class="size-label">72px (xxhdpi)</div>
+                        </div>
+                        <div class="size-example">
+                            <img src="bragging_rights_app/assets/images/bragging_rights_logo.png" width="48" height="48" alt="48px">
+                            <div class="size-label">48px (mdpi)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Option 2: Play Store Icon -->
+            <div class="option-card">
+                <div class="option-header">
+                    <h2 class="option-title">Option 2: Play Store Icon</h2>
+                </div>
+
+                <div class="icon-preview">
+                    <img src="bragging_rights_app/play_store_icon_512.png" alt="Play Store Icon">
+                </div>
+
+                <div class="icon-specs">
+                    <div class="spec-row">
+                        <span class="spec-label">Size:</span>
+                        <span class="spec-value">512 x 512 px</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Format:</span>
+                        <span class="spec-value">PNG (RGB)</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Transparency:</span>
+                        <span class="spec-value">No</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Location:</span>
+                        <span class="spec-value">Root directory</span>
+                    </div>
+                </div>
+
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h4>✓ Pros</h4>
+                        <ul>
+                            <li>Good resolution (512x512)</li>
+                            <li>Perfect square format</li>
+                            <li>Already available</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h4>✗ Cons</h4>
+                        <ul>
+                            <li>Lower resolution than Option 1</li>
+                            <li>No transparency channel</li>
+                            <li>May appear pixelated on high-DPI screens</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="preview-sizes">
+                    <h4>How it looks at different sizes:</h4>
+                    <div class="size-examples">
+                        <div class="size-example">
+                            <img src="bragging_rights_app/play_store_icon_512.png" width="96" height="96" alt="96px">
+                            <div class="size-label">96px (xxxhdpi)</div>
+                        </div>
+                        <div class="size-example">
+                            <img src="bragging_rights_app/play_store_icon_512.png" width="72" height="72" alt="72px">
+                            <div class="size-label">72px (xxhdpi)</div>
+                        </div>
+                        <div class="size-example">
+                            <img src="bragging_rights_app/play_store_icon_512.png" width="48" height="48" alt="48px">
+                            <div class="size-label">48px (mdpi)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Option 3: BR Initials Icon -->
+            <div class="option-card">
+                <div class="option-header">
+                    <h2 class="option-title">Option 3: BR Initials (Custom)</h2>
+                </div>
+
+                <div class="icon-preview">
+                    <img src="bragging_rights_app/assets/images/br_initials_icon.svg" alt="BR Initials Icon">
+                </div>
+
+                <div class="icon-specs">
+                    <div class="spec-row">
+                        <span class="spec-label">Size:</span>
+                        <span class="spec-value">1024 x 1024 px (Vector)</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Format:</span>
+                        <span class="spec-value">SVG (Scalable)</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Colors:</span>
+                        <span class="spec-value">Gold & White</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Location:</span>
+                        <span class="spec-value">assets/images/</span>
+                    </div>
+                </div>
+
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h4>✓ Pros</h4>
+                        <ul>
+                            <li>Clean, minimalist design</li>
+                            <li>Bold "BR" branding - instantly recognizable</li>
+                            <li>Gold gradient matches app theme</li>
+                            <li>Vector format - scales perfectly</li>
+                            <li>Simple and professional</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h4>✗ Considerations</h4>
+                        <ul>
+                            <li>Very simple - may lack visual interest</li>
+                            <li>Less distinctive than coin logo</li>
+                            <li>Needs PNG conversion for app icon</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="preview-sizes">
+                    <h4>How it looks at different sizes:</h4>
+                    <div class="size-examples">
+                        <div class="size-example">
+                            <img src="bragging_rights_app/assets/images/br_initials_icon.svg" width="96" height="96" alt="96px">
+                            <div class="size-label">96px (xxxhdpi)</div>
+                        </div>
+                        <div class="size-example">
+                            <img src="bragging_rights_app/assets/images/br_initials_icon.svg" width="72" height="72" alt="72px">
+                            <div class="size-label">72px (xxhdpi)</div>
+                        </div>
+                        <div class="size-example">
+                            <img src="bragging_rights_app/assets/images/br_initials_icon.svg" width="48" height="48" alt="48px">
+                            <div class="size-label">48px (mdpi)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="recommendation-box">
+            <h2>💡 My Recommendation</h2>
+            <p><strong>Use Option 1: assets/images/bragging_rights_logo.png</strong></p>
+            <p>It's the highest quality (1024x1024), has transparency, and is already in your project.</p>
+            <p>This will scale perfectly to all device sizes and look crisp on any screen.</p>
+        </div>
+
+        <div class="note">
+            <strong>📝 Next Steps:</strong>
+            <p>1. Choose your preferred option above</p>
+            <p>2. I'll configure flutter_launcher_icons to generate all necessary icon sizes</p>
+            <p>3. The icon will be applied to Android, iOS (if configured), and Web</p>
+            <p>4. You'll see your custom icon on your device and in app stores!</p>
+        </div>
+    </div>
+</body>
+</html>

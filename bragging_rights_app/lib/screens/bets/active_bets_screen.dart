@@ -273,16 +273,29 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
       stream: _activeBetsStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
+          debugPrint('🔄 [ACTIVE BETS TAB] Waiting for active bets stream...');
           return const Center(child: CircularProgressIndicator());
         }
 
         if (snapshot.hasError) {
+          debugPrint('❌ [ACTIVE BETS TAB] Error loading active bets: ${snapshot.error}');
           return Center(
             child: Text('Error loading bets: ${snapshot.error}'),
           );
         }
 
         final activeBets = snapshot.data ?? [];
+        debugPrint('📊 [ACTIVE BETS TAB] Received ${activeBets.length} active bets');
+
+        // Log each bet's details
+        for (int i = 0; i < activeBets.length; i++) {
+          final bet = activeBets[i];
+          debugPrint('   [$i] ${bet.gameTitle}');
+          debugPrint('       Status: ${bet.status}');
+          debugPrint('       Game ID: ${bet.gameId}');
+          debugPrint('       Placed: ${bet.placedAt}');
+          debugPrint('       Wager: ${bet.wagerAmount} BR');
+        }
 
         if (activeBets.isEmpty) {
           return Center(
@@ -454,16 +467,30 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
       stream: _pastBetsStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
+          debugPrint('🔄 [PAST BETS TAB] Waiting for past bets stream...');
           return const Center(child: CircularProgressIndicator());
         }
 
         if (snapshot.hasError) {
+          debugPrint('❌ [PAST BETS TAB] Error loading past bets: ${snapshot.error}');
           return Center(
             child: Text('Error loading bet history: ${snapshot.error}'),
           );
         }
 
         final pastBets = snapshot.data ?? [];
+        debugPrint('📊 [PAST BETS TAB] Received ${pastBets.length} past bets');
+
+        // Log each past bet's details
+        for (int i = 0; i < pastBets.length; i++) {
+          final bet = pastBets[i];
+          debugPrint('   [$i] ${bet.gameTitle}');
+          debugPrint('       Status: ${bet.status}');
+          debugPrint('       Game ID: ${bet.gameId}');
+          debugPrint('       Placed: ${bet.placedAt}');
+          debugPrint('       Settled: ${bet.settledAt}');
+          debugPrint('       Wager: ${bet.wagerAmount} BR | Payout: ${bet.potentialPayout} BR');
+        }
 
         // Calculate stats whenever past bets are loaded
         _calculateStats(pastBets);

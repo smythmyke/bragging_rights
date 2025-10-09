@@ -31,8 +31,10 @@ class GameDetailsScreen extends StatefulWidget {
 }
 
 class _GameDetailsScreenState extends State<GameDetailsScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late TabController _tabController;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
   final OddsApiService _oddsService = OddsApiService();
   final OddsCacheService _oddsCacheService = OddsCacheService();
   final TeamLogoService _logoService = TeamLogoService();
@@ -56,6 +58,17 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
   @override
   void initState() {
     super.initState();
+
+    // Initialize pulse animation for "Earn BR" button
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
     // For baseball, we have 3 tabs (Matchup, Box Score, Stats)
     // Different sports have different numbers of tabs
     final tabCount = widget.sport.toUpperCase() == 'MLB'
@@ -86,6 +99,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -966,15 +980,30 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppTheme.primaryCyan),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: IconButton(
-                      icon: const Icon(PhosphorIconsRegular.plus),
-                      color: AppTheme.primaryCyan,
-                      onPressed: _createPool,
+                  ScaleTransition(
+                    scale: _pulseAnimation,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppTheme.neonGreen.withOpacity(0.8),
+                            AppTheme.neonGreen,
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: AppTheme.neonGlow(
+                          color: AppTheme.neonGreen.withOpacity(0.6),
+                        ),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.play_circle_filled),
+                        color: Colors.black,
+                        iconSize: 28,
+                        onPressed: () {
+                          Navigator.of(context).pushNamed('/br-shop');
+                        },
+                        tooltip: 'Watch videos to earn BR',
+                      ),
                     ),
                   ),
                 ],

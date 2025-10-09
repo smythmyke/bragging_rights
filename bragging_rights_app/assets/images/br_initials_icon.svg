@@ -1,0 +1,53 @@
+<svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient (Deep Blue to Surface Blue - matching app theme) -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#0A0E27;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1A1F3A;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Gold gradient for B (matching coin logo) -->
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f4c542;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#d4a02c;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#b8861b;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Drop shadow -->
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- Rounded rectangle background -->
+  <rect width="1024" height="1024" rx="180" fill="url(#bgGradient)"/>
+
+  <!-- B - Gold with dark outline (using serif font like coin) -->
+  <text
+    x="340"
+    y="680"
+    font-family="Georgia, Times New Roman, serif"
+    font-size="520"
+    font-weight="900"
+    fill="url(#goldGradient)"
+    stroke="#0A0E27"
+    stroke-width="12"
+    text-anchor="middle"
+    filter="url(#shadow)">B</text>
+
+  <!-- R - White with dark outline (using serif font like coin) -->
+  <text
+    x="684"
+    y="680"
+    font-family="Georgia, Times New Roman, serif"
+    font-size="520"
+    font-weight="900"
+    fill="#ffffff"
+    stroke="#0A0E27"
+    stroke-width="12"
+    text-anchor="middle"
+    filter="url(#shadow)">R</text>
+
+  <!-- Gold underline under BR -->
+  <rect x="156" y="720" width="712" height="12" rx="6" fill="url(#goldGradient)" opacity="0.9"/>
+</svg>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SVG to PNG Converter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        #preview {
+            margin: 20px 0;
+            text-align: center;
+        }
+        #preview img {
+            max-width: 300px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .instructions {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Convert BR Icon SVG to PNG</h1>
+
+        <div class="instructions">
+            <h3>Instructions:</h3>
+            <ol>
+                <li>The SVG will load automatically from your project</li>
+                <li>Click the "Download PNG (1024x1024)" button</li>
+                <li>Save the file as <strong>br_initials_icon.png</strong></li>
+                <li>Move it to: <code>bragging_rights_app/assets/images/</code></li>
+            </ol>
+        </div>
+
+        <div id="preview">
+            <h3>Preview:</h3>
+            <img id="svgImage" src="bragging_rights_app/assets/images/br_initials_icon.svg" alt="BR Icon">
+        </div>
+
+        <button onclick="convertToPNG()">📥 Download PNG (1024x1024)</button>
+    </div>
+
+    <canvas id="canvas" style="display: none;"></canvas>
+
+    <script>
+        // Embedded SVG data
+        const svgData = `<svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#0A0E27;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1A1F3A;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f4c542;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#d4a02c;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#b8861b;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" rx="180" fill="url(#bgGradient)"/>
+  <text x="340" y="680" font-family="Georgia, Times New Roman, serif" font-size="520" font-weight="900" fill="url(#goldGradient)" stroke="#0A0E27" stroke-width="12" text-anchor="middle" filter="url(#shadow)">B</text>
+  <text x="684" y="680" font-family="Georgia, Times New Roman, serif" font-size="520" font-weight="900" fill="#ffffff" stroke="#0A0E27" stroke-width="12" text-anchor="middle" filter="url(#shadow)">R</text>
+  <rect x="156" y="720" width="712" height="12" rx="6" fill="url(#goldGradient)" opacity="0.9"/>
+</svg>`;
+
+        function convertToPNG() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Set canvas size to 1024x1024
+            canvas.width = 1024;
+            canvas.height = 1024;
+
+            // Convert SVG to data URL
+            const blob = new Blob([svgData], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+
+            // Create a new image to load the SVG
+            const svgImg = new Image();
+            svgImg.onload = function() {
+                // Draw the SVG image onto canvas
+                ctx.drawImage(svgImg, 0, 0, 1024, 1024);
+
+                // Convert canvas to PNG and download
+                canvas.toBlob(function(blob) {
+                    const downloadUrl = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = 'br_initials_icon.png';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(downloadUrl);
+                    URL.revokeObjectURL(url);
+
+                    alert('✅ PNG downloaded! Save it to: bragging_rights_app/assets/images/br_initials_icon.png');
+                }, 'image/png');
+            };
+
+            svgImg.onerror = function() {
+                alert('❌ Error loading SVG. Please try again.');
+                URL.revokeObjectURL(url);
+            };
+
+            svgImg.src = url;
+        }
+
+        // Update preview image on load
+        window.onload = function() {
+            const blob = new Blob([svgData], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            document.getElementById('svgImage').src = url;
+        };
+    </script>
+</body>
+</html>

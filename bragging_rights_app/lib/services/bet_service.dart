@@ -130,7 +130,12 @@ class BetService {
 
   // Get active bets (pending status)
   Stream<List<BetModel>> getActiveBets() {
-    if (_userId == null) return Stream.value([]);
+    if (_userId == null) {
+      print('⚠️ [BET SERVICE] getActiveBets() - No user logged in');
+      return Stream.value([]);
+    }
+
+    print('🔍 [BET SERVICE] getActiveBets() - Querying for userId: $_userId, status: pending');
 
     return _firestore
         .collection('bets')
@@ -138,14 +143,28 @@ class BetService {
         .where('status', isEqualTo: 'pending')
         .orderBy('placedAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => BetModel.fromFirestore(doc))
-            .toList());
+        .map((snapshot) {
+          print('📦 [BET SERVICE] getActiveBets() - Received ${snapshot.docs.length} active bets from Firestore');
+
+          for (var doc in snapshot.docs) {
+            final data = doc.data();
+            print('   🎯 Bet ${doc.id}: ${data['gameTitle']} - Status: ${data['status']}');
+          }
+
+          return snapshot.docs
+              .map((doc) => BetModel.fromFirestore(doc))
+              .toList();
+        });
   }
 
   // Get past bets (settled, won, lost, cancelled)
   Stream<List<BetModel>> getPastBets({int limit = 50}) {
-    if (_userId == null) return Stream.value([]);
+    if (_userId == null) {
+      print('⚠️ [BET SERVICE] getPastBets() - No user logged in');
+      return Stream.value([]);
+    }
+
+    print('🔍 [BET SERVICE] getPastBets() - Querying for userId: $_userId, status in: [settled, won, lost, cancelled]');
 
     return _firestore
         .collection('bets')
@@ -154,9 +173,18 @@ class BetService {
         .orderBy('placedAt', descending: true)
         .limit(limit)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => BetModel.fromFirestore(doc))
-            .toList());
+        .map((snapshot) {
+          print('📦 [BET SERVICE] getPastBets() - Received ${snapshot.docs.length} past bets from Firestore');
+
+          for (var doc in snapshot.docs) {
+            final data = doc.data();
+            print('   🏁 Bet ${doc.id}: ${data['gameTitle']} - Status: ${data['status']} - Settled: ${data['settledAt']}');
+          }
+
+          return snapshot.docs
+              .map((doc) => BetModel.fromFirestore(doc))
+              .toList();
+        });
   }
 
   // Cancel a pending bet (if allowed)

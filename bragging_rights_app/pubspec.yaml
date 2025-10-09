@@ -98,6 +98,7 @@ dev_dependencies:
   fake_cloud_firestore: ^3.0.3
   mockito: ^5.4.4
   build_runner: ^2.4.9
+  flutter_launcher_icons: ^0.14.1  # For generating app icons
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -145,3 +146,20 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+
+# flutter_launcher_icons configuration
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/br_initials_icon.png"
+  adaptive_icon_background: "#0A0E27"
+  adaptive_icon_foreground: "assets/images/br_initials_icon.png"
+  web:
+    generate: true
+    image_path: "assets/images/br_initials_icon.png"
+    background_color: "#0A0E27"
+  windows:
+    generate: true
+    image_path: "assets/images/br_initials_icon.png"
+

@@ -5,6 +5,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../theme/app_theme.dart';
 import '../../services/ad_reward_service.dart';
 import '../../services/br_currency_service.dart';
+import '../../services/purchase_service.dart';
 
 /// BR Currency Shop Screen
 /// Allows users to:
@@ -21,20 +22,42 @@ class BRShopScreen extends StatefulWidget {
 class _BRShopScreenState extends State<BRShopScreen> {
   final AdRewardService _adService = AdRewardService();
   final BRCurrencyService _brService = BRCurrencyService();
+  final PurchaseService _purchaseService = PurchaseService();
 
   int _currentBalance = 0;
   bool _isPremium = false;
   bool _isLoading = true;
   AdWatchStatus? _adStatus;
+  List<dynamic> _availableProducts = [];
+  bool _productsLoaded = false;
 
   @override
   void initState() {
     super.initState();
     debugPrint('🏪 [BR-SHOP] initState() - BR Shop screen initializing');
+    _initializePurchaseService();
     _loadUserData();
     _loadAdStatus();
     debugPrint('📥 [BR-SHOP] Calling _adService.loadRewardedAd() to preload ad...');
     _adService.loadRewardedAd(); // Preload ad
+  }
+
+  Future<void> _initializePurchaseService() async {
+    debugPrint('💳 [BR-SHOP] Initializing PurchaseService...');
+    try {
+      await _purchaseService.initialize();
+      final products = await _purchaseService.getProducts();
+      debugPrint('✅ [BR-SHOP] PurchaseService initialized - ${products.length} products available');
+      setState(() {
+        _availableProducts = products;
+        _productsLoaded = true;
+      });
+    } catch (e) {
+      debugPrint('❌ [BR-SHOP] Error initializing PurchaseService: $e');
+      setState(() {
+        _productsLoaded = true; // Still mark as loaded to show UI
+      });
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -249,6 +272,40 @@ class _BRShopScreenState extends State<BRShopScreen> {
                 ),
               ),
             ),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        currentIndex: 4, // Highlight "More" since BR Shop is under More section
+        onTap: (index) {
+          if (index == 4) {
+            // Already on More/Shop - do nothing or go back to More tab
+            return;
+          }
+          // Navigate back to home and let it handle tab switching
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(PhosphorIconsRegular.gameController),
+            label: 'Games',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(PhosphorIconsRegular.currencyDollar),
+            label: 'Bets',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.live_tv),
+            label: 'Watch Live',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(PhosphorIconsRegular.lightning),
+            label: 'Edge',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(PhosphorIconsRegular.dotsThreeOutline),
+            label: 'More',
+          ),
+        ],
+      ),
     );
   }
 
@@ -602,6 +659,51 @@ class _BRShopScreenState extends State<BRShopScreen> {
   }
 
   Widget _buildPurchaseSection() {
+    if (!_productsLoaded) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20.0),
+          child: CircularProgressIndicator(color: AppTheme.primaryCyan),
+        ),
+      );
+    }
+
+    if (_availableProducts.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceBlue.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.borderCyan.withOpacity(0.3)),
+        ),
+        child: const Column(
+          children: [
+            Icon(
+              PhosphorIconsRegular.shoppingCartSimple,
+              color: Colors.white60,
+              size: 48,
+            ),
+            SizedBox(height: 12),
+            Text(
+              'No products available',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 16,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Check back later',
+              style: TextStyle(
+                color: Colors.white60,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -617,18 +719,25 @@ class _BRShopScreenState extends State<BRShopScreen> {
             ),
           ),
         ),
-        _buildBRPackage('Starter Pack', 100, 0.99),
-        const SizedBox(height: 12),
-        _buildBRPackage('Value Pack', 550, 4.99, isBestValue: true),
-        const SizedBox(height: 12),
-        _buildBRPackage('Pro Pack', 1200, 9.99),
-        const SizedBox(height: 12),
-        _buildBRPackage('Elite Pack', 2500, 19.99),
+        ...List.generate(_availableProducts.length, (index) {
+          final product = _availableProducts[index];
+          final isBestValue = index == 1; // Second product is best value
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: index < _availableProducts.length - 1 ? 12 : 0),
+            child: _buildBRPackageFromProduct(product, isBestValue: isBestValue),
+          );
+        }),
       ],
     );
   }
 
-  Widget _buildBRPackage(String name, int amount, double price, {bool isBestValue = false}) {
+  Widget _buildBRPackageFromProduct(dynamic product, {bool isBestValue = false}) {
+    final productInfo = _purchaseService.getProductInfo(product.id);
+    final name = productInfo?['name'] ?? product.title;
+    final amount = productInfo?['coins'] ?? 0;
+    final price = product.price;
+
     return Container(
       decoration: BoxDecoration(
         gradient: isBestValue
@@ -729,7 +838,7 @@ class _BRShopScreenState extends State<BRShopScreen> {
           ),
         ),
         trailing: ElevatedButton(
-          onPressed: () => _processBRPurchase(amount, price),
+          onPressed: () => _processRealBRPurchase(product.id, productInfo),
           style: ElevatedButton.styleFrom(
             backgroundColor: isBestValue ? Colors.white : AppTheme.primaryCyan,
             foregroundColor: isBestValue ? AppTheme.neonGreen : Colors.white,
@@ -740,7 +849,7 @@ class _BRShopScreenState extends State<BRShopScreen> {
             elevation: 0,
           ),
           child: Text(
-            '\$${price.toStringAsFixed(2)}',
+            price,
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 15,
@@ -751,100 +860,51 @@ class _BRShopScreenState extends State<BRShopScreen> {
     );
   }
 
-  Future<void> _processBRPurchase(int amount, double price) async {
+  Future<void> _processRealBRPurchase(String productId, Map<String, dynamic>? productInfo) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       _showError('Please log in to purchase BR');
       return;
     }
 
-    // TODO: Implement actual in-app purchase via PurchaseService
-    // For now, show placeholder message
+    debugPrint('💳 [BR-SHOP] Processing purchase for product: $productId');
+
+    // Show loading dialog
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.surfaceBlue,
-        title: const Text(
-          'Purchase BR',
-          style: TextStyle(color: Colors.white),
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(
+          color: AppTheme.neonGreen,
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              PhosphorIconsRegular.shoppingCart,
-              color: AppTheme.primaryCyan,
-              size: 48,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Purchase $amount BR for \$${price.toStringAsFixed(2)}?',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppTheme.warningAmber.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: AppTheme.warningAmber.withOpacity(0.3),
-                ),
-              ),
-              child: const Text(
-                'In-app purchases coming soon!\nThis is a placeholder for testing.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppTheme.warningAmber,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-
-              // TODO: Replace with actual IAP
-              // For testing: Add BR to wallet subcollection (correct location)
-              try {
-                await FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(user.uid)
-                    .collection('wallet')
-                    .doc('current')
-                    .update({
-                  'balance': FieldValue.increment(amount),
-                });
-
-                setState(() {
-                  _currentBalance += amount;
-                });
-
-                _showSuccess(
-                  'Purchase Successful!',
-                  'Added $amount BR to your account',
-                );
-              } catch (e) {
-                _showError('Purchase failed: $e');
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.neonGreen,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Confirm (Test)'),
-          ),
-        ],
       ),
     );
+
+    try {
+      final success = await _purchaseService.purchaseProduct(productId);
+
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+
+      if (success && mounted) {
+        // Reload balance
+        await _loadUserData();
+
+        _showSuccess(
+          'Successfully purchased ${productInfo?['coins'] ?? ''} BR!',
+          'New balance: $_currentBalance BR',
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ [BR-SHOP] Purchase error: $e');
+
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+
+      if (mounted) {
+        _showError('Purchase failed: ${e.toString()}');
+      }
+    }
   }
 
   @override
