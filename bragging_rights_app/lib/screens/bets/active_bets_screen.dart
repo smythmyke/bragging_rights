@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import '../../services/bet_service.dart';
+import '../../models/game_model.dart';
 import '../../theme/app_theme.dart';
 
 class ActiveBetsScreen extends StatefulWidget {
@@ -18,12 +21,16 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
   Stream<List<BetModel>>? _pastBetsStream;
   List<BetModel> _activeBets = [];
   bool _isLoading = true;
-  
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   // Stats
   int _totalWins = 0;
   int _totalLosses = 0;
   double _totalProfit = 0;
   int _currentStreak = 0;
+
+  // Cache for game details
+  final Map<String, GameModel?> _gameCache = {};
   
   @override
   void initState() {
@@ -82,6 +89,53 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
         }
       }
       if (!streakType) _currentStreak = -_currentStreak;
+    }
+  }
+
+  /// Fetch game details for a bet
+  Future<GameModel?> _fetchGameDetails(String gameId) async {
+    // Check cache first
+    if (_gameCache.containsKey(gameId)) {
+      return _gameCache[gameId];
+    }
+
+    try {
+      final gameDoc = await _firestore.collection('games').doc(gameId).get();
+      if (gameDoc.exists) {
+        final game = GameModel.fromFirestore(gameDoc);
+        _gameCache[gameId] = game;
+        return game;
+      }
+    } catch (e) {
+      debugPrint('Error fetching game details for $gameId: $e');
+    }
+
+    _gameCache[gameId] = null;
+    return null;
+  }
+
+  /// Format game time display
+  String _formatGameTime(DateTime gameTime, String status) {
+    final now = DateTime.now();
+    final difference = gameTime.difference(now);
+
+    if (status == 'final') {
+      // Game ended
+      final formatter = DateFormat('MMM d, h:mm a');
+      return formatter.format(gameTime);
+    } else if (status == 'live') {
+      return 'Live Now';
+    } else {
+      // Scheduled game
+      if (difference.isNegative) {
+        // Game time has passed but status not updated
+        return 'Pending Settlement';
+      } else if (difference.inHours < 24) {
+        return 'Starts in ${difference.inHours}h ${difference.inMinutes.remainder(60)}m';
+      } else {
+        final formatter = DateFormat('MMM d, h:mm a');
+        return formatter.format(gameTime);
+      }
     }
   }
   
@@ -266,57 +320,98 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
           itemCount: activeBets.length,
           itemBuilder: (context, index) {
             final bet = activeBets[index];
-            return Card(
-              margin: const EdgeInsets.only(bottom: 16),
-              child: ListTile(
-                title: Text(
-                  bet.gameTitle,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('${bet.sport} • ${bet.poolName}'),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Wager: ${bet.wagerAmount} BR • Potential: ${bet.potentialPayout} BR',
-                      style: TextStyle(
+            return FutureBuilder<GameModel?>(
+              future: _fetchGameDetails(bet.gameId),
+              builder: (context, gameSnapshot) {
+                final game = gameSnapshot.data;
+
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: ListTile(
+                    title: Text(
+                      bet.gameTitle,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('${bet.sport} • ${bet.poolName}'),
+                        const SizedBox(height: 4),
+                        // Display game time and status
+                        if (game != null) ...[
+                          Row(
+                            children: [
+                              Icon(
+                                game.status == 'live'
+                                    ? PhosphorIconsRegular.broadcast
+                                    : game.status == 'final'
+                                        ? PhosphorIconsRegular.checkCircle
+                                        : PhosphorIconsRegular.clock,
+                                size: 12,
+                                color: game.status == 'live'
+                                    ? AppTheme.errorPink
+                                    : game.status == 'final'
+                                        ? AppTheme.neonGreen
+                                        : AppTheme.primaryCyan.withOpacity(0.7),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _formatGameTime(game.gameTime, game.status),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: game.status == 'live'
+                                      ? AppTheme.errorPink
+                                      : game.status == 'final'
+                                          ? AppTheme.neonGreen
+                                          : AppTheme.primaryCyan.withOpacity(0.7),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                        ],
+                        Text(
+                          'Wager: ${bet.wagerAmount} BR • Potential: ${bet.potentialPayout} BR',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (bet.bets.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Selection: ${bet.bets.first.selection}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ],
+                    ),
+                    leading: CircleAvatar(
+                      backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      child: Icon(
+                        _getSportIcon(bet.sport),
                         color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    if (bet.bets.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        'Selection: ${bet.bets.first.selection}',
-                        style: const TextStyle(fontSize: 12),
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.warningAmber.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ],
-                  ],
-                ),
-                leading: CircleAvatar(
-                  backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                  child: Icon(
-                    _getSportIcon(bet.sport),
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-                trailing: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppTheme.warningAmber.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'PENDING',
-                    style: TextStyle(
-                      color: AppTheme.warningAmber,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
+                      child: const Text(
+                        'PENDING',
+                        style: TextStyle(
+                          color: AppTheme.warningAmber,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             );
           },
         );
@@ -423,6 +518,27 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
                   children: [
                     Text('${bet.sport} • ${bet.poolName}'),
                     const SizedBox(height: 4),
+                    // Display settlement date
+                    if (bet.settledAt != null) ...[
+                      Row(
+                        children: [
+                          Icon(
+                            PhosphorIconsRegular.calendarCheck,
+                            size: 12,
+                            color: AppTheme.primaryCyan.withOpacity(0.7),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Settled ${DateFormat('MMM d, h:mm a').format(bet.settledAt!)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.primaryCyan.withOpacity(0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                    ],
                     Text(
                       'Wager: ${bet.wagerAmount} BR • ${bet.status == 'won' ? 'Won: ${bet.potentialPayout} BR' : bet.status == 'lost' ? 'Lost' : 'Cancelled'}',
                       style: TextStyle(

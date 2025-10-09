@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../services/pool_service.dart';
 import '../../services/wallet_service.dart';
 import '../../services/game_odds_enrichment_service.dart';
@@ -1648,12 +1649,7 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
     if (balance < 25) {
       print('[AUTO-CREATE] Insufficient balance: $balance BR (need 25 BR)');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Insufficient balance to join pool. You need 25 BR.'),
-            backgroundColor: AppTheme.errorPink,
-          ),
-        );
+        _showInsufficientBRDialog(25, balance);
       }
       return;
     }
@@ -1843,5 +1839,62 @@ class _PoolSelectionScreenState extends State<PoolSelectionScreen> with SingleTi
         ),
       );
     }
+  }
+
+  void _showInsufficientBRDialog(int required, int current) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surfaceBlue,
+        title: const Row(
+          children: [
+            Icon(PhosphorIconsRegular.warning, color: AppTheme.errorPink),
+            SizedBox(width: 12),
+            Text('Insufficient BR', style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'You need $required BR to join this pool',
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.errorPink.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppTheme.errorPink.withOpacity(0.3)),
+              ),
+              child: Text(
+                'Your balance: $current BR\nNeed: ${required - current} more BR',
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/br-shop');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.neonGreen,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Get BR'),
+          ),
+        ],
+      ),
+    );
   }
 }

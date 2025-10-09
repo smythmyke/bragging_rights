@@ -11,6 +11,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:math';
 import '../../services/espn_id_resolver_service.dart';
+import '../../services/game_cache_service.dart';
+import '../../services/live_score_update_service.dart';
 
 class GameDetailsScreen extends StatefulWidget {
   final String gameId;
@@ -34,6 +36,8 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
   final OddsApiService _oddsService = OddsApiService();
   final OddsCacheService _oddsCacheService = OddsCacheService();
   final TeamLogoService _logoService = TeamLogoService();
+  final GameCacheService _cacheService = GameCacheService();
+  final LiveScoreUpdateService _liveScoreService = LiveScoreUpdateService();
 
   GameModel? _game;
   Map<String, dynamic>? _eventDetails;
@@ -94,6 +98,11 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         // TODO: Fetch from Firestore or API
       }
 
+      // Update live scores if game is live
+      if (_game != null && _game!.isLive) {
+        await _updateLiveScore();
+      }
+
       // Fetch additional details based on sport
       if (widget.sport.toUpperCase() == 'MLB') {
         await _loadBaseballDetails();
@@ -118,6 +127,134 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
       print('Error loading event details: $e');
       setState(() => _isLoading = false);
     }
+  }
+
+  /// Update live score with 2-minute caching
+  Future<void> _updateLiveScore() async {
+    if (_game == null || !_game!.isLive) return;
+
+    try {
+      debugPrint('⚡ Checking live score for ${_game!.awayTeam} @ ${_game!.homeTeam}');
+
+      // Check cache first (2-minute TTL)
+      final cachedScore = await _cacheService.getCachedLiveScore(widget.gameId);
+      if (cachedScore != null) {
+        debugPrint('⚡ Using cached live score');
+        _updateGameWithScoreData(cachedScore);
+        return;
+      }
+
+      // Cache is stale or missing - fetch from ESPN
+      debugPrint('⚡ Fetching fresh live score from ESPN');
+      await _liveScoreService.updateLiveGameScores([_game!]);
+
+      // The service updates the game object directly, but we can also fetch via API
+      await _fetchLiveScoreFromESPN();
+    } catch (e) {
+      debugPrint('❌ Error updating live score: $e');
+    }
+  }
+
+  /// Fetch live score directly from ESPN scoreboard
+  Future<void> _fetchLiveScoreFromESPN() async {
+    try {
+      final sportMap = {
+        'NFL': 'football/nfl',
+        'NBA': 'basketball/nba',
+        'NHL': 'hockey/nhl',
+        'MLB': 'baseball/mlb',
+        'NCAAF': 'football/college-football',
+        'NCAAB': 'basketball/mens-college-basketball',
+      };
+
+      final endpoint = sportMap[widget.sport.toUpperCase()];
+      if (endpoint == null) {
+        debugPrint('⚠️ No ESPN endpoint for sport: ${widget.sport}');
+        return;
+      }
+
+      final url = 'https://site.api.espn.com/apis/site/v2/sports/$endpoint/scoreboard';
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final events = data['events'] as List? ?? [];
+
+        // Find matching game by team names
+        for (final event in events) {
+          final competitions = event['competitions'] as List? ?? [];
+          if (competitions.isEmpty) continue;
+
+          final competition = competitions[0];
+          final competitors = competition['competitors'] as List? ?? [];
+
+          // Extract team names and scores
+          String? homeTeam, awayTeam;
+          int? homeScore, awayScore;
+
+          for (final competitor in competitors) {
+            final team = competitor['team'];
+            final teamName = team['displayName'] ?? team['name'];
+            final score = int.tryParse(competitor['score']?.toString() ?? '0') ?? 0;
+            final homeAway = competitor['homeAway'];
+
+            if (homeAway == 'home') {
+              homeTeam = teamName;
+              homeScore = score;
+            } else {
+              awayTeam = teamName;
+              awayScore = score;
+            }
+          }
+
+          // Check if this matches our game
+          if ((homeTeam?.toLowerCase().contains(_game!.homeTeam.toLowerCase()) ?? false) ||
+              (awayTeam?.toLowerCase().contains(_game!.awayTeam.toLowerCase()) ?? false)) {
+            final scoreData = {
+              'homeScore': homeScore,
+              'awayScore': awayScore,
+              'status': competition['status'],
+            };
+
+            // Cache the score
+            await _cacheService.cacheLiveScore(widget.gameId, scoreData);
+
+            // Update UI
+            _updateGameWithScoreData(scoreData);
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error fetching live score from ESPN: $e');
+    }
+  }
+
+  /// Update game object with fresh score data
+  void _updateGameWithScoreData(Map<String, dynamic> scoreData) {
+    if (_game == null) return;
+
+    setState(() {
+      _game = GameModel(
+        id: _game!.id,
+        sport: _game!.sport,
+        homeTeam: _game!.homeTeam,
+        awayTeam: _game!.awayTeam,
+        gameTime: _game!.gameTime,
+        status: _game!.status,
+        homeScore: scoreData['homeScore'],
+        awayScore: scoreData['awayScore'],
+        period: scoreData['status']?['period']?.toString(),
+        timeRemaining: scoreData['status']?['displayClock'],
+        league: _game!.league,
+        venue: _game!.venue,
+        broadcast: _game!.broadcast,
+        homeTeamLogo: _game!.homeTeamLogo,
+        awayTeamLogo: _game!.awayTeamLogo,
+      );
+    });
+
+    debugPrint('⚡ Updated live scores: ${_game!.awayTeam} ${scoreData['awayScore']} @ ${_game!.homeTeam} ${scoreData['homeScore']}');
   }
 
   Future<void> _loadBaseballDetails() async {
@@ -778,45 +915,70 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
             ),
           ],
         ),
-        child: Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _navigateToPoolSelection,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppTheme.primaryCyan,
-                  side: const BorderSide(
-                    color: AppTheme.primaryCyan,
-                    width: 2,
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+        child: _game != null && _game!.isLive
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        PhosphorIconsRegular.prohibit,
+                        color: AppTheme.errorPink,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Betting closed - Game is live',
+                        style: TextStyle(
+                          color: AppTheme.errorPink,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: const Text(
-                  'Enter Pool',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+              )
+            : Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _navigateToPoolSelection,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.primaryCyan,
+                        side: const BorderSide(
+                          color: AppTheme.primaryCyan,
+                          width: 2,
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Enter Pool',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppTheme.primaryCyan),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(PhosphorIconsRegular.plus),
+                      color: AppTheme.primaryCyan,
+                      onPressed: _createPool,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(width: 12),
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: AppTheme.primaryCyan),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: IconButton(
-                icon: const Icon(PhosphorIconsRegular.plus),
-                color: AppTheme.primaryCyan,
-                onPressed: _createPool,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

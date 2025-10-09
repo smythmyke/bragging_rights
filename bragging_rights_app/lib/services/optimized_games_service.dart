@@ -386,12 +386,8 @@ class OptimizedGamesService {
               awayTeamLogo: game.awayTeamLogo,
             );
 
-            // Filter out completed games (similar to NFL/NBA filtering)
-            if (updatedGame.status == 'final') {
-              debugPrint('🚫 Filtering out completed $sport game: ${game.awayTeam} @ ${game.homeTeam} at ${game.gameTime}');
-              continue; // Skip this game
-            }
-
+            // Add ALL games to list (including final games)
+            // This ensures final games are saved to Firestore to trigger bet settlement
             updatedGames.add(updatedGame);
           } else {
             // No score data - check if game is in the past
@@ -403,20 +399,36 @@ class OptimizedGamesService {
           }
           }
 
-          // Group combat sports by event before returning
+          // Group combat sports by event before saving
           if (sport.toUpperCase() == 'MMA' || sport.toUpperCase() == 'BOXING') {
             debugPrint('🥊 Applying grouping to $sport with ${updatedGames.length} fights');
             finalGames = await _groupCombatSportsByEvent(updatedGames, sport);
-            debugPrint('✅ Grouped into ${finalGames.length} events for display');
+            debugPrint('✅ Grouped into ${finalGames.length} events for Firestore');
           } else {
             finalGames = updatedGames;
           }
         }
 
-        // Save to Firestore cache
+        // Save ALL games to Firestore (including final games)
+        // This ensures Cloud Functions can detect status changes and settle bets
         await _saveGamesToFirestore(finalGames, sport: sport);
+        debugPrint('💾 Saved ${finalGames.length} games to Firestore (including final games)');
 
-        return finalGames;
+        // NOW filter for UI display - don't show old completed games
+        final gamesToDisplay = finalGames.where((game) {
+          if (game.status == 'final') {
+            // Show completed games for 4 hours after finish
+            final hoursSinceEnd = DateTime.now().difference(game.gameTime).inHours;
+            if (hoursSinceEnd >= 4) {
+              debugPrint('🚫 Hiding old completed game from UI: ${game.awayTeam} @ ${game.homeTeam} (${hoursSinceEnd}h ago)');
+              return false;
+            }
+          }
+          return true; // Show all non-final games and recent final games
+        }).toList();
+
+        debugPrint('📱 Returning ${gamesToDisplay.length} games to UI (filtered from ${finalGames.length})');
+        return gamesToDisplay;
       }
       
       debugPrint('⚠️ No games from Odds API, falling back to ESPN...');

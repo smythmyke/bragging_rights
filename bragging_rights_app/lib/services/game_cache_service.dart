@@ -8,6 +8,11 @@ class GameCacheService {
   static const String _cacheKey = 'cached_games';
   static const String _cacheTimestampKey = 'games_cache_timestamp';
   static const Duration _cacheValidDuration = Duration(minutes: 5);
+
+  // Live score caching (2-minute TTL)
+  static const String _liveScoreCachePrefix = 'live_score_';
+  static const String _liveScoreTimestampPrefix = 'live_score_timestamp_';
+  static const Duration _liveScoreCacheDuration = Duration(minutes: 2);
   
   // Singleton instance
   static final GameCacheService _instance = GameCacheService._internal();
@@ -125,14 +130,81 @@ class GameCacheService {
   Future<Duration?> getCacheAge() async {
     try {
       _prefs ??= await SharedPreferences.getInstance();
-      
+
       final timestamp = _prefs!.getInt(_cacheTimestampKey);
       if (timestamp == null) return null;
-      
+
       final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
       return DateTime.now().difference(cacheTime);
     } catch (e) {
       return null;
+    }
+  }
+
+  /// Cache live score for a specific game (2-minute TTL)
+  Future<void> cacheLiveScore(String gameId, Map<String, dynamic> scoreData) async {
+    try {
+      _prefs ??= await SharedPreferences.getInstance();
+
+      final cacheKey = '$_liveScoreCachePrefix$gameId';
+      final timestampKey = '$_liveScoreTimestampPrefix$gameId';
+
+      await _prefs!.setString(cacheKey, json.encode(scoreData));
+      await _prefs!.setInt(timestampKey, DateTime.now().millisecondsSinceEpoch);
+
+      debugPrint('⚡ Cached live score for game $gameId');
+    } catch (e) {
+      debugPrint('Error caching live score: $e');
+    }
+  }
+
+  /// Get cached live score if not stale (< 2 minutes old)
+  Future<Map<String, dynamic>?> getCachedLiveScore(String gameId) async {
+    try {
+      _prefs ??= await SharedPreferences.getInstance();
+
+      final cacheKey = '$_liveScoreCachePrefix$gameId';
+      final timestampKey = '$_liveScoreTimestampPrefix$gameId';
+
+      final scoreJson = _prefs!.getString(cacheKey);
+      final timestamp = _prefs!.getInt(timestampKey);
+
+      if (scoreJson == null || timestamp == null) {
+        debugPrint('⚡ No cached live score for game $gameId');
+        return null;
+      }
+
+      // Check if cache is stale
+      final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+      final age = DateTime.now().difference(cacheTime);
+
+      if (age > _liveScoreCacheDuration) {
+        debugPrint('⚡ Live score cache stale for game $gameId (age: ${age.inSeconds}s)');
+        return null;
+      }
+
+      debugPrint('⚡ Returning cached live score for game $gameId (age: ${age.inSeconds}s)');
+      return json.decode(scoreJson) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('Error getting cached live score: $e');
+      return null;
+    }
+  }
+
+  /// Clear live score cache for a specific game
+  Future<void> clearLiveScoreCache(String gameId) async {
+    try {
+      _prefs ??= await SharedPreferences.getInstance();
+
+      final cacheKey = '$_liveScoreCachePrefix$gameId';
+      final timestampKey = '$_liveScoreTimestampPrefix$gameId';
+
+      await _prefs!.remove(cacheKey);
+      await _prefs!.remove(timestampKey);
+
+      debugPrint('⚡ Cleared live score cache for game $gameId');
+    } catch (e) {
+      debugPrint('Error clearing live score cache: $e');
     }
   }
 }

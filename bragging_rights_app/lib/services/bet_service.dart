@@ -241,6 +241,7 @@ class BetModel {
   final String status;
   final DateTime placedAt;
   final bool isParlay;
+  final DateTime? settledAt; // When bet was settled (won/lost/cancelled)
 
   BetModel({
     required this.id,
@@ -256,11 +257,12 @@ class BetModel {
     required this.status,
     required this.placedAt,
     required this.isParlay,
+    this.settledAt,
   });
 
   factory BetModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    
+
     return BetModel(
       id: doc.id,
       userId: data['userId'],
@@ -277,6 +279,7 @@ class BetModel {
       status: data['status'],
       placedAt: (data['placedAt'] as Timestamp).toDate(),
       isParlay: data['isParlay'] ?? false,
+      settledAt: data['settledAt'] != null ? (data['settledAt'] as Timestamp).toDate() : null,
     );
   }
 }

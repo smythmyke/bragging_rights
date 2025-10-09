@@ -430,6 +430,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showPurchaseOptions(BuildContext context) {
+    // Navigate to BR Shop instead of showing bottom sheet
+    Navigator.pushNamed(context, '/br-shop');
+  }
+
+  void _showPurchaseOptionsOLD(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -3474,14 +3479,30 @@ class _HomeScreenState extends State<HomeScreen> {
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      alignment: Alignment.centerLeft,
-                                      child: Text(
-                                        '$brBalance BR',
-                                        style: const TextStyle(
-                                          fontSize: 28,
-                                          fontWeight: FontWeight.bold,
+                                    GestureDetector(
+                                      onTap: () {
+                                        Navigator.pushNamed(context, '/br-shop');
+                                      },
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.centerLeft,
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              '$brBalance BR',
+                                              style: const TextStyle(
+                                                fontSize: 28,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            const Icon(
+                                              PhosphorIconsRegular.plusCircle,
+                                              size: 20,
+                                              color: AppTheme.neonGreen,
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ),
@@ -4121,12 +4142,7 @@ class _HomeScreenState extends State<HomeScreen> {
       
       if (balance < 25) {
         print('Quick Play failed: Insufficient balance (need 25 BR, have $balance BR)');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Insufficient BR. You need 25 BR (current: $balance BR)'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _showInsufficientBRDialog(25, balance);
         return;
       }
       
@@ -4778,6 +4794,63 @@ class _HomeScreenState extends State<HomeScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showInsufficientBRDialog(int required, int current) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surfaceBlue,
+        title: const Row(
+          children: [
+            Icon(PhosphorIconsRegular.warning, color: AppTheme.errorPink),
+            SizedBox(width: 12),
+            Text('Insufficient BR', style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'You need $required BR for Quick Play',
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.errorPink.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppTheme.errorPink.withOpacity(0.3)),
+              ),
+              child: Text(
+                'Your balance: $current BR\nNeed: ${required - current} more BR',
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/br-shop');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.neonGreen,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Get BR'),
           ),
         ],
       ),

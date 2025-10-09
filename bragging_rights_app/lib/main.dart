@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'firebase_options.dart';
 import 'theme/app_theme.dart';
 import 'services/notification_service.dart';
 import 'services/pool_management_service.dart';
 import 'services/game_cache_service.dart';
 import 'services/challenge_service.dart';
+import 'services/ad_reward_service.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/onboarding/sports_selection_screen.dart';
 import 'screens/home/home_screen.dart' as home;
@@ -33,6 +35,7 @@ import 'screens/friends/invite_friends_screen.dart';
 import 'screens/test/mlb_debug_screen.dart';
 import 'screens/test/espn_resolver_test_screen.dart';
 import 'screens/test/soccer_resolver_test_screen.dart';
+import 'screens/rewards/br_shop_screen.dart';
 import 'screens/intel/intel_type_selection_screen.dart';
 import 'screens/intel/injury_intel_purchase_screen.dart';
 import 'screens/intel/injury_report_view_screen.dart';
@@ -70,9 +73,32 @@ void main() async {
   // Initialize challenge service
   ChallengeService().init();
 
+  // Initialize AdMob SDK
+  debugPrint('🎬 [ADMOB] Starting AdMob initialization...');
+
+  // Check Google Play Services availability (Android only)
+  try {
+    debugPrint('🔍 [ADMOB] Checking Google Play Services availability...');
+    final initStatus = await MobileAds.instance.initialize();
+    debugPrint('✅ [ADMOB] Google Play Services available!');
+    debugPrint('📊 [ADMOB] Initialization status: ${initStatus.adapterStatuses}');
+  } catch (e, stackTrace) {
+    debugPrint('❌ [ADMOB] Google Play Services check FAILED: $e');
+    debugPrint('❌ [ADMOB] Stack trace: $stackTrace');
+  }
+
+  try {
+    await AdRewardService.initialize();
+    debugPrint('✅ [ADMOB] AdMob SDK initialized successfully!');
+  } catch (e, stackTrace) {
+    debugPrint('❌ [ADMOB] AdMob initialization FAILED: $e');
+    debugPrint('❌ [ADMOB] Stack trace: $stackTrace');
+  }
+
   // Don't start pool management here - wait for authentication
   // PoolManagementService().startPoolManagement();
 
+  debugPrint('🚀 [APP] Running BraggingRightsApp...');
   runApp(const BraggingRightsApp());
 }
 
@@ -99,6 +125,7 @@ class BraggingRightsApp extends StatelessWidget {
         '/mlb-debug': (context) => const MlbDebugScreen(),
         '/test-resolver': (context) => const EspnResolverTestScreen(),
         '/soccer-resolver-test': (context) => const SoccerResolverTestScreen(),
+        '/br-shop': (context) => const BRShopScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/pool-selection') {

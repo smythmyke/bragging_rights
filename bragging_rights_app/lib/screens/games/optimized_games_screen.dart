@@ -918,6 +918,13 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
     );
   }
   
+  void _navigateToTab(int index) {
+    // Navigate back to home screen with the selected tab
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    // The home screen will handle tab switching via its own navigation
+    // For now, just pop back to home
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1223,6 +1230,41 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
                     ],
                   ),
                 ),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        currentIndex: 0, // Always highlight "Games" since this is the games screen
+        onTap: (index) {
+          if (index == 0) {
+            // Games tab - already here, just go back to home
+            Navigator.of(context).pop();
+          } else {
+            // Other tabs - go back to home and let it handle the navigation
+            _navigateToTab(index);
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(PhosphorIconsRegular.gameController),
+            label: 'Games',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(PhosphorIconsRegular.currencyDollar),
+            label: 'Bets',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.live_tv),
+            label: 'Watch Live',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(PhosphorIconsRegular.lightning),
+            label: 'Edge',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(PhosphorIconsRegular.dotsThreeOutline),
+            label: 'More',
+          ),
+        ],
+      ),
       );
   }
 

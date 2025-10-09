@@ -7,78 +7,120 @@ import 'br_currency_service.dart';
 class AdRewardService {
   final BRCurrencyService _brService = BRCurrencyService();
 
-  // AdMob Ad Unit IDs (REPLACE WITH YOUR ACTUAL AD UNIT IDS)
-  static const String _rewardedAdUnitIdAndroid = 'ca-app-pub-3940256099942544/5224354917'; // Test ID
-  static const String _rewardedAdUnitIdIOS = 'ca-app-pub-3940256099942544/1712485313'; // Test ID
+  // Test Ad Unit IDs (for development only)
+  static const String _testRewardedAdUnitIdAndroid = 'ca-app-pub-3940256099942544/5224354917';
+  static const String _testRewardedAdUnitIdIOS = 'ca-app-pub-3940256099942544/1712485313';
+
+  // Production Ad Unit IDs from AdMob console
+  // Android App ID: ca-app-pub-6550805819637330~3890172020
+  static const String _prodRewardedAdUnitIdAndroid = 'ca-app-pub-6550805819637330/2465409717';
+  static const String _prodRewardedAdUnitIdIOS = 'ca-app-pub-XXXXXX/2222222222'; // iOS when needed
 
   RewardedAd? _rewardedAd;
   bool _isAdLoading = false;
   bool _isAdReady = false;
 
   /// Get platform-specific ad unit ID
+  /// Uses test IDs in debug mode, production IDs in release builds
   String get _adUnitId {
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      return _rewardedAdUnitIdAndroid;
-    } else if (defaultTargetPlatform == TargetPlatform.iOS) {
-      return _rewardedAdUnitIdIOS;
+    final isProduction = bool.fromEnvironment('dart.vm.product');
+    final platform = defaultTargetPlatform;
+
+    debugPrint('🔧 [ADMOB] Platform: $platform, Production: $isProduction');
+
+    if (platform == TargetPlatform.android) {
+      final adUnitId = isProduction ? _prodRewardedAdUnitIdAndroid : _testRewardedAdUnitIdAndroid;
+      debugPrint('🎯 [ADMOB] Using Android ad unit: ${adUnitId.substring(0, 20)}...');
+      return adUnitId;
+    } else if (platform == TargetPlatform.iOS) {
+      final adUnitId = isProduction ? _prodRewardedAdUnitIdIOS : _testRewardedAdUnitIdIOS;
+      debugPrint('🎯 [ADMOB] Using iOS ad unit: ${adUnitId.substring(0, 20)}...');
+      return adUnitId;
     }
-    return _rewardedAdUnitIdAndroid; // Fallback
+    debugPrint('⚠️ [ADMOB] Unknown platform, using Android test ID fallback');
+    return _testRewardedAdUnitIdAndroid; // Fallback
   }
 
   /// Initialize AdMob SDK (call this on app startup)
   static Future<void> initialize() async {
-    await MobileAds.instance.initialize();
-    debugPrint('✅ AdMob SDK initialized');
+    debugPrint('🎬 [ADMOB-SERVICE] Calling MobileAds.instance.initialize()...');
+    try {
+      final initStatus = await MobileAds.instance.initialize();
+      debugPrint('✅ [ADMOB-SERVICE] MobileAds initialized successfully!');
+      debugPrint('📊 [ADMOB-SERVICE] Init status: $initStatus');
+    } catch (e, stackTrace) {
+      debugPrint('❌ [ADMOB-SERVICE] MobileAds initialization error: $e');
+      debugPrint('❌ [ADMOB-SERVICE] Stack: $stackTrace');
+      rethrow;
+    }
   }
 
   /// Load a rewarded ad
   Future<void> loadRewardedAd() async {
+    debugPrint('📥 [AD-LOAD] loadRewardedAd() called');
+    debugPrint('📥 [AD-LOAD] Current state - isLoading: $_isAdLoading, isReady: $_isAdReady');
+
     if (_isAdLoading || _isAdReady) {
-      debugPrint('⏸️ Ad already loading or ready');
+      debugPrint('⏸️ [AD-LOAD] Ad already loading or ready, skipping');
       return;
     }
 
     _isAdLoading = true;
+    final adUnitId = _adUnitId; // This will trigger the getter logs
+    debugPrint('📥 [AD-LOAD] Starting RewardedAd.load with ad unit: ${adUnitId.substring(0, 20)}...');
 
-    await RewardedAd.load(
-      adUnitId: _adUnitId,
-      request: const AdRequest(),
-      rewardedAdLoadCallback: RewardedAdLoadCallback(
-        onAdLoaded: (ad) {
-          debugPrint('✅ Rewarded ad loaded');
-          _rewardedAd = ad;
-          _isAdReady = true;
-          _isAdLoading = false;
+    try {
+      await RewardedAd.load(
+        adUnitId: adUnitId,
+        request: const AdRequest(),
+        rewardedAdLoadCallback: RewardedAdLoadCallback(
+          onAdLoaded: (ad) {
+            debugPrint('✅ [AD-LOAD] Rewarded ad LOADED successfully!');
+            _rewardedAd = ad;
+            _isAdReady = true;
+            _isAdLoading = false;
 
-          // Set up callbacks
-          _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
-            onAdShowedFullScreenContent: (ad) {
-              debugPrint('📺 Rewarded ad showed full screen');
-            },
-            onAdDismissedFullScreenContent: (ad) {
-              debugPrint('👋 Rewarded ad dismissed');
-              ad.dispose();
-              _rewardedAd = null;
-              _isAdReady = false;
-              // Preload next ad
-              loadRewardedAd();
-            },
-            onAdFailedToShowFullScreenContent: (ad, error) {
-              debugPrint('❌ Rewarded ad failed to show: $error');
-              ad.dispose();
-              _rewardedAd = null;
-              _isAdReady = false;
-            },
-          );
-        },
-        onAdFailedToLoad: (error) {
-          debugPrint('❌ Rewarded ad failed to load: $error');
-          _rewardedAd = null;
-          _isAdReady = false;
-          _isAdLoading = false;
-        },
-      ),
-    );
+            // Set up callbacks
+            _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
+              onAdShowedFullScreenContent: (ad) {
+                debugPrint('📺 [AD-SHOW] Rewarded ad showing full screen');
+              },
+              onAdDismissedFullScreenContent: (ad) {
+                debugPrint('👋 [AD-SHOW] Rewarded ad dismissed by user');
+                ad.dispose();
+                _rewardedAd = null;
+                _isAdReady = false;
+                // Preload next ad
+                debugPrint('🔄 [AD-LOAD] Preloading next ad...');
+                loadRewardedAd();
+              },
+              onAdFailedToShowFullScreenContent: (ad, error) {
+                debugPrint('❌ [AD-SHOW] Rewarded ad FAILED to show: $error');
+                debugPrint('❌ [AD-SHOW] Error code: ${error.code}, Message: ${error.message}');
+                ad.dispose();
+                _rewardedAd = null;
+                _isAdReady = false;
+              },
+            );
+          },
+          onAdFailedToLoad: (error) {
+            debugPrint('❌ [AD-LOAD] Rewarded ad FAILED to load!');
+            debugPrint('❌ [AD-LOAD] Error code: ${error.code}');
+            debugPrint('❌ [AD-LOAD] Error domain: ${error.domain}');
+            debugPrint('❌ [AD-LOAD] Error message: ${error.message}');
+            debugPrint('❌ [AD-LOAD] Response info: ${error.responseInfo}');
+            _rewardedAd = null;
+            _isAdReady = false;
+            _isAdLoading = false;
+          },
+        ),
+      );
+      debugPrint('📥 [AD-LOAD] RewardedAd.load() call completed (waiting for callback)');
+    } catch (e, stackTrace) {
+      debugPrint('❌ [AD-LOAD] Exception during RewardedAd.load: $e');
+      debugPrint('❌ [AD-LOAD] Stack trace: $stackTrace');
+      _isAdLoading = false;
+    }
   }
 
   /// Check if ad is ready to show
