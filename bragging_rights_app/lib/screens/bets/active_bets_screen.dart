@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -102,10 +103,20 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
       if (bet.status == 'won') {
         _totalWins++;
         _totalProfit += bet.potentialPayout - bet.wagerAmount;
-      } else if (bet.status == 'lost') {
+      } else if (bet.status == 'lost' || bet.status == 'cancelled' || bet.status == 'cashed_out') {
+        // Count cancellations and cash-outs as losses
         _totalLosses++;
-        _totalProfit -= bet.wagerAmount;
+        // For cancelled/cashed out: Loss is the penalty amount (wager - refund)
+        if (bet.status == 'cancelled' || bet.status == 'cashed_out') {
+          // User gave up on the bet, counts as a loss
+          // Profit impact: they lost the wager but got some/all back (handled by wallet)
+          // Don't double-count in profit calculation
+        } else {
+          // Regular loss: lost full wager
+          _totalProfit -= bet.wagerAmount;
+        }
       }
+      // Note: 'expired' bets are refunded in full, so they don't count as wins or losses
     }
 
     // Calculate current streak
@@ -113,15 +124,22 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
       final sortedBets = List<BetModel>.from(pastBets)
         ..sort((a, b) => b.placedAt.compareTo(a.placedAt));
 
-      final streakType = sortedBets.first.status == 'won';
-      for (final bet in sortedBets) {
-        if ((bet.status == 'won') == streakType) {
-          _currentStreak++;
-        } else {
-          break;
+      // Filter out expired/refunded bets for streak calculation
+      final betsForStreak = sortedBets.where((b) =>
+        b.status == 'won' || b.status == 'lost' || b.status == 'cancelled' || b.status == 'cashed_out'
+      ).toList();
+
+      if (betsForStreak.isNotEmpty) {
+        final streakType = betsForStreak.first.status == 'won';
+        for (final bet in betsForStreak) {
+          if ((bet.status == 'won') == streakType) {
+            _currentStreak++;
+          } else {
+            break;
+          }
         }
+        if (!streakType) _currentStreak = -_currentStreak;
       }
-      if (!streakType) _currentStreak = -_currentStreak;
     }
   }
 
@@ -370,10 +388,17 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
               future: _fetchGameDetails(bet.gameId),
               builder: (context, gameSnapshot) {
                 final game = gameSnapshot.data;
+                final gameStatus = game?.status ?? 'scheduled';
 
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: ListTile(
+                return GestureDetector(
+                  onLongPress: () async {
+                    // Haptic feedback
+                    HapticFeedback.mediumImpact();
+                    await _showCancelBetDialog(context, bet, gameStatus);
+                  },
+                  child: Card(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    child: ListTile(
                     title: Text(
                       bet.gameTitle,
                       style: const TextStyle(fontWeight: FontWeight.bold),
@@ -455,6 +480,7 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
                         ),
                       ),
                     ),
+                  ),
                   ),
                 );
               },
@@ -566,9 +592,15 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
             final statusColor = _getStatusColor(bet.status);
             final statusText = _getStatusText(bet.status);
 
-            return Card(
-              margin: const EdgeInsets.only(bottom: 16),
-              child: ListTile(
+            return GestureDetector(
+              onLongPress: () async {
+                // Haptic feedback
+                HapticFeedback.mediumImpact();
+                await _showHideBetDialog(context, bet);
+              },
+              child: Card(
+                margin: const EdgeInsets.only(bottom: 16),
+                child: ListTile(
                 title: Text(
                   bet.gameTitle,
                   style: const TextStyle(fontWeight: FontWeight.bold),
@@ -600,7 +632,7 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
                       const SizedBox(height: 4),
                     ],
                     Text(
-                      'Wager: ${bet.wagerAmount} BR • ${bet.status == 'won' ? 'Won: ${bet.potentialPayout} BR' : bet.status == 'lost' ? 'Lost' : 'Cancelled'}',
+                      'Wager: ${bet.wagerAmount} BR • ${bet.status == 'won' ? 'Won: ${bet.potentialPayout} BR' : bet.status == 'lost' ? 'Lost' : bet.status == 'expired' ? 'Refunded: ${bet.wagerAmount} BR' : bet.status == 'cashed_out' ? 'Cashed Out (25% penalty)' : 'Cancelled'}',
                       style: TextStyle(
                         color: statusColor,
                         fontWeight: FontWeight.w600,
@@ -638,6 +670,7 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
                   ),
                 ),
               ),
+              ),
             );
           },
         );
@@ -653,6 +686,10 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
         return AppTheme.errorPink;
       case 'cancelled':
         return Colors.grey;
+      case 'expired':
+        return Colors.orange;
+      case 'cashed_out':
+        return Colors.deepOrange;
       case 'pending':
         return AppTheme.warningAmber;
       default:
@@ -668,10 +705,227 @@ class _ActiveBetsScreenState extends State<ActiveBetsScreen> with SingleTickerPr
         return 'LOST';
       case 'cancelled':
         return 'CANCELLED';
+      case 'expired':
+        return 'REFUNDED';
+      case 'cashed_out':
+        return 'CASHED OUT';
       case 'pending':
         return 'PENDING';
       default:
         return status.toUpperCase();
+    }
+  }
+
+  /// Show dialog for cancelling/cashing out active bet
+  Future<void> _showCancelBetDialog(BuildContext context, BetModel bet, String gameStatus) async {
+    // Block deletion if game has finished
+    if (gameStatus == 'final') {
+      _showCannotDeleteDialog(context);
+      return;
+    }
+
+    // Calculate penalty
+    final isLive = gameStatus == 'live';
+    final penaltyPercent = isLive ? 25 : 0;
+    final penaltyAmount = (bet.wagerAmount * (penaltyPercent / 100)).round();
+    final refundAmount = bet.wagerAmount - penaltyAmount;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(isLive ? '⚠️ Cash Out Early?' : 'Cancel Bet?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              bet.gameTitle,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 4),
+            if (isLive)
+              Text(
+                'Status: LIVE',
+                style: TextStyle(
+                  color: AppTheme.errorPink,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            const SizedBox(height: 16),
+            Text('Original Wager: ${bet.wagerAmount} BR'),
+            if (isLive) ...[
+              Text(
+                'Cash Out Penalty: -$penaltyAmount BR (25%)',
+                style: TextStyle(color: AppTheme.errorPink),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Text(
+              'You\'ll Receive: $refundAmount BR',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: isLive ? AppTheme.warningAmber : AppTheme.neonGreen,
+              ),
+            ),
+            if (isLive) ...[
+              const SizedBox(height: 12),
+              Text(
+                '⚠️ This cannot be undone',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.warningAmber,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(isLive ? 'Keep Betting' : 'Keep Bet'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isLive ? AppTheme.errorPink : AppTheme.neonGreen,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(isLive ? 'Cash Out' : 'Cancel Bet'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      await _processCancellation(bet.id, gameStatus);
+    }
+  }
+
+  /// Show error dialog when trying to delete finished game
+  void _showCannotDeleteDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('❌ Cannot Delete'),
+        content: const Text(
+          'This game has finished.\n\n'
+          'Settlement is pending. Please wait for automatic settlement or expiration.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Process bet cancellation
+  Future<void> _processCancellation(String betId, String gameStatus) async {
+    try {
+      // Show loading indicator
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Processing cancellation...'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+
+      final result = await _betService.cancelBet(betId, gameStatus);
+      final refundAmount = result['refundAmount'] as int;
+      final penaltyAmount = result['penaltyAmount'] as int;
+      final status = result['status'] as String;
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              status == 'cashed_out'
+                  ? 'Cashed out! Refunded $refundAmount BR (${penaltyAmount} BR penalty)'
+                  : 'Bet cancelled! Refunded $refundAmount BR',
+            ),
+            backgroundColor: AppTheme.neonGreen,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: AppTheme.errorPink,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Show dialog for hiding past bet
+  Future<void> _showHideBetDialog(BuildContext context, BetModel bet) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove from History?'),
+        content: const Text(
+          'This will hide this bet from your history.\n\n'
+          'Your stats and wallet will NOT be affected.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      await _processHideBet(bet.id);
+    }
+  }
+
+  /// Process hiding a bet
+  Future<void> _processHideBet(String betId) async {
+    try {
+      // Haptic feedback
+      HapticFeedback.lightImpact();
+
+      await _betService.hideBet(betId);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Bet hidden from history'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: AppTheme.errorPink,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 

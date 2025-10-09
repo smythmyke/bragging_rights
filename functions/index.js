@@ -54,21 +54,31 @@ exports.settleGameBets = functions.firestore
     const gameId = context.params.gameId;
     const previousData = change.before.data();
     const currentData = change.after.data();
-    
+
+    // LOG: Every game update
+    console.log(`📊 [SETTLEMENT] Game ${gameId} updated`);
+    console.log(`   Previous status: ${previousData.status}`);
+    console.log(`   Current status: ${currentData.status}`);
+    console.log(`   Home: ${currentData.homeTeam || 'N/A'} (${currentData.homeScore || 0})`);
+    console.log(`   Away: ${currentData.awayTeam || 'N/A'} (${currentData.awayScore || 0})`);
+
     // Only process if game just finished
     if (previousData.status !== 'final' && currentData.status === 'final') {
-      console.log(`Game ${gameId} finished. Starting bet settlement...`);
-      
+      console.log(`🎮 [SETTLEMENT] Game ${gameId} FINISHED! Starting bet settlement...`);
+      console.log(`   Final Score: ${currentData.homeTeam} ${currentData.homeScore} - ${currentData.awayScore} ${currentData.awayTeam}`);
+
       try {
         await settleBetsForGame(gameId, currentData);
         await settlePoolsForGame(gameId, currentData);
-        console.log(`Successfully settled all bets for game ${gameId}`);
+        console.log(`✅ [SETTLEMENT] Successfully settled all bets for game ${gameId}`);
       } catch (error) {
-        console.error(`Error settling bets for game ${gameId}:`, error);
+        console.error(`❌ [SETTLEMENT] Error settling bets for game ${gameId}:`, error);
         throw error;
       }
+    } else {
+      console.log(`⏭️ [SETTLEMENT] Skipping game ${gameId} - status change (${previousData.status} → ${currentData.status}) doesn't trigger settlement`);
     }
-    
+
     return null;
   });
 
@@ -935,6 +945,87 @@ exports.cleanupExpiredBets = functions.https.onCall(async (data, context) => {
     );
   }
 });
+
+/**
+ * Cleanup hidden bets (soft-deleted from UI)
+ * Scheduled to run daily, removes hidden bets older than 7 days
+ * This only deletes the bet document itself - wallet/stats remain intact
+ */
+exports.cleanupHiddenBets = functions.pubsub
+  .schedule('every 24 hours')
+  .timeZone('America/New_York')
+  .onRun(async (context) => {
+    console.log('🧹 Starting cleanup of hidden bets older than 7 days');
+
+    const sevenDaysAgo = admin.firestore.Timestamp.fromDate(
+      new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    );
+
+    try {
+      // Find all hidden bets older than 7 days
+      const snapshot = await db.collection('bets')
+        .where('hidden', '==', true)
+        .where('hiddenAt', '<', sevenDaysAgo)
+        .get();
+
+      if (snapshot.empty) {
+        console.log('No hidden bets found older than 7 days');
+        return {
+          success: true,
+          deleted: 0
+        };
+      }
+
+      console.log(`Found ${snapshot.docs.length} hidden bets to delete`);
+
+      let deleteCount = 0;
+      let errorCount = 0;
+
+      // Process in batches of 500 (Firestore batch limit)
+      const BATCH_SIZE = 500;
+      for (let i = 0; i < snapshot.docs.length; i += BATCH_SIZE) {
+        const batch = db.batch();
+        const batchDocs = snapshot.docs.slice(i, i + BATCH_SIZE);
+
+        for (const betDoc of batchDocs) {
+          try {
+            // IMPORTANT: Only delete the bet document
+            // Do NOT touch wallet or stats - they were already updated when bet was settled
+            batch.delete(betDoc.ref);
+            deleteCount++;
+
+            console.log(`🗑️ Deleting hidden bet ${betDoc.id} (hidden ${Math.floor((Date.now() - betDoc.data().hiddenAt.toDate()) / (24 * 60 * 60 * 1000))} days ago)`);
+          } catch (error) {
+            console.error(`❌ Error deleting bet ${betDoc.id}:`, error);
+            errorCount++;
+          }
+        }
+
+        // Commit batch
+        await batch.commit();
+        console.log(`📦 Committed batch ${Math.floor(i / BATCH_SIZE) + 1}`);
+      }
+
+      console.log(`✅ Cleanup complete: ${deleteCount} hidden bets deleted, ${errorCount} errors`);
+
+      // Log summary
+      await db.collection('system_logs').add({
+        type: 'cleanup_hidden_bets',
+        timestamp: FieldValue.serverTimestamp(),
+        deleteCount,
+        errorCount
+      });
+
+      return {
+        success: true,
+        deleted: deleteCount,
+        errors: errorCount
+      };
+    } catch (error) {
+      console.error('Fatal error during hidden bets cleanup:', error);
+      throw error;
+    }
+  });
 
 /**
  * Cancel a bet (user request)

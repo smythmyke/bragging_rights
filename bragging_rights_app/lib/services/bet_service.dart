@@ -158,38 +158,49 @@ class BetService {
         });
   }
 
-  // Get past bets (settled, won, lost, cancelled)
+  // Get past bets (settled, won, lost, cancelled, expired, cashed_out)
+  // Excludes hidden bets (soft deleted)
   Stream<List<BetModel>> getPastBets({int limit = 50}) {
     if (_userId == null) {
       print('⚠️ [BET SERVICE] getPastBets() - No user logged in');
       return Stream.value([]);
     }
 
-    print('🔍 [BET SERVICE] getPastBets() - Querying for userId: $_userId, status in: [settled, won, lost, cancelled]');
+    print('🔍 [BET SERVICE] getPastBets() - Querying for userId: $_userId, status in: [settled, won, lost, cancelled, expired, cashed_out], hidden: false');
 
     return _firestore
         .collection('bets')
         .where('userId', isEqualTo: _userId)
-        .where('status', whereIn: ['settled', 'won', 'lost', 'cancelled'])
+        .where('status', whereIn: ['settled', 'won', 'lost', 'cancelled', 'expired', 'cashed_out'])
         .orderBy('placedAt', descending: true)
         .limit(limit)
         .snapshots()
         .map((snapshot) {
           print('📦 [BET SERVICE] getPastBets() - Received ${snapshot.docs.length} past bets from Firestore');
 
-          for (var doc in snapshot.docs) {
+          // Filter out hidden bets (client-side since we can't add more where clauses)
+          final visibleBets = snapshot.docs.where((doc) {
             final data = doc.data();
-            print('   🏁 Bet ${doc.id}: ${data['gameTitle']} - Status: ${data['status']} - Settled: ${data['settledAt']}');
-          }
+            final isHidden = data['hidden'] == true;
 
-          return snapshot.docs
+            if (!isHidden) {
+              print('   🏁 Bet ${doc.id}: ${data['gameTitle']} - Status: ${data['status']} - Settled: ${data['settledAt']}');
+            }
+
+            return !isHidden;
+          }).toList();
+
+          print('📊 [BET SERVICE] Filtered to ${visibleBets.length} visible bets (excluded hidden)');
+
+          return visibleBets
               .map((doc) => BetModel.fromFirestore(doc))
               .toList();
         });
   }
 
-  // Cancel a pending bet (if allowed)
-  Future<void> cancelBet(String betId) async {
+  // Cancel or cash out a pending bet
+  // Returns: {refundAmount, penaltyAmount, status}
+  Future<Map<String, dynamic>> cancelBet(String betId, String gameStatus) async {
     if (_userId == null) throw Exception('User not logged in');
 
     final betDoc = await _firestore.collection('bets').doc(betId).get();
@@ -203,18 +214,73 @@ class BetService {
       throw Exception('Can only cancel pending bets');
     }
 
-    // Refund the wager
+    // Block deletion if game has finished
+    if (gameStatus == 'final') {
+      throw Exception('Cannot cancel bet - game has finished and settlement is pending');
+    }
+
+    // Calculate refund and penalty
+    final wagerAmount = betData['wagerAmount'] as int;
+    final isLive = gameStatus == 'live';
+    final penaltyPercent = isLive ? 0.25 : 0.0;
+    final penaltyAmount = (wagerAmount * penaltyPercent).round();
+    final refundAmount = wagerAmount - penaltyAmount;
+    final newStatus = isLive ? 'cashed_out' : 'cancelled';
+
+    print('🚫 [BET SERVICE] Cancelling bet $betId');
+    print('   Game Status: $gameStatus');
+    print('   Wager: $wagerAmount BR');
+    print('   Penalty: $penaltyAmount BR (${(penaltyPercent * 100).round()}%)');
+    print('   Refund: $refundAmount BR');
+    print('   New Status: $newStatus');
+
+    // Process refund via wallet service (creates transaction record)
     await _walletService.addWinnings(
-      amount: betData['wagerAmount'],
+      amount: refundAmount,
       betId: betId,
-      description: 'Bet cancelled - refund',
+      description: isLive
+        ? 'Bet cashed out (25% penalty)'
+        : 'Bet cancelled - full refund',
     );
 
     // Update bet status
     await _firestore.collection('bets').doc(betId).update({
-      'status': 'cancelled',
+      'status': newStatus,
       'cancelledAt': FieldValue.serverTimestamp(),
+      'settledAt': FieldValue.serverTimestamp(),
+      'refundAmount': refundAmount,
+      'penaltyAmount': penaltyAmount,
     });
+
+    print('✅ [BET SERVICE] Bet cancelled successfully');
+
+    return {
+      'refundAmount': refundAmount,
+      'penaltyAmount': penaltyAmount,
+      'status': newStatus,
+    };
+  }
+
+  // Hide a bet from past bets (soft delete)
+  Future<void> hideBet(String betId) async {
+    if (_userId == null) throw Exception('User not logged in');
+
+    final betDoc = await _firestore.collection('bets').doc(betId).get();
+    if (!betDoc.exists) throw Exception('Bet not found');
+
+    final betData = betDoc.data()!;
+    if (betData['userId'] != _userId) {
+      throw Exception('Unauthorized to hide this bet');
+    }
+
+    print('🙈 [BET SERVICE] Hiding bet $betId from history');
+
+    await _firestore.collection('bets').doc(betId).update({
+      'hidden': true,
+      'hiddenAt': FieldValue.serverTimestamp(),
+    });
+
+    print('✅ [BET SERVICE] Bet hidden successfully');
   }
 
   // Cleanup expired bets (older than 30 days)
