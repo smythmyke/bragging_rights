@@ -656,17 +656,10 @@ class EdgeCardBuilder {
   }
 
   /// Build social sentiment teaser
+  /// NOTE: This should be generic for locked cards - specific data shown only after unlock
   String _buildSocialTeaser(Map<String, dynamic> socialData, EdgeIntelligence intelligence) {
-    final fanConfidence = socialData['fanConfidence'];
-    if (fanConfidence != null) {
-      final homeConfidence = fanConfidence['homeFanConfidence'];
-      if (homeConfidence != null) {
-        final pct = (homeConfidence * 100).toStringAsFixed(0);
-        return '${intelligence.homeTeam} fans $pct% confident';
-      }
-    }
-
-    return 'Community sentiment analysis available';
+    // Return generic teaser text - specific fan confidence data shown only after unlock
+    return 'See what fans are saying about this matchup';
   }
 
   /// Build social sentiment content

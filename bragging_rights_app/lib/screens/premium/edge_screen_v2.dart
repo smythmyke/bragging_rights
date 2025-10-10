@@ -72,7 +72,7 @@ class _EdgeScreenV2State extends State<EdgeScreenV2> with TickerProviderStateMix
       _isLoading = true;
       _error = null;
     });
-    
+
     try {
       // Load user BR balance
       final user = _auth.currentUser;
@@ -81,6 +81,30 @@ class _EdgeScreenV2State extends State<EdgeScreenV2> with TickerProviderStateMix
         setState(() {
           _userBRBalance = balance;
         });
+
+        // Load previously unlocked cards for this game
+        final gameId = widget.gameId ?? widget.eventId ?? '';
+        if (gameId.isNotEmpty) {
+          final unlockedSnapshot = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .collection('unlocked_cards')
+              .where('gameId', isEqualTo: gameId)
+              .get();
+
+          setState(() {
+            _unlockedCardIds.clear();
+            for (final doc in unlockedSnapshot.docs) {
+              final data = doc.data();
+              final cardId = data['cardId'] as String?;
+              if (cardId != null) {
+                _unlockedCardIds.add(cardId);
+              }
+            }
+          });
+
+          debugPrint('📖 Loaded ${_unlockedCardIds.length} unlocked cards for game $gameId');
+        }
       }
       
       // Parse teams from game title
@@ -431,133 +455,85 @@ class _EdgeScreenV2State extends State<EdgeScreenV2> with TickerProviderStateMix
       _showInsufficientBRDialog(card.currentCost);
       return;
     }
-    
-    // Show confirmation dialog
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: Text(
-          'Unlock ${card.title}?',
-          style: TextStyle(color: Colors.white),
+
+    // Instant unlock - no confirmation dialog
+    final user = _auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please sign in to unlock cards'),
+          backgroundColor: Colors.red,
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: EdgeCardConfigs.getRarityColor(card.rarity).withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: EdgeCardConfigs.getRarityColor(card.rarity),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    EdgeCardConfigs.getConfig(card.category).icon,
-                    color: EdgeCardConfigs.getRarityColor(card.rarity),
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      card.teaserText,
-                      style: TextStyle(color: Colors.white70),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.monetization_on, color: Colors.green, size: 20),
-                SizedBox(width: 4),
-                Text(
-                  '${card.currentCost} BR',
-                  style: TextStyle(
-                    color: Colors.green,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Your balance: $_userBRBalance BR',
-              style: TextStyle(color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-            ),
-            child: Text('Unlock'),
-          ),
-        ],
-      ),
-    );
-    
-    if (confirmed != true) return;
-    
-    // Process unlock
+      );
+      return;
+    }
+
     try {
-      final user = _auth.currentUser;
-      if (user != null) {
-        // Deduct BR
-        await _walletService.deductFromWallet(
-          user.uid,
-          card.currentCost,
-          'Edge Intel: ${card.title}',
-          metadata: {
-            'type': 'edge_card',
-            'cardId': card.id,
-            'category': card.category.name,
-          },
-        );
-        
-        // Update state
-        setState(() {
-          _userBRBalance -= card.currentCost;
-          _unlockedCardIds.add(card.id);
-          
-          // Update card's lock status
-          final index = _cards.indexWhere((c) => c.id == card.id);
-          if (index != -1) {
-            _cards[index] = card.copyWithLockStatus(false);
-          }
-        });
-        
-        // Show success
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Unlocked ${card.title} for ${card.currentCost} BR'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        
-        // Log analytics
-        await FirebaseFirestore.instance.collection('edge_unlocks').add({
-          'userId': user.uid,
+      // Deduct BR
+      await _walletService.deductFromWallet(
+        user.uid,
+        card.currentCost,
+        'Edge Intel: ${card.title}',
+        metadata: {
+          'type': 'edge_card',
+          'cardId': card.id,
+          'category': card.category.name,
+        },
+      );
+
+      // Save unlock to Firestore for persistence
+      final gameId = widget.gameId ?? widget.eventId ?? '';
+      if (gameId.isNotEmpty) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('unlocked_cards')
+            .doc('${gameId}_${card.category.name}')
+            .set({
+          'gameId': gameId,
           'cardId': card.id,
           'category': card.category.name,
           'rarity': card.rarity.name,
           'cost': card.currentCost,
           'sport': widget.sport,
           'gameTitle': widget.gameTitle,
-          'timestamp': FieldValue.serverTimestamp(),
+          'unlockedAt': FieldValue.serverTimestamp(),
         });
       }
+
+      // Update state
+      setState(() {
+        _userBRBalance -= card.currentCost;
+        _unlockedCardIds.add(card.id);
+
+        // Update card's lock status
+        final index = _cards.indexWhere((c) => c.id == card.id);
+        if (index != -1) {
+          _cards[index] = card.copyWithLockStatus(false);
+        }
+      });
+
+      // Show success
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✅ Unlocked ${card.title} for ${card.currentCost} BR'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      // Log analytics (separate collection for analytics)
+      await FirebaseFirestore.instance.collection('edge_unlocks').add({
+        'userId': user.uid,
+        'cardId': card.id,
+        'category': card.category.name,
+        'rarity': card.rarity.name,
+        'cost': card.currentCost,
+        'sport': widget.sport,
+        'gameTitle': widget.gameTitle,
+        'gameId': gameId,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
     } catch (e) {
       debugPrint('Error unlocking card: $e');
       ScaffoldMessenger.of(context).showSnackBar(
