@@ -93,7 +93,7 @@ class _EdgeCardWidgetState extends State<EdgeCardWidget>
                 context,
                 MaterialPageRoute(
                   builder: (context) => EdgeDetailScreenV2(
-                    cardData: widget.cardData,
+                    card: widget.cardData,
                   ),
                 ),
               );
