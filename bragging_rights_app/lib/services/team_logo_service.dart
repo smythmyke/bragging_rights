@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -445,6 +446,99 @@ class TeamLogoService {
   void clearCache() {
     _memoryCache.clear();
     debugPrint('🗑️ TeamLogoService: Memory cache cleared');
+  }
+
+  /// Get team logo as a Widget (for use in TeamLogo widget)
+  Future<Widget> getTeamLogoWidget({
+    required String sport,
+    required String teamId,
+    required String teamName,
+    double? width,
+    double? height,
+    BoxFit fit = BoxFit.contain,
+  }) async {
+    try {
+      final logoData = await getTeamLogo(
+        teamName: teamName,
+        sport: sport,
+      );
+
+      if (logoData != null && logoData.logoUrl.isNotEmpty) {
+        return Image.network(
+          logoData.logoUrl,
+          width: width,
+          height: height,
+          fit: fit,
+          errorBuilder: (context, error, stackTrace) {
+            debugPrint('Error loading logo: $error');
+            return _buildPlaceholderIcon(sport, width, height);
+          },
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return _buildLoadingIndicator(width, height);
+          },
+        );
+      }
+
+      return _buildPlaceholderIcon(sport, width, height);
+    } catch (e) {
+      debugPrint('Error getting team logo widget: $e');
+      return _buildPlaceholderIcon(sport, width, height);
+    }
+  }
+
+  /// Build placeholder icon when logo is not available
+  Widget _buildPlaceholderIcon(String sport, double? width, double? height) {
+    return Container(
+      width: width,
+      height: height,
+      color: Colors.grey[300],
+      child: Icon(
+        _getSportIcon(sport),
+        color: Colors.grey[600],
+        size: (width ?? 50) * 0.5,
+      ),
+    );
+  }
+
+  /// Build loading indicator
+  Widget _buildLoadingIndicator(double? width, double? height) {
+    return Container(
+      width: width,
+      height: height,
+      color: Colors.grey[200],
+      child: Center(
+        child: SizedBox(
+          width: (width ?? 50) * 0.4,
+          height: (height ?? 50) * 0.4,
+          child: const CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+    );
+  }
+
+  /// Get sport icon based on sport name
+  IconData _getSportIcon(String sport) {
+    switch (sport.toLowerCase()) {
+      case 'nba':
+      case 'ncaab':
+      case 'basketball':
+        return Icons.sports_basketball;
+      case 'nfl':
+      case 'ncaaf':
+      case 'football':
+        return Icons.sports_football;
+      case 'mlb':
+      case 'baseball':
+        return Icons.sports_baseball;
+      case 'nhl':
+      case 'hockey':
+        return Icons.sports_hockey;
+      case 'soccer':
+        return Icons.sports_soccer;
+      default:
+        return Icons.sports;
+    }
   }
 }
 

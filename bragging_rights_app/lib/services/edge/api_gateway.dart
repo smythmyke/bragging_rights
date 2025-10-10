@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'api_config_manager.dart';
 
 class ApiGateway {
   static final ApiGateway _instance = ApiGateway._internal();
@@ -10,6 +11,8 @@ class ApiGateway {
   ApiGateway._internal();
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final ApiConfigManager _configManager = ApiConfigManager();
+  bool _configManagerInitialized = false;
   
   // In-memory cache
   final Map<String, CachedResponse> _memoryCache = {};
@@ -74,6 +77,28 @@ class ApiGateway {
     ),
   };
 
+  /// Ensure ApiConfigManager is initialized
+  Future<void> _ensureConfigManagerInitialized() async {
+    if (!_configManagerInitialized) {
+      await _configManager.initialize();
+      _configManagerInitialized = true;
+    }
+  }
+
+  /// Get API key from ApiConfigManager or fallback to config
+  Future<String?> _getApiKey(String apiName, String? configApiKey) async {
+    await _ensureConfigManagerInitialized();
+
+    // Try to get from ApiConfigManager first
+    final credentials = _configManager.getCredentials(apiName);
+    if (credentials != null && credentials.apiKey.isNotEmpty) {
+      return credentials.apiKey;
+    }
+
+    // Fallback to hardcoded config (for APIs that don't need keys)
+    return configApiKey;
+  }
+
   /// Main request method with all gateway features
   Future<ApiResponse> request({
     required String apiName,
@@ -90,6 +115,9 @@ class ApiGateway {
     if (config == null) {
       throw ApiException('Unknown API: $apiName');
     }
+
+    // Get the API key from ApiConfigManager
+    final apiKey = await _getApiKey(apiName, config.apiKey);
 
     // Generate cache key
     final cacheKey = _generateCacheKey(apiName, endpoint, queryParams);
@@ -130,8 +158,8 @@ class ApiGateway {
     // Check rate limiting
     await _checkRateLimit(apiName, config);
 
-    // Build request URL
-    final uri = _buildUri(config.baseUrl, endpoint, queryParams, config.apiKey);
+    // Build request URL with the dynamically fetched API key
+    final uri = _buildUri(config.baseUrl, endpoint, queryParams, apiKey);
 
     // Prepare headers
     final requestHeaders = {
@@ -268,8 +296,9 @@ class ApiGateway {
   ) {
     final url = '$baseUrl$endpoint';
     final params = {...?queryParams};
-    
-    if (apiKey != null) {
+
+    // Only add apiKey if it's not null and not empty
+    if (apiKey != null && apiKey.isNotEmpty) {
       params['apiKey'] = apiKey;
     }
 

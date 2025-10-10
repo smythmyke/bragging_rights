@@ -11,6 +11,7 @@ import '../pools/pool_selection_screen.dart';
 import '../cards/card_inventory_screen.dart';
 import '../../data/card_definitions.dart';
 import '../../widgets/bragging_rights_logo.dart';
+import '../../widgets/team_logo.dart';
 
 /// Optimized games screen with lazy loading and smart fetching
 class OptimizedGamesScreen extends StatefulWidget {
@@ -821,20 +822,52 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
                             ),
                           ),
                           const SizedBox(height: 6),
-                          Text(
-                            game.awayTeam,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          // Away Team with Logo
+                          Row(
+                            children: [
+                              TeamLogoCompact(
+                                sport: game.sport,
+                                teamId: game.id,
+                                teamName: game.awayTeam,
+                                size: 28,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  game.awayTeam,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            game.homeTeam,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          // Home Team with Logo
+                          Row(
+                            children: [
+                              TeamLogoCompact(
+                                sport: game.sport,
+                                teamId: game.id,
+                                teamName: game.homeTeam,
+                                size: 28,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  game.homeTeam,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ],

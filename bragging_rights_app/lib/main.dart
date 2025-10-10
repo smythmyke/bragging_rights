@@ -54,16 +54,26 @@ void main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    debugPrint('✅ Firebase initialized successfully');
 
-    // Initialize Firebase App Check with debug provider for development
-    await FirebaseAppCheck.instance.activate(
-      androidProvider: AndroidProvider.debug,
-    );
+    // Initialize Firebase App Check with better error handling
+    try {
+      await FirebaseAppCheck.instance.activate(
+        androidProvider: AndroidProvider.debug,
+        // Optionally add web provider and iOS provider for cross-platform support
+      );
+      debugPrint('✅ App Check activated successfully');
+    } catch (appCheckError) {
+      // App Check failure should not crash the app
+      // Firestore will still work with authentication alone
+      debugPrint('⚠️ App Check activation failed: $appCheckError');
+      debugPrint('   App will continue with authentication-only security');
+    }
 
     // Initialize notification service
     await NotificationService().initialize();
   } catch (e) {
-    print('⚠️ Firebase initialization error (continuing without Firebase): $e');
+    debugPrint('⚠️ Firebase initialization error (continuing without Firebase): $e');
     // Continue without Firebase for testing
   }
 

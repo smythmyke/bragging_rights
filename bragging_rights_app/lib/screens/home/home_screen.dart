@@ -25,7 +25,7 @@ import '../../widgets/intel_card_widget.dart';
 import '../card_detail_screen.dart';
 import '../../models/intel_product.dart';
 // import '../../utils/dev_tools.dart'; // Removed for production
-import '../premium/edge_screen.dart';
+import '../premium/edge_screen_v2.dart';
 import '../cards/card_inventory_screen.dart';
 import '../watch/watch_live_screen.dart';
 import '../games/all_games_screen.dart';
@@ -3222,7 +3222,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => EdgeScreen(
+              builder: (context) => EdgeScreenV2(
                 gameTitle: gameTitle,
                 sport: sport,
               ),

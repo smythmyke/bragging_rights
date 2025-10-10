@@ -4,6 +4,36 @@ service cloud.firestore {
     // Allow authenticated users to read/write their own user documents
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Allow access to user subcollections (wallet, cards, etc.)
+      match /wallet/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /cards/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /bets/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /pools/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /preferences/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /standings/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Allow authenticated users to read/write their victory coins
+    match /victory_coins/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
     
     // Allow authenticated users to read all pools, write with conditions
@@ -66,6 +96,39 @@ service cloud.firestore {
     match /odds/{document=**} {
       allow read: if request.auth != null;
       allow write: if false; // Only backend updates odds
+    }
+
+    // Allow authenticated users to read/write edge intelligence (cached data)
+    // Caches intelligence data with 5-minute TTL to reduce API calls
+    match /edge_intelligence/{intelligenceId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow delete: if request.auth != null; // Allow cleanup of old cached data
+    }
+
+    // Allow authenticated users to read/write cached team logos
+    match /team_logos/{logoId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null; // Allow caching of logos
+    }
+
+    // Allow authenticated users to read/write API gateway cache
+    match /edge_cache/{cacheId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null; // Allow caching of API responses
+      allow delete: if request.auth != null; // Allow cleanup of old cached data
+    }
+
+    // Allow authenticated users to read config data
+    match /config/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if false; // Only admin/backend can write config
+    }
+
+    // Allow authenticated users to read API usage tracking
+    match /api_usage/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null; // Allow tracking API usage
     }
   }
 }

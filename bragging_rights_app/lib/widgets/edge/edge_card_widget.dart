@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'edge_card_types.dart';
-import '../../screens/premium/edge_detail_screen.dart';
+import '../../screens/premium/edge_detail_screen_v2.dart';
 import '../../theme/app_theme.dart';
 
 /// Main Edge Card Widget
@@ -92,7 +92,7 @@ class _EdgeCardWidgetState extends State<EdgeCardWidget>
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => EdgeDetailScreen(
+                  builder: (context) => EdgeDetailScreenV2(
                     cardData: widget.cardData,
                   ),
                 ),
