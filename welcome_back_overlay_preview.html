@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome Back Overlay - Bragging Rights (Phosphor Icons)</title>
+
+    <!-- Phosphor Icons CDN -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a1628 0%, #1a2940 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* Semi-transparent overlay */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Main card */
+        .welcome-card {
+            background: linear-gradient(180deg, #1a2940 0%, #0f1e35 100%);
+            border: 2px solid #00d4ff;
+            border-radius: 20px;
+            box-shadow: 0 0 40px rgba(0, 212, 255, 0.3), 0 0 80px rgba(0, 212, 255, 0.1);
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Custom scrollbar */
+        .welcome-card::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .welcome-card::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        .welcome-card::-webkit-scrollbar-thumb {
+            background: #00d4ff;
+            border-radius: 10px;
+        }
+
+        /* Header */
+        .header {
+            padding: 30px 30px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .header h1 {
+            color: #00d4ff;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .header .subtitle {
+            color: #888;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        /* Section */
+        .section {
+            padding: 20px 30px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .section:last-of-type {
+            border-bottom: none;
+        }
+
+        .section-title {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            font-size: 22px;
+            color: #00d4ff;
+        }
+
+        /* Wallet Update */
+        .wallet-change {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .balance-display {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .old-balance {
+            color: #888;
+            text-decoration: line-through;
+        }
+
+        .arrow {
+            color: #00d4ff;
+            font-size: 20px;
+            margin: 0 10px;
+        }
+
+        .new-balance {
+            color: #00ff88;
+            animation: countUp 1s ease-out;
+        }
+
+        @keyframes countUp {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .net-change {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .net-change.profit {
+            background: rgba(0, 255, 136, 0.1);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .net-change.loss {
+            background: rgba(255, 68, 68, 0.1);
+            color: #ff4444;
+            border: 1px solid rgba(255, 68, 68, 0.3);
+        }
+
+        .net-change i {
+            font-size: 20px;
+        }
+
+        /* Settled Bets */
+        .bet-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            transition: transform 0.2s;
+        }
+
+        .bet-item:hover {
+            transform: translateX(5px);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .bet-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .bet-icon {
+            font-size: 28px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bet-icon.won {
+            color: #00ff88;
+        }
+
+        .bet-icon.lost {
+            color: #ff4444;
+        }
+
+        .bet-details {
+            flex: 1;
+        }
+
+        .bet-name {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .bet-type {
+            color: #888;
+            font-size: 12px;
+        }
+
+        .bet-amount {
+            font-size: 16px;
+            font-weight: 700;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .bet-amount.won {
+            color: #00ff88;
+        }
+
+        .bet-amount.lost {
+            color: #ff4444;
+        }
+
+        .bet-summary {
+            text-align: center;
+            margin-top: 12px;
+            padding: 10px;
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 8px;
+            color: #00d4ff;
+            font-weight: 600;
+        }
+
+        .no-activity {
+            text-align: center;
+            color: #888;
+            padding: 20px;
+            font-style: italic;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        /* Performance Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .stat-item {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .stat-label {
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .stat-label i {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .stat-value {
+            color: #fff;
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .stat-value i {
+            font-size: 22px;
+        }
+
+        /* Leaderboard Updates */
+        .rank-change {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .rank-label {
+            color: #888;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rank-label i {
+            font-size: 18px;
+            color: #888;
+        }
+
+        .rank-values {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .rank-arrow {
+            color: #00ff88;
+            font-size: 20px;
+        }
+
+        .rank-arrow.down {
+            color: #ff4444;
+        }
+
+        .friend-passed {
+            text-align: center;
+            padding: 12px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 8px;
+            color: #00ff88;
+            font-weight: 600;
+            animation: pulse 1.5s infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .friend-passed i {
+            font-size: 20px;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
+            }
+        }
+
+        /* Active Bets */
+        .active-bets-count {
+            text-align: center;
+            color: #fff;
+            font-size: 18px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .active-bets-count i {
+            color: #ffd700;
+            font-size: 28px;
+        }
+
+        .active-bets-count strong {
+            color: #ffd700;
+            font-size: 24px;
+        }
+
+        .view-bets-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(90deg, #00d4ff 0%, #0099cc 100%);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .view-bets-btn i {
+            font-size: 16px;
+        }
+
+        .view-bets-btn:hover {
+            background: linear-gradient(90deg, #00e5ff 0%, #00aadd 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+        }
+
+        /* Dismiss Button */
+        .footer {
+            padding: 30px;
+        }
+
+        .dismiss-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(90deg, #00ff88 0%, #00cc66 100%);
+            border: none;
+            border-radius: 12px;
+            color: #0a1628;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(0, 255, 136, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .dismiss-btn i {
+            font-size: 20px;
+        }
+
+        .dismiss-btn:hover {
+            background: linear-gradient(90deg, #00ffaa 0%, #00dd77 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(0, 255, 136, 0.5);
+        }
+
+        .dismiss-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .welcome-card {
+                max-width: 100%;
+                border-radius: 0;
+                max-height: 100vh;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background mockup of app (blurred) -->
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; filter: blur(5px); opacity: 0.3;">
+        <h2 style="color: #00d4ff; padding: 20px;">Games Screen (underneath)</h2>
+    </div>
+
+    <!-- Welcome Back Overlay -->
+    <div class="overlay" id="welcomeOverlay">
+        <div class="welcome-card">
+            <!-- Header -->
+            <div class="header">
+                <h1>
+                    <i class="ph-bold ph-trophy"></i>
+                    Welcome Back!
+                </h1>
+                <p class="subtitle">
+                    <i class="ph ph-clock-countdown"></i>
+                    Last seen: 8 hours ago
+                </p>
+            </div>
+
+            <!-- Wallet Update Section -->
+            <div class="section">
+                <div class="section-title">
+                    <i class="ph-fill ph-wallet"></i>
+                    <span>Wallet Update</span>
+                </div>
+                <div class="wallet-change">
+                    <span class="balance-display old-balance">1,000 BR</span>
+                    <span class="arrow">→</span>
+                    <span class="balance-display new-balance">1,450 BR</span>
+                </div>
+                <div class="net-change profit">
+                    <i class="ph-fill ph-trend-up"></i>
+                    <span>+450 BR (+45%)</span>
+                </div>
+            </div>
+
+            <!-- Settled Bets Section -->
+            <div class="section">
+                <div class="section-title">
+                    <i class="ph-fill ph-crosshair"></i>
+                    <span>While You Were Away</span>
+                </div>
+
+                <div class="bet-item">
+                    <div class="bet-icon won">
+                        <i class="ph-fill ph-check-circle"></i>
+                    </div>
+                    <div class="bet-details">
+                        <div class="bet-name">Lakers vs Celtics</div>
+                        <div class="bet-type">Lakers ML</div>
+                    </div>
+                    <div class="bet-amount won">
+                        <i class="ph-fill ph-arrow-up"></i>
+                        <span>200 BR</span>
+                    </div>
+                </div>
+
+                <div class="bet-item">
+                    <div class="bet-icon won">
+                        <i class="ph-fill ph-check-circle"></i>
+                    </div>
+                    <div class="bet-details">
+                        <div class="bet-name">Warriors vs Suns</div>
+                        <div class="bet-type">Celtics Spread</div>
+                    </div>
+                    <div class="bet-amount won">
+                        <i class="ph-fill ph-arrow-up"></i>
+                        <span>150 BR</span>
+                    </div>
+                </div>
+
+                <div class="bet-item">
+                    <div class="bet-icon lost">
+                        <i class="ph-fill ph-x-circle"></i>
+                    </div>
+                    <div class="bet-details">
+                        <div class="bet-name">Nuggets vs Heat</div>
+                        <div class="bet-type">Warriors ML</div>
+                    </div>
+                    <div class="bet-amount lost">
+                        <i class="ph-fill ph-arrow-down"></i>
+                        <span>100 BR</span>
+                    </div>
+                </div>
+
+                <div class="bet-summary">
+                    Net: +250 BR (2W-1L)
+                </div>
+            </div>
+
+            <!-- Performance Snapshot Section -->
+            <div class="section">
+                <div class="section-title">
+                    <i class="ph-fill ph-chart-line-up"></i>
+                    <span>Performance Snapshot</span>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">
+                            <i class="ph ph-list-checks"></i>
+                            Record
+                        </div>
+                        <div class="stat-value">15-8 (65%)</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">
+                            <i class="ph ph-flame"></i>
+                            Streak
+                        </div>
+                        <div class="stat-value">
+                            <i class="ph-fill ph-fire" style="color: #ff6b35;"></i>
+                            <span>3 wins</span>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">
+                            <i class="ph ph-coins"></i>
+                            Total Profit
+                        </div>
+                        <div class="stat-value" style="color: #00ff88;">+1,450 BR</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">
+                            <i class="ph ph-percent"></i>
+                            Win Rate
+                        </div>
+                        <div class="stat-value" style="color: #00d4ff;">65%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboard Updates Section -->
+            <div class="section">
+                <div class="section-title">
+                    <i class="ph-fill ph-ranking"></i>
+                    <span>Leaderboard Updates</span>
+                </div>
+
+                <div class="rank-change">
+                    <span class="rank-label">
+                        <i class="ph ph-globe"></i>
+                        Global
+                    </span>
+                    <div class="rank-values">
+                        <span>#42</span>
+                        <i class="ph-bold ph-arrow-up rank-arrow"></i>
+                        <span>#38</span>
+                        <span style="color: #00ff88; font-size: 12px;">(+4)</span>
+                    </div>
+                </div>
+
+                <div class="rank-change">
+                    <span class="rank-label">
+                        <i class="ph ph-users"></i>
+                        Friends
+                    </span>
+                    <div class="rank-values">
+                        <span>#3</span>
+                        <i class="ph-bold ph-arrow-up rank-arrow"></i>
+                        <span>#2</span>
+                        <span style="color: #00ff88; font-size: 12px;">(+1)</span>
+                    </div>
+                </div>
+
+                <div class="friend-passed">
+                    <i class="ph-fill ph-hand-fist"></i>
+                    <span>You passed Mike!</span>
+                </div>
+            </div>
+
+            <!-- Active Bets Section -->
+            <div class="section">
+                <div class="section-title">
+                    <i class="ph-fill ph-hourglass-medium"></i>
+                    <span>Active Bets</span>
+                </div>
+                <div class="active-bets-count">
+                    <i class="ph-fill ph-file-text"></i>
+                    <span><strong>5</strong> bets pending</span>
+                </div>
+                <button class="view-bets-btn" onclick="alert('Navigate to Active Bets tab')">
+                    <i class="ph ph-arrow-right"></i>
+                    <span>View Active Bets</span>
+                </button>
+            </div>
+
+            <!-- Dismiss Button -->
+            <div class="footer">
+                <button class="dismiss-btn" onclick="dismissOverlay()">
+                    <span>Got It, Let's Go!</span>
+                    <i class="ph-bold ph-rocket-launch"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Counter animation for balance
+        function animateCounter(element, start, end, duration) {
+            let startTime = null;
+
+            function step(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const progress = Math.min((timestamp - startTime) / duration, 1);
+                const current = Math.floor(progress * (end - start) + start);
+                element.textContent = current.toLocaleString() + ' BR';
+
+                if (progress < 1) {
+                    requestAnimationFrame(step);
+                }
+            }
+
+            requestAnimationFrame(step);
+        }
+
+        // Animate balance on load
+        window.addEventListener('load', () => {
+            const newBalanceEl = document.querySelector('.new-balance');
+            animateCounter(newBalanceEl, 1000, 1450, 1500);
+        });
+
+        // Dismiss overlay
+        function dismissOverlay() {
+            const overlay = document.getElementById('welcomeOverlay');
+            overlay.style.animation = 'fadeOut 0.3s ease-out';
+
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                // In real app: Update lastLoginAt, lastSeenBalance, etc.
+                console.log('Overlay dismissed - updating user data...');
+            }, 300);
+        }
+
+        // Add fadeOut animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeOut {
+                from { opacity: 1; }
+                to { opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Test with different scenarios (toggle comments to test)
+        function loadNoActivityScenario() {
+            const betsSection = document.querySelector('.section:nth-of-type(2)');
+            const betsContent = `
+                <div class="section-title">
+                    <i class="ph-fill ph-crosshair"></i>
+                    <span>While You Were Away</span>
+                </div>
+                <div class="no-activity">
+                    <i class="ph ph-empty" style="font-size: 20px;"></i>
+                    <span>No bets settled since your last visit</span>
+                </div>
+            `;
+            betsSection.innerHTML = betsContent;
+        }
+
+        function loadLossScenario() {
+            const walletSection = document.querySelector('.section:nth-of-type(1)');
+            const walletContent = `
+                <div class="section-title">
+                    <i class="ph-fill ph-wallet"></i>
+                    <span>Wallet Update</span>
+                </div>
+                <div class="wallet-change">
+                    <span class="balance-display old-balance">1,000 BR</span>
+                    <span class="arrow">→</span>
+                    <span class="balance-display new-balance" style="color: #ff4444;">750 BR</span>
+                </div>
+                <div class="net-change loss">
+                    <i class="ph-fill ph-trend-down"></i>
+                    <span>-250 BR (-25%)</span>
+                </div>
+            `;
+            walletSection.innerHTML = walletContent;
+        }
+
+        // Uncomment to test different scenarios:
+        // loadNoActivityScenario();
+        // loadLossScenario();
+    </script>
+</body>
+</html>

@@ -93,15 +93,16 @@ class SportCardGenerator {
       ));
     }
     
-    // Check for clutch performance
+    // Check for clutch performance - map to matchup category
     if (data['clutchStats'] != null) {
       final clutch = data['clutchStats'] as Map<String, dynamic>;
       cards.add(EdgeCardData(
         id: 'nba_clutch_${DateTime.now().millisecondsSinceEpoch}',
-        category: EdgeCardCategory.clutch,
-        title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.clutch, intelligence.homeTeam.split(' ').last),
-        teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.clutch),
-        fullContent: 'Clutch Net Rating: ${clutch['netRating']}\n'
+        category: EdgeCardCategory.matchup,
+        title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.matchup, intelligence.homeTeam.split(' ').last),
+        teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.matchup),
+        fullContent: 'CLUTCH PERFORMANCE\n\n'
+            'Clutch Net Rating: ${clutch['netRating']}\n'
             'FG% in clutch: ${clutch['fgPercentage']}%\n'
             'Key player: ${clutch['keyPlayer'] ?? 'Team'}\n'
             'Clutch wins: ${clutch['clutchWins'] ?? 0}',
@@ -287,17 +288,18 @@ class SportCardGenerator {
     final cards = <EdgeCardData>[];
     final data = intelligence.data;
     
-    // Fighter profiles
+    // Fighter profiles - map to breaking category for insider info
     if (data['fighterProfiles'] != null) {
       final profiles = data['fighterProfiles'] as Map<String, dynamic>;
       profiles.forEach((fighter, profile) {
         if (profile['camp'] != null) {
           cards.add(EdgeCardData(
             id: 'mma_camp_${DateTime.now().millisecondsSinceEpoch}',
-            category: EdgeCardCategory.insider,
-            title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.insider, fighter),
-            teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.insider),
-            fullContent: 'Fighter: $fighter\n'
+            category: EdgeCardCategory.breaking,
+            title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.breaking, fighter),
+            teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.breaking),
+            fullContent: 'FIGHTER CAMP INTEL\n\n'
+                'Fighter: $fighter\n'
                 'Camp: ${profile['camp']}\n'
                 'Coach: ${profile['coach'] ?? 'Unknown'}\n'
                 'Record: ${profile['record']}\n'
@@ -315,15 +317,16 @@ class SportCardGenerator {
       });
     }
     
-    // Weight cut info
+    // Weight cut info - map to breaking category for insider info
     if (data['weightCut'] != null) {
       final weight = data['weightCut'] as Map<String, dynamic>;
       cards.add(EdgeCardData(
         id: 'mma_weight_${DateTime.now().millisecondsSinceEpoch}',
-        category: EdgeCardCategory.insider,
-        title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.insider, 'Fight'),
-        teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.insider),
-        fullContent: 'Fighter: ${weight['fighter']}\n'
+        category: EdgeCardCategory.breaking,
+        title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.breaking, 'Fight'),
+        teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.breaking),
+        fullContent: 'WEIGHT CUT INTEL\n\n'
+            'Fighter: ${weight['fighter']}\n'
             'Weight: ${weight['weight']} lbs\n'
             'Cut difficulty: ${weight['difficulty'] ?? 'Normal'}\n'
             'Hydration: ${weight['hydration'] ?? 'Unknown'}\n'
@@ -366,15 +369,16 @@ class SportCardGenerator {
       ));
     }
     
-    // Judge analysis
+    // Judge analysis - map to breaking category for insider info
     if (data['judgeAnalysis'] != null) {
       final judges = data['judgeAnalysis'] as Map<String, dynamic>;
       cards.add(EdgeCardData(
         id: 'boxing_judges_${DateTime.now().millisecondsSinceEpoch}',
-        category: EdgeCardCategory.insider,
-        title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.insider, 'Officials'),
-        teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.insider),
-        fullContent: 'Analysis: ${judges['note']}\n'
+        category: EdgeCardCategory.breaking,
+        title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.breaking, 'Officials'),
+        teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.breaking),
+        fullContent: 'JUDGE INTEL\n\n'
+            'Analysis: ${judges['note']}\n'
             'Recommendation: ${judges['recommendation']}\n'
             'Historical bias: ${judges['bias'] ?? 'None detected'}',
         metadata: judges,

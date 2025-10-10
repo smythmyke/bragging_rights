@@ -786,6 +786,18 @@ class OptimizedGamesService {
         debugPrint('   ⚠️ Team data is incomplete or null');
         return null;
       }
+
+      // Filter out TBD games (playoff matchups not yet determined)
+      final homeTeamName = homeTeam['team']?['displayName']?.toString() ?? '';
+      final awayTeamName = awayTeam['team']?['displayName']?.toString() ?? '';
+
+      if (homeTeamName.toUpperCase() == 'TBD' ||
+          awayTeamName.toUpperCase() == 'TBD' ||
+          homeTeamName.contains('/') || // e.g., "Tigers/Mariners"
+          awayTeamName.contains('/')) {
+        debugPrint('   🚫 Filtering out TBD/undetermined playoff game: $awayTeamName @ $homeTeamName');
+        return null;
+      }
       
       // Parse game time
       final dateStr = competition['date'] ?? event['date'];
@@ -1440,10 +1452,13 @@ class OptimizedGamesService {
   /// Save games to Firestore with cache timestamp
   Future<void> _saveGamesToFirestore(List<GameModel> games, {String? sport}) async {
     if (games.isEmpty) return;
-    
+
     final batch = _firestore.batch();
     final timestamp = DateTime.now().toIso8601String();
-    
+
+    // Count final games
+    final finalGamesCount = games.where((g) => g.status == 'final').length;
+
     for (final game in games) {
       final docRef = _firestore.collection('games').doc(game.id);
       final data = game.toMap();
@@ -1452,18 +1467,19 @@ class OptimizedGamesService {
         data['sport'] = sport.toUpperCase();
       }
 
-      // Debug log for MLB
-      if (sport == 'MLB' && games.indexOf(game) < 3) { // Log first 3 MLB games
-        debugPrint('📝 Saving MLB game to Firestore:');
-        debugPrint('   Game ID: ${game.id}');
-        debugPrint('   ESPN ID: ${game.espnId}');
-        debugPrint('   Data contains espnId: ${data.containsKey('espnId')}');
+      // LOG: Final games being saved
+      if (game.status == 'final') {
+        debugPrint('💾 [FIRESTORE] Saving FINAL game: ${game.id}');
+        debugPrint('   Sport: ${sport?.toUpperCase()}');
         debugPrint('   Teams: ${game.awayTeam} @ ${game.homeTeam}');
+        debugPrint('   Score: ${game.awayScore} - ${game.homeScore}');
+        debugPrint('   Status: ${game.status}');
+        debugPrint('   This should trigger Cloud Function settlement!');
       }
 
       batch.set(docRef, data, SetOptions(merge: true));
     }
-    
+
     // Also save a sport cache metadata document
     if (sport != null) {
       final metaRef = _firestore.collection('game_cache_meta').doc(sport.toLowerCase());
@@ -1473,10 +1489,13 @@ class OptimizedGamesService {
         'gameCount': games.length,
       }, SetOptions(merge: true));
     }
-    
+
     try {
       await batch.commit();
       debugPrint('💾 Saved ${games.length} games to Firestore for $sport');
+      if (finalGamesCount > 0) {
+        debugPrint('   ⚠️ Including $finalGamesCount FINAL games that should trigger bet settlement');
+      }
     } catch (e) {
       debugPrint('Error saving games to Firestore: $e');
     }

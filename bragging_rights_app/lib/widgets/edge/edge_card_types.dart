@@ -8,8 +8,6 @@ enum EdgeCardCategory {
   matchup,
   breaking,
   betting,
-  insider,
-  clutch,
 }
 
 /// Configuration for each card category
@@ -126,26 +124,6 @@ class EdgeCardConfigs {
       priority: EdgeCardPriority.high,
       defaultRarity: EdgeCardRarity.rare,
     ),
-    EdgeCardCategory.insider: EdgeCardConfig(
-      category: EdgeCardCategory.insider,
-      title: 'Insider/Camp',
-      icon: Icons.fitness_center,
-      gradientColors: [Color(0xFF2C3E50), Color(0xFF34495E)],
-      previewText: 'Training Camp Intel',
-      baseCost: 15,
-      priority: EdgeCardPriority.high,
-      defaultRarity: EdgeCardRarity.rare,
-    ),
-    EdgeCardCategory.clutch: EdgeCardConfig(
-      category: EdgeCardCategory.clutch,
-      title: 'Clutch Performance',
-      icon: Icons.timer,
-      gradientColors: [Color(0xFFFFD700), Color(0xFFB8860B)],
-      previewText: 'Clutch Factor Analysis',
-      baseCost: 10,
-      priority: EdgeCardPriority.medium,
-      defaultRarity: EdgeCardRarity.uncommon,
-    ),
   };
 
   /// Get configuration for a category
@@ -168,10 +146,6 @@ class EdgeCardConfigs {
         return 'Time-sensitive information available';
       case EdgeCardCategory.betting:
         return 'Market movement detected';
-      case EdgeCardCategory.insider:
-        return 'Exclusive source intelligence';
-      case EdgeCardCategory.clutch:
-        return 'Critical moment analysis available';
     }
   }
   
@@ -190,10 +164,6 @@ class EdgeCardConfigs {
         return 'Breaking Intel - $teamName';
       case EdgeCardCategory.betting:
         return 'Market Alert';
-      case EdgeCardCategory.insider:
-        return '$teamName - Inside Info';
-      case EdgeCardCategory.clutch:
-        return 'Performance Metrics';
     }
   }
 

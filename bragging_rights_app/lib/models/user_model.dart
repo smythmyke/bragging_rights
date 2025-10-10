@@ -26,6 +26,11 @@ class UserModel {
   final int? currentStreak;
   final int? bestStreak;
 
+  // Welcome Back tracking
+  final int? lastSeenBalance;
+  final int? lastSeenGlobalRank;
+  final int? lastSeenFriendsRank;
+
   UserModel({
     required this.uid,
     required this.email,
@@ -47,6 +52,9 @@ class UserModel {
     this.winRate,
     this.currentStreak,
     this.bestStreak,
+    this.lastSeenBalance,
+    this.lastSeenGlobalRank,
+    this.lastSeenFriendsRank,
   });
 
   // Factory constructor to create UserModel from Firestore document
@@ -82,6 +90,10 @@ class UserModel {
       winRate: statsData?['winRate']?.toDouble(),
       currentStreak: statsData?['currentStreak'],
       bestStreak: statsData?['bestStreak'],
+      // Welcome Back tracking
+      lastSeenBalance: data['lastSeenBalance'],
+      lastSeenGlobalRank: data['lastSeenGlobalRank'],
+      lastSeenFriendsRank: data['lastSeenFriendsRank'],
     );
   }
 
@@ -123,6 +135,9 @@ class UserModel {
     double? winRate,
     int? currentStreak,
     int? bestStreak,
+    int? lastSeenBalance,
+    int? lastSeenGlobalRank,
+    int? lastSeenFriendsRank,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -145,6 +160,9 @@ class UserModel {
       winRate: winRate ?? this.winRate,
       currentStreak: currentStreak ?? this.currentStreak,
       bestStreak: bestStreak ?? this.bestStreak,
+      lastSeenBalance: lastSeenBalance ?? this.lastSeenBalance,
+      lastSeenGlobalRank: lastSeenGlobalRank ?? this.lastSeenGlobalRank,
+      lastSeenFriendsRank: lastSeenFriendsRank ?? this.lastSeenFriendsRank,
     );
   }
 

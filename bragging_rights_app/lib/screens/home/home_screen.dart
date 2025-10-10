@@ -35,8 +35,11 @@ import '../bets/active_bets_screen.dart';
 import '../intel_detail_screen.dart';
 import '../../widgets/bragging_rights_logo.dart';
 import '../../widgets/standings_info_card.dart';
+import '../../widgets/welcome_back_overlay.dart';
 import '../../services/friend_service.dart';
 import '../../services/api_call_tracker.dart';
+import '../../services/welcome_back_service.dart';
+import '../../models/welcome_back_data.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -66,9 +69,14 @@ class _HomeScreenState extends State<HomeScreen> {
   final CardService _cardService = CardService();
   final SoundService _soundService = SoundService();
   final FriendService _friendService = FriendService();
-  
+  final WelcomeBackService _welcomeBackService = WelcomeBackService();
+
   // Feature flag for optimized loading
   static const bool USE_OPTIMIZED_GAMES = true;
+
+  // Welcome Back overlay state
+  bool _showWelcomeBackOverlay = false;
+  WelcomeBackData? _welcomeBackData;
   
   // Track games with bets
   List<String> _gamesWithBets = [];
@@ -117,9 +125,63 @@ class _HomeScreenState extends State<HomeScreen> {
     
     // Start pool management after authentication
     _startPoolManagement();
-    
+
     // Check if we should show standings card
     _checkShowStandingsCard();
+
+    // Check if we should show Welcome Back overlay
+    _checkWelcomeBackOverlay();
+  }
+
+  /// Check and show Welcome Back overlay if needed
+  void _checkWelcomeBackOverlay() async {
+    try {
+      debugPrint('🎉 Welcome Back: Starting check...');
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        debugPrint('❌ Welcome Back: No user logged in');
+        return;
+      }
+
+      debugPrint('✅ Welcome Back: User found: ${user.uid}');
+
+      // Check if user should see welcome back overlay
+      final shouldShow = await _welcomeBackService.shouldShowWelcomeBack(user.uid);
+      debugPrint('🔍 Welcome Back: Should show? $shouldShow');
+
+      if (!shouldShow) return;
+
+      // Fetch welcome back data
+      debugPrint('📊 Welcome Back: Fetching data...');
+      final data = await _welcomeBackService.getWelcomeBackData();
+
+      if (data == null) {
+        debugPrint('❌ Welcome Back: No data available');
+        return;
+      }
+
+      debugPrint('✅ Welcome Back: Data fetched successfully');
+
+      // Show overlay immediately (acts as loading screen for games)
+      if (mounted) {
+        debugPrint('🎨 Welcome Back: Showing overlay!');
+        setState(() {
+          _welcomeBackData = data;
+          _showWelcomeBackOverlay = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Welcome Back Error: $e');
+      debugPrint('Stack trace: ${StackTrace.current}');
+    }
+  }
+
+  void _dismissWelcomeBackOverlay() {
+    setState(() {
+      _showWelcomeBackOverlay = false;
+      _welcomeBackData = null;
+    });
   }
   
   void _checkShowStandingsCard() async {
@@ -897,6 +959,18 @@ class _HomeScreenState extends State<HomeScreen> {
               setState(() {
                 _showStandingsCard = false;
               });
+            },
+          ),
+        // Welcome Back Overlay
+        if (_showWelcomeBackOverlay && _welcomeBackData != null)
+          WelcomeBackOverlay(
+            data: _welcomeBackData!,
+            onDismiss: _dismissWelcomeBackOverlay,
+            onNavigateToBets: () {
+              setState(() {
+                _selectedIndex = 1; // Navigate to Bets tab
+              });
+              _pageController.jumpToPage(1);
             },
           ),
       ],

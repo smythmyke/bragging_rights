@@ -13,6 +13,14 @@ import 'dart:math';
 import '../../services/espn_id_resolver_service.dart';
 import '../../services/game_cache_service.dart';
 import '../../services/live_score_update_service.dart';
+import '../../services/edge/edge_intelligence_service.dart';
+import '../../services/edge/edge_card_builder.dart';
+import '../../widgets/edge/cards/breaking_news_card.dart';
+import '../../widgets/edge/cards/injury_intelligence_card.dart';
+import '../../widgets/edge/cards/weather_impact_card.dart';
+import '../../widgets/edge/cards/matchup_analysis_card.dart';
+import '../../widgets/edge/cards/social_sentiment_card.dart';
+import '../../widgets/edge/edge_card_types.dart';
 
 class GameDetailsScreen extends StatefulWidget {
   final String gameId;
@@ -40,6 +48,8 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
   final TeamLogoService _logoService = TeamLogoService();
   final GameCacheService _cacheService = GameCacheService();
   final LiveScoreUpdateService _liveScoreService = LiveScoreUpdateService();
+  final EdgeIntelligenceService _intelligenceService = EdgeIntelligenceService();
+  final EdgeCardBuilder _cardBuilder = EdgeCardBuilder();
 
   GameModel? _game;
   Map<String, dynamic>? _eventDetails;
@@ -54,6 +64,11 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
   Map<String, dynamic>? _nhlStandings;
   List<dynamic>? _nhlGameLeaders;  // Changed from Map to List
   Map<String, dynamic>? _nhlOddsData;
+
+  // Edge Intelligence cards
+  List<EdgeCardData>? _edgeCards;
+  bool _isLoadingCards = false;
+  final Set<String> _unlockedCardIds = {};
 
   @override
   void initState() {
@@ -94,6 +109,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
     });
     _game = widget.gameData;
     _loadEventDetails();
+    _loadEdgeCards();
   }
 
   @override
@@ -140,6 +156,48 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
     } catch (e) {
       print('Error loading event details: $e');
       setState(() => _isLoading = false);
+    }
+  }
+
+  /// Load Edge Intelligence cards for this game
+  Future<void> _loadEdgeCards() async {
+    if (_game == null) return;
+
+    setState(() {
+      _isLoadingCards = true;
+    });
+
+    try {
+      debugPrint('🎴 Loading Edge cards for ${_game!.homeTeam} vs ${_game!.awayTeam}');
+
+      // Get intelligence data from backend
+      final intelligence = await _intelligenceService.getEventIntelligence(
+        eventId: widget.gameId,
+        sport: widget.sport,
+        homeTeam: _game!.homeTeam,
+        awayTeam: _game!.awayTeam,
+        eventDate: _game!.gameTime,
+      );
+
+      debugPrint('✅ Intelligence gathered with ${intelligence.dataPoints.length} data points');
+
+      // Build card models from intelligence
+      final cards = await _cardBuilder.buildCardsFromIntelligence(
+        intelligence: intelligence,
+        gameTime: _game!.gameTime,
+      );
+
+      debugPrint('✅ Built ${cards.length} Edge cards');
+
+      setState(() {
+        _edgeCards = cards;
+        _isLoadingCards = false;
+      });
+    } catch (e) {
+      debugPrint('❌ Error loading Edge cards: $e');
+      setState(() {
+        _isLoadingCards = false;
+      });
     }
   }
 
@@ -1112,6 +1170,10 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Edge Intelligence Cards
+          _buildEdgeCardsSection(),
+          const SizedBox(height: 16),
+
           if (_isCombatSport) ...[
             // Tale of the Tape for main event
             if (_game?.fights != null && _game!.fights!.isNotEmpty)
@@ -2151,12 +2213,247 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
     );
   }
 
+  // Edge Intelligence Cards section
+  Widget _buildEdgeCardsSection() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                const Icon(Icons.lightbulb, color: Colors.amber, size: 24),
+                const SizedBox(width: 8),
+                const Text(
+                  'Edge Intelligence',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${_edgeCards?.length ?? 0} cards',
+                    style: const TextStyle(
+                      color: Colors.amber,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Loading state
+          if (_isLoadingCards)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: CircularProgressIndicator(),
+              ),
+            ),
+
+          // Cards list
+          if (!_isLoadingCards && _edgeCards != null && _edgeCards!.isNotEmpty)
+            ..._edgeCards!.map((card) => _buildCardWidget(card)).toList(),
+
+          // Empty state
+          if (!_isLoadingCards && (_edgeCards == null || _edgeCards!.isEmpty))
+            Padding(
+              padding: const EdgeInsets.all(32),
+              child: Center(
+                child: Text(
+                  'No intelligence cards available for this game',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.5),
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCardWidget(EdgeCardData cardData) {
+    switch (cardData.category) {
+      case EdgeCardCategory.breaking:
+        return BreakingNewsCard(
+          cardData: cardData,
+          onPurchase: () => _handleCardPurchase(cardData),
+          showFullContent: _isCardUnlocked(cardData.id),
+        );
+
+      case EdgeCardCategory.injury:
+        return InjuryIntelligenceCard(
+          cardData: cardData,
+          onPurchase: () => _handleCardPurchase(cardData),
+          showFullContent: _isCardUnlocked(cardData.id),
+        );
+
+      case EdgeCardCategory.weather:
+        return WeatherImpactCard(
+          cardData: cardData,
+          onPurchase: () => _handleCardPurchase(cardData),
+          showFullContent: _isCardUnlocked(cardData.id),
+        );
+
+      case EdgeCardCategory.matchup:
+        return MatchupAnalysisCard(
+          cardData: cardData,
+          onPurchase: () => _handleCardPurchase(cardData),
+          showFullContent: _isCardUnlocked(cardData.id),
+        );
+
+      case EdgeCardCategory.social:
+        return SocialSentimentCard(
+          cardData: cardData,
+          onPurchase: () => _handleCardPurchase(cardData),
+          showFullContent: _isCardUnlocked(cardData.id),
+        );
+
+      case EdgeCardCategory.betting:
+        // TODO: Implement betting movement card when Odds API is upgraded
+        return const SizedBox.shrink();
+
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  bool _isCardUnlocked(String cardId) {
+    return _unlockedCardIds.contains(cardId);
+  }
+
+  Future<void> _handleCardPurchase(EdgeCardData cardData) async {
+    // Calculate dynamic price
+    final price = cardData.calculateDynamicPrice(
+      cardData.expiresAt ?? _game!.gameTime,
+    );
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surfaceBlue,
+        title: Text(
+          'Unlock ${cardData.title}?',
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Cost: $price BR',
+              style: const TextStyle(
+                color: Colors.amber,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              cardData.teaserText,
+              style: const TextStyle(fontSize: 13, color: Colors.white70),
+            ),
+            if (cardData.impactText != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                cardData.impactText!,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.orange[700],
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber,
+              foregroundColor: Colors.black,
+            ),
+            child: const Text('Unlock'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      // TODO: Call your BR points service to deduct points
+      // await BRPointsService().deductPoints(userId, price, reason: 'edge_card_unlock');
+
+      // TODO: Save unlock to Firestore
+      // await FirebaseFirestore.instance
+      //     .collection('users')
+      //     .doc(userId)
+      //     .collection('unlocked_cards')
+      //     .doc(cardData.id)
+      //     .set({
+      //       'cardId': cardData.id,
+      //       'gameId': widget.gameId,
+      //       'category': cardData.category.toString(),
+      //       'cost': price,
+      //       'unlockedAt': FieldValue.serverTimestamp(),
+      //     });
+
+      setState(() {
+        _unlockedCardIds.add(cardData.id);
+      });
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('🎉 ${cardData.title} unlocked!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error purchasing card: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error unlocking card: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   // Baseball-specific tab builders
   Widget _buildBaseballMatchupTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
+          _buildEdgeCardsSection(),
+          const SizedBox(height: 16),
           _buildPitchingMatchupCard(),
           const SizedBox(height: 16),
           _buildTeamFormCard(),
@@ -3602,6 +3899,10 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Edge Intelligence Cards
+          _buildEdgeCardsSection(),
+          const SizedBox(height: 16),
+
           // Match Info Card
           Container(
             padding: const EdgeInsets.all(16),
@@ -4939,6 +5240,10 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Edge Intelligence Cards
+          _buildEdgeCardsSection(),
+          const SizedBox(height: 16),
+
           // Score Card
           _buildNFLScoreCard(),
           const SizedBox(height: 16),
@@ -6518,6 +6823,10 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Edge Intelligence Cards
+          _buildEdgeCardsSection(),
+          const SizedBox(height: 16),
+
           // Score card
           Card(
             color: AppTheme.surfaceBlue,
@@ -7366,6 +7675,10 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Edge Intelligence Cards
+          _buildEdgeCardsSection(),
+          const SizedBox(height: 16),
+
           // Score Card
           Container(
             padding: const EdgeInsets.all(16),
