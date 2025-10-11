@@ -1461,20 +1461,51 @@ class OptimizedGamesService {
 
     for (final game in games) {
       final docRef = _firestore.collection('games').doc(game.id);
+
+      // CRITICAL: Check existing game status to log transitions
+      DocumentSnapshot? existingDoc;
+      String? previousStatus;
+      try {
+        existingDoc = await docRef.get();
+        if (existingDoc.exists) {
+          final existingData = existingDoc.data() as Map<String, dynamic>?;
+          previousStatus = existingData?['status'] as String?;
+        }
+      } catch (e) {
+        debugPrint('⚠️ Could not check existing game status: $e');
+      }
+
       final data = game.toMap();
       data['cacheTimestamp'] = timestamp;
       if (sport != null) {
         data['sport'] = sport.toUpperCase();
       }
 
-      // LOG: Final games being saved
-      if (game.status == 'final') {
-        debugPrint('💾 [FIRESTORE] Saving FINAL game: ${game.id}');
+      // LOG: Status transitions
+      if (previousStatus != null && previousStatus != game.status) {
+        debugPrint('🔄 [STATUS CHANGE] Game ${game.id}');
         debugPrint('   Sport: ${sport?.toUpperCase()}');
         debugPrint('   Teams: ${game.awayTeam} @ ${game.homeTeam}');
-        debugPrint('   Score: ${game.awayScore} - ${game.homeScore}');
-        debugPrint('   Status: ${game.status}');
-        debugPrint('   This should trigger Cloud Function settlement!');
+        debugPrint('   Status Transition: $previousStatus → ${game.status}');
+        if (game.status == 'final') {
+          debugPrint('   Score: ${game.awayScore} - ${game.homeScore}');
+          debugPrint('   ⚠️ CRITICAL: Status changed to FINAL - should trigger bet settlement!');
+        }
+      }
+
+      // LOG: Final games being saved
+      if (game.status == 'final') {
+        if (previousStatus == null) {
+          debugPrint('💾 [FIRESTORE] Saving NEW FINAL game: ${game.id}');
+          debugPrint('   Sport: ${sport?.toUpperCase()}');
+          debugPrint('   Teams: ${game.awayTeam} @ ${game.homeTeam}');
+          debugPrint('   Score: ${game.awayScore} - ${game.homeScore}');
+          debugPrint('   Status: ${game.status}');
+          debugPrint('   ⚠️ WARNING: Game created with status=final (no transition)');
+          debugPrint('   This may NOT trigger Cloud Function if trigger expects status change!');
+        } else if (previousStatus == 'final') {
+          debugPrint('💾 [FIRESTORE] Re-saving FINAL game: ${game.id} (already final)');
+        }
       }
 
       batch.set(docRef, data, SetOptions(merge: true));

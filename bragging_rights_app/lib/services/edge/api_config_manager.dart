@@ -28,10 +28,14 @@ class ApiConfigManager {
     try {
       // Load .env file if it exists
       await dotenv.load(fileName: '.env');
-      
+
+      print('🔐 [ApiConfigManager] Loading API keys from environment...');
+      final newsApiKey = dotenv.env['NEWS_API_KEY'] ?? '';
+      print('🔐 [ApiConfigManager] NEWS_API_KEY loaded: ${newsApiKey.isNotEmpty ? "${newsApiKey.substring(0, 8)}..." : "EMPTY!"}');
+
       _credentials = {
         'news_api': ApiCredentials(
-          apiKey: dotenv.env['NEWS_API_KEY'] ?? '',
+          apiKey: newsApiKey,
           baseUrl: 'https://newsapi.org/v2',
           rateLimit: 100,
           rateLimitWindow: const Duration(hours: 24),

@@ -117,8 +117,10 @@ class _EdgeCardBaseState extends State<EdgeCardBase> with SingleTickerProviderSt
                       // Header
                       _buildHeader(config, rarityColor),
 
-                      // Content
-                      _buildContent(),
+                      // Content (flexible to fit available space)
+                      Expanded(
+                        child: _buildContent(),
+                      ),
 
                       // Footer (purchase button or metadata)
                       _buildFooter(config),
@@ -279,84 +281,88 @@ class _EdgeCardBaseState extends State<EdgeCardBase> with SingleTickerProviderSt
   }
 
   Widget _buildLockedContent() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Teaser text (blurred)
-          ClipRRect(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.2),
+    return SingleChildScrollView(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Teaser text (blurred)
+            ClipRRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                    ),
                   ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.lock,
-                          color: Colors.white70,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            widget.cardData.teaserText,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                              fontStyle: FontStyle.italic,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.lock,
+                            color: Colors.white70,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              widget.cardData.teaserText,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                                fontStyle: FontStyle.italic,
+                              ),
                             ),
+                          ),
+                        ],
+                      ),
+                      if (widget.cardData.impactText != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          widget.cardData.impactText!,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.5),
+                            fontSize: 12,
                           ),
                         ),
                       ],
-                    ),
-                    if (widget.cardData.impactText != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        widget.cardData.impactText!,
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
-                          fontSize: 12,
-                        ),
-                      ),
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
 
-          // Confidence indicator
-          const SizedBox(height: 12),
-          _buildConfidenceIndicator(),
-        ],
+            // Confidence indicator
+            const SizedBox(height: 12),
+            _buildConfidenceIndicator(),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildUnlockedContent() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Custom content from builder
-          widget.contentBuilder(context, widget.cardData),
+    return SingleChildScrollView(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Custom content from builder
+            widget.contentBuilder(context, widget.cardData),
 
-          // Confidence indicator
-          const SizedBox(height: 12),
-          _buildConfidenceIndicator(),
-        ],
+            // Confidence indicator
+            const SizedBox(height: 12),
+            _buildConfidenceIndicator(),
+          ],
+        ),
       ),
     );
   }

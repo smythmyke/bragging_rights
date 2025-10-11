@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../edge_card_types.dart';
 import 'edge_card_base.dart';
 
 /// Breaking News Card
-/// Displays recent headlines with timestamps and sources
+/// Displays recent news articles with timestamps and sources
+/// Tappable to open full article in browser
 class BreakingNewsCard extends StatelessWidget {
   final EdgeCardData cardData;
   final VoidCallback onPurchase;
@@ -27,16 +29,11 @@ class BreakingNewsCard extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context, EdgeCardData cardData) {
-    // Parse headlines from full content
-    final lines = cardData.fullContent.split('\n').where((line) => line.trim().isNotEmpty).toList();
+    // Get news articles from metadata
+    final articles = (cardData.metadata['articles'] as List<dynamic>?) ?? [];
 
-    // Extract headlines (lines that start with numbers)
-    final headlines = <String>[];
-    for (final line in lines) {
-      if (RegExp(r'^\d+\.').hasMatch(line.trim())) {
-        headlines.add(line.trim().replaceFirst(RegExp(r'^\d+\.\s*'), ''));
-      }
-    }
+    // Limit to top 3 articles for card display
+    final displayArticles = articles.take(3).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,17 +79,17 @@ class BreakingNewsCard extends StatelessWidget {
 
         const SizedBox(height: 16),
 
-        // Headlines
-        if (headlines.isEmpty)
+        // News Articles
+        if (displayArticles.isEmpty)
           _buildFallbackContent(cardData)
         else
-          ...headlines.asMap().entries.map((entry) {
+          ...displayArticles.asMap().entries.map((entry) {
             final index = entry.key;
-            final headline = entry.value;
+            final article = entry.value as Map<String, dynamic>;
 
             return Padding(
-              padding: EdgeInsets.only(bottom: index < headlines.length - 1 ? 12 : 0),
-              child: _buildHeadlineItem(headline, index),
+              padding: EdgeInsets.only(bottom: index < displayArticles.length - 1 ? 12 : 0),
+              child: _buildArticleItem(context, article, index),
             );
           }).toList(),
 
@@ -117,7 +114,7 @@ class BreakingNewsCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                '${cardData.metadata['articleCount'] ?? headlines.length} articles found',
+                '${articles.length} article${articles.length != 1 ? 's' : ''} found',
                 style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 13,
@@ -126,7 +123,7 @@ class BreakingNewsCard extends StatelessWidget {
               const Spacer(),
               const Icon(
                 Icons.trending_up,
-                color: Colors.amber,
+                color: Colors.redAccent,
                 size: 16,
               ),
             ],
@@ -171,87 +168,154 @@ class BreakingNewsCard extends StatelessWidget {
     );
   }
 
-  Widget _buildHeadlineItem(String headline, int index) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.1),
+  Widget _buildArticleItem(BuildContext context, Map<String, dynamic> article, int index) {
+    final title = article['title'] as String? ?? 'No title';
+    final description = article['description'] as String? ?? '';
+    final source = article['source'] as String? ?? 'Unknown';
+    final url = article['url'] as String? ?? '';
+    final publishedAt = article['publishedAt'] as DateTime?;
+    final analysis = article['analysis'] as Map<String, dynamic>? ?? {};
+
+    // Calculate time ago
+    String timeAgo = 'Recently';
+    if (publishedAt != null) {
+      try {
+        final diff = DateTime.now().difference(publishedAt);
+        if (diff.inMinutes < 60) {
+          timeAgo = '${diff.inMinutes}m ago';
+        } else if (diff.inHours < 24) {
+          timeAgo = '${diff.inHours}h ago';
+        } else {
+          timeAgo = '${diff.inDays}d ago';
+        }
+      } catch (e) {
+        // Keep default timeAgo
+      }
+    }
+
+    // Get sentiment for color coding
+    final sentiment = analysis['sentiment'] as String? ?? 'neutral';
+    Color sentimentColor = Colors.white.withOpacity(0.1);
+    IconData sentimentIcon = Icons.article;
+
+    if (sentiment == 'negative') {
+      sentimentColor = Colors.red.withOpacity(0.1);
+      sentimentIcon = Icons.warning_amber;
+    } else if (sentiment == 'positive') {
+      sentimentColor = Colors.green.withOpacity(0.1);
+      sentimentIcon = Icons.trending_up;
+    }
+
+    return GestureDetector(
+      onTap: () => _openArticle(url),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: sentimentColor,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.1),
+          ),
         ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Number badge
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: Colors.amber.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: Colors.amber.withOpacity(0.5)),
-            ),
-            child: Center(
-              child: Text(
-                '${index + 1}',
-                style: const TextStyle(
-                  color: Colors.amber,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Title (max 2 lines)
+            Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                height: 1.4,
               ),
             ),
-          ),
 
-          const SizedBox(width: 12),
+            if (description.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              // Description (max 2 lines)
+              Text(
+                description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 12,
+                  height: 1.4,
+                ),
+              ),
+            ],
 
-          // Headline text
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 8),
+
+            // Source and time
+            Row(
               children: [
+                Icon(
+                  sentimentIcon,
+                  size: 14,
+                  color: Colors.white.withOpacity(0.5),
+                ),
+                const SizedBox(width: 4),
                 Text(
-                  headline,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    height: 1.4,
+                  source,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.5),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.access_time,
-                      size: 12,
-                      color: Colors.white.withOpacity(0.5),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Just now',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
+                const SizedBox(width: 8),
+                Text(
+                  '•',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.3),
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.access_time,
+                  size: 12,
+                  color: Colors.white.withOpacity(0.5),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  timeAgo,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.5),
+                    fontSize: 11,
+                  ),
+                ),
+                const Spacer(),
+                // Read more indicator
+                Icon(
+                  Icons.open_in_new,
+                  size: 14,
+                  color: Colors.white.withOpacity(0.3),
                 ),
               ],
             ),
-          ),
-
-          // Arrow icon
-          Icon(
-            Icons.arrow_forward_ios,
-            size: 14,
-            color: Colors.white.withOpacity(0.3),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  /// Open article URL in browser
+  Future<void> _openArticle(String url) async {
+    if (url.isEmpty) return;
+
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      debugPrint('Error opening article: $e');
+    }
   }
 
   Widget _buildFallbackContent(EdgeCardData cardData) {

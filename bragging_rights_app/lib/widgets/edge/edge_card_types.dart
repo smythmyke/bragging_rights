@@ -108,7 +108,7 @@ class EdgeCardConfigs {
       category: EdgeCardCategory.breaking,
       title: 'Breaking News',
       icon: Icons.bolt,
-      gradientColors: [Color(0xFFFFC107), Color(0xFFFFD700)],
+      gradientColors: [Color(0xFFFF4757), Color(0xFFFF6348)],
       previewText: 'Breaking:',
       baseCost: 20,
       priority: EdgeCardPriority.highest,

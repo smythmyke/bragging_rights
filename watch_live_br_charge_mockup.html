@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Watch Live - BR Charge UI Options</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0A1929 0%, #1A2634 100%);
+            color: #E0E0E0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #00D9FF, #00FF94);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #A0A0A0;
+            margin-bottom: 50px;
+        }
+
+        .option-section {
+            background: #1E293B;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 40px;
+            border: 1px solid rgba(0, 217, 255, 0.2);
+        }
+
+        .option-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+        }
+
+        .option-title {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+
+        .option-badge {
+            background: linear-gradient(90deg, #00D9FF, #00FF94);
+            color: #0A1929;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .pros, .cons {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .pros h3 {
+            color: #00FF94;
+            margin-bottom: 10px;
+        }
+
+        .cons h3 {
+            color: #FF6B6B;
+            margin-bottom: 10px;
+        }
+
+        .pros ul, .cons ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .pros li::before {
+            content: "✓ ";
+            color: #00FF94;
+            font-weight: bold;
+        }
+
+        .cons li::before {
+            content: "✗ ";
+            color: #FF6B6B;
+            font-weight: bold;
+        }
+
+        /* OPTION 1 - Unlock All */
+        .unlock-all-demo {
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.1), rgba(0, 255, 148, 0.1));
+            border-radius: 12px;
+            padding: 25px;
+            border: 2px solid rgba(0, 217, 255, 0.3);
+        }
+
+        .unlock-all-demo h4 {
+            color: #00D9FF;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .lock-overlay {
+            position: relative;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .lock-icon {
+            text-align: center;
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .unlock-button {
+            background: linear-gradient(90deg, #00D9FF, #00FF94);
+            color: #0A1929;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 1.1em;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+            transition: transform 0.2s;
+        }
+
+        .unlock-button:hover {
+            transform: scale(1.05);
+        }
+
+        .br-cost {
+            background: linear-gradient(90deg, #FFB800, #FFA000);
+            color: #000;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-weight: bold;
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        /* OPTION 2 - Pay Per Click */
+        .pay-per-click-demo {
+            background: linear-gradient(135deg, rgba(255, 184, 0, 0.1), rgba(255, 160, 0, 0.1));
+            border-radius: 12px;
+            padding: 25px;
+            border: 2px solid rgba(255, 184, 0, 0.3);
+        }
+
+        .pay-per-click-demo h4 {
+            color: #FFB800;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .link-card {
+            background: #1E293B;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid rgba(255, 184, 0, 0.3);
+        }
+
+        .link-info {
+            flex: 1;
+        }
+
+        .link-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .link-url {
+            color: #A0A0A0;
+            font-size: 0.9em;
+        }
+
+        .pay-button {
+            background: linear-gradient(90deg, #FFB800, #FFA000);
+            color: #000;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: transform 0.2s;
+        }
+
+        .pay-button:hover {
+            transform: scale(1.05);
+        }
+
+        /* OPTION 3 - Time-Based Access */
+        .time-based-demo {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.1), rgba(236, 72, 153, 0.1));
+            border-radius: 12px;
+            padding: 25px;
+            border: 2px solid rgba(147, 51, 234, 0.3);
+        }
+
+        .time-based-demo h4 {
+            color: #9333EA;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .access-tier {
+            background: #1E293B;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            transition: all 0.3s;
+        }
+
+        .access-tier:hover {
+            border-color: rgba(147, 51, 234, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .tier-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .tier-name {
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .tier-price {
+            background: linear-gradient(90deg, #9333EA, #EC4899);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        .tier-description {
+            color: #A0A0A0;
+            margin-bottom: 10px;
+        }
+
+        .tier-features {
+            list-style: none;
+            margin-bottom: 15px;
+        }
+
+        .tier-features li {
+            padding: 5px 0;
+        }
+
+        .tier-features li::before {
+            content: "→ ";
+            color: #9333EA;
+            font-weight: bold;
+        }
+
+        .select-tier-button {
+            background: linear-gradient(90deg, #9333EA, #EC4899);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s;
+        }
+
+        .select-tier-button:hover {
+            transform: scale(1.02);
+        }
+
+        .disclaimer-box {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 30px;
+        }
+
+        .disclaimer-box h4 {
+            color: #FF6B6B;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .pros-cons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Watch Live - BR Charge UI Options</h1>
+        <p class="subtitle">Three different approaches to charging BR for third-party streaming links</p>
+
+        <!-- OPTION 1: Unlock All Links (One-Time Payment) -->
+        <div class="option-section">
+            <div class="option-header">
+                <div class="option-title">Option 1: Unlock All Links</div>
+                <div class="option-badge">RECOMMENDED</div>
+            </div>
+
+            <div class="pros-cons">
+                <div class="pros">
+                    <h3>Pros</h3>
+                    <ul>
+                        <li>Simple, one-time decision</li>
+                        <li>User-friendly experience</li>
+                        <li>No repeated payments</li>
+                        <li>Clear value proposition</li>
+                        <li>Predictable revenue per session</li>
+                    </ul>
+                </div>
+                <div class="cons">
+                    <h3>Cons</h3>
+                    <ul>
+                        <li>Lower total revenue per user</li>
+                        <li>Users might not visit all links</li>
+                        <li>No differentiation between links</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="unlock-all-demo">
+                <h4>UI Demo:</h4>
+                <div class="lock-overlay">
+                    <div class="lock-icon">🔒</div>
+                    <div style="text-align: center;">
+                        <p style="font-size: 1.1em; margin-bottom: 15px;">
+                            <strong>Third-Party Streaming Links Locked</strong>
+                        </p>
+                        <p style="color: #A0A0A0; margin-bottom: 20px;">
+                            Unlock access to all 12 streaming links for this session
+                        </p>
+                        <button class="unlock-button">
+                            🔓 Unlock All Links <span class="br-cost">50 BR</span>
+                        </button>
+                        <p style="color: #A0A0A0; font-size: 0.9em; margin-top: 15px;">
+                            Access valid until you leave this page
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- OPTION 2: Pay Per Click -->
+        <div class="option-section">
+            <div class="option-header">
+                <div class="option-title">Option 2: Pay Per Click</div>
+                <div class="option-badge">REVENUE MAX</div>
+            </div>
+
+            <div class="pros-cons">
+                <div class="pros">
+                    <h3>Pros</h3>
+                    <ul>
+                        <li>Higher revenue potential</li>
+                        <li>Users only pay for what they use</li>
+                        <li>Fair pricing model</li>
+                        <li>Encourages link quality</li>
+                    </ul>
+                </div>
+                <div class="cons">
+                    <h3>Cons</h3>
+                    <ul>
+                        <li>Friction on every click</li>
+                        <li>May frustrate users</li>
+                        <li>Requires wallet check each time</li>
+                        <li>Could discourage exploration</li>
+                        <li>More complex UX</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="pay-per-click-demo">
+                <h4>UI Demo:</h4>
+                <div class="link-card">
+                    <div class="link-info">
+                        <div class="link-name">⚠️ StreamEast - Mirror 1</div>
+                        <div class="link-url">streameast.io/nfl</div>
+                    </div>
+                    <button class="pay-button">Open - 5 BR</button>
+                </div>
+                <div class="link-card">
+                    <div class="link-info">
+                        <div class="link-name">⚠️ CrackStreams</div>
+                        <div class="link-url">crackstreams.com</div>
+                    </div>
+                    <button class="pay-button">Open - 5 BR</button>
+                </div>
+                <div class="link-card">
+                    <div class="link-info">
+                        <div class="link-name">⚠️ Buffstreams</div>
+                        <div class="link-url">buffstreams.tv</div>
+                    </div>
+                    <button class="pay-button">Open - 5 BR</button>
+                </div>
+                <p style="color: #A0A0A0; margin-top: 15px; text-align: center;">
+                    💡 Each link costs 5 BR to open. Payment is one-time per link per session.
+                </p>
+            </div>
+        </div>
+
+        <!-- OPTION 3: Time-Based Access Tiers -->
+        <div class="option-section">
+            <div class="option-header">
+                <div class="option-title">Option 3: Time-Based Access Tiers</div>
+                <div class="option-badge">FLEXIBLE</div>
+            </div>
+
+            <div class="pros-cons">
+                <div class="pros">
+                    <h3>Pros</h3>
+                    <ul>
+                        <li>Flexible pricing options</li>
+                        <li>Recurring revenue potential</li>
+                        <li>Premium tier for power users</li>
+                        <li>Users choose commitment level</li>
+                        <li>Gamification opportunity</li>
+                    </ul>
+                </div>
+                <div class="cons">
+                    <h3>Cons</h3>
+                    <ul>
+                        <li>Complex to manage</li>
+                        <li>Requires timer/expiry system</li>
+                        <li>May confuse casual users</li>
+                        <li>Need clear value differentiation</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="time-based-demo">
+                <h4>UI Demo:</h4>
+
+                <div class="access-tier">
+                    <div class="tier-header">
+                        <div class="tier-name">⚡ Quick Pass</div>
+                        <div class="tier-price">30 BR</div>
+                    </div>
+                    <div class="tier-description">Perfect for watching one game</div>
+                    <ul class="tier-features">
+                        <li>2 hours of access</li>
+                        <li>All streaming links unlocked</li>
+                        <li>Auto-expires after time limit</li>
+                    </ul>
+                    <button class="select-tier-button">Activate Quick Pass</button>
+                </div>
+
+                <div class="access-tier">
+                    <div class="tier-header">
+                        <div class="tier-name">🎯 Game Day Pass</div>
+                        <div class="tier-price">75 BR</div>
+                    </div>
+                    <div class="tier-description">Watch all your games today</div>
+                    <ul class="tier-features">
+                        <li>24 hours of access</li>
+                        <li>All streaming links unlocked</li>
+                        <li>Valid until midnight</li>
+                    </ul>
+                    <button class="select-tier-button">Activate Game Day Pass</button>
+                </div>
+
+                <div class="access-tier">
+                    <div class="tier-header">
+                        <div class="tier-name">👑 VIP Week Pass</div>
+                        <div class="tier-price">200 BR</div>
+                    </div>
+                    <div class="tier-description">Best value for serious fans</div>
+                    <ul class="tier-features">
+                        <li>7 days of unlimited access</li>
+                        <li>All streaming links unlocked</li>
+                        <li>Priority new link additions</li>
+                        <li>Special VIP badge</li>
+                    </ul>
+                    <button class="select-tier-button">Activate VIP Pass</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendation -->
+        <div class="disclaimer-box">
+            <h4>💡 Recommendation</h4>
+            <p>
+                <strong>Option 1 (Unlock All)</strong> is recommended for the best user experience. It's simple, clear, and removes friction
+                while still monetizing access. The one-time payment model respects users' time and creates a positive association with BR.
+            </p>
+            <p style="margin-top: 10px;">
+                <strong>Option 3 (Time-Based)</strong> could be a great alternative if you want to encourage regular usage and create
+                recurring revenue streams, especially for power users who watch multiple games per week.
+            </p>
+            <p style="margin-top: 10px;">
+                <strong>Option 2 (Pay Per Click)</strong> maximizes revenue but may frustrate users and discourage exploration.
+                Best avoided unless you have very high-quality, differentiated links.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

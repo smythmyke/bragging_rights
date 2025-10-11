@@ -89,11 +89,16 @@ class ApiGateway {
   Future<String?> _getApiKey(String apiName, String? configApiKey) async {
     await _ensureConfigManagerInitialized();
 
+    debugPrint('🔑 [ApiGateway] Getting API key for: $apiName');
+
     // Try to get from ApiConfigManager first
     final credentials = _configManager.getCredentials(apiName);
     if (credentials != null && credentials.apiKey.isNotEmpty) {
+      debugPrint('✅ [ApiGateway] Found API key from ApiConfigManager for $apiName: ${credentials.apiKey.substring(0, 8)}...');
       return credentials.apiKey;
     }
+
+    debugPrint('⚠️ [ApiGateway] No API key from ApiConfigManager for $apiName, using config: ${configApiKey ?? "(null)"}');
 
     // Fallback to hardcoded config (for APIs that don't need keys)
     return configApiKey;

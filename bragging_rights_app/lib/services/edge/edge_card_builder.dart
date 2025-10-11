@@ -78,21 +78,22 @@ class EdgeCardBuilder {
 
     // Get the most recent news data
     final newsData = newsDataPoints.last;
-    final articles = newsData.data['headlines'] as List? ?? [];
+    final articles = newsData.data['articles'] as List? ?? [];
 
     if (articles.isEmpty) {
       debugPrint('  ⚠️ No articles in news data');
       return null;
     }
 
-    // Build teaser text (first headline)
-    final teaserText = articles.first.toString();
+    // Build teaser text (first article title)
+    final firstArticle = articles.first as Map<String, dynamic>;
+    final teaserText = firstArticle['title'] ?? 'Breaking news available';
 
-    // Build full content with all headlines
+    // Build full content with all articles
     final fullContent = _buildBreakingNewsContent(articles, newsData.data);
 
     // Calculate confidence based on article count and recency
-    final articleCount = newsData.data['articleCount'] ?? 0;
+    final articleCount = articles.length;
     final confidence = (articleCount / 10).clamp(0.5, 0.95);
 
     // Determine rarity based on content
@@ -112,9 +113,13 @@ class EdgeCardBuilder {
       teaserText: teaserText,
       fullContent: fullContent,
       metadata: {
+        'articles': articles, // Pass full articles array with all data
         'articleCount': articleCount,
         'source': newsData.source,
         'sport': intelligence.sport,
+        'sentiment': newsData.data['sentiment'],
+        'keyTopics': newsData.data['keyTopics'],
+        'injuryNews': newsData.data['injuryNews'],
       },
       timestamp: newsData.timestamp,
       rarity: rarity,
@@ -128,18 +133,29 @@ class EdgeCardBuilder {
   }
 
   /// Build full content for Breaking News card
-  String _buildBreakingNewsContent(List<dynamic> headlines, Map<String, dynamic> newsData) {
+  String _buildBreakingNewsContent(List<dynamic> articles, Map<String, dynamic> newsData) {
     final buffer = StringBuffer();
     buffer.writeln('🚨 BREAKING NEWS\n');
     buffer.writeln('Latest Updates:\n');
 
-    for (int i = 0; i < headlines.length && i < 5; i++) {
-      buffer.writeln('${i + 1}. ${headlines[i]}');
-      if (i < headlines.length - 1) buffer.writeln();
+    for (int i = 0; i < articles.length && i < 5; i++) {
+      final article = articles[i] as Map<String, dynamic>;
+      final title = article['title'] ?? 'No title';
+      buffer.writeln('${i + 1}. $title');
+      if (i < articles.length - 1) buffer.writeln();
     }
 
     buffer.writeln('\n📊 Coverage:');
-    buffer.writeln('${newsData['articleCount'] ?? 0} articles found');
+    buffer.writeln('${articles.length} articles found');
+
+    // Add sentiment summary if available
+    final sentiment = newsData['sentiment'];
+    if (sentiment != null && sentiment is Map) {
+      final overall = sentiment['overall'];
+      if (overall != null) {
+        buffer.writeln('\n💬 Overall Sentiment: ${overall.toString().toUpperCase()}');
+      }
+    }
 
     return buffer.toString();
   }

@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/streaming_service_model.dart';
 import '../../theme/app_theme.dart';
+import '../../services/auth_service.dart';
+import '../../services/wallet_service.dart';
 
 class WatchLiveScreen extends StatefulWidget {
   const WatchLiveScreen({Key? key}) : super(key: key);
@@ -15,6 +18,10 @@ class WatchLiveScreen extends StatefulWidget {
 class _WatchLiveScreenState extends State<WatchLiveScreen> {
   bool _disclaimerAccepted = false;
   bool _isLoading = true;
+  final AuthService _authService = AuthService();
+  final WalletService _walletService = WalletService();
+  final Set<String> _purchasedLinks = {}; // Track purchased links by URL
+  static const int _linkCostBR = 5; // Cost per link in BR
 
   @override
   void initState() {
@@ -38,6 +45,205 @@ class _WatchLiveScreenState extends State<WatchLiveScreen> {
     });
   }
 
+  /// Handle opening a link with BR payment (for third-party links)
+  Future<void> _handlePaidLinkOpen(String url, String linkName) async {
+    final user = _authService.currentUser;
+
+    // Check if user is logged in
+    if (user == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please sign in to access streaming links'),
+            backgroundColor: AppTheme.errorPink,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Check if link already purchased in this session
+    if (_purchasedLinks.contains(url)) {
+      await _launchURL(url);
+      return;
+    }
+
+    // Show confirmation dialog
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surfaceBlue,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.open_in_new,
+                color: Colors.orange,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Open Link',
+                style: TextStyle(fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              linkName,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              url,
+              style: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.orange.withOpacity(0.2),
+                    Colors.amber.withOpacity(0.2),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.orange.withOpacity(0.5),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.orange,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(
+                      Icons.monetization_on,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Cost: $_linkCostBR BR',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        Text(
+                          'One-time payment per link',
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Open - $_linkCostBR BR'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // Check balance and process payment
+    try {
+      final currentBalance = await _walletService.getCurrentBalance();
+
+      if (currentBalance < _linkCostBR) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Insufficient BR. Need $_linkCostBR BR, have $currentBalance BR',
+              ),
+              backgroundColor: AppTheme.errorPink,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
+
+      // Deduct BR
+      await _walletService.updateBalance(-_linkCostBR);
+
+      // Mark link as purchased
+      setState(() {
+        _purchasedLinks.add(url);
+      });
+
+      // Open the link
+      await _launchURL(url);
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Link opened! -$_linkCostBR BR'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error processing BR payment: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment failed. Please try again.'),
+            backgroundColor: AppTheme.errorPink,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Launch URL without payment (for official services)
   Future<void> _launchURL(String url) async {
     try {
       final uri = Uri.parse(url);
@@ -444,24 +650,31 @@ class _WatchLiveScreenState extends State<WatchLiveScreen> {
   }
 
   Widget _buildThirdPartyServiceCard(StreamingService service) {
+    final isPurchased = _purchasedLinks.contains(service.url);
+    final linkName = service.mirrorNumber != null
+        ? '${service.name} - Mirror ${service.mirrorNumber}'
+        : service.name;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: () => _launchURL(service.url),
+        onTap: () => _handlePaidLinkOpen(service.url, linkName),
         child: Container(
           decoration: BoxDecoration(
             color: AppTheme.surfaceBlue,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Colors.orange.withOpacity(0.3),
+              color: isPurchased
+                  ? Colors.green.withOpacity(0.5)
+                  : Colors.orange.withOpacity(0.3),
             ),
           ),
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              const Icon(
-                Icons.warning_outlined,
-                color: Colors.orange,
+              Icon(
+                isPurchased ? Icons.check_circle : Icons.warning_outlined,
+                color: isPurchased ? Colors.green : Colors.orange,
                 size: 24,
               ),
               const SizedBox(width: 12),
@@ -470,9 +683,7 @@ class _WatchLiveScreenState extends State<WatchLiveScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      service.mirrorNumber != null
-                          ? '${service.name} - Mirror ${service.mirrorNumber}'
-                          : service.name,
+                      linkName,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
@@ -500,11 +711,70 @@ class _WatchLiveScreenState extends State<WatchLiveScreen> {
                   ],
                 ),
               ),
-              const Icon(
-                Icons.open_in_new,
-                color: AppTheme.primaryCyan,
-                size: 20,
-              ),
+              const SizedBox(width: 12),
+              // Show cost badge or purchased indicator
+              if (isPurchased)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.green.withOpacity(0.5),
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.check,
+                        color: Colors.green,
+                        size: 16,
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        'Purchased',
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.orange.withOpacity(0.8),
+                        Colors.amber.withOpacity(0.8),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.monetization_on,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$_linkCostBR BR',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),

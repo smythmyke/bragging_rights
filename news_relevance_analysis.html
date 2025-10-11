@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Relevance Analysis - Bragging Rights Edge Intelligence</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+        }
+        h1 {
+            color: #00d9ff;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+        }
+        .flow-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        .step {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid #00d9ff;
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+        }
+        .step-number {
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background: #00d9ff;
+            color: #1a1a2e;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .step-title {
+            color: #00d9ff;
+            font-size: 20px;
+            font-weight: bold;
+            margin: 10px 0 15px 0;
+        }
+        .code-block {
+            background: #0a0a0a;
+            border-left: 4px solid #00d9ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+        .query-example {
+            background: rgba(0, 217, 255, 0.1);
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .relevance-score {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 5px;
+        }
+        .high { background: #4caf50; color: white; }
+        .medium { background: #ff9800; color: white; }
+        .low { background: #f44336; color: white; }
+        .neutral { background: #757575; color: white; }
+
+        .keyword-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .keyword-category {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+        .keyword-category h4 {
+            color: #00d9ff;
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+        .keyword-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .keyword-list li {
+            padding: 5px 0;
+            border-bottom: 1px solid #333;
+            font-size: 13px;
+        }
+        .keyword-list li:last-child {
+            border-bottom: none;
+        }
+
+        .example-article {
+            background: rgba(0, 217, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #00d9ff;
+            margin: 10px 0;
+        }
+        .article-title {
+            color: #00d9ff;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .article-meta {
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        .analysis-result {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .arrow-down {
+            text-align: center;
+            font-size: 40px;
+            color: #00d9ff;
+            margin: -20px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+        th {
+            background: rgba(0, 217, 255, 0.2);
+            color: #00d9ff;
+            padding: 12px;
+            text-align: left;
+            border-bottom: 2px solid #00d9ff;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #333;
+        }
+        tr:hover {
+            background: rgba(0, 217, 255, 0.05);
+        }
+
+        .impact-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .impact-high { background: #f44336; color: white; }
+        .impact-medium { background: #ff9800; color: white; }
+        .impact-low { background: #4caf50; color: white; }
+        .impact-unknown { background: #757575; color: white; }
+    </style>
+</head>
+<body>
+    <h1>🧠 News Relevance Analysis</h1>
+    <p class="subtitle">How Bragging Rights Edge Intelligence Determines News Relevance</p>
+
+    <div class="flow-container">
+        <!-- STEP 1: Query Construction -->
+        <div class="step">
+            <div class="step-number">STEP 1</div>
+            <div class="step-title">📡 Query Construction & API Call</div>
+
+            <p><strong>Input:</strong> Game matchup (e.g., Lakers vs Warriors)</p>
+
+            <div class="query-example">
+                <strong>Three Queries Executed:</strong>
+                <ol>
+                    <li><code>"Lakers" "Warriors"</code> - Both teams together</li>
+                    <li><code>"Lakers"</code> - Home team news</li>
+                    <li><code>"Warriors"</code> - Away team news</li>
+                </ol>
+            </div>
+
+            <div class="code-block">
+// news_api_service.dart - lines 79-91
+final queries = [
+  '"$homeNorm" "$awayNorm"',  // Both teams
+  homeNorm,                    // Home team news
+  awayNorm,                    // Away team news
+];
+
+for (final query in queries) {
+  final news = await getTeamNews(
+    query: query,
+    pageSize: 5,
+    sortBy: 'publishedAt',  // Most recent first
+  );
+}
+            </div>
+
+            <p><strong>⚠️ CURRENT ISSUE:</strong> No date filter! Gets ALL articles, not just last 14 days.</p>
+            <p><strong>✅ SHOULD BE:</strong> <code>from: '2025-09-26', to: '2025-10-10'</code></p>
+        </div>
+
+        <div class="arrow-down">↓</div>
+
+        <!-- STEP 2: Relevance Scoring -->
+        <div class="step">
+            <div class="step-number">STEP 2</div>
+            <div class="step-title">🎯 Relevance Scoring Algorithm</div>
+
+            <p>Each article is scored from <strong>0.0 to 1.0</strong> based on:</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Check</th>
+                        <th>Points Added</th>
+                        <th>Logic</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Home Team Mentioned</strong></td>
+                        <td>+0.5</td>
+                        <td>Article title/description contains team name</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Away Team Mentioned</strong></td>
+                        <td>+0.5</td>
+                        <td>Article title/description contains team name</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Per Relevant Keyword</strong></td>
+                        <td>+0.2 each</td>
+                        <td>injury, doubtful, questionable, probable, starting, lineup, suspension, return</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="code-block">
+// news_api_service.dart - lines 130-160
+double relevance = 0.0;
+
+// Check team mentions
+if (text.contains(homeNorm)) {
+  relevance += 0.5;
+  mentions.add(homeTeam);
+}
+if (text.contains(awayNorm)) {
+  relevance += 0.5;
+  mentions.add(awayTeam);
+}
+
+// Check for relevant keywords
+final keywords = ['injury', 'doubtful', 'questionable', 'probable',
+                  'starting', 'lineup', 'suspension', 'return'];
+for (final keyword in keywords) {
+  if (text.contains(keyword)) {
+    relevance += 0.2;
+  }
+}
+
+return relevance.clamp(0.0, 1.0);
+            </div>
+
+            <p><strong>✅ FILTER THRESHOLD:</strong> Only articles with <code>relevance > 0.5</code> are kept (line 98)</p>
+        </div>
+
+        <div class="arrow-down">↓</div>
+
+        <!-- STEP 3: Sentiment Analysis -->
+        <div class="step">
+            <div class="step-number">STEP 3</div>
+            <div class="step-title">😊😐😞 Sentiment Analysis</div>
+
+            <p>Articles are classified as positive, neutral, or negative:</p>
+
+            <div class="keyword-grid">
+                <div class="keyword-category">
+                    <h4>✅ Positive Keywords</h4>
+                    <ul class="keyword-list">
+                        <li>win</li>
+                        <li>victory</li>
+                        <li>dominant</li>
+                        <li>streak</li>
+                        <li>healthy</li>
+                        <li>return</li>
+                    </ul>
+                </div>
+
+                <div class="keyword-category">
+                    <h4>❌ Negative Keywords</h4>
+                    <ul class="keyword-list">
+                        <li>loss</li>
+                        <li>injury</li>
+                        <li>doubtful</li>
+                        <li>struggle</li>
+                        <li>suspension</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="code-block">
+// news_api_service.dart - lines 162-180
+int positiveCount = 0;
+int negativeCount = 0;
+
+for (final word in positiveWords) {
+  if (text.contains(word)) positiveCount++;
+}
+for (final word in negativeWords) {
+  if (text.contains(word)) negativeCount++;
+}
+
+if (positiveCount > negativeCount) {
+  sentiment = 'positive';
+} else if (negativeCount > positiveCount) {
+  sentiment = 'negative';
+} else {
+  sentiment = 'neutral';
+}
+            </div>
+        </div>
+
+        <div class="arrow-down">↓</div>
+
+        <!-- STEP 4: Injury Detection -->
+        <div class="step">
+            <div class="step-number">STEP 4</div>
+            <div class="step-title">🚑 Injury Detection & Impact Assessment</div>
+
+            <p><strong>Injury Keywords:</strong></p>
+            <div class="code-block">
+injury, injured, hurt, doubtful, questionable,
+probable, game-time decision, sidelined, out
+            </div>
+
+            <p><strong>Impact Level Assessment:</strong></p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>If Article Contains...</th>
+                        <th>Impact Level</th>
+                        <th>Reasoning</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>"out" OR "ruled out"</td>
+                        <td><span class="impact-badge impact-high">High</span></td>
+                        <td>Player definitely not playing</td>
+                    </tr>
+                    <tr>
+                        <td>"doubtful"</td>
+                        <td><span class="impact-badge impact-high">High</span></td>
+                        <td>75% chance they won't play</td>
+                    </tr>
+                    <tr>
+                        <td>"questionable"</td>
+                        <td><span class="impact-badge impact-medium">Medium</span></td>
+                        <td>50/50 chance of playing</td>
+                    </tr>
+                    <tr>
+                        <td>"probable" OR "game-time"</td>
+                        <td><span class="impact-badge impact-low">Low</span></td>
+                        <td>Likely to play but watch pregame</td>
+                    </tr>
+                    <tr>
+                        <td>None of the above</td>
+                        <td><span class="impact-badge impact-unknown">Unknown</span></td>
+                        <td>Unclear status</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="code-block">
+// news_api_service.dart - lines 201-214
+if (text.contains('out') || text.contains('ruled out')) {
+  return 'high';
+} else if (text.contains('doubtful')) {
+  return 'high';
+} else if (text.contains('questionable')) {
+  return 'medium';
+} else if (text.contains('probable') || text.contains('game-time')) {
+  return 'low';
+}
+            </div>
+        </div>
+
+        <div class="arrow-down">↓</div>
+
+        <!-- STEP 5: Real Example -->
+        <div class="step">
+            <div class="step-number">STEP 5</div>
+            <div class="step-title">📰 Real-World Example</div>
+
+            <div class="example-article">
+                <div class="article-title">
+                    Lakers superstar LeBron James to miss start of season due to sciatica
+                </div>
+                <div class="article-meta">
+                    Source: The Japan Times | Published: 2025-10-10T02:03:00Z
+                </div>
+                <p>
+                    "The Lakers revealed the diagnosis of right-side sciatica after the team's practice on Thursday.
+                    LeBron James is set to miss the team's season-opener after the Lakers said he will be sidelined
+                    three to four weeks with sciatica..."
+                </p>
+
+                <div class="analysis-result">
+                    <h4 style="color: #00d9ff; margin-top: 0;">Analysis Results:</h4>
+
+                    <p><strong>Team Mentions:</strong></p>
+                    <ul>
+                        <li>✅ "Lakers" mentioned → +0.5 points</li>
+                        <li>✅ "LeBron James" (key player) mentioned</li>
+                    </ul>
+
+                    <p><strong>Relevant Keywords Found:</strong></p>
+                    <ul>
+                        <li>✅ "miss" → +0.2 points</li>
+                        <li>✅ "injury" (sciatica) → +0.2 points</li>
+                        <li>✅ "sidelined" → +0.2 points</li>
+                    </ul>
+
+                    <p><strong>Relevance Score:</strong> <span class="relevance-score high">1.0 / 1.0</span> (clamped max)</p>
+                    <p><strong>Sentiment:</strong> <span class="relevance-score low">Negative</span> (injury, miss, sidelined)</p>
+                    <p><strong>Injury Detected:</strong> ✅ Yes</p>
+                    <p><strong>Injury Impact:</strong> <span class="impact-badge impact-high">High</span> (contains "miss" and "sidelined")</p>
+
+                    <p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #444;">
+                        <strong>✅ RESULT:</strong> This article PASSES the 0.5 relevance threshold and will be shown
+                        in Edge Intelligence as a breaking news card and injury intelligence card.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="arrow-down">↓</div>
+
+        <!-- STEP 6: Topic Extraction -->
+        <div class="step">
+            <div class="step-number">STEP 6</div>
+            <div class="step-title">🏷️ Topic Extraction</div>
+
+            <p>Articles are categorized into trending topics:</p>
+
+            <div class="keyword-grid">
+                <div class="keyword-category">
+                    <h4>🚑 Injuries</h4>
+                    <ul class="keyword-list">
+                        <li>injury</li>
+                        <li>injured</li>
+                        <li>hurt</li>
+                        <li>sidelined</li>
+                    </ul>
+                </div>
+
+                <div class="keyword-category">
+                    <h4>📋 Lineup Changes</h4>
+                    <ul class="keyword-list">
+                        <li>lineup</li>
+                        <li>starting</li>
+                        <li>benched</li>
+                    </ul>
+                </div>
+
+                <div class="keyword-category">
+                    <h4>🔥 Momentum</h4>
+                    <ul class="keyword-list">
+                        <li>streak</li>
+                        <li>hot</li>
+                        <li>cold</li>
+                        <li>momentum</li>
+                    </ul>
+                </div>
+
+                <div class="keyword-category">
+                    <h4>⚔️ Rivalry</h4>
+                    <ul class="keyword-list">
+                        <li>rivalry</li>
+                        <li>rival</li>
+                        <li>history</li>
+                    </ul>
+                </div>
+
+                <div class="keyword-category">
+                    <h4>🏆 Playoffs</h4>
+                    <ul class="keyword-list">
+                        <li>playoff</li>
+                        <li>seed</li>
+                        <li>standings</li>
+                    </ul>
+                </div>
+            </div>
+
+            <p><strong>Top 5 topics</strong> by frequency are returned for each game.</p>
+        </div>
+
+        <div class="arrow-down">↓</div>
+
+        <!-- FINAL OUTPUT -->
+        <div class="step">
+            <div class="step-number">FINAL</div>
+            <div class="step-title">📊 Final Output to Edge Intelligence</div>
+
+            <div class="code-block">
+{
+  "articles": [
+    {
+      "title": "Lakers superstar LeBron James to miss...",
+      "description": "The Lakers revealed the diagnosis...",
+      "url": "https://...",
+      "source": "The Japan Times",
+      "publishedAt": "2025-10-10T02:03:00Z",
+      "analysis": {
+        "relevance": 1.0,
+        "sentiment": "negative",
+        "mentions": ["Lakers"]
+      }
+    }
+  ],
+  "sentiment": {
+    "positive": 0,
+    "negative": 3,
+    "neutral": 2,
+    "overall": "negative",
+    "confidence": 0.6
+  },
+  "keyTopics": ["injuries", "lineup_changes"],
+  "injuryNews": [
+    {
+      "title": "Lakers superstar LeBron James to miss...",
+      "impact": "high"
+    }
+  ]
+}
+            </div>
+
+            <p style="margin-top: 20px; padding: 15px; background: rgba(0, 217, 255, 0.1); border-radius: 8px;">
+                <strong>🎴 Edge Cards Generated:</strong><br>
+                • <strong>Breaking News Card:</strong> "LeBron James to miss start of season"<br>
+                • <strong>Injury Intelligence Card:</strong> "High-impact injury: LeBron James sidelined 3-4 weeks"<br>
+                • <strong>Social Sentiment Card:</strong> "Negative sentiment around Lakers (-60%)"
+            </p>
+        </div>
+    </div>
+
+    <div style="margin-top: 40px; padding: 20px; background: rgba(255, 152, 0, 0.1); border: 2px solid #ff9800; border-radius: 12px;">
+        <h3 style="color: #ff9800; margin-top: 0;">⚠️ Current Limitations</h3>
+        <ol>
+            <li><strong>No Date Filtering:</strong> Gets articles from any time period (should limit to 14 days)</li>
+            <li><strong>Simple Keyword Matching:</strong> Could miss context (e.g., "not injured" vs "injured")</li>
+            <li><strong>No Player Name Recognition:</strong> Doesn't boost relevance for star players like LeBron</li>
+            <li><strong>Fixed Threshold:</strong> 0.5 relevance might be too strict or too lenient</li>
+            <li><strong>No Source Credibility Weighting:</strong> ESPN article = random blog article</li>
+        </ol>
+    </div>
+
+    <div style="margin-top: 20px; padding: 20px; background: rgba(76, 175, 80, 0.1); border: 2px solid #4caf50; border-radius: 12px;">
+        <h3 style="color: #4caf50; margin-top: 0;">✅ Strengths</h3>
+        <ol>
+            <li><strong>Multi-Source:</strong> Checks ESPN, CBS Sports, Bleacher Report, Fox Sports</li>
+            <li><strong>Injury Focus:</strong> Specialized detection for injury news (critical for betting)</li>
+            <li><strong>Sentiment Scoring:</strong> Helps users gauge team morale/momentum</li>
+            <li><strong>Topic Clustering:</strong> Groups related news for easier consumption</li>
+            <li><strong>Relevance Filtering:</strong> Removes low-quality/unrelated articles</li>
+        </ol>
+    </div>
+</body>
+</html>

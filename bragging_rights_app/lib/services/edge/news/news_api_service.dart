@@ -32,10 +32,22 @@ class NewsApiService {
     int pageSize = 20,
     String? language = 'en',
     String sortBy = 'relevancy', // relevancy, popularity, publishedAt
+    int daysBack = 14, // Get news from last 14 days
   }) async {
     try {
       debugPrint('📰 Fetching news for: $query');
-      
+
+      // Calculate date range (last 14 days)
+      final now = DateTime.now();
+      final fromDate = now.subtract(Duration(days: daysBack));
+      final toDate = now;
+
+      // Format dates as YYYY-MM-DD (NewsAPI requirement)
+      final fromDateStr = DateFormat('yyyy-MM-dd').format(fromDate);
+      final toDateStr = DateFormat('yyyy-MM-dd').format(toDate);
+
+      debugPrint('📅 Date range: $fromDateStr to $toDateStr');
+
       final response = await _gateway.request(
         apiName: _apiName,
         endpoint: _everythingEndpoint,
@@ -45,6 +57,8 @@ class NewsApiService {
           'sortBy': sortBy,
           'pageSize': pageSize.toString(),
           'domains': 'espn.com,bleacherreport.com,cbssports.com,foxsports.com',
+          'from': fromDateStr,
+          'to': toDateStr,
         },
       );
 
@@ -112,6 +126,7 @@ class NewsApiService {
 
     // Fetch news for each query
     for (final query in queries) {
+      debugPrint('🔍 Searching news with query: "$query"');
       final news = await getTeamNews(
         query: query,
         pageSize: 5,
@@ -119,11 +134,14 @@ class NewsApiService {
       );
 
       if (news != null) {
+        debugPrint('   Found ${news.articles.length} articles');
         for (final article in news.articles) {
           // Analyze article for relevance and sentiment
           final analysis = _analyzeArticle(article, homeNorm, awayNorm);
-          
-          if (analysis['relevance'] > 0.5) {
+
+          debugPrint('   Article: "${article.title}" - Relevance: ${analysis['relevance']}');
+
+          if (analysis['relevance'] >= 0.5) {
             newsData['articles'].add({
               'title': article.title,
               'description': article.description,
@@ -142,6 +160,8 @@ class NewsApiService {
             }
           }
         }
+      } else {
+        debugPrint('   No articles found for query "$query"');
       }
     }
 
@@ -168,12 +188,17 @@ class NewsApiService {
     final homeNorm = homeTeam.toLowerCase();
     final awayNorm = awayTeam.toLowerCase();
 
-    // Check team mentions
-    if (text.contains(homeNorm)) {
+    // Extract team nicknames (last word) for better matching
+    // e.g., "Los Angeles Lakers" -> "lakers", "Golden State Warriors" -> "warriors"
+    final homeNickname = homeNorm.split(' ').last;
+    final awayNickname = awayNorm.split(' ').last;
+
+    // Check team mentions (full name or nickname)
+    if (text.contains(homeNorm) || text.contains(homeNickname)) {
       relevance += 0.5;
       mentions.add(homeTeam);
     }
-    if (text.contains(awayNorm)) {
+    if (text.contains(awayNorm) || text.contains(awayNickname)) {
       relevance += 0.5;
       mentions.add(awayTeam);
     }

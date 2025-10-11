@@ -95,7 +95,29 @@ class StreamingServiceData {
   ];
 
   static List<StreamingService> thirdPartyServices = [
-    // SportSurge
+    // LiveTV - Working mirrors
+    StreamingService(
+      name: 'LiveTV',
+      url: 'https://livetv860.me/enx/',
+      isOfficial: false,
+      mirrorNumber: '1',
+    ),
+    StreamingService(
+      name: 'LiveTV',
+      url: 'https://livetv.sx/enx/',
+      isOfficial: false,
+      mirrorNumber: '2',
+    ),
+
+    // CrackStreams - Working mirror
+    StreamingService(
+      name: 'CrackStreams',
+      url: 'https://crackstreams.ch/',
+      isOfficial: false,
+      mirrorNumber: '2',
+    ),
+
+    // SportSurge - Working mirrors
     StreamingService(
       name: 'SportSurge',
       url: 'https://v2.sportsurge.net/home5/',
@@ -113,51 +135,6 @@ class StreamingServiceData {
       url: 'https://www.sportsurge.uno/',
       isOfficial: false,
       mirrorNumber: '3',
-    ),
-    // CrackStreams
-    StreamingService(
-      name: 'CrackStreams',
-      url: 'https://crackstreams.cx/',
-      isOfficial: false,
-      mirrorNumber: '1',
-    ),
-    StreamingService(
-      name: 'CrackStreams',
-      url: 'https://crackstreams.ch/',
-      isOfficial: false,
-      mirrorNumber: '2',
-    ),
-    // BuffStreams
-    StreamingService(
-      name: 'BuffStreams',
-      url: 'https://buffsports.io/',
-      isOfficial: false,
-    ),
-    // LiveTV
-    StreamingService(
-      name: 'LiveTV',
-      url: 'https://livetv860.me/enx/',
-      isOfficial: false,
-      mirrorNumber: '1',
-    ),
-    StreamingService(
-      name: 'LiveTV',
-      url: 'https://livetv.sx/enx/',
-      isOfficial: false,
-      mirrorNumber: '2',
-    ),
-    // DofuStream
-    StreamingService(
-      name: 'DofuStream',
-      url: 'http://www.dofustream.com/',
-      isOfficial: false,
-      description: 'Main Site/App Link Hub',
-    ),
-    // StreamEast
-    StreamingService(
-      name: 'StreamEast',
-      url: 'https://v2.streameast.sk/',
-      isOfficial: false,
     ),
   ];
 }

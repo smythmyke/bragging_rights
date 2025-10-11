@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Challenge Hub - Bragging Rights</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #ffffff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 420px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+        }
+
+        .br-balance {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            padding: 15px 20px;
+            border-radius: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+        }
+
+        .br-balance .label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .br-balance .amount {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .quick-action-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .quick-action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .quick-action-btn.friend {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
+        }
+
+        .quick-action-btn.friend:hover {
+            box-shadow: 0 6px 20px rgba(240, 147, 251, 0.5);
+        }
+
+        .quick-action-btn .icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .quick-action-btn .text {
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .entry-fee-selector {
+            margin-bottom: 30px;
+        }
+
+        .fee-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .fee-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 12px 8px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .fee-btn:hover, .fee-btn.active {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            border-color: #FFD700;
+            transform: scale(1.05);
+        }
+
+        .games-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .game-card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s;
+        }
+
+        .game-card:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 215, 0, 0.5);
+            transform: translateX(4px);
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .game-time {
+            font-size: 12px;
+            color: #FFD700;
+            font-weight: 600;
+        }
+
+        .game-sport {
+            font-size: 11px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .teams {
+            margin-bottom: 12px;
+        }
+
+        .team {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+        }
+
+        .team-name {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .odds {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .challenge-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            color: #1a1a2e;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(255, 215, 0, 0.3);
+        }
+
+        .challenge-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(255, 215, 0, 0.5);
+        }
+
+        .active-challenges {
+            margin-bottom: 20px;
+        }
+
+        .challenge-item {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .challenge-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .challenger-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .entry-amount {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .challenge-details {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 10px;
+        }
+
+        .accept-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            padding: 10px;
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .accept-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.5);
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(255, 0, 0, 0.2);
+            color: #ff6b6b;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-around;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #FFD700;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>⚡ Quick Challenge</h1>
+            <p>Challenge anyone, anytime</p>
+        </div>
+
+        <!-- BR Balance -->
+        <div class="br-balance">
+            <div>
+                <div class="label">Your Balance</div>
+                <div class="amount">1,450 BR</div>
+            </div>
+            <div style="font-size: 32px;">💰</div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="section-title">
+            🎯 Quick Challenge
+        </div>
+        <div class="quick-actions">
+            <button class="quick-action-btn">
+                <div class="icon">🎲</div>
+                <div class="text">Random Opponent</div>
+            </button>
+            <button class="quick-action-btn friend">
+                <div class="icon">👥</div>
+                <div class="text">Challenge Friend</div>
+            </button>
+        </div>
+
+        <!-- Entry Fee Selector -->
+        <div class="entry-fee-selector">
+            <div class="section-title">
+                💵 Entry Fee
+            </div>
+            <div class="fee-buttons">
+                <button class="fee-btn">10 BR</button>
+                <button class="fee-btn active">25 BR</button>
+                <button class="fee-btn">50 BR</button>
+                <button class="fee-btn">100 BR</button>
+            </div>
+        </div>
+
+        <!-- Today's Games -->
+        <div class="section-title">
+            🏀 Today's Games
+        </div>
+        <div class="games-grid">
+            <div class="game-card">
+                <div class="game-header">
+                    <span class="game-time">🕐 7:30 PM ET</span>
+                    <span class="game-sport">NBA</span>
+                </div>
+                <div class="teams">
+                    <div class="team">
+                        <span class="team-name">Boston Celtics</span>
+                        <span class="odds">-6.5</span>
+                    </div>
+                    <div class="team">
+                        <span class="team-name">Miami Heat</span>
+                        <span class="odds">+6.5</span>
+                    </div>
+                </div>
+                <button class="challenge-btn">⚔️ CREATE CHALLENGE (25 BR)</button>
+            </div>
+
+            <div class="game-card">
+                <div class="game-header">
+                    <span class="game-time">🕐 8:00 PM ET</span>
+                    <span class="game-sport">NBA</span>
+                </div>
+                <div class="teams">
+                    <div class="team">
+                        <span class="team-name">LA Lakers</span>
+                        <span class="odds">-3.5</span>
+                    </div>
+                    <div class="team">
+                        <span class="team-name">Golden State Warriors</span>
+                        <span class="odds">+3.5</span>
+                    </div>
+                </div>
+                <button class="challenge-btn">⚔️ CREATE CHALLENGE (25 BR)</button>
+            </div>
+
+            <div class="game-card">
+                <div class="game-header">
+                    <span class="game-time">🕐 10:30 PM ET</span>
+                    <span class="game-sport">NBA</span>
+                </div>
+                <div class="teams">
+                    <div class="team">
+                        <span class="team-name">Denver Nuggets</span>
+                        <span class="odds">-8.5</span>
+                    </div>
+                    <div class="team">
+                        <span class="team-name">Portland Trail Blazers</span>
+                        <span class="odds">+8.5</span>
+                    </div>
+                </div>
+                <button class="challenge-btn">⚔️ CREATE CHALLENGE (25 BR)</button>
+            </div>
+        </div>
+
+        <!-- Active Challenges -->
+        <div class="active-challenges">
+            <div class="section-title">
+                ⏳ Open Challenges <span class="badge">3 NEW</span>
+            </div>
+
+            <div class="challenge-item">
+                <div class="challenge-header">
+                    <span class="challenger-name">Mike_TheKing</span>
+                    <span class="entry-amount">50 BR</span>
+                </div>
+                <div class="challenge-details">
+                    Lakers vs Warriors • 8:00 PM ET
+                </div>
+                <button class="accept-btn">⚔️ ACCEPT CHALLENGE</button>
+            </div>
+
+            <div class="challenge-item">
+                <div class="challenge-header">
+                    <span class="challenger-name">Sarah_Buckets</span>
+                    <span class="entry-amount">25 BR</span>
+                </div>
+                <div class="challenge-details">
+                    Celtics vs Heat • 7:30 PM ET
+                </div>
+                <button class="accept-btn">⚔️ ACCEPT CHALLENGE</button>
+            </div>
+
+            <div class="challenge-item">
+                <div class="challenge-header">
+                    <span class="challenger-name">JordanBets</span>
+                    <span class="entry-amount">100 BR</span>
+                </div>
+                <div class="challenge-details">
+                    Nuggets vs Blazers • 10:30 PM ET
+                </div>
+                <button class="accept-btn">⚔️ ACCEPT CHALLENGE</button>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stat-row">
+            <div class="stat">
+                <div class="stat-value">12</div>
+                <div class="stat-label">ACTIVE</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">8-3</div>
+                <div class="stat-label">H2H RECORD</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">+450</div>
+                <div class="stat-label">PROFIT</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

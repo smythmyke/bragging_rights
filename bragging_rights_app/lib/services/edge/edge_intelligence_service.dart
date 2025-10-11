@@ -40,6 +40,15 @@ class EdgeIntelligenceService {
   }) async {
     debugPrint('🧠 Gathering intelligence for $homeTeam vs $awayTeam...');
 
+    // Check cache first - if data exists and is fresh (< 5 min), return it
+    final cachedIntelligence = await getCachedIntelligence(eventId);
+    if (cachedIntelligence != null) {
+      debugPrint('✅ Using cached intelligence (saved API calls!)');
+      return cachedIntelligence;
+    }
+
+    debugPrint('📥 Cache miss - fetching fresh intelligence from APIs');
+
     // Create event match for normalization
     final eventMatch = await _matcher.matchEvent(
       eventId: eventId,
@@ -125,25 +134,76 @@ class EdgeIntelligenceService {
         intelligence.addDataPoint(
           source: 'NBA Stats API',
           type: 'statistics',
-          data: gameData['analysis'],
+          data: Map<String, dynamic>.from(gameData['analysis'] as Map),
           confidence: 0.95,
         );
       }
 
       // Add key factors
       if (gameData['keyFactors'] != null) {
-        for (final factor in gameData['keyFactors']) {
-          intelligence.addInsight(
-            category: factor['type'],
-            insight: factor['insights'].join(', '),
-            impact: 'medium',
-          );
+        final keyFactors = gameData['keyFactors'] as List?;
+        if (keyFactors != null && keyFactors.isNotEmpty) {
+          for (final factor in keyFactors) {
+            final factorMap = Map<String, dynamic>.from(factor as Map);
+            final insights = factorMap['insights'];
+            if (insights != null && insights is List) {
+              intelligence.addInsight(
+                category: factorMap['type'] ?? 'general',
+                insight: insights.join(', '),
+                impact: 'medium',
+              );
+            }
+          }
         }
       }
 
       // Add predictions if available
       if (gameData['predictions'] != null) {
-        intelligence.predictions = gameData['predictions'];
+        intelligence.predictions = Map<String, dynamic>.from(gameData['predictions'] as Map);
+      }
+
+      // Get NBA news
+      debugPrint('📰 Fetching NBA news for ${intelligence.homeTeam} vs ${intelligence.awayTeam}...');
+      final newsData = await _newsService.getGameNews(
+        homeTeam: intelligence.homeTeam,
+        awayTeam: intelligence.awayTeam,
+        sport: 'NBA',
+      );
+
+      debugPrint('📰 News data received: ${newsData != null ? 'YES' : 'NULL'}');
+      if (newsData != null) {
+        debugPrint('   Articles: ${newsData['articles']}');
+        debugPrint('   Article count: ${newsData['articles'] != null ? (newsData['articles'] as List).length : 0}');
+      }
+
+      if (newsData != null && newsData['articles'] != null && (newsData['articles'] as List).isNotEmpty) {
+        final articles = newsData['articles'] as List;
+        debugPrint('✅ Adding ${articles.length} articles to intelligence');
+        intelligence.addDataPoint(
+          source: 'NewsAPI',
+          type: 'recent_news',
+          data: newsData, // Pass the full newsData object including articles, sentiment, etc.
+          confidence: 0.75,
+        );
+      } else {
+        debugPrint('⚠️  No news articles found for NBA game');
+      }
+
+      // Get Reddit sentiment from r/nba
+      final redditData = await _redditService.getGameIntelligence(
+        homeTeam: intelligence.homeTeam,
+        awayTeam: intelligence.awayTeam,
+        sport: 'nba',
+        gameDate: intelligence.eventDate,
+      );
+
+      if (redditData.isNotEmpty) {
+        intelligence.addDataPoint(
+          source: 'Reddit r/nba',
+          type: 'fan_sentiment',
+          data: redditData,
+          confidence: 0.70,
+        );
       }
     } catch (e) {
       debugPrint('Error gathering NBA intelligence: $e');
@@ -342,23 +402,30 @@ class EdgeIntelligenceService {
       }
       
       // Get NFL news
+      debugPrint('📰 Fetching NFL news for ${intelligence.homeTeam} vs ${intelligence.awayTeam}...');
       final newsData = await _newsService.getGameNews(
         homeTeam: intelligence.homeTeam,
         awayTeam: intelligence.awayTeam,
         sport: 'NFL',
       );
-      
+
+      debugPrint('📰 News data received: ${newsData != null ? 'YES' : 'NULL'}');
+      if (newsData != null) {
+        debugPrint('   Articles: ${newsData['articles']}');
+        debugPrint('   Article count: ${newsData['articles'] != null ? (newsData['articles'] as List).length : 0}');
+      }
+
       if (newsData != null && newsData['articles'] != null && (newsData['articles'] as List).isNotEmpty) {
         final articles = newsData['articles'] as List;
+        debugPrint('✅ Adding ${articles.length} articles to intelligence');
         intelligence.addDataPoint(
           source: 'NewsAPI',
           type: 'recent_news',
-          data: {
-            'articleCount': articles.length,
-            'headlines': articles.take(3).map((a) => a['title']).toList(),
-          },
+          data: newsData, // Pass the full newsData object including articles, sentiment, etc.
           confidence: 0.75,
         );
+      } else {
+        debugPrint('⚠️  No news articles found for NFL game');
       }
       
       // Get Reddit sentiment from r/nfl
@@ -670,23 +737,30 @@ class EdgeIntelligenceService {
       }
       
       // Get MLB news
+      debugPrint('📰 Fetching MLB news for ${intelligence.homeTeam} vs ${intelligence.awayTeam}...');
       final newsData = await _newsService.getGameNews(
         homeTeam: intelligence.homeTeam,
         awayTeam: intelligence.awayTeam,
         sport: 'MLB',
       );
-      
+
+      debugPrint('📰 News data received: ${newsData != null ? 'YES' : 'NULL'}');
+      if (newsData != null) {
+        debugPrint('   Articles: ${newsData['articles']}');
+        debugPrint('   Article count: ${newsData['articles'] != null ? (newsData['articles'] as List).length : 0}');
+      }
+
       if (newsData != null && newsData['articles'] != null && (newsData['articles'] as List).isNotEmpty) {
         final articles = newsData['articles'] as List;
+        debugPrint('✅ Adding ${articles.length} articles to intelligence');
         intelligence.addDataPoint(
           source: 'NewsAPI',
           type: 'recent_news',
-          data: {
-            'articleCount': articles.length,
-            'headlines': articles.take(3).map((a) => a['title']).toList(),
-          },
+          data: newsData, // Pass the full newsData object including articles, sentiment, etc.
           confidence: 0.75,
         );
+      } else {
+        debugPrint('⚠️  No news articles found for MLB game');
       }
       
       // Get Reddit sentiment from r/baseball
@@ -927,23 +1001,30 @@ class EdgeIntelligenceService {
       }
       
       // Get news for both teams
+      debugPrint('📰 Fetching NHL news for ${intelligence.homeTeam} vs ${intelligence.awayTeam}...');
       final newsData = await _newsService.getGameNews(
         homeTeam: intelligence.homeTeam,
         awayTeam: intelligence.awayTeam,
         sport: 'NHL',
       );
-      
+
+      debugPrint('📰 News data received: ${newsData != null ? 'YES' : 'NULL'}');
+      if (newsData != null) {
+        debugPrint('   Articles: ${newsData['articles']}');
+        debugPrint('   Article count: ${newsData['articles'] != null ? (newsData['articles'] as List).length : 0}');
+      }
+
       if (newsData != null && newsData['articles'] != null && (newsData['articles'] as List).isNotEmpty) {
         final articles = newsData['articles'] as List;
+        debugPrint('✅ Adding ${articles.length} articles to intelligence');
         intelligence.addDataPoint(
           source: 'NewsAPI',
           type: 'recent_news',
-          data: {
-            'articleCount': articles.length,
-            'headlines': articles.take(3).map((a) => a['title']).toList(),
-          },
+          data: newsData, // Pass the full newsData object including articles, sentiment, etc.
           confidence: 0.75,
         );
+      } else {
+        debugPrint('⚠️  No news articles found for NHL game');
       }
       
       // Get Reddit sentiment
@@ -1201,23 +1282,30 @@ class EdgeIntelligenceService {
       }
       
       // Get MMA news
+      debugPrint('📰 Fetching MMA news for $eventName...');
       final newsData = await _newsService.getGameNews(
         homeTeam: eventName, // Use event name for news search
         awayTeam: '',
         sport: mmaPromotion.toUpperCase(),
       );
-      
+
+      debugPrint('📰 News data received: ${newsData != null ? 'YES' : 'NULL'}');
+      if (newsData != null) {
+        debugPrint('   Articles: ${newsData['articles']}');
+        debugPrint('   Article count: ${newsData['articles'] != null ? (newsData['articles'] as List).length : 0}');
+      }
+
       if (newsData != null && newsData['articles'] != null && (newsData['articles'] as List).isNotEmpty) {
         final articles = newsData['articles'] as List;
+        debugPrint('✅ Adding ${articles.length} articles to intelligence');
         intelligence.addDataPoint(
           source: 'NewsAPI',
           type: 'recent_news',
-          data: {
-            'articleCount': articles.length,
-            'headlines': articles.take(3).map((a) => a['title']).toList(),
-          },
+          data: newsData, // Pass the full newsData object including articles, sentiment, etc.
           confidence: 0.75,
         );
+      } else {
+        debugPrint('⚠️  No news articles found for MMA event');
       }
       
       // Get Reddit sentiment from r/MMA
@@ -1490,40 +1578,63 @@ class EdgeIntelligenceService {
       }
 
       // Get boxing news
-      final newsQuery = '${intelligence.homeTeam} ${intelligence.awayTeam} boxing';
-      final newsData = await _newsService.getTeamNews(query: newsQuery);
-      
-      if (newsData != null && newsData.articles.isNotEmpty) {
-        final articles = newsData.articles;
+      debugPrint('📰 Fetching Boxing news for ${intelligence.homeTeam} vs ${intelligence.awayTeam}...');
+      final newsData = await _newsService.getGameNews(
+        homeTeam: intelligence.homeTeam,
+        awayTeam: intelligence.awayTeam,
+        sport: 'Boxing',
+      );
+
+      debugPrint('📰 News data received: ${newsData != null ? 'YES' : 'NULL'}');
+      if (newsData != null) {
+        debugPrint('   Articles: ${newsData['articles']}');
+        debugPrint('   Article count: ${newsData['articles'] != null ? (newsData['articles'] as List).length : 0}');
+      }
+
+      if (newsData != null && newsData['articles'] != null && (newsData['articles'] as List).isNotEmpty) {
+        final articles = newsData['articles'] as List;
+        debugPrint('✅ Adding ${articles.length} articles to intelligence');
+
+        // Add full news data
+        intelligence.addDataPoint(
+          source: 'NewsAPI',
+          type: 'recent_news',
+          data: newsData, // Pass the full newsData object including articles, sentiment, etc.
+          confidence: 0.75,
+        );
+
+        // Store summary in boxingData for legacy compatibility
         boxingData['news'] = {
           'articleCount': articles.length,
-          'headlines': articles.take(3).map((a) => a.title).toList(),
+          'headlines': articles.take(3).map((a) => a['title']).toList(),
         };
-        
+
         // Look for injury or training camp news
         for (final article in articles) {
-          final headline = article.title?.toLowerCase() ?? '';
-          final description = article.description?.toLowerCase() ?? '';
+          final headline = article['title']?.toLowerCase() ?? '';
+          final description = article['description']?.toLowerCase() ?? '';
           final content = '$headline $description';
-          
+
           if (content.contains('injur') || content.contains('pull out') || content.contains('withdraw')) {
             intelligence.insights.add(
               EdgeInsight(
                 message: 'Injury concern reported in news',
                 type: 'injury_alert',
                 confidence: 0.60,
-                data: {'headline': article.title},
+                data: {'headline': article['title']},
               ),
             );
           }
-          
+
           if (content.contains('sparring') || content.contains('camp') || content.contains('train')) {
             boxingData['trainingCamp'] = {
-              'recentNews': article.title,
-              'source': article.source ?? 'Unknown',
+              'recentNews': article['title'],
+              'source': article['source'] ?? 'Unknown',
             };
           }
         }
+      } else {
+        debugPrint('⚠️  No news articles found for Boxing fight');
       }
 
       // Get Reddit sentiment for boxing
@@ -1761,28 +1872,30 @@ class EdgeIntelligenceService {
       }
       
       // Get tennis news
-      final newsQuery = '${intelligence.homeTeam} ${intelligence.awayTeam} tennis ATP WTA';
-      final newsData = await _newsService.getTeamNews(query: newsQuery);
-      
-      if (newsData != null && newsData.articles.isNotEmpty) {
+      debugPrint('📰 Fetching Tennis news for ${intelligence.homeTeam} vs ${intelligence.awayTeam}...');
+      final newsData = await _newsService.getGameNews(
+        homeTeam: intelligence.homeTeam,
+        awayTeam: intelligence.awayTeam,
+        sport: 'Tennis',
+      );
+
+      debugPrint('📰 News data received: ${newsData != null ? 'YES' : 'NULL'}');
+      if (newsData != null) {
+        debugPrint('   Articles: ${newsData['articles']}');
+        debugPrint('   Article count: ${newsData['articles'] != null ? (newsData['articles'] as List).length : 0}');
+      }
+
+      if (newsData != null && newsData['articles'] != null && (newsData['articles'] as List).isNotEmpty) {
+        final articles = newsData['articles'] as List;
+        debugPrint('✅ Adding ${articles.length} articles to intelligence');
         intelligence.addDataPoint(
-          source: 'News',
-          type: 'media_coverage',
-          data: {
-            'articleCount': newsData.articles.length,
-            'headlines': newsData.articles.take(3).map((a) => a.title).toList(),
-          },
-          confidence: 0.70,
+          source: 'NewsAPI',
+          type: 'recent_news',
+          data: newsData, // Pass the full newsData object including articles, sentiment, etc.
+          confidence: 0.75,
         );
-        
-        // Add news sentiment
-        if (newsData.articles.isNotEmpty) {
-          intelligence.addInsight(
-            category: 'media',
-            insight: '${newsData.articles.length} recent articles about this match',
-            impact: 'low',
-          );
-        }
+      } else {
+        debugPrint('⚠️  No news articles found for Tennis match');
       }
       
       // Get Reddit sentiment for tennis

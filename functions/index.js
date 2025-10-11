@@ -45,8 +45,13 @@ exports.manualCombatSettlement = functions.https.onRequest(async (req, res) => {
 // ============================================
 
 /**
- * Triggered when a game status changes to 'final'
- * Automatically settles all pending bets for that game
+ * Triggered when a game document is updated
+ * Automatically settles all pending bets for games with status='final'
+ *
+ * IMPROVED LOGIC:
+ * - Triggers on ANY game with status='final' (not just status changes)
+ * - Uses 'betsSettled' flag to prevent double-settlement
+ * - Handles games created with status='final' initially
  */
 exports.settleGameBets = functions.firestore
   .document('games/{gameId}')
@@ -61,22 +66,45 @@ exports.settleGameBets = functions.firestore
     console.log(`   Current status: ${currentData.status}`);
     console.log(`   Home: ${currentData.homeTeam || 'N/A'} (${currentData.homeScore || 0})`);
     console.log(`   Away: ${currentData.awayTeam || 'N/A'} (${currentData.awayScore || 0})`);
+    console.log(`   Bets already settled: ${currentData.betsSettled || false}`);
 
-    // Only process if game just finished
-    if (previousData.status !== 'final' && currentData.status === 'final') {
-      console.log(`🎮 [SETTLEMENT] Game ${gameId} FINISHED! Starting bet settlement...`);
+    // Check if game is final and bets haven't been settled yet
+    if (currentData.status === 'final' && !currentData.betsSettled) {
+      // Log the trigger reason
+      if (previousData.status !== 'final') {
+        console.log(`🎮 [SETTLEMENT] Game ${gameId} status changed to FINAL! Starting bet settlement...`);
+        console.log(`   Status transition: ${previousData.status} → final`);
+      } else {
+        console.log(`🎮 [SETTLEMENT] Game ${gameId} is FINAL but not yet settled! Starting bet settlement...`);
+        console.log(`   Note: Game was already final, but betsSettled flag was missing`);
+      }
+
       console.log(`   Final Score: ${currentData.homeTeam} ${currentData.homeScore} - ${currentData.awayScore} ${currentData.awayTeam}`);
 
       try {
+        // Settle bets and pools
         await settleBetsForGame(gameId, currentData);
         await settlePoolsForGame(gameId, currentData);
+
+        // Mark game as settled to prevent double-processing
+        await db.collection('games').doc(gameId).update({
+          betsSettled: true,
+          betsSettledAt: FieldValue.serverTimestamp()
+        });
+
         console.log(`✅ [SETTLEMENT] Successfully settled all bets for game ${gameId}`);
+        console.log(`   Marked game as settled with betsSettled=true`);
       } catch (error) {
         console.error(`❌ [SETTLEMENT] Error settling bets for game ${gameId}:`, error);
         throw error;
       }
+    } else if (currentData.status === 'final' && currentData.betsSettled) {
+      console.log(`⏭️ [SETTLEMENT] Skipping game ${gameId} - bets already settled`);
+      console.log(`   Bets were settled at: ${currentData.betsSettledAt?.toDate() || 'unknown'}`);
+    } else if (currentData.status !== 'final') {
+      console.log(`⏭️ [SETTLEMENT] Skipping game ${gameId} - status is not final (current: ${currentData.status})`);
     } else {
-      console.log(`⏭️ [SETTLEMENT] Skipping game ${gameId} - status change (${previousData.status} → ${currentData.status}) doesn't trigger settlement`);
+      console.log(`⏭️ [SETTLEMENT] Skipping game ${gameId} - unknown reason`);
     }
 
     return null;
