@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sports Trivia Challenge</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0A0E27 0%, #1a1f3a 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            touch-action: manipulation;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+
+        /* Sport Selection Screen */
+        .sport-selection {
+            text-align: center;
+        }
+
+        .sport-selection h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: #00D9FF;
+            animation: fadeInDown 0.6s ease;
+        }
+
+        .sport-selection p {
+            font-size: 16px;
+            opacity: 0.8;
+            margin-bottom: 30px;
+            animation: fadeInDown 0.6s ease 0.1s backwards;
+        }
+
+        .sports-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        @media (min-width: 500px) {
+            .sports-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .sport-card {
+            background: linear-gradient(135deg, #1e2849 0%, #2a3254 100%);
+            border: 2px solid rgba(0, 217, 255, 0.3);
+            border-radius: 16px;
+            padding: 30px 15px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sport-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.1) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sport-card:hover::before,
+        .sport-card:active::before {
+            opacity: 1;
+        }
+
+        .sport-card:active {
+            transform: scale(0.95);
+        }
+
+        .sport-card.selected {
+            border-color: #7FFF00;
+            background: linear-gradient(135deg, #2a4a2e 0%, #1e3a22 100%);
+            transform: scale(1.05);
+        }
+
+        .sport-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .sport-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #00D9FF;
+        }
+
+        .sport-card.all-sports .sport-name {
+            background: linear-gradient(90deg, #00D9FF, #7FFF00, #FF1493);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .start-button {
+            background: linear-gradient(135deg, #7FFF00 0%, #5cd900 100%);
+            color: #0A0E27;
+            border: none;
+            padding: 18px 40px;
+            border-radius: 12px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(127, 255, 0, 0.3);
+        }
+
+        .start-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .start-button:not(:disabled):active {
+            transform: scale(0.98);
+        }
+
+        /* Question Screen */
+        .question-screen {
+            display: none;
+        }
+
+        .question-screen.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .question-progress {
+            font-size: 18px;
+            font-weight: bold;
+            color: #00D9FF;
+        }
+
+        .score-display {
+            font-size: 20px;
+            font-weight: bold;
+            color: #7FFF00;
+        }
+
+        .timer {
+            font-size: 36px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #7FFF00;
+            text-shadow: 0 0 20px rgba(127, 255, 0, 0.5);
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        .timer.warning {
+            color: #FF1493;
+            animation: pulseWarning 0.5s ease-in-out infinite;
+        }
+
+        .question-card {
+            background: linear-gradient(135deg, #1e2849 0%, #2a3254 100%);
+            border: 2px solid rgba(0, 217, 255, 0.3);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            animation: flipIn 0.6s ease;
+        }
+
+        .question-text {
+            font-size: 20px;
+            line-height: 1.5;
+        }
+
+        .answers-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .answer-button {
+            background: linear-gradient(135deg, #2a3254 0%, #1e2849 100%);
+            border: 2px solid rgba(0, 217, 255, 0.3);
+            border-radius: 12px;
+            padding: 18px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .answer-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(0, 217, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.5s, height 0.5s;
+        }
+
+        .answer-button:active::before {
+            width: 300%;
+            height: 300%;
+        }
+
+        .answer-button:hover:not(:disabled) {
+            border-color: #00D9FF;
+            transform: translateX(5px);
+        }
+
+        .answer-button:disabled {
+            cursor: not-allowed;
+        }
+
+        .answer-button.correct {
+            background: linear-gradient(135deg, #7FFF00 0%, #5cd900 100%);
+            border-color: #7FFF00;
+            color: #0A0E27;
+            font-weight: bold;
+            animation: correctPulse 0.5s ease;
+        }
+
+        .answer-button.wrong {
+            background: linear-gradient(135deg, #FF1493 0%, #c71075 100%);
+            border-color: #FF1493;
+            animation: shake 0.5s ease;
+        }
+
+        /* Results Screen */
+        .results-screen {
+            display: none;
+            text-align: center;
+        }
+
+        .results-screen.active {
+            display: block;
+            animation: fadeIn 0.6s ease;
+        }
+
+        .results-trophy {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: bounce 1s ease infinite;
+        }
+
+        .final-score {
+            font-size: 64px;
+            font-weight: bold;
+            color: #7FFF00;
+            margin-bottom: 20px;
+            text-shadow: 0 0 30px rgba(127, 255, 0, 0.6);
+        }
+
+        .results-stats {
+            background: linear-gradient(135deg, #1e2849 0%, #2a3254 100%);
+            border: 2px solid rgba(0, 217, 255, 0.3);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #00D9FF;
+        }
+
+        .action-buttons {
+            display: grid;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .action-button {
+            background: linear-gradient(135deg, #2a3254 0%, #1e2849 100%);
+            border: 2px solid rgba(0, 217, 255, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .action-button:hover {
+            border-color: #00D9FF;
+            transform: translateY(-2px);
+        }
+
+        .action-button:active {
+            transform: scale(0.98);
+        }
+
+        .action-button.primary {
+            background: linear-gradient(135deg, #7FFF00 0%, #5cd900 100%);
+            border-color: #7FFF00;
+            color: #0A0E27;
+        }
+
+        .action-button.secondary {
+            background: linear-gradient(135deg, #00D9FF 0%, #0099cc 100%);
+            border-color: #00D9FF;
+            color: #0A0E27;
+        }
+
+        .mini-leaderboard {
+            background: linear-gradient(135deg, #1e2849 0%, #2a3254 100%);
+            border: 2px solid rgba(0, 217, 255, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .mini-leaderboard h3 {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #00D9FF;
+            font-size: 18px;
+        }
+
+        .leaderboard-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: rgba(0, 217, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid transparent;
+        }
+
+        .leaderboard-entry.rank-1 {
+            border-left-color: gold;
+        }
+
+        .leaderboard-entry.rank-2 {
+            border-left-color: silver;
+        }
+
+        .leaderboard-entry.rank-3 {
+            border-left-color: #CD7F32;
+        }
+
+        .leaderboard-entry.current-user {
+            background: rgba(127, 255, 0, 0.1);
+            border-color: #7FFF00;
+        }
+
+        .entry-rank {
+            font-weight: bold;
+            color: #00D9FF;
+            min-width: 30px;
+        }
+
+        .entry-name {
+            flex: 1;
+            margin: 0 10px;
+        }
+
+        .entry-score {
+            font-weight: bold;
+            color: #7FFF00;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes flipIn {
+            from {
+                opacity: 0;
+                transform: rotateY(-90deg);
+            }
+            to {
+                opacity: 1;
+                transform: rotateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes pulseWarning {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
+        }
+
+        @keyframes correctPulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes shake {
+            0%, 100% {
+                transform: translateX(0);
+            }
+            25% {
+                transform: translateX(-10px);
+            }
+            75% {
+                transform: translateX(10px);
+            }
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Streak Badge */
+        .streak-badge {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #FF6B00 0%, #FF1493 100%);
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            animation: slideInRight 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 0, 0.5);
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sport Selection Screen -->
+        <div class="sport-selection" id="sportSelection">
+            <h1>🏆 Sports Trivia Challenge</h1>
+            <p>Test your knowledge! 10 questions, 10 seconds each.</p>
+
+            <div class="sports-grid">
+                <div class="sport-card" data-sport="nba">
+                    <span class="sport-icon">🏀</span>
+                    <div class="sport-name">NBA</div>
+                </div>
+                <div class="sport-card" data-sport="nfl">
+                    <span class="sport-icon">🏈</span>
+                    <div class="sport-name">NFL</div>
+                </div>
+                <div class="sport-card" data-sport="mlb">
+                    <span class="sport-icon">⚾</span>
+                    <div class="sport-name">MLB</div>
+                </div>
+                <div class="sport-card" data-sport="nhl">
+                    <span class="sport-icon">🏒</span>
+                    <div class="sport-name">NHL</div>
+                </div>
+                <div class="sport-card" data-sport="mls">
+                    <span class="sport-icon">⚽</span>
+                    <div class="sport-name">MLS</div>
+                </div>
+                <div class="sport-card" data-sport="boxing">
+                    <span class="sport-icon">🥊</span>
+                    <div class="sport-name">Boxing</div>
+                </div>
+                <div class="sport-card" data-sport="mma">
+                    <span class="sport-icon">🥋</span>
+                    <div class="sport-name">MMA</div>
+                </div>
+                <div class="sport-card all-sports" data-sport="all">
+                    <span class="sport-icon">🎯</span>
+                    <div class="sport-name">ALL</div>
+                </div>
+            </div>
+
+            <button class="start-button" id="startButton" disabled>SELECT A SPORT TO START</button>
+        </div>
+
+        <!-- Question Screen -->
+        <div class="question-screen" id="questionScreen">
+            <div class="question-header">
+                <div class="question-progress" id="questionProgress">Q 1/10</div>
+                <div class="score-display" id="scoreDisplay">Score: 0</div>
+            </div>
+
+            <div class="timer" id="timer">10</div>
+
+            <div class="question-card">
+                <div class="question-text" id="questionText"></div>
+            </div>
+
+            <div class="answers-grid" id="answersGrid"></div>
+        </div>
+
+        <!-- Results Screen -->
+        <div class="results-screen" id="resultsScreen">
+            <div class="results-trophy">🏆</div>
+            <h2>Game Complete!</h2>
+            <div class="final-score" id="finalScore">0</div>
+
+            <div class="results-stats">
+                <div class="stat-row">
+                    <span class="stat-label">Correct Answers</span>
+                    <span class="stat-value" id="correctCount">0/10</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Accuracy</span>
+                    <span class="stat-value" id="accuracy">0%</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Best Streak</span>
+                    <span class="stat-value" id="bestStreak">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Time Bonus</span>
+                    <span class="stat-value" id="timeBonus">+0</span>
+                </div>
+            </div>
+
+            <!-- Mini Leaderboard -->
+            <div class="mini-leaderboard">
+                <h3>🏅 Top 5 This Week</h3>
+                <div id="leaderboardList">
+                    <div class="leaderboard-entry rank-1">
+                        <span class="entry-rank">#1</span>
+                        <span class="entry-name">SportsFan23</span>
+                        <span class="entry-score">1,450</span>
+                    </div>
+                    <div class="leaderboard-entry rank-2">
+                        <span class="entry-rank">#2</span>
+                        <span class="entry-name">QuizMaster</span>
+                        <span class="entry-score">1,380</span>
+                    </div>
+                    <div class="leaderboard-entry rank-3">
+                        <span class="entry-rank">#3</span>
+                        <span class="entry-name">TriviaKing</span>
+                        <span class="entry-score">1,290</span>
+                    </div>
+                    <div class="leaderboard-entry current-user">
+                        <span class="entry-rank">#4</span>
+                        <span class="entry-name">You</span>
+                        <span class="entry-score" id="yourRankScore">0</span>
+                    </div>
+                    <div class="leaderboard-entry">
+                        <span class="entry-rank">#5</span>
+                        <span class="entry-name">SportGuru</span>
+                        <span class="entry-score">1,150</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="action-button primary" onclick="playAgain()">
+                    <span>🔄</span>
+                    <span>Play Again</span>
+                </button>
+                <button class="action-button secondary" onclick="shareScore()">
+                    <span>📤</span>
+                    <span>Share Score</span>
+                </button>
+                <button class="action-button" onclick="exitGame()">
+                    <span>🏠</span>
+                    <span>Back to Lobby</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game questions database
+        const QUESTIONS = {
+            nba: [
+                {
+                    question: "Who won the 2023 NBA Championship?",
+                    answers: ["Denver Nuggets", "Miami Heat", "Boston Celtics", "LA Lakers"],
+                    correct: 0
+                },
+                {
+                    question: "Which player is known as 'The Greek Freak'?",
+                    answers: ["Luka Dončić", "Giannis Antetokounmpo", "Nikola Jokić", "Joel Embiid"],
+                    correct: 1
+                },
+                {
+                    question: "Who holds the NBA record for most career points?",
+                    answers: ["Michael Jordan", "LeBron James", "Kareem Abdul-Jabbar", "Kobe Bryant"],
+                    correct: 1
+                },
+                {
+                    question: "Which team did Michael Jordan play for?",
+                    answers: ["Chicago Bulls", "LA Lakers", "Boston Celtics", "Miami Heat"],
+                    correct: 0
+                },
+                {
+                    question: "Who won the 2023 NBA MVP award?",
+                    answers: ["Giannis Antetokounmpo", "Joel Embiid", "Nikola Jokić", "Jayson Tatum"],
+                    correct: 1
+                },
+                {
+                    question: "Which arena is home to the LA Lakers?",
+                    answers: ["Crypto.com Arena", "Madison Square Garden", "TD Garden", "Chase Center"],
+                    correct: 0
+                },
+                {
+                    question: "Who is the all-time leader in 3-pointers made?",
+                    answers: ["Ray Allen", "Reggie Miller", "Stephen Curry", "James Harden"],
+                    correct: 2
+                },
+                {
+                    question: "Which team has won the most NBA championships?",
+                    answers: ["LA Lakers", "Boston Celtics", "Chicago Bulls", "Golden State Warriors"],
+                    correct: 1
+                },
+                {
+                    question: "What is Kobe Bryant's nickname?",
+                    answers: ["The King", "Black Mamba", "The Answer", "The Truth"],
+                    correct: 1
+                },
+                {
+                    question: "Who was the first overall pick in the 2003 NBA Draft?",
+                    answers: ["Carmelo Anthony", "Dwyane Wade", "LeBron James", "Chris Bosh"],
+                    correct: 2
+                }
+            ],
+            nfl: [
+                {
+                    question: "Who won Super Bowl LVII (2023)?",
+                    answers: ["Kansas City Chiefs", "Philadelphia Eagles", "San Francisco 49ers", "Buffalo Bills"],
+                    correct: 0
+                },
+                {
+                    question: "Which quarterback has won the most Super Bowls?",
+                    answers: ["Joe Montana", "Terry Bradshaw", "Tom Brady", "Peyton Manning"],
+                    correct: 2
+                },
+                {
+                    question: "What is Lambeau Field known as?",
+                    answers: ["The Frozen Tundra", "The Steel Curtain", "The Dawg Pound", "The 12th Man"],
+                    correct: 0
+                },
+                {
+                    question: "Who holds the NFL record for most career touchdowns?",
+                    answers: ["Emmitt Smith", "Jerry Rice", "LaDainian Tomlinson", "Randy Moss"],
+                    correct: 1
+                },
+                {
+                    question: "Which team is known as 'America's Team'?",
+                    answers: ["New England Patriots", "Dallas Cowboys", "Green Bay Packers", "Pittsburgh Steelers"],
+                    correct: 1
+                },
+                {
+                    question: "Who won the first Super Bowl?",
+                    answers: ["Green Bay Packers", "Kansas City Chiefs", "Dallas Cowboys", "Oakland Raiders"],
+                    correct: 0
+                },
+                {
+                    question: "What is Travis Kelce's position?",
+                    answers: ["Wide Receiver", "Tight End", "Running Back", "Quarterback"],
+                    correct: 1
+                },
+                {
+                    question: "Which team plays at Gillette Stadium?",
+                    answers: ["New York Giants", "New England Patriots", "Philadelphia Eagles", "Miami Dolphins"],
+                    correct: 1
+                },
+                {
+                    question: "Who is known as 'Primetime'?",
+                    answers: ["Randy Moss", "Terrell Owens", "Deion Sanders", "Jerry Rice"],
+                    correct: 2
+                },
+                {
+                    question: "How many teams are in the NFL?",
+                    answers: ["30", "32", "34", "28"],
+                    correct: 1
+                }
+            ],
+            mlb: [
+                {
+                    question: "Who holds the MLB record for most home runs in a career?",
+                    answers: ["Babe Ruth", "Hank Aaron", "Barry Bonds", "Alex Rodriguez"],
+                    correct: 2
+                },
+                {
+                    question: "Which team won the 2023 World Series?",
+                    answers: ["Texas Rangers", "Arizona Diamondbacks", "Houston Astros", "Philadelphia Phillies"],
+                    correct: 0
+                },
+                {
+                    question: "What is Yankee Stadium also known as?",
+                    answers: ["The Cathedral", "The House That Ruth Built", "The Bronx Zoo", "The Stadium"],
+                    correct: 1
+                },
+                {
+                    question: "Who is 'The Captain' of the New York Yankees?",
+                    answers: ["Aaron Judge", "Derek Jeter", "Mariano Rivera", "Alex Rodriguez"],
+                    correct: 1
+                },
+                {
+                    question: "Which player is known as 'Mr. October'?",
+                    answers: ["Mickey Mantle", "Reggie Jackson", "Babe Ruth", "Joe DiMaggio"],
+                    correct: 1
+                },
+                {
+                    question: "How many innings are in a standard MLB game?",
+                    answers: ["7", "8", "9", "10"],
+                    correct: 2
+                },
+                {
+                    question: "Who won the 2023 AL MVP?",
+                    answers: ["Aaron Judge", "Shohei Ohtani", "Mike Trout", "Mookie Betts"],
+                    correct: 1
+                },
+                {
+                    question: "Which team has won the most World Series titles?",
+                    answers: ["Boston Red Sox", "St. Louis Cardinals", "New York Yankees", "Los Angeles Dodgers"],
+                    correct: 2
+                },
+                {
+                    question: "What is Jackie Robinson's number?",
+                    answers: ["7", "42", "24", "3"],
+                    correct: 1
+                },
+                {
+                    question: "Which stadium is known as Fenway Park?",
+                    answers: ["Yankees home", "Red Sox home", "Dodgers home", "Cubs home"],
+                    correct: 1
+                }
+            ],
+            nhl: [
+                {
+                    question: "Who has won the most Stanley Cups as a player?",
+                    answers: ["Wayne Gretzky", "Henri Richard", "Mario Lemieux", "Bobby Orr"],
+                    correct: 1
+                },
+                {
+                    question: "Which team won the 2023 Stanley Cup?",
+                    answers: ["Colorado Avalanche", "Vegas Golden Knights", "Tampa Bay Lightning", "Florida Panthers"],
+                    correct: 1
+                },
+                {
+                    question: "Who is 'The Great One'?",
+                    answers: ["Bobby Orr", "Wayne Gretzky", "Mario Lemieux", "Gordie Howe"],
+                    correct: 1
+                },
+                {
+                    question: "How many players are on the ice per team during play?",
+                    answers: ["5", "6", "7", "4"],
+                    correct: 1
+                },
+                {
+                    question: "Which country is Connor McDavid from?",
+                    answers: ["USA", "Russia", "Canada", "Sweden"],
+                    correct: 2
+                },
+                {
+                    question: "What is a hat trick in hockey?",
+                    answers: ["3 goals by one player", "3 assists", "3 penalties", "3 periods"],
+                    correct: 0
+                },
+                {
+                    question: "Which team is known as the Original Six?",
+                    answers: ["Vegas Golden Knights", "Montreal Canadiens", "Seattle Kraken", "Arizona Coyotes"],
+                    correct: 1
+                },
+                {
+                    question: "Who holds the record for most career goals?",
+                    answers: ["Wayne Gretzky", "Alex Ovechkin", "Gordie Howe", "Jaromir Jagr"],
+                    correct: 0
+                },
+                {
+                    question: "What is the trophy for NHL champions called?",
+                    answers: ["World Cup", "Stanley Cup", "Presidents Trophy", "Hart Trophy"],
+                    correct: 1
+                },
+                {
+                    question: "Which position defends the goal?",
+                    answers: ["Forward", "Defenseman", "Goaltender", "Center"],
+                    correct: 2
+                }
+            ],
+            mls: [
+                {
+                    question: "Which team did Lionel Messi join in 2023?",
+                    answers: ["LA Galaxy", "Inter Miami", "LAFC", "Atlanta United"],
+                    correct: 1
+                },
+                {
+                    question: "Who won the 2022 MLS Cup?",
+                    answers: ["Philadelphia Union", "LAFC", "Seattle Sounders", "Atlanta United"],
+                    correct: 1
+                },
+                {
+                    question: "Which country is Chicharito from?",
+                    answers: ["Spain", "Argentina", "Mexico", "Brazil"],
+                    correct: 2
+                },
+                {
+                    question: "What is the MLS championship game called?",
+                    answers: ["Super Bowl", "MLS Cup", "Finals", "Championship"],
+                    correct: 1
+                },
+                {
+                    question: "Which stadium hosts Inter Miami?",
+                    answers: ["Hard Rock Stadium", "DRV PNK Stadium", "Camping World Stadium", "Mercedes-Benz Stadium"],
+                    correct: 1
+                },
+                {
+                    question: "How many teams are currently in MLS?",
+                    answers: ["26", "28", "29", "30"],
+                    correct: 2
+                },
+                {
+                    question: "Which team did David Beckham own?",
+                    answers: ["LA Galaxy", "Inter Miami", "LAFC", "Seattle Sounders"],
+                    correct: 1
+                },
+                {
+                    question: "Who won the 2023 MLS MVP?",
+                    answers: ["Lorenzo Insigne", "Riqui Puig", "Sebastian Driussi", "Luciano Acosta"],
+                    correct: 3
+                },
+                {
+                    question: "Which team has the most MLS Cup titles?",
+                    answers: ["LA Galaxy", "DC United", "Seattle Sounders", "Houston Dynamo"],
+                    correct: 0
+                },
+                {
+                    question: "What year was MLS founded?",
+                    answers: ["1990", "1993", "1996", "2000"],
+                    correct: 2
+                }
+            ],
+            boxing: [
+                {
+                    question: "Who is known as 'The Greatest'?",
+                    answers: ["Mike Tyson", "Muhammad Ali", "Floyd Mayweather", "Sugar Ray Leonard"],
+                    correct: 1
+                },
+                {
+                    question: "Who bit Evander Holyfield's ear?",
+                    answers: ["Mike Tyson", "Lennox Lewis", "Riddick Bowe", "George Foreman"],
+                    correct: 0
+                },
+                {
+                    question: "What is Floyd Mayweather's professional record?",
+                    answers: ["49-0", "50-0", "48-1", "51-0"],
+                    correct: 1
+                },
+                {
+                    question: "Who is the current heavyweight champion (2024)?",
+                    answers: ["Tyson Fury", "Oleksandr Usyk", "Anthony Joshua", "Deontay Wilder"],
+                    correct: 1
+                },
+                {
+                    question: "Which country is Canelo Álvarez from?",
+                    answers: ["Spain", "Puerto Rico", "Mexico", "Argentina"],
+                    correct: 2
+                },
+                {
+                    question: "What does KO stand for?",
+                    answers: ["Kick Out", "Knockout", "Keep Out", "King Of"],
+                    correct: 1
+                },
+                {
+                    question: "Who is known as 'Iron Mike'?",
+                    answers: ["Michael Jordan", "Mike Tyson", "Michael Buffer", "Mike Ditka"],
+                    correct: 1
+                },
+                {
+                    question: "How many weight classes are in professional boxing?",
+                    answers: ["8", "12", "17", "20"],
+                    correct: 2
+                },
+                {
+                    question: "What is the boxing ring floor called?",
+                    answers: ["Ring", "Canvas", "Mat", "Floor"],
+                    correct: 1
+                },
+                {
+                    question: "Who won the 'Thrilla in Manila'?",
+                    answers: ["Joe Frazier", "Muhammad Ali", "George Foreman", "Larry Holmes"],
+                    correct: 1
+                }
+            ],
+            mma: [
+                {
+                    question: "What does UFC stand for?",
+                    answers: ["United Fight Club", "Ultimate Fighting Championship", "Universal Fight Championship", "United Fighter Combat"],
+                    correct: 1
+                },
+                {
+                    question: "Who is known as 'The Notorious'?",
+                    answers: ["Khabib Nurmagomedov", "Conor McGregor", "Israel Adesanya", "Jon Jones"],
+                    correct: 1
+                },
+                {
+                    question: "Which country is Khabib Nurmagomedov from?",
+                    answers: ["Russia", "Kazakhstan", "Uzbekistan", "Dagestan is not a country, but Russia"],
+                    correct: 3
+                },
+                {
+                    question: "How many rounds in a UFC championship fight?",
+                    answers: ["3", "4", "5", "6"],
+                    correct: 2
+                },
+                {
+                    question: "What is Ronda Rousey's signature move?",
+                    answers: ["Rear Naked Choke", "Armbar", "Triangle Choke", "Guillotine"],
+                    correct: 1
+                },
+                {
+                    question: "Who is the UFC commentator known for 'It's time!'?",
+                    answers: ["Joe Rogan", "Bruce Buffer", "Mike Goldberg", "Dana White"],
+                    correct: 1
+                },
+                {
+                    question: "What is the lightest UFC weight class?",
+                    answers: ["Flyweight", "Strawweight", "Bantamweight", "Featherweight"],
+                    correct: 1
+                },
+                {
+                    question: "Who has the most UFC title defenses?",
+                    answers: ["Anderson Silva", "Jon Jones", "Georges St-Pierre", "Demetrious Johnson"],
+                    correct: 3
+                },
+                {
+                    question: "What is the UFC octagon made of?",
+                    answers: ["Steel", "Chain-link fence", "Rope", "Plexiglass"],
+                    correct: 1
+                },
+                {
+                    question: "Who is known as 'Bones'?",
+                    answers: ["Jon Jones", "Daniel Cormier", "Alexander Volkanovski", "Max Holloway"],
+                    correct: 0
+                }
+            ]
+        };
+
+        // Game state
+        let selectedSport = null;
+        let currentQuestions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let correctAnswers = 0;
+        let timeRemaining = 10;
+        let timerInterval = null;
+        let currentStreak = 0;
+        let bestStreak = 0;
+        let totalTimeBonus = 0;
+
+        // DOM elements
+        const sportSelection = document.getElementById('sportSelection');
+        const questionScreen = document.getElementById('questionScreen');
+        const resultsScreen = document.getElementById('resultsScreen');
+        const startButton = document.getElementById('startButton');
+        const questionProgress = document.getElementById('questionProgress');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const timer = document.getElementById('timer');
+        const questionText = document.getElementById('questionText');
+        const answersGrid = document.getElementById('answersGrid');
+
+        // Sport selection
+        document.querySelectorAll('.sport-card').forEach(card => {
+            card.addEventListener('click', function() {
+                // Remove previous selection
+                document.querySelectorAll('.sport-card').forEach(c => c.classList.remove('selected'));
+
+                // Select this card
+                this.classList.add('selected');
+                selectedSport = this.dataset.sport;
+
+                // Enable start button
+                startButton.disabled = false;
+                startButton.textContent = 'START GAME';
+            });
+        });
+
+        // Start game
+        startButton.addEventListener('click', startGame);
+
+        function startGame() {
+            // Prepare questions
+            if (selectedSport === 'all') {
+                // Mix questions from all sports
+                const allQuestions = [];
+                Object.keys(QUESTIONS).forEach(sport => {
+                    const sportQuestions = [...QUESTIONS[sport]];
+                    // Take 2 random questions from each sport
+                    for (let i = 0; i < 2; i++) {
+                        const randomIndex = Math.floor(Math.random() * sportQuestions.length);
+                        allQuestions.push(sportQuestions.splice(randomIndex, 1)[0]);
+                    }
+                });
+                currentQuestions = shuffle(allQuestions);
+            } else {
+                currentQuestions = shuffle([...QUESTIONS[selectedSport]]);
+            }
+
+            // Reset game state
+            currentQuestionIndex = 0;
+            score = 0;
+            correctAnswers = 0;
+            currentStreak = 0;
+            bestStreak = 0;
+            totalTimeBonus = 0;
+
+            // Show question screen
+            sportSelection.classList.add('hidden');
+            questionScreen.classList.add('active');
+
+            // Load first question
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            if (currentQuestionIndex >= currentQuestions.length) {
+                showResults();
+                return;
+            }
+
+            const question = currentQuestions[currentQuestionIndex];
+
+            // Update progress
+            questionProgress.textContent = `Q ${currentQuestionIndex + 1}/${currentQuestions.length}`;
+            scoreDisplay.textContent = `Score: ${score}`;
+
+            // Load question
+            questionText.textContent = question.question;
+
+            // Load answers
+            answersGrid.innerHTML = '';
+            question.answers.forEach((answer, index) => {
+                const button = document.createElement('button');
+                button.className = 'answer-button';
+                button.textContent = answer;
+                button.addEventListener('click', () => selectAnswer(index));
+                answersGrid.appendChild(button);
+            });
+
+            // Start timer
+            timeRemaining = 10;
+            timer.textContent = timeRemaining;
+            timer.classList.remove('warning');
+
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function updateTimer() {
+            timeRemaining--;
+            timer.textContent = timeRemaining;
+
+            if (timeRemaining <= 3) {
+                timer.classList.add('warning');
+            }
+
+            if (timeRemaining <= 0) {
+                clearInterval(timerInterval);
+                selectAnswer(null); // Time's up, wrong answer
+            }
+        }
+
+        function selectAnswer(selectedIndex) {
+            clearInterval(timerInterval);
+
+            const question = currentQuestions[currentQuestionIndex];
+            const buttons = answersGrid.querySelectorAll('.answer-button');
+            const isCorrect = selectedIndex === question.correct;
+
+            // Disable all buttons
+            buttons.forEach(btn => btn.disabled = true);
+
+            // Show correct answer
+            buttons[question.correct].classList.add('correct');
+
+            if (isCorrect) {
+                // Calculate score
+                const basePoints = 100;
+                const timeBonus = timeRemaining * 10;
+                totalTimeBonus += timeBonus;
+                score += basePoints + timeBonus;
+                correctAnswers++;
+                currentStreak++;
+
+                if (currentStreak > bestStreak) {
+                    bestStreak = currentStreak;
+                }
+
+                // Show streak if 3+
+                if (currentStreak >= 3) {
+                    showStreakBadge();
+                }
+            } else {
+                // Show wrong answer
+                if (selectedIndex !== null) {
+                    buttons[selectedIndex].classList.add('wrong');
+                }
+                currentStreak = 0;
+            }
+
+            // Next question after delay
+            setTimeout(() => {
+                currentQuestionIndex++;
+                loadQuestion();
+            }, 1500);
+        }
+
+        function showStreakBadge() {
+            const badge = document.createElement('div');
+            badge.className = 'streak-badge';
+            badge.textContent = `🔥 ${currentStreak} Streak!`;
+            document.body.appendChild(badge);
+
+            setTimeout(() => {
+                badge.remove();
+            }, 2000);
+        }
+
+        function showResults() {
+            questionScreen.classList.remove('active');
+            resultsScreen.classList.add('active');
+
+            // Display results
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('correctCount').textContent = `${correctAnswers}/${currentQuestions.length}`;
+            document.getElementById('accuracy').textContent = `${Math.round((correctAnswers / currentQuestions.length) * 100)}%`;
+            document.getElementById('bestStreak').textContent = bestStreak;
+            document.getElementById('timeBonus').textContent = `+${totalTimeBonus}`;
+            document.getElementById('yourRankScore').textContent = score.toLocaleString();
+
+            // Submit score to Flutter
+            if (window.FlutterGameBridge) {
+                window.FlutterGameBridge.postMessage(score.toString());
+            } else if (window.parent) {
+                window.parent.postMessage({ type: 'gameScore', score: score }, '*');
+            }
+        }
+
+        function playAgain() {
+            // Reset and go back to sport selection
+            resultsScreen.classList.remove('active');
+            sportSelection.classList.remove('hidden');
+
+            // Clear selection
+            document.querySelectorAll('.sport-card').forEach(c => c.classList.remove('selected'));
+            selectedSport = null;
+            startButton.disabled = true;
+            startButton.textContent = 'SELECT A SPORT TO START';
+        }
+
+        function shareScore() {
+            const shareText = `I just scored ${score} points in Sports Trivia! 🏆\n\nCorrect: ${correctAnswers}/${currentQuestions.length}\nBest Streak: ${bestStreak} 🔥\n\nCan you beat my score?`;
+
+            // Try native share API
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Sports Trivia Challenge',
+                    text: shareText
+                }).catch(() => {
+                    // Fallback to clipboard
+                    copyToClipboard(shareText);
+                });
+            } else {
+                // Fallback to clipboard
+                copyToClipboard(shareText);
+            }
+        }
+
+        function copyToClipboard(text) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('Score copied to clipboard!');
+                });
+            } else {
+                // Old school fallback
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('Score copied to clipboard!');
+            }
+        }
+
+        function exitGame() {
+            // Signal to Flutter to go back to lobby
+            if (window.FlutterGameBridge) {
+                window.FlutterGameBridge.postMessage('EXIT');
+            } else if (window.parent) {
+                window.parent.postMessage({ type: 'exit' }, '*');
+            }
+
+            // Also reset game for next time
+            playAgain();
+        }
+
+        function shuffle(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+    </script>
+</body>
+</html>
