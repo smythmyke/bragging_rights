@@ -15,6 +15,25 @@
   "storage": {
     "rules": "storage.rules"
   },
+  "hosting": {
+    "public": "bragging_rights_app/web/games",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "headers": [
+      {
+        "source": "**/*.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=3600"
+          }
+        ]
+      }
+    ]
+  },
   "emulators": {
     "auth": {
       "port": 9099
@@ -27,6 +46,9 @@
     },
     "storage": {
       "port": 9199
+    },
+    "hosting": {
+      "port": 5000
     },
     "ui": {
       "enabled": true,
