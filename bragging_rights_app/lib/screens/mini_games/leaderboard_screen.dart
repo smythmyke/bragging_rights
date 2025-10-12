@@ -123,6 +123,85 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+
+          // Countdown timer
+          StreamBuilder<GameLeaderboard?>(
+            stream: _gamesService.getGameLeaderboard(widget.game.id),
+            builder: (context, snapshot) {
+              if (snapshot.hasData && snapshot.data != null) {
+                final weekEnd = snapshot.data!.weekEnd;
+                final now = DateTime.now();
+                final difference = weekEnd.difference(now);
+
+                if (difference.isNegative) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.errorPink.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppTheme.errorPink,
+                      ),
+                    ),
+                    child: const Text(
+                      '⏰ Week ended - Prizes being distributed!',
+                      style: TextStyle(
+                        color: AppTheme.errorPink,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  );
+                }
+
+                final days = difference.inDays;
+                final hours = difference.inHours % 24;
+                final minutes = difference.inMinutes % 60;
+
+                String timeLeft;
+                if (days > 0) {
+                  timeLeft = '$days day${days > 1 ? 's' : ''} ${hours}h left';
+                } else if (hours > 0) {
+                  timeLeft = '${hours}h ${minutes}m left';
+                } else {
+                  timeLeft = '${minutes}m left';
+                }
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.neonGreen.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppTheme.neonGreen,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        PhosphorIconsRegular.clock,
+                        color: AppTheme.neonGreen,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        timeLeft,
+                        style: const TextStyle(
+                          color: AppTheme.neonGreen,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+
           const SizedBox(height: 16),
 
           // Prize pool info

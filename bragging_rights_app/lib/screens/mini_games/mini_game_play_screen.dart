@@ -39,6 +39,16 @@ class _MiniGamePlayScreenState extends State<MiniGamePlayScreen> {
     _webViewController = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(AppTheme.deepBlue)
+      ..addJavaScriptChannel(
+        'FlutterGameBridge',
+        onMessageReceived: (JavaScriptMessage message) {
+          // Auto-capture score from game
+          final score = int.tryParse(message.message);
+          if (score != null && !_hasSubmittedScore) {
+            _submitScore(score);
+          }
+        },
+      )
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
@@ -382,6 +392,9 @@ class _MiniGamePlayScreenState extends State<MiniGamePlayScreen> {
   }
 
   Future<void> _showSuccessDialog(int score) async {
+    // Get user's rank
+    final userRank = await _gamesService.getUserRank(widget.game.id);
+
     await showDialog(
       context: context,
       barrierDismissible: false,
@@ -423,6 +436,50 @@ class _MiniGamePlayScreenState extends State<MiniGamePlayScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
+
+            // Show rank if available
+            if (userRank != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: userRank <= 10
+                      ? AppTheme.neonGreen.withOpacity(0.2)
+                      : AppTheme.primaryCyan.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: userRank <= 10
+                        ? AppTheme.neonGreen
+                        : AppTheme.primaryCyan.withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      userRank <= 3
+                          ? PhosphorIconsFill.crown
+                          : PhosphorIconsRegular.trophy,
+                      color: userRank <= 10 ? AppTheme.neonGreen : AppTheme.primaryCyan,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      userRank <= 10
+                          ? 'Rank #$userRank - You\'re in the prize zone! 🎉'
+                          : 'Current Rank: #$userRank',
+                      style: TextStyle(
+                        color: userRank <= 10 ? AppTheme.neonGreen : Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(16),
