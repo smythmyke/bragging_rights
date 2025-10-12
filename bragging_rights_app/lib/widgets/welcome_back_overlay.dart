@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/welcome_back_data.dart';
 import '../services/welcome_back_service.dart';
+import '../services/ad_reward_service.dart';
+import '../services/br_currency_service.dart';
 import '../theme/app_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -10,12 +13,14 @@ class WelcomeBackOverlay extends StatefulWidget {
   final WelcomeBackData data;
   final VoidCallback onDismiss;
   final VoidCallback? onNavigateToBets;
+  final VoidCallback? onNavigateToGames;
 
   const WelcomeBackOverlay({
     super.key,
     required this.data,
     required this.onDismiss,
     this.onNavigateToBets,
+    this.onNavigateToGames,
   });
 
   @override
@@ -23,10 +28,23 @@ class WelcomeBackOverlay extends StatefulWidget {
 }
 
 class _WelcomeBackOverlayState extends State<WelcomeBackOverlay>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+
+  // Logo pulse animation
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  // Ad bonus services
+  final AdRewardService _adService = AdRewardService();
+  final BRCurrencyService _brService = BRCurrencyService();
+
+  // Ad bonus state
+  bool _isDailyAdBonusAvailable = false;
+  bool _isDailyAdBonusClaimed = false;
+  bool _isLoadingAdBonus = false;
 
   @override
   void initState() {
@@ -63,22 +81,38 @@ class _WelcomeBackOverlayState extends State<WelcomeBackOverlay>
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
 
+    // Initialize pulse animation for BR logo
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 3000), // 3 second cycle
+      vsync: this,
+    );
+
+    _pulseAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
     _controller.forward();
+    _pulseController.repeat(); // Loop the pulse animation
 
     // Log when overlay is mounted
     debugPrint('🎨 WelcomeBackOverlay: Mounted and ready');
     debugPrint('   - Data: ${widget.data.wins}W-${widget.data.losses}L');
     debugPrint('   - Balance: ${widget.data.oldBalance} → ${widget.data.newBalance}');
     debugPrint('   - Settled bets: ${widget.data.settledBets.length}');
+
+    // Check if daily ad bonus is available and preload ad
+    _checkDailyAdBonusAvailability();
+    _adService.loadRewardedAd();
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
-  void _dismiss() async {
+  Future<void> _dismiss() async {
     await _controller.reverse();
 
     // Update last login data
@@ -93,6 +127,143 @@ class _WelcomeBackOverlayState extends State<WelcomeBackOverlay>
     }
 
     widget.onDismiss();
+  }
+
+  Future<void> _checkDailyAdBonusAvailability() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (!userDoc.exists) return;
+
+      final data = userDoc.data()!;
+      final lastBonusDate = data['lastDailyAdBonusDate'] as String?;
+      final today = _getTodayDateString();
+
+      setState(() {
+        _isDailyAdBonusAvailable = lastBonusDate != today;
+        _isDailyAdBonusClaimed = lastBonusDate == today;
+      });
+
+      debugPrint('🎁 Daily Ad Bonus: Available=$_isDailyAdBonusAvailable, Claimed=$_isDailyAdBonusClaimed');
+    } catch (e) {
+      debugPrint('Error checking daily ad bonus: $e');
+    }
+  }
+
+  Future<void> _claimDailyAdBonus() async {
+    if (!_isDailyAdBonusAvailable || _isLoadingAdBonus) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    setState(() {
+      _isLoadingAdBonus = true;
+    });
+
+    try {
+      // Check if ad is ready
+      if (!_adService.isAdReady()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Ad is loading... Please try again in a moment'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        _adService.loadRewardedAd();
+        setState(() {
+          _isLoadingAdBonus = false;
+        });
+        return;
+      }
+
+      // Show ad
+      final result = await _adService.showRewardedAd(user.uid);
+
+      if (!result.success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        setState(() {
+          _isLoadingAdBonus = false;
+        });
+        return;
+      }
+
+      // Award bonus BR (50 BR for watching ad)
+      final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final userDoc = await userRef.get();
+      final currentBalance = (userDoc.data()?['brBalance'] ?? 0) as int;
+      final newBalance = currentBalance + 50;
+
+      await userRef.update({
+        'brBalance': newBalance,
+        'totalBrEarned': FieldValue.increment(50),
+        'lastDailyAdBonusDate': _getTodayDateString(),
+      });
+
+      // Log analytics
+      await FirebaseFirestore.instance.collection('daily_ad_bonuses').add({
+        'userId': user.uid,
+        'amount': 50,
+        'claimedAt': FieldValue.serverTimestamp(),
+        'source': 'welcome_back_overlay',
+      });
+
+      setState(() {
+        _isDailyAdBonusAvailable = false;
+        _isDailyAdBonusClaimed = true;
+        _isLoadingAdBonus = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🎁 +50 BR claimed! Thanks for watching!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+
+      debugPrint('✅ Daily ad bonus claimed successfully!');
+
+      // Navigate to Games page after successful ad watch
+      await _dismiss();
+      if (widget.onNavigateToGames != null) {
+        widget.onNavigateToGames!();
+      }
+    } catch (e) {
+      debugPrint('Error claiming daily ad bonus: $e');
+      setState(() {
+        _isLoadingAdBonus = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to claim bonus. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  String _getTodayDateString() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -142,7 +313,8 @@ class _WelcomeBackOverlayState extends State<WelcomeBackOverlay>
               if (widget.data.settledBets.isNotEmpty) _buildSettledBets(),
               _buildPerformanceSnapshot(),
               _buildLeaderboardUpdates(),
-              _buildActiveBets(),
+              if (_isDailyAdBonusAvailable || _isDailyAdBonusClaimed)
+                _buildCompactAdButton(),
               _buildDismissButton(),
             ],
           ),
@@ -164,26 +336,46 @@ class _WelcomeBackOverlayState extends State<WelcomeBackOverlay>
       ),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              PhosphorIcon(
-                PhosphorIconsBold.trophy,
-                color: AppTheme.primaryCyan,
-                size: 28,
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'Welcome Back!',
-                style: const TextStyle(
-                  color: AppTheme.primaryCyan,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  shadows: [], // Explicitly remove shadows
-                  inherit: false, // Don't inherit theme styles
+          // BR Logo with pulse animation
+          AnimatedBuilder(
+            animation: _pulseAnimation,
+            builder: (context, child) {
+              // Interpolate between cyan and gold glow colors
+              final glowColor = Color.lerp(
+                AppTheme.primaryCyan,
+                const Color(0xFFf4c542), // Gold color
+                _pulseAnimation.value,
+              )!;
+
+              return Container(
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: glowColor.withOpacity(0.6),
+                      blurRadius: 30,
+                      spreadRadius: 5,
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                child: Image.asset(
+                  'assets/images/br_initials_icon.png',
+                  width: 120,
+                  height: 120,
+                  fit: BoxFit.contain,
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 15),
+          Text(
+            'Welcome Back!',
+            style: const TextStyle(
+              color: AppTheme.primaryCyan,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              shadows: [], // Explicitly remove shadows
+              inherit: false, // Don't inherit theme styles
+            ),
           ),
           const SizedBox(height: 8),
           Row(
@@ -206,6 +398,64 @@ class _WelcomeBackOverlayState extends State<WelcomeBackOverlay>
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCompactAdButton() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: _isDailyAdBonusClaimed || _isLoadingAdBonus
+              ? null
+              : _claimDailyAdBonus,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _isDailyAdBonusClaimed
+                ? Colors.grey
+                : AppTheme.warningAmber,
+            disabledBackgroundColor: Colors.grey.shade700,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            elevation: 0,
+          ),
+          child: _isLoadingAdBonus
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    color: AppTheme.deepBlue,
+                    strokeWidth: 2,
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    PhosphorIcon(
+                      _isDailyAdBonusClaimed
+                          ? PhosphorIconsFill.checkCircle
+                          : PhosphorIconsFill.videoCamera,
+                      color: AppTheme.deepBlue,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _isDailyAdBonusClaimed
+                          ? 'Daily Ad Bonus Claimed (+50 BR)'
+                          : 'Watch Ad for +50 BR Bonus',
+                      style: const TextStyle(
+                        color: AppTheme.deepBlue,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        shadows: [],
+                      ),
+                    ),
+                  ],
+                ),
+        ),
       ),
     );
   }
@@ -646,82 +896,6 @@ class _WelcomeBackOverlayState extends State<WelcomeBackOverlay>
     );
   }
 
-  Widget _buildActiveBets() {
-    return _buildSection(
-      icon: PhosphorIconsFill.hourglassMedium,
-      title: 'Active Bets',
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              PhosphorIcon(
-                PhosphorIconsFill.fileText,
-                color: AppTheme.warningAmber,
-                size: 28,
-              ),
-              const SizedBox(width: 8),
-              RichText(
-                text: TextSpan(
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
-                  children: [
-                    TextSpan(
-                      text: '${widget.data.activeBetsCount}',
-                      style: const TextStyle(
-                        color: AppTheme.warningAmber,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const TextSpan(text: ' bets pending'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                _dismiss();
-                if (widget.onNavigateToBets != null) {
-                  widget.onNavigateToBets!();
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryCyan,
-                padding: const EdgeInsets.all(12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  PhosphorIcon(
-                    PhosphorIconsRegular.arrowRight,
-                    color: AppTheme.deepBlue,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'View Active Bets',
-                    style: TextStyle(
-                      color: AppTheme.deepBlue,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      shadows: [], // Explicitly remove shadows
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildDismissButton() {
     return Container(

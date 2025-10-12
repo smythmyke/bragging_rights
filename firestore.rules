@@ -120,6 +120,12 @@ service cloud.firestore {
       allow write: if isOwner(userId);
     }
 
+    // User unlocked Edge Intelligence cards subcollection
+    match /users/{userId}/unlocked_cards/{document=**} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId);
+    }
+
     // User preferences collection
     match /userPreferences/{userId} {
       allow read: if isOwner(userId);
@@ -226,7 +232,8 @@ service cloud.firestore {
     match /transactions/{transactionId} {
       allow read: if isAuthenticated() &&
         (resource.data.fromUserId == request.auth.uid ||
-         resource.data.toUserId == request.auth.uid);
+         resource.data.toUserId == request.auth.uid ||
+         resource.data.userId == request.auth.uid);
       allow create: if isAuthenticated();
       allow update: if false;
       allow delete: if false; // Transactions cannot be deleted
@@ -319,6 +326,34 @@ service cloud.firestore {
       );
 
       // Escrow transactions cannot be deleted
+      allow delete: if false;
+    }
+
+    // Wagers collection
+    match /wagers/{wagerId} {
+      // Users can read their own wagers
+      allow read: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid;
+
+      // Users can create their own wagers
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
+
+      // Users can update their own pending wagers
+      allow update: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid &&
+        resource.data.status == 'pending';
+
+      // Wagers cannot be deleted
+      allow delete: if false;
+    }
+
+    // Daily ad bonuses collection - for tracking ad rewards
+    match /daily_ad_bonuses/{bonusId} {
+      allow read: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated();
+      allow update: if false;
       allow delete: if false;
     }
   }

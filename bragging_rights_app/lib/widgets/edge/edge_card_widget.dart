@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'edge_card_types.dart';
 import '../../screens/premium/edge_detail_screen_v2.dart';
 import '../../theme/app_theme.dart';
@@ -8,6 +9,7 @@ import '../../theme/app_theme.dart';
 class EdgeCardWidget extends StatefulWidget {
   final EdgeCardData cardData;
   final VoidCallback onUnlock;
+  final VoidCallback? onUnlockWithAd;
   final VoidCallback? onTap;
   final bool showAnimation;
 
@@ -15,6 +17,7 @@ class EdgeCardWidget extends StatefulWidget {
     Key? key,
     required this.cardData,
     required this.onUnlock,
+    this.onUnlockWithAd,
     this.onTap,
     this.showAnimation = true,
   }) : super(key: key);
@@ -67,6 +70,222 @@ class _EdgeCardWidgetState extends State<EdgeCardWidget>
     super.dispose();
   }
 
+  void _showUnlockDialog(BuildContext context) {
+    final cost = widget.cardData.calculateDynamicPrice(
+      DateTime.now().add(const Duration(hours: 2)),
+    );
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppTheme.surfaceBlue,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Column(
+            children: [
+              Icon(
+                EdgeCardConfigs.getConfig(widget.cardData.category).icon,
+                color: AppTheme.primaryCyan,
+                size: 48,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Unlock Edge Intelligence',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                widget.cardData.title,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 16,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Choose your unlock method:',
+                style: const TextStyle(
+                  color: Colors.white60,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Option 1: Pay with BR
+              InkWell(
+                onTap: () {
+                  Navigator.pop(context);
+                  widget.onUnlock();
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.deepBlue.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppTheme.primaryCyan.withOpacity(0.5),
+                      width: 2,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryCyan.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          PhosphorIconsRegular.coins,
+                          color: AppTheme.primaryCyan,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Pay with BR',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              '$cost BR',
+                              style: TextStyle(
+                                color: AppTheme.primaryCyan,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        PhosphorIconsRegular.arrowRight,
+                        color: Colors.white54,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Option 2: Watch Ad (if available)
+              if (widget.onUnlockWithAd != null)
+                InkWell(
+                  onTap: () {
+                    Navigator.pop(context);
+                    widget.onUnlockWithAd!();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppTheme.neonGreen.withOpacity(0.3),
+                          AppTheme.neonGreen.withOpacity(0.1),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppTheme.neonGreen,
+                        width: 2,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.neonGreen.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            PhosphorIconsRegular.videoCamera,
+                            color: AppTheme.neonGreen,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Watch Ad',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                'FREE - 30 seconds',
+                                style: TextStyle(
+                                  color: AppTheme.neonGreen,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.neonGreen,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'FREE',
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: Colors.white60),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final config = EdgeCardConfigs.getConfig(widget.cardData.category);
@@ -80,7 +299,8 @@ class _EdgeCardWidgetState extends State<EdgeCardWidget>
         onTapCancel: () => setState(() => _isPressed = false),
         onTap: () {
           if (widget.cardData.isLocked) {
-            widget.onUnlock();
+            // Show unlock dialog with both options
+            _showUnlockDialog(context);
           } else {
             if (!_isExpanded) {
               // First tap: expand to show preview

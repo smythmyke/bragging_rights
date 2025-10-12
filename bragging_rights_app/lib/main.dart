@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:applovin_max/applovin_max.dart';
 import 'firebase_options.dart';
 import 'theme/app_theme.dart';
 import 'services/notification_service.dart';
@@ -105,6 +106,32 @@ void main() async {
     debugPrint('❌ [ADMOB] Stack trace: $stackTrace');
   }
 
+  // Initialize AppLovin MAX for ad mediation
+  debugPrint('🎬 [APPLOVIN] Starting AppLovin MAX initialization...');
+  try {
+    // TODO: Replace with your actual AppLovin SDK key from dashboard
+    // Get your SDK key from: https://dash.applovin.com/o/account
+    final sdkKey = dotenv.env['APPLOVIN_SDK_KEY'] ?? '';
+
+    if (sdkKey.isEmpty) {
+      debugPrint('⚠️ [APPLOVIN] SDK key not found in .env file');
+      debugPrint('⚠️ [APPLOVIN] Add APPLOVIN_SDK_KEY to your .env file');
+      debugPrint('⚠️ [APPLOVIN] Skipping AppLovin MAX initialization');
+    } else {
+      await AppLovinMAX.initialize(sdkKey);
+      debugPrint('✅ [APPLOVIN] AppLovin MAX initialized successfully!');
+      debugPrint('📊 [APPLOVIN] SDK Key: ${sdkKey.substring(0, 8)}...');
+
+      // Enable test mode for development (disable in production!)
+      AppLovinMAX.showMediationDebugger();
+      debugPrint('🔧 [APPLOVIN] Test mode enabled - showing mediation debugger');
+    }
+  } catch (e, stackTrace) {
+    debugPrint('❌ [APPLOVIN] AppLovin MAX initialization FAILED: $e');
+    debugPrint('❌ [APPLOVIN] Stack trace: $stackTrace');
+    debugPrint('⚠️ [APPLOVIN] Will fallback to AdMob only');
+  }
+
   // Don't start pool management here - wait for authentication
   // PoolManagementService().startPoolManagement();
 
@@ -128,7 +155,6 @@ class BraggingRightsApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/sports-selection': (context) => const SportsSelectionScreen(),
         '/home': (context) => const home.HomeScreen(),
-        '/game-detail': (context) => const GameDetailScreen(),
         '/preferences': (context) => const PreferencesSettingsScreen(),
         '/leaderboard': (context) => const LeaderboardScreen(),
         '/invite-friends': (context) => const InviteFriendsScreen(),

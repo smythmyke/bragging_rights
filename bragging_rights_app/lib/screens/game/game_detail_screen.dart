@@ -1,532 +1,130 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
-import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../models/game_model.dart';
 import '../../theme/app_theme.dart';
+import '../watch/watch_live_screen.dart';
 
+/// Live Game Detail Screen
+/// Displays current score, status, and provides quick access to watch the game live
 class GameDetailScreen extends StatefulWidget {
-  const GameDetailScreen({super.key});
+  final String gameId;
+
+  const GameDetailScreen({
+    super.key,
+    required this.gameId,
+  });
 
   @override
   State<GameDetailScreen> createState() => _GameDetailScreenState();
 }
 
-class _GameDetailScreenState extends State<GameDetailScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  Timer? _countdownTimer;
-  Duration _gameStartCountdown = const Duration(hours: 1, minutes: 30);
-  
-  // Wagering
-  String? _selectedTeam;
-  int _wagerAmount = 50;
-  final TextEditingController _customWagerController = TextEditingController();
-  
-  // Community picks - will be populated from real data
-  final double _team1Percentage = 0;
-  double get _team2Percentage => 0;
-
-  // Odds - will be populated from real data
-  final Map<String, double> _odds = {};
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    _startCountdownTimer();
-  }
-
-  void _startCountdownTimer() {
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        setState(() {
-          if (_gameStartCountdown.inSeconds > 0) {
-            _gameStartCountdown = Duration(seconds: _gameStartCountdown.inSeconds - 1);
-          }
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    _countdownTimer?.cancel();
-    _customWagerController.dispose();
-    super.dispose();
-  }
-
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    String hours = twoDigits(duration.inHours);
-    String minutes = twoDigits(duration.inMinutes.remainder(60));
-    String seconds = twoDigits(duration.inSeconds.remainder(60));
-    return '$hours:$minutes:$seconds';
-  }
-
+class _GameDetailScreenState extends State<GameDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.deepBlue,
       appBar: AppBar(
-        title: const Text('Game Details'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Wager'),
-            Tab(text: 'Stats'),
-            Tab(text: 'Chat'),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildWagerTab(),
-          _buildStatsTab(),
-          _buildChatTab(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWagerTab() {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          // Game Header
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                  Colors.white,
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-            child: Column(
-              children: [
-                // Countdown Timer
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: _gameStartCountdown.inMinutes < 30 ? AppTheme.errorPink : AppTheme.neonGreen,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.timer, color: Colors.white, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Game starts in: ${_formatDuration(_gameStartCountdown)}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                // Teams
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceBlue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(Icons.sports, size: 48, color: AppTheme.surfaceBlue.withOpacity(0.5)),
-                      SizedBox(height: 8),
-                      Text(
-                        'Game data loading...',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryCyan.withOpacity(0.5),
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Team information will appear when connected',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.primaryCyan.withOpacity(0.5),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Community Picks
-          _buildCommunityPicks(),
-          
-          // Wager Amount Selection
-          _buildWagerAmountSection(),
-          
-          // Potential Payout
-          if (_selectedTeam != null) _buildPotentialPayout(),
-          
-          // Place Wager Button
-          _buildPlaceWagerButton(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTeamCard(String team, String abbreviation, Color color, double odds) {
-    final isSelected = _selectedTeam == team;
-    
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedTeam = team;
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 140,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.2) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? color : AppTheme.surfaceBlue.withOpacity(0.3),
-            width: isSelected ? 3 : 1,
-          ),
-          boxShadow: [
-            if (isSelected)
-              BoxShadow(
-                color: color.withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-          ],
-        ),
-        child: Column(
-          children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundColor: color,
-              child: Text(
-                abbreviation,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              team,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: isSelected ? color : AppTheme.deepBlue,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceBlue.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                'x${odds.toStringAsFixed(2)}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-            if (isSelected)
-              Icon(Icons.check_circle, color: AppTheme.neonGreen, size: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCommunityPicks() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceBlue.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Icon(Icons.people, color: Colors.grey.shade700),
-              const SizedBox(width: 8),
-              Text(
-                'Community Picks',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade700,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                flex: _team1Percentage.toInt(),
-                child: Container(
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.purple,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(8),
-                      bottomLeft: Radius.circular(8),
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${_team1Percentage.toInt()}%',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: _team2Percentage.toInt(),
-                child: Container(
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.green,
-                    borderRadius: const BorderRadius.only(
-                      topRight: Radius.circular(8),
-                      bottomRight: Radius.circular(8),
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${_team2Percentage.toInt()}%',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '1,234 total wagers',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWagerAmountSection() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Wager Amount',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              _buildWagerChip(10),
-              _buildWagerChip(25),
-              _buildWagerChip(50),
-              _buildWagerChip(100),
-              _buildWagerChip(200),
-              _buildCustomWagerChip(),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWagerChip(int amount) {
-    final isSelected = _wagerAmount == amount;
-    final canAfford = amount <= 500; // Current balance
-    
-    return GestureDetector(
-      onTap: canAfford
-          ? () {
-              setState(() {
-                _wagerAmount = amount;
-              });
-            }
-          : null,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Theme.of(context).colorScheme.primary
-              : canAfford
-                  ? Colors.white
-                  : Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected
-                ? Theme.of(context).colorScheme.primary
-                : canAfford
-                    ? Colors.grey.shade400
-                    : Colors.grey,
-            width: 2,
-          ),
-        ),
-        child: Text(
-          '$amount BR',
+        backgroundColor: AppTheme.surfaceBlue,
+        title: const Text(
+          'Live Game',
           style: TextStyle(
-            color: isSelected
-                ? Colors.white
-                : canAfford
-                    ? Colors.black
-                    : Colors.grey,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
         ),
+        centerTitle: true,
       ),
-    );
-  }
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('games')
+            .doc(widget.gameId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(
+                color: AppTheme.primaryCyan,
+              ),
+            );
+          }
 
-  Widget _buildCustomWagerChip() {
-    return Container(
-      width: 100,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade400, width: 2),
-      ),
-      child: TextField(
-        controller: _customWagerController,
-        keyboardType: TextInputType.number,
-        decoration: const InputDecoration(
-          hintText: 'Custom',
-          border: InputBorder.none,
-          isDense: true,
-          contentPadding: EdgeInsets.symmetric(vertical: 12),
-        ),
-        onChanged: (value) {
-          setState(() {
-            _wagerAmount = int.tryParse(value) ?? 0;
-          });
+          if (snapshot.hasError || !snapshot.hasData || !snapshot.data!.exists) {
+            return _buildErrorState();
+          }
+
+          final game = GameModel.fromMap(snapshot.data!.data() as Map<String, dynamic>);
+          return _buildLiveGameContent(game);
         },
       ),
     );
   }
 
-  Widget _buildPotentialPayout() {
-    final odds = _odds[_selectedTeam] ?? 1.0;
-    final payout = (_wagerAmount * odds).toInt();
-    final profit = payout - _wagerAmount;
-    
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.green),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildLiveGameContent(GameModel game) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Potential Payout',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text(
-                'Profit: +$profit BR',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-              ),
-            ],
-          ),
-          Text(
-            '$payout BR',
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.green,
-            ),
-          ),
+          // Live Status Badge
+          _buildLiveStatusBadge(game),
+          const SizedBox(height: 30),
+
+          // Team Scores
+          _buildTeamScores(game),
+          const SizedBox(height: 30),
+
+          // Game Info
+          _buildGameInfo(game),
+          const SizedBox(height: 30),
+
+          // Watch Live Button
+          _buildWatchLiveButton(game),
         ],
       ),
     );
   }
 
-  Widget _buildPlaceWagerButton() {
-    final canPlaceWager = _selectedTeam != null && _wagerAmount > 0 && _wagerAmount <= 500;
-    
-    return Container(
-      margin: const EdgeInsets.all(16),
-      width: double.infinity,
-      height: 56,
-      child: ElevatedButton(
-        onPressed: canPlaceWager ? _placeWager : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        child: Text(
-          canPlaceWager ? 'Place Wager ($_wagerAmount BR)' : 'Select Team & Amount',
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-      ),
-    );
-  }
+  Widget _buildLiveStatusBadge(GameModel game) {
+    final isLive = _isGameLive(game);
+    final statusText = _getStatusText(game);
 
-  Widget _buildStatsTab() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isLive
+              ? [Colors.red, Colors.red.shade700]
+              : [Colors.orange, Colors.orange.shade700],
+        ),
+        borderRadius: BorderRadius.circular(25),
+        boxShadow: [
+          BoxShadow(
+            color: (isLive ? Colors.red : Colors.orange).withOpacity(0.4),
+            blurRadius: 15,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.analytics, size: 64, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          const Text(
-            'No stats available',
-            style: TextStyle(
+          if (isLive)
+            Container(
+              width: 12,
+              height: 12,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+            ),
+          if (isLive) const SizedBox(width: 10),
+          Text(
+            statusText,
+            style: const TextStyle(
+              color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.grey,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Game statistics will appear when data is available',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
             ),
           ),
         ],
@@ -534,163 +132,231 @@ class _GameDetailScreenState extends State<GameDetailScreen> with SingleTickerPr
     );
   }
 
-  Widget _buildStatCard(String title, List<Widget> stats) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const Divider(),
-            ...stats,
-          ],
+  Widget _buildTeamScores(GameModel game) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppTheme.surfaceBlue, AppTheme.cardBlue],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppTheme.primaryCyan.withOpacity(0.3),
+          width: 2,
         ),
       ),
-    );
-  }
-
-  Widget _buildStatRow(String label1, String label2, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
         children: [
-          Text(label1, style: TextStyle(color: Colors.grey.shade600)),
-          Text(label2),
+          // Home Team
+          _buildTeamRow(
+            teamName: game.homeTeam,
+            score: game.homeScore,
+            logoUrl: game.homeTeamLogo,
+            isHome: true,
+          ),
+
+          const SizedBox(height: 20),
+
+          // VS Divider
           Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            'VS',
+            style: TextStyle(
+              color: AppTheme.primaryCyan.withOpacity(0.5),
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Away Team
+          _buildTeamRow(
+            teamName: game.awayTeam,
+            score: game.awayScore,
+            logoUrl: game.awayTeamLogo,
+            isHome: false,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildChatTab() {
-    return Column(
+  Widget _buildTeamRow({
+    required String teamName,
+    int? score,
+    String? logoUrl,
+    required bool isHome,
+  }) {
+    return Row(
       children: [
-        Expanded(
-          child: ListView(
-            reverse: true,
-            padding: const EdgeInsets.all(16),
-            children: [
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: Column(
-                    children: [
-                      Icon(Icons.chat_bubble_outline, size: 48, color: Colors.grey[400]),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No messages yet',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Be the first to start the conversation!',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                    ],
-                  ),
+        // Team Logo
+        if (logoUrl != null)
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-              ),
-            ].reversed.toList(),
+              ],
+            ),
+            padding: const EdgeInsets.all(8),
+            child: Image.network(
+              logoUrl,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(
+                  PhosphorIconsRegular.shieldStar,
+                  color: AppTheme.primaryCyan,
+                  size: 40,
+                );
+              },
+            ),
+          )
+        else
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryCyan.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              PhosphorIconsRegular.shieldStar,
+              color: AppTheme.primaryCyan,
+              size: 40,
+            ),
+          ),
+
+        const SizedBox(width: 16),
+
+        // Team Name
+        Expanded(
+          child: Text(
+            teamName,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.2),
-                blurRadius: 4,
-                offset: const Offset(0, -2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.emoji_emotions),
-                onPressed: () {},
-              ),
-              Expanded(
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Type a message...',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey.shade100,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: Icon(Icons.send, color: Theme.of(context).colorScheme.primary),
-                onPressed: () {},
-              ),
-            ],
+
+        const SizedBox(width: 16),
+
+        // Score
+        Text(
+          score?.toString() ?? '-',
+          style: const TextStyle(
+            color: AppTheme.neonGreen,
+            fontSize: 36,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildChatMessage(String sender, String message, bool isMe, {bool isSystem = false}) {
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSystem
-              ? Colors.grey.shade200
-              : isMe
-                  ? Theme.of(context).colorScheme.primary
-                  : Colors.grey,
-          borderRadius: BorderRadius.circular(16),
+  Widget _buildGameInfo(GameModel game) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceBlue,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppTheme.primaryCyan.withOpacity(0.2),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      ),
+      child: Column(
+        children: [
+          // Venue
+          if (game.venue != null)
+            _buildInfoRow(
+              icon: PhosphorIconsRegular.mapPin,
+              label: game.venue!,
+            ),
+
+          if (game.venue != null && game.broadcast != null)
+            const SizedBox(height: 12),
+
+          // Broadcast
+          if (game.broadcast != null)
+            _buildInfoRow(
+              icon: PhosphorIconsRegular.television,
+              label: game.broadcast!,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow({required IconData icon, required String label}) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          color: AppTheme.primaryCyan,
+          size: 20,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWatchLiveButton(GameModel game) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const WatchLiveScreen(),
+            ),
+          );
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppTheme.neonGreen,
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          elevation: 8,
+          shadowColor: AppTheme.neonGreen.withOpacity(0.5),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (!isSystem)
-              Text(
-                sender,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                  color: isMe ? Colors.white70 : Colors.grey.shade700,
-                ),
-              ),
-            Text(
-              message,
+            Icon(
+              PhosphorIconsFill.playCircle,
+              color: AppTheme.deepBlue,
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'WATCH LIVE NOW',
               style: TextStyle(
-                color: isSystem
-                    ? Colors.grey.shade700
-                    : isMe
-                        ? Colors.white
-                        : Colors.black87,
+                color: AppTheme.deepBlue,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1,
               ),
             ),
           ],
@@ -699,34 +365,89 @@ class _GameDetailScreenState extends State<GameDetailScreen> with SingleTickerPr
     );
   }
 
-  void _placeWager() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Wager Placed!'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.check_circle, color: Colors.green, size: 64),
-            const SizedBox(height: 16),
-            Text('You wagered $_wagerAmount BR on $_selectedTeam'),
-            const SizedBox(height: 8),
+            Icon(
+              PhosphorIconsRegular.warningCircle,
+              size: 80,
+              color: AppTheme.errorPink,
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Game Not Found',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
             Text(
-              'Good luck!',
-              style: TextStyle(color: Colors.grey.shade600),
+              'Unable to load game information',
+              style: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 16,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryCyan,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Go Back',
+                style: TextStyle(
+                  color: AppTheme.deepBlue,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: const Text('OK'),
-          ),
-        ],
       ),
     );
+  }
+
+  /// Check if game is currently live
+  bool _isGameLive(GameModel game) {
+    final status = game.status.toLowerCase();
+    return status == 'in_progress' ||
+           status == 'live' ||
+           status == 'active' ||
+           status.contains('quarter') ||
+           status.contains('half') ||
+           status.contains('period') ||
+           status.contains('inning');
+  }
+
+  /// Get status text for display
+  String _getStatusText(GameModel game) {
+    if (_isGameLive(game)) {
+      // Show period/quarter info if available
+      if (game.period != null && game.timeRemaining != null) {
+        return '🔴 LIVE - ${game.period} ${game.timeRemaining}';
+      } else if (game.period != null) {
+        return '🔴 LIVE - ${game.period}';
+      }
+      return '🔴 LIVE';
+    } else if (game.status.toLowerCase() == 'final') {
+      return 'FINAL';
+    }
+    return game.status.toUpperCase();
   }
 }

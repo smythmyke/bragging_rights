@@ -7,6 +7,7 @@ import '../../widgets/edge/edge_card_types.dart';
 import '../../widgets/edge/sport_card_generator.dart';
 import '../../services/edge/edge_intelligence_service.dart';
 import '../../services/wallet_service.dart';
+import '../../services/ad_reward_service.dart';
 import '../../widgets/loading_video_overlay.dart';
 import 'edge_detail_screen_v2.dart';
 import '../../models/intel_card_model.dart';
@@ -41,6 +42,7 @@ class _EdgeScreenV2State extends State<EdgeScreenV2> with TickerProviderStateMix
   // Services
   final EdgeIntelligenceService _intelligenceService = EdgeIntelligenceService();
   final WalletService _walletService = WalletService();
+  final AdRewardService _adService = AdRewardService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final InjuryService _injuryService = InjuryService();
   final IntelCardService _intelCardService = IntelCardService();
@@ -65,6 +67,7 @@ class _EdgeScreenV2State extends State<EdgeScreenV2> with TickerProviderStateMix
   void initState() {
     super.initState();
     _loadData();
+    _adService.loadRewardedAd(); // Preload ad for unlock option
   }
   
   Future<void> _loadData() async {
@@ -513,15 +516,6 @@ class _EdgeScreenV2State extends State<EdgeScreenV2> with TickerProviderStateMix
         }
       });
 
-      // Show success
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('✅ Unlocked ${card.title} for ${card.currentCost} BR'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
-
       // Log analytics (separate collection for analytics)
       await FirebaseFirestore.instance.collection('edge_unlocks').add({
         'userId': user.uid,
@@ -536,6 +530,113 @@ class _EdgeScreenV2State extends State<EdgeScreenV2> with TickerProviderStateMix
       });
     } catch (e) {
       debugPrint('Error unlocking card: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to unlock card. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _unlockCardWithAd(EdgeCardData card) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please sign in to unlock cards'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Check if ad is ready
+    if (!_adService.isAdReady()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ad is loading... Please try again in a moment'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      _adService.loadRewardedAd(); // Try loading again
+      return;
+    }
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: Colors.purple),
+      ),
+    );
+
+    try {
+      // Show ad (but don't award BR - just use it as unlock mechanism)
+      final result = await _adService.showRewardedAd(user.uid);
+
+      // Close loading dialog
+      if (mounted) Navigator.of(context).pop();
+
+      if (!result.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Save unlock to Firestore for persistence
+      final gameId = widget.gameId ?? widget.eventId ?? '';
+      if (gameId.isNotEmpty) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('unlocked_cards')
+            .doc('${gameId}_${card.category.name}')
+            .set({
+          'gameId': gameId,
+          'cardId': card.id,
+          'category': card.category.name,
+          'rarity': card.rarity.name,
+          'cost': 0, // Free via ad
+          'unlockMethod': 'ad_watch',
+          'sport': widget.sport,
+          'gameTitle': widget.gameTitle,
+          'unlockedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      // Update state
+      setState(() {
+        _unlockedCardIds.add(card.id);
+
+        // Update card's lock status
+        final index = _cards.indexWhere((c) => c.id == card.id);
+        if (index != -1) {
+          _cards[index] = card.copyWithLockStatus(false);
+        }
+      });
+
+      // Log analytics
+      await FirebaseFirestore.instance.collection('edge_unlocks').add({
+        'userId': user.uid,
+        'cardId': card.id,
+        'category': card.category.name,
+        'rarity': card.rarity.name,
+        'cost': 0,
+        'unlockMethod': 'ad_watch',
+        'sport': widget.sport,
+        'gameTitle': widget.gameTitle,
+        'gameId': gameId,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint('Error unlocking card with ad: $e');
+      if (mounted) Navigator.of(context).pop(); // Close loading if still open
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to unlock card. Please try again.'),
@@ -988,6 +1089,7 @@ class _EdgeScreenV2State extends State<EdgeScreenV2> with TickerProviderStateMix
                             return card;
                           }).toList(),
                           onCardUnlock: _unlockCard,
+                          onCardUnlockWithAd: _unlockCardWithAd,
                           onCardTap: (card) {
                             if (!card.isLocked) {
                               // Show detailed view for unlocked cards

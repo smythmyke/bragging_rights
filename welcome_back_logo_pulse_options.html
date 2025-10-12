@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome Back - BR Logo Pulse Animations</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0A0E27 0%, #1A1F3A 100%);
+            color: white;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #00d9ff;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #999;
+            margin-bottom: 40px;
+            font-size: 14px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .config {
+            background: linear-gradient(180deg, #1E2949 0%, #151B35 100%);
+            border: 2px solid rgba(0, 217, 255, 0.3);
+            border-radius: 20px;
+            padding: 0;
+            box-shadow: 0 8px 32px rgba(0, 217, 255, 0.15);
+            overflow: hidden;
+        }
+
+        .config-label {
+            background: rgba(0, 217, 255, 0.1);
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(0, 217, 255, 0.2);
+            font-weight: 600;
+            color: #00d9ff;
+            font-size: 16px;
+        }
+
+        .config-content {
+            padding: 30px 20px;
+            position: relative;
+        }
+
+        /* Logo Styles */
+        .br-logo-large {
+            width: 120px;
+            height: 120px;
+        }
+
+        /* Welcome Back Card Styles */
+        .welcome-card {
+            background: linear-gradient(180deg, #1E2949 0%, #151B35 100%);
+            border: 2px solid #00d9ff;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(0, 217, 255, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .header-vertical {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .header-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00d9ff;
+        }
+
+        .header-subtitle {
+            color: #999;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        /* Stats Section */
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 217, 255, 0.2);
+        }
+
+        .stat-label {
+            color: #999;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        /* Button */
+        .btn-primary {
+            background: #00ff88;
+            color: #0A0E27;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        /* PULSE ANIMATIONS */
+
+        /* Pulse 1: Subtle Glow Pulse (Soft) */
+        @keyframes pulse-glow-subtle {
+            0%, 100% {
+                filter: drop-shadow(0 0 20px rgba(0, 217, 255, 0.6));
+            }
+            50% {
+                filter: drop-shadow(0 0 40px rgba(0, 217, 255, 0.9));
+            }
+        }
+
+        .logo-pulse-subtle {
+            animation: pulse-glow-subtle 3s ease-in-out infinite;
+        }
+
+        /* Pulse 2: Medium Glow Pulse */
+        @keyframes pulse-glow-medium {
+            0%, 100% {
+                filter: drop-shadow(0 0 20px rgba(0, 217, 255, 0.6));
+            }
+            50% {
+                filter: drop-shadow(0 0 50px rgba(0, 217, 255, 1));
+            }
+        }
+
+        .logo-pulse-medium {
+            animation: pulse-glow-medium 2.5s ease-in-out infinite;
+        }
+
+        /* Pulse 3: Strong Glow Pulse */
+        @keyframes pulse-glow-strong {
+            0%, 100% {
+                filter: drop-shadow(0 0 25px rgba(0, 217, 255, 0.7));
+            }
+            50% {
+                filter: drop-shadow(0 0 60px rgba(0, 217, 255, 1));
+            }
+        }
+
+        .logo-pulse-strong {
+            animation: pulse-glow-strong 2s ease-in-out infinite;
+        }
+
+        /* Pulse 4: Scale + Glow Pulse */
+        @keyframes pulse-scale-glow {
+            0%, 100% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 20px rgba(0, 217, 255, 0.6));
+            }
+            50% {
+                transform: scale(1.05);
+                filter: drop-shadow(0 0 45px rgba(0, 217, 255, 0.95));
+            }
+        }
+
+        .logo-pulse-scale {
+            animation: pulse-scale-glow 2.5s ease-in-out infinite;
+        }
+
+        /* Pulse 5: Heartbeat (Two Beats) */
+        @keyframes pulse-heartbeat {
+            0%, 100% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 20px rgba(0, 217, 255, 0.6));
+            }
+            10% {
+                transform: scale(1.08);
+                filter: drop-shadow(0 0 50px rgba(0, 217, 255, 1));
+            }
+            20% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 20px rgba(0, 217, 255, 0.6));
+            }
+            30% {
+                transform: scale(1.08);
+                filter: drop-shadow(0 0 50px rgba(0, 217, 255, 1));
+            }
+            40%, 90% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 20px rgba(0, 217, 255, 0.6));
+            }
+        }
+
+        .logo-pulse-heartbeat {
+            animation: pulse-heartbeat 3s ease-in-out infinite;
+        }
+
+        /* Pulse 6: Breathing Effect */
+        @keyframes pulse-breathing {
+            0%, 100% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 15px rgba(0, 217, 255, 0.5));
+            }
+            50% {
+                transform: scale(1.08);
+                filter: drop-shadow(0 0 50px rgba(0, 217, 255, 1));
+            }
+        }
+
+        .logo-pulse-breathing {
+            animation: pulse-breathing 4s ease-in-out infinite;
+        }
+
+        /* Pulse 7: Fast Pulse (Energetic) */
+        @keyframes pulse-fast {
+            0%, 100% {
+                filter: drop-shadow(0 0 20px rgba(0, 217, 255, 0.6));
+            }
+            50% {
+                filter: drop-shadow(0 0 45px rgba(0, 217, 255, 1));
+            }
+        }
+
+        .logo-pulse-fast {
+            animation: pulse-fast 1.5s ease-in-out infinite;
+        }
+
+        /* Pulse 8: Double Color Pulse (Cyan to Gold) */
+        @keyframes pulse-double-color {
+            0%, 100% {
+                filter: drop-shadow(0 0 25px rgba(0, 217, 255, 0.8));
+            }
+            50% {
+                filter: drop-shadow(0 0 45px rgba(244, 197, 66, 0.9));
+            }
+        }
+
+        .logo-pulse-double {
+            animation: pulse-double-color 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <h1>✨ BR Logo Pulse Animation Options</h1>
+    <p class="subtitle">Choose your preferred pulsing effect for the Welcome Back page</p>
+
+    <div class="grid">
+        <!-- Pulse 1: Subtle -->
+        <div class="config">
+            <div class="config-label">Pulse 1: Subtle Glow (Soft & Slow - 3s)</div>
+            <div class="config-content">
+                <div class="welcome-card">
+                    <div class="header header-vertical">
+                        <svg class="br-logo-large logo-pulse-subtle" width="120" height="120" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="bgGradient1" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#0A0E27;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#1A1F3A;stop-opacity:1" />
+                                </linearGradient>
+                                <linearGradient id="goldGradient1" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#f4c542;stop-opacity:1" />
+                                    <stop offset="50%" style="stop-color:#d4a02c;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#b8861b;stop-opacity:1" />
+                                </linearGradient>
+                                <filter id="shadow1">
+                                    <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#000000" flood-opacity="0.5"/>
+                                </filter>
+                            </defs>
+                            <rect width="1024" height="1024" rx="180" fill="url(#bgGradient1)"/>
+                            <text x="340" y="680" font-family="Georgia, serif" font-size="520" font-weight="900" fill="url(#goldGradient1)" stroke="#0A0E27" stroke-width="12" text-anchor="middle" filter="url(#shadow1)">B</text>
+                            <text x="684" y="680" font-family="Georgia, serif" font-size="520" font-weight="900" fill="#ffffff" stroke="#0A0E27" stroke-width="12" text-anchor="middle" filter="url(#shadow1)">R</text>
+                            <rect x="156" y="720" width="712" height="12" rx="6" fill="url(#goldGradient1)" opacity="0.9"/>
+                        </svg>
+                        <div>
+                            <div class="header-title">Welcome Back!</div>
+                            <div class="header-subtitle">Last seen: 2 days ago</div>
+                        </div>
+                    </div>
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-label">Record</div>
+                            <div class="stat-value">45-12 (79%)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Streak</div>
+                            <div class="stat-value">🔥 7 wins</div>
+                        </div>
+                    </div>
+                    <button class="btn-primary">Got It, Let's Go! 🚀</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pulse 2: Medium -->
+        <div class="config">
+            <div class="config-label">Pulse 2: Medium Glow (Balanced - 2.5s) ⭐ RECOMMENDED</div>
+            <div class="config-content">
+                <div class="welcome-card">
+                    <div class="header header-vertical">
+                        <svg class="br-logo-large logo-pulse-medium" width="120" height="120" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="bgGradient2" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#0A0E27;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#1A1F3A;stop-opacity:1" />
+                                </linearGradient>
+                                <linearGradient id="goldGradient2" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#f4c542;stop-opacity:1" />
+                                    <stop offset="50%" style="stop-color:#d4a02c;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#b8861b;stop-opacity:1" />
+                                </linearGradient>
+                                <filter id="shadow2">
+                                    <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#000000" flood-opacity="0.5"/>
+                                </filter>
+                            </defs>
+                            <rect width="1024" height="1024" rx="180" fill="url(#bgGradient2)"/>
+                            <text x="340" y="680" font-family="Georgia, serif" font-size="520" font-weight="900" fill="url(#goldGradient2)" stroke="#0A0E27" stroke-width="12" text-anchor="middle" filter="url(#shadow2)">B</text>
+                            <text x="684" y="680" font-family="Georgia, serif" font-size="520" font-weight="900" fill="#ffffff" stroke="#0A0E27" stroke-width="12" text-anchor="middle" filter="url(#shadow2)">R</text>
+                            <rect x="156" y="720" width="712" height="12" rx="6" fill="url(#goldGradient2)" opacity="0.9"/>
+                        </svg>
+                        <div>
+                            <div class="header-title">Welcome Back!</div>
+                            <div class="header-subtitle">Last seen: 2 days ago</div>
+                        </div>
+                    </div>
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-label">Record</div>
+                            <div class="stat-value">45-12 (79%)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Streak</div>
+                            <div class="stat-value">🔥 7 wins</div>
+                        </div>
+                    </div>
+                    <button class="btn-primary">Got It, Let's Go! 🚀</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pulse 3: Strong -->
+        <div class="config">
+            <div class="config-label">Pulse 3: Strong Glow (Bold - 2s)</div>
+            <div class="config-content">
+                <div class="welcome-card">
+                    <div class="header header-vertical">
+                        <svg class="br-logo-large logo-pulse-strong" width="120" height="120" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="bgGradient3" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#0A0E27;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#1A1F3A;stop-opacity:1" />
+                                </linearGradient>
+                                <linearGradient id="goldGradient3" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#f4c542;stop-opacity:1" />
+                                    <stop offset="50%" style="stop-color:#d4a02c;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#b8861b;stop-opacity:1" />
+                                </linearGradient>
+                                <filter id="shadow3">
+                                    <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#000000" flood-opacity="0.5"/>
+                                </filter>
+                            </defs>
+                            <rect width="1024" height="1024" rx="180" fill="url(#bgGradient3)"/>
+                            <text x="340" y="680" font-family="Georgia, serif" font-size="520" font-weight="900" fill="url(#goldGradient3)" stroke="#0A0E27" stroke-width="12" text-anchor="middle" filter="url(#shadow3)">B</text>
+                            <text x="684" y="680" font-family="Georgia, serif" font-size="520" font-weight="900" fill="#ffffff" stroke="#0A0E27" stroke-width="12" text-anchor="middle" filter="url(#shadow3)">R</text>
+                            <rect x="156" y="720" width="712" height="12" rx="6" fill="url(#goldGradient3)" opacity="0.9"/>
+                        </svg>
+                        <div>
+                            <div class="header-title">Welcome Back!</div>
+                            <div class="header-subtitle">Last seen: 2 days ago</div>
+                        </div>
+                    </div>
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-label">Record</div>
+                            <div class="stat-value">45-12 (79%)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Streak</div>
+                            <div class="stat-value">🔥 7 wins</div>
+                        </div>
+                    </div>
+                    <button class="btn-primary">Got It, Let's Go! 🚀</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pulse 4: Scale + Glow -->
+        <div class="config">
+            <div class="config-label">Pulse 4: Scale + Glow (Dynamic - 2.5s)</div>
+            <div class="config-content">
+                <div class="welcome-card">
+                    <div class="header header-vertical">
+                        <svg class="br-logo-large logo-pulse-scale" width="120" height="120" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="bgGradient4" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#0A0E27;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#1A1F3A;stop-opacity:1" />
+                                </linearGradient>
+                                <linearGradient id="goldGradient4" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#f4c542;stop-opacity:1" />
+                                    <stop offset="50%" style="stop-color:#d4a02c;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#b8861b;stop-opacity:1" />
+                                </linearGradient>
+                                <filter id="shadow4">
+                                    <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#000000" flood-opacity="0.5"/>
+                                </filter>
+                            </defs>
+                            <rect width="1024" height="1024" rx="180" fill="url(#bgGradient4)"/>
+                            <text x="340" y="680" font-family="Georgia, serif" font-size="520" font-weight="900" fill="url(#goldGradient4)" stroke="#0A0E27" stroke-width="12" text-anchor="middle" filter="url(#shadow4)">B</text>
+                            <text x="684" y="680" font-family="Georgia, serif" font-size="520" font-weight="900" fill="#ffffff" stroke="#0A0E27" stroke-width="12" text-anchor="middle" filter="url(#shadow4)">R</text>
+                            <rect x="156" y="720" width="712" height="12" rx="6" fill="url(#goldGradient4)" opacity="0.9"/>
+                        </svg>
+                        <div>
+                            <div class="header-title">Welcome Back!</div>
+                            <div class="header-subtitle">Last seen: 2 days ago</div>
+                        </div>
+                    </div>
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-label">Record</div>
+                            <div class="stat-value">45-12 (79%)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Streak</div>
+                            <div class="stat-value">🔥 7 wins</div>
+                        </div>
+                    </div>
+                    <button class="btn-primary">Got It, Let's Go! 🚀</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pulse 5: Heartbeat -->
+        <div class="config">
+            <div class="config-label">Pulse 5: Heartbeat (Two Beats - 3s)</div>
+            <div class="config-content">
+                <div class="welcome-card">
+                    <div class="header header-vertical">
+                        <svg class="br-logo-large logo-pulse-heartbeat" width="120" height="120" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="bgGradient5" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#0A0E27;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#1A1F3A;stop-opacity:1" />
+                                </linearGradient>
+                                <linearGradient id="goldGradient5" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#f4c542;stop-opacity:1" />
+                                    <stop offset="50%" style="stop-color:#d4a02c;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#b8861b;stop-opacity:1" />
+                                </linearGradient>
+                                <filter id="shadow5">
+                                    <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#000000" flood-opacity="0.5"/>
+                                </filter>
+                            </defs>
+                            <rect width="1024" height="1024" rx="180" fill="url(#bgGradient5)"/>
+                            <text x="340" y="680" font-family="Georgia, serif" font-size="520" font-weight="900" fill="url(#goldGradient5)" stroke="#0A0E27" stroke-width="12" text-anchor="middle" filter="url(#shadow5)">B</text>
+                            <text x="684" y="680" font-family="Georgia, serif" font-size="520" font-weight="900" fill="#ffffff" stroke="#0A0E27" stroke-width="12" text-anchor="middle" filter="url(#shadow5)">R</text>
+                            <rect x="156" y="720" width="712" height="12" rx="6" fill="url(#goldGradient5)" opacity="0.9"/>
+                        </svg>
+                        <div>
+                            <div class="header-title">Welcome Back!</div>
+                            <div class="header-subtitle">Last seen: 2 days ago</div>
+                        </div>
+                    </div>
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-label">Record</div>
+                            <div class="stat-value">45-12 (79%)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Streak</div>
+                            <div class="stat-value">🔥 7 wins</div>
+                        </div>
+                    </div>
+                    <button class="btn-primary">Got It, Let's Go! 🚀</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pulse 6: Breathing -->
+        <div class="config">
+            <div class="config-label">Pulse 6: Breathing Effect (Slow & Organic - 4s)</div>
+            <div class="config-content">
+                <div class="welcome-card">
+                    <div class="header header-vertical">
+                        <svg class="br-logo-large logo-pulse-breathing" width="120" height="120" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="bgGradient6" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#0A0E27;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#1A1F3A;stop-opacity:1" />
+                                </linearGradient>
+                                <linearGradient id="goldGradient6" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#f4c542;stop-opacity:1" />
+                                    <stop offset="50%" style="stop-color:#d4a02c;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#b8861b;stop-opacity:1" />
+                                </linearGradient>
+                                <filter id="shadow6">
+                                    <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#000000" flood-opacity="0.5"/>
+                                </filter>
+                            </defs>
+                            <rect width="1024" height="1024" rx="180" fill="url(#bgGradient6)"/>
+                            <text x="340" y="680" font-family="Georgia, serif" font-size="520" font-weight="900" fill="url(#goldGradient6)" stroke="#0A0E27" stroke-width="12" text-anchor="middle" filter="url(#shadow6)">B</text>
+                            <text x="684" y="680" font-family="Georgia, serif" font-size="520" font-weight="900" fill="#ffffff" stroke="#0A0E27" stroke-width="12" text-anchor="middle" filter="url(#shadow6)">R</text>
+                            <rect x="156" y="720" width="712" height="12" rx="6" fill="url(#goldGradient6)" opacity="0.9"/>
+                        </svg>
+                        <div>
+                            <div class="header-title">Welcome Back!</div>
+                            <div class="header-subtitle">Last seen: 2 days ago</div>
+                        </div>
+                    </div>
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-label">Record</div>
+                            <div class="stat-value">45-12 (79%)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Streak</div>
+                            <div class="stat-value">🔥 7 wins</div>
+                        </div>
+                    </div>
+                    <button class="btn-primary">Got It, Let's Go! 🚀</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pulse 7: Fast -->
+        <div class="config">
+            <div class="config-label">Pulse 7: Fast Pulse (Energetic - 1.5s)</div>
+            <div class="config-content">
+                <div class="welcome-card">
+                    <div class="header header-vertical">
+                        <svg class="br-logo-large logo-pulse-fast" width="120" height="120" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="bgGradient7" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#0A0E27;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#1A1F3A;stop-opacity:1" />
+                                </linearGradient>
+                                <linearGradient id="goldGradient7" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#f4c542;stop-opacity:1" />
+                                    <stop offset="50%" style="stop-color:#d4a02c;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#b8861b;stop-opacity:1" />
+                                </linearGradient>
+                                <filter id="shadow7">
+                                    <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#000000" flood-opacity="0.5"/>
+                                </filter>
+                            </defs>
+                            <rect width="1024" height="1024" rx="180" fill="url(#bgGradient7)"/>
+                            <text x="340" y="680" font-family="Georgia, serif" font-size="520" font-weight="900" fill="url(#goldGradient7)" stroke="#0A0E27" stroke-width="12" text-anchor="middle" filter="url(#shadow7)">B</text>
+                            <text x="684" y="680" font-family="Georgia, serif" font-size="520" font-weight="900" fill="#ffffff" stroke="#0A0E27" stroke-width="12" text-anchor="middle" filter="url(#shadow7)">R</text>
+                            <rect x="156" y="720" width="712" height="12" rx="6" fill="url(#goldGradient7)" opacity="0.9"/>
+                        </svg>
+                        <div>
+                            <div class="header-title">Welcome Back!</div>
+                            <div class="header-subtitle">Last seen: 2 days ago</div>
+                        </div>
+                    </div>
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-label">Record</div>
+                            <div class="stat-value">45-12 (79%)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Streak</div>
+                            <div class="stat-value">🔥 7 wins</div>
+                        </div>
+                    </div>
+                    <button class="btn-primary">Got It, Let's Go! 🚀</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pulse 8: Double Color -->
+        <div class="config">
+            <div class="config-label">Pulse 8: Double Color (Cyan ↔ Gold - 3s)</div>
+            <div class="config-content">
+                <div class="welcome-card">
+                    <div class="header header-vertical">
+                        <svg class="br-logo-large logo-pulse-double" width="120" height="120" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="bgGradient8" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#0A0E27;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#1A1F3A;stop-opacity:1" />
+                                </linearGradient>
+                                <linearGradient id="goldGradient8" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#f4c542;stop-opacity:1" />
+                                    <stop offset="50%" style="stop-color:#d4a02c;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#b8861b;stop-opacity:1" />
+                                </linearGradient>
+                                <filter id="shadow8">
+                                    <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#000000" flood-opacity="0.5"/>
+                                </filter>
+                            </defs>
+                            <rect width="1024" height="1024" rx="180" fill="url(#bgGradient8)"/>
+                            <text x="340" y="680" font-family="Georgia, serif" font-size="520" font-weight="900" fill="url(#goldGradient8)" stroke="#0A0E27" stroke-width="12" text-anchor="middle" filter="url(#shadow8)">B</text>
+                            <text x="684" y="680" font-family="Georgia, serif" font-size="520" font-weight="900" fill="#ffffff" stroke="#0A0E27" stroke-width="12" text-anchor="middle" filter="url(#shadow8)">R</text>
+                            <rect x="156" y="720" width="712" height="12" rx="6" fill="url(#goldGradient8)" opacity="0.9"/>
+                        </svg>
+                        <div>
+                            <div class="header-title">Welcome Back!</div>
+                            <div class="header-subtitle">Last seen: 2 days ago</div>
+                        </div>
+                    </div>
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-label">Record</div>
+                            <div class="stat-value">45-12 (79%)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Streak</div>
+                            <div class="stat-value">🔥 7 wins</div>
+                        </div>
+                    </div>
+                    <button class="btn-primary">Got It, Let's Go! 🚀</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 60px; color: #999; font-size: 14px;">
+        <p>💡 Recommendations:</p>
+        <p style="margin-top: 10px;">
+            <strong style="color: #00d9ff;">Best Options:</strong><br>
+            <strong>#2 Medium Glow</strong> - Perfect balance (most versatile)<br>
+            <strong>#4 Scale + Glow</strong> - Dynamic and eye-catching<br>
+            <strong>#6 Breathing</strong> - Organic and calming
+        </p>
+    </div>
+</body>
+</html>

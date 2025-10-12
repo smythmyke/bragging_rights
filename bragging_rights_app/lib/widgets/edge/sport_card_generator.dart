@@ -181,52 +181,90 @@ class SportCardGenerator {
   static List<EdgeCardData> _generateMlbCards(EdgeIntelligence intelligence) {
     final cards = <EdgeCardData>[];
     final data = intelligence.data;
-    
+
     // Starting pitcher matchup
-    if (data['pitchers'] != null) {
-      final pitchers = data['pitchers'] as Map<String, dynamic>;
-      cards.add(EdgeCardData(
-        id: 'mlb_pitcher_${DateTime.now().millisecondsSinceEpoch}',
-        category: EdgeCardCategory.matchup,
-        title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.matchup, intelligence.homeTeam.split(' ').last),
-        teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.matchup),
-        fullContent: 'Home: ${pitchers['home']} (${pitchers['homeERA']} ERA)\n'
-            'Away: ${pitchers['away']} (${pitchers['awayERA']} ERA)\n'
-            'H2H History: ${pitchers['h2h'] ?? 'No previous matchups'}\n'
-            'Recent Form: ${pitchers['recentForm'] ?? 'N/A'}',
-        metadata: pitchers,
-        timestamp: DateTime.now(),
-        rarity: EdgeCardRarity.rare,
-        badges: [EdgeCardBadge.verified],
-        currentCost: 15,
-        confidence: 0.80,
-        impactText: pitchers['advantage'] ?? 'Even matchup',
-      ));
+    if (data['startingPitchers'] != null) {
+      final pitchers = data['startingPitchers'] as Map<String, dynamic>;
+      final homePitcher = pitchers['home'] as Map<String, dynamic>?;
+      final awayPitcher = pitchers['away'] as Map<String, dynamic>?;
+
+      if (homePitcher != null && awayPitcher != null) {
+        final homeERA = homePitcher['stats']?['era'] ?? 'N/A';
+        final awayERA = awayPitcher['stats']?['era'] ?? 'N/A';
+
+        cards.add(EdgeCardData(
+          id: 'mlb_pitcher_${DateTime.now().millisecondsSinceEpoch}',
+          category: EdgeCardCategory.matchup,
+          title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.matchup, intelligence.homeTeam.split(' ').last),
+          teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.matchup),
+          fullContent: 'Home: ${homePitcher['name']} ($homeERA ERA)\n'
+              'Away: ${awayPitcher['name']} ($awayERA ERA)\n'
+              'Handedness: ${homePitcher['handedness']} vs ${awayPitcher['handedness']}\n'
+              'Stats: ${homePitcher['stats']?['wins'] ?? '0'}-${homePitcher['stats']?['losses'] ?? '0'} | ${awayPitcher['stats']?['wins'] ?? '0'}-${awayPitcher['stats']?['losses'] ?? '0'}',
+          metadata: pitchers,
+          timestamp: DateTime.now(),
+          rarity: EdgeCardRarity.rare,
+          badges: [EdgeCardBadge.verified],
+          currentCost: 15,
+          confidence: 0.80,
+          impactText: 'Pitcher matchup analysis',
+        ));
+      }
     }
-    
+
     // Ballpark factors
-    if (data['ballpark'] != null) {
-      final park = data['ballpark'] as Map<String, dynamic>;
+    if (data['ballparkFactors'] != null) {
+      final park = data['ballparkFactors'] as Map<String, dynamic>;
+      final factors = park['factors'] as Map<String, dynamic>?;
+
       cards.add(EdgeCardData(
         id: 'mlb_park_${DateTime.now().millisecondsSinceEpoch}',
         category: EdgeCardCategory.matchup,
         title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.matchup, 'Ballpark'),
         teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.matchup),
         fullContent: 'Park: ${park['name']}\n'
-            'Type: ${park['type']} park\n'
-            'Wind: ${park['wind'] ?? 'N/A'}\n'
-            'Impact on runs: ${park['runFactor'] ?? '1.0'}x\n'
-            'Best for: ${park['favors'] ?? 'Neutral'}',
+            'City: ${park['city']}\n'
+            'Surface: ${park['surface']}\n'
+            '${factors != null ? 'Type: ${factors['type']}\nRun Factor: ${factors['runFactor']}x\n${factors['description']}' : 'Standard park conditions'}',
         metadata: park,
         timestamp: DateTime.now(),
         rarity: EdgeCardRarity.common,
         badges: [],
         currentCost: 5,
         confidence: 0.70,
-        impactText: park['recommendation'] ?? 'Standard',
+        impactText: factors?['type'] ?? 'Neutral park',
       ));
     }
-    
+
+    // Weather impact (important for MLB)
+    if (data['weather'] != null) {
+      final weather = data['weather'] as Map<String, dynamic>;
+      final impact = weather['impact']?.toString() ?? '';
+
+      // Only create card if weather has significant impact
+      if (impact.contains('HIGH') || impact.contains('MEDIUM')) {
+        final wind = weather['wind'] as Map<String, dynamic>?;
+        cards.add(EdgeCardData(
+          id: 'mlb_weather_${DateTime.now().millisecondsSinceEpoch}',
+          category: EdgeCardCategory.weather,
+          title: EdgeCardConfigs.getObfuscatedTitle(EdgeCardCategory.weather, 'Game'),
+          teaserText: EdgeCardConfigs.getGenericTeaser(EdgeCardCategory.weather),
+          fullContent: 'Conditions: ${weather['conditions']}\n'
+              'Temperature: ${weather['temperature']}°F\n'
+              '${wind != null ? 'Wind: ${wind['speed']} mph ${wind['direction']}\n${wind['impact']}' : 'Wind: Minimal'}\n'
+              'Humidity: ${weather['humidity']}\n'
+              'Impact: ${weather['impact']}',
+          metadata: weather,
+          timestamp: DateTime.now(),
+          rarity: impact.contains('HIGH') ? EdgeCardRarity.rare : EdgeCardRarity.uncommon,
+          badges: impact.contains('HIGH') ? [EdgeCardBadge.verified, EdgeCardBadge.hot] : [EdgeCardBadge.verified],
+          currentCost: impact.contains('HIGH') ? 15 : 10,
+          confidence: 0.85,
+          impactText: wind?['impact'] ?? 'Weather factor',
+        ));
+      }
+    }
+
     return cards;
   }
   

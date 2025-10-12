@@ -6,6 +6,7 @@ import 'edge_card_types.dart';
 class EdgeCardCollection extends StatefulWidget {
   final List<EdgeCardData> cards;
   final Function(EdgeCardData) onCardUnlock;
+  final Function(EdgeCardData)? onCardUnlockWithAd;
   final Function(EdgeCardData)? onCardTap;
   final String? sportFilter;
   final bool showPriorityOrder;
@@ -14,6 +15,7 @@ class EdgeCardCollection extends StatefulWidget {
     Key? key,
     required this.cards,
     required this.onCardUnlock,
+    this.onCardUnlockWithAd,
     this.onCardTap,
     this.sportFilter,
     this.showPriorityOrder = true,
@@ -367,6 +369,9 @@ class _EdgeCardCollectionState extends State<EdgeCardCollection> {
                 key: ValueKey(card.id),
                 cardData: card,
                 onUnlock: () => widget.onCardUnlock(card),
+                onUnlockWithAd: widget.onCardUnlockWithAd != null
+                    ? () => widget.onCardUnlockWithAd!(card)
+                    : null,
                 onTap: () => widget.onCardTap?.call(card),
               ),
             );
