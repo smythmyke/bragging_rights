@@ -317,7 +317,7 @@ class WalletService {
         final transactionRef = _firestore.collection('transactions').doc();
         transaction.set(transactionRef, {
           'userId': _userId,
-          'type': 'payout',
+          'type': 'winnings',
           'amount': amount, // Positive for additions
           'description': description,
           'balanceBefore': currentBalance,
@@ -456,13 +456,13 @@ class WalletService {
   }
 
   // Get wallet statistics stream (won, lost, pending)
+  // Shows lifetime stats to match Bets tab
   Stream<Map<String, int>> getWalletStatsStream() {
     if (_userId == null) return Stream.value({'won': 0, 'lost': 0, 'pending': 0});
 
     return _firestore
         .collection('transactions')
         .where('userId', isEqualTo: _userId)
-        .where('timestamp', isGreaterThan: DateTime.now().subtract(const Duration(days: 30)))
         .snapshots()
         .map((snapshot) {
       int won = 0;
@@ -477,7 +477,7 @@ class WalletService {
 
         if (status == 'pending') {
           pending += amount.abs();
-        } else if (type == 'winnings' || (type == 'pool_prize' && amount > 0)) {
+        } else if (type == 'winnings' || type == 'payout' || (type == 'pool_prize' && amount > 0)) {
           won += amount;
         } else if (type == 'wager' || type == 'pool_entry' || amount < 0) {
           lost += amount.abs();

@@ -85,9 +85,8 @@ class EdgeCardBuilder {
       return null;
     }
 
-    // Build teaser text (first article title)
-    final firstArticle = articles.first as Map<String, dynamic>;
-    final teaserText = firstArticle['title'] ?? 'Breaking news available';
+    // Build teaser text (generic message for locked card)
+    final teaserText = 'See breaking news and latest updates about this matchup';
 
     // Build full content with all articles
     final fullContent = _buildBreakingNewsContent(articles, newsData.data);

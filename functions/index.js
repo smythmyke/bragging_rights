@@ -1373,4 +1373,147 @@ exports.getESPNScoreboard = sportsApiProxy.getESPNScoreboard;
 exports.getNHLSchedule = sportsApiProxy.getNHLSchedule;
 exports.getTennisMatches = sportsApiProxy.getTennisMatches;
 
+// ============================================
+// MINI-GAMES FUNCTIONS
+// ============================================
+
+/**
+ * Rotate featured mini-game weekly
+ * Runs every Monday at midnight UTC
+ */
+exports.rotateFeaturedMiniGame = functions.pubsub
+  .schedule('0 0 * * 1')  // Monday 00:00 UTC
+  .timeZone('UTC')
+  .onRun(async (context) => {
+    console.log('🎮 [MINI-GAMES] Starting featured game rotation...');
+
+    try {
+      const gamesRef = db.collection('mini-games');
+
+      // 1. Get all active games
+      const activeGamesSnapshot = await gamesRef
+        .where('active', '==', true)
+        .get();
+
+      if (activeGamesSnapshot.empty) {
+        console.log('⚠️ [MINI-GAMES] No active games found for rotation');
+        return null;
+      }
+
+      const activeGames = activeGamesSnapshot.docs;
+      console.log(`📊 [MINI-GAMES] Found ${activeGames.length} active games`);
+
+      // 2. Unfeature all games
+      const batch = db.batch();
+      activeGames.forEach(doc => {
+        batch.update(doc.ref, { featured: false });
+      });
+      await batch.commit();
+      console.log('✅ [MINI-GAMES] Unfeatured all games');
+
+      // 3. Select random game to feature
+      const randomIndex = Math.floor(Math.random() * activeGames.length);
+      const selectedGame = activeGames[randomIndex];
+      const selectedGameData = selectedGame.data();
+
+      const nextWeek = new Date();
+      nextWeek.setDate(nextWeek.getDate() + 7);
+
+      await selectedGame.ref.update({
+        featured: true,
+        featuredUntil: admin.firestore.Timestamp.fromDate(nextWeek),
+      });
+
+      console.log(`🌟 [MINI-GAMES] Featured game set to: "${selectedGameData.title}" (${selectedGame.id})`);
+      console.log(`📅 [MINI-GAMES] Featured until: ${nextWeek.toISOString()}`);
+
+      // 4. Log rotation to system logs
+      await db.collection('system_logs').add({
+        type: 'mini_games_rotation',
+        timestamp: FieldValue.serverTimestamp(),
+        featuredGameId: selectedGame.id,
+        featuredGameTitle: selectedGameData.title,
+        featuredUntil: admin.firestore.Timestamp.fromDate(nextWeek),
+        totalActiveGames: activeGames.length,
+      });
+
+      console.log('✅ [MINI-GAMES] Featured game rotation complete');
+      return null;
+    } catch (error) {
+      console.error('❌ [MINI-GAMES] Error rotating featured game:', error);
+      throw error;
+    }
+  });
+
+/**
+ * Manually trigger featured game rotation (admin only)
+ */
+exports.manualRotateFeaturedGame = functions.https.onCall(async (data, context) => {
+  // Verify admin status
+  if (!context.auth || !context.auth.token.admin) {
+    throw new functions.https.HttpsError(
+      'permission-denied',
+      'Only admins can manually rotate featured games'
+    );
+  }
+
+  console.log('🎮 [MINI-GAMES] Manual featured game rotation requested');
+
+  try {
+    const gamesRef = db.collection('mini-games');
+
+    // Get all active games
+    const activeGamesSnapshot = await gamesRef
+      .where('active', '==', true)
+      .get();
+
+    if (activeGamesSnapshot.empty) {
+      throw new functions.https.HttpsError(
+        'not-found',
+        'No active games found'
+      );
+    }
+
+    const activeGames = activeGamesSnapshot.docs;
+
+    // Unfeature all games
+    const batch = db.batch();
+    activeGames.forEach(doc => {
+      batch.update(doc.ref, { featured: false });
+    });
+    await batch.commit();
+
+    // Select random game to feature
+    const randomIndex = Math.floor(Math.random() * activeGames.length);
+    const selectedGame = activeGames[randomIndex];
+    const selectedGameData = selectedGame.data();
+
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+
+    await selectedGame.ref.update({
+      featured: true,
+      featuredUntil: admin.firestore.Timestamp.fromDate(nextWeek),
+    });
+
+    console.log(`✅ [MINI-GAMES] Manually featured: "${selectedGameData.title}"`);
+
+    return {
+      success: true,
+      featuredGame: {
+        id: selectedGame.id,
+        title: selectedGameData.title,
+        featuredUntil: nextWeek.toISOString(),
+      },
+    };
+  } catch (error) {
+    console.error('❌ [MINI-GAMES] Manual rotation error:', error);
+    throw new functions.https.HttpsError(
+      'internal',
+      'Failed to rotate featured game',
+      error.message
+    );
+  }
+});
+
 console.log('Cloud Functions initialized for Bragging Rights');

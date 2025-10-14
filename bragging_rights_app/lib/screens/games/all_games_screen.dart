@@ -477,7 +477,7 @@ class _AllGamesScreenState extends State<AllGamesScreen> with WidgetsBindingObse
                     Row(
                       children: [
                         Text(
-                          game.sport,
+                          game.sportDisplayName,
                           style: TextStyle(
                             fontSize: 12,
                             color: _getSportColor(game.sport),

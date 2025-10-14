@@ -28,6 +28,9 @@ import '../../models/intel_product.dart';
 import '../premium/edge_screen_v2.dart';
 import '../cards/card_inventory_screen.dart';
 import '../watch/watch_live_screen.dart';
+import '../profile/profile_edit_screen.dart';
+import '../../widgets/user_avatar.dart';
+import '../../models/avatar_config.dart';
 import '../games/all_games_screen.dart';
 import '../games/optimized_games_screen.dart';
 import '../../services/sound_service.dart';
@@ -114,24 +117,47 @@ class _HomeScreenState extends State<HomeScreen> {
     APICallTracker.startSession();
 
     _pageController = PageController(initialPage: _selectedIndex);
+
+    // TIER 1: Critical UI Setup (synchronous)
     _initializeCountdowns();
     _startCountdownTimer();
+
+    // TIER 2: Show welcome popup immediately (non-blocking)
+    _checkWelcomeBackOverlay();
+
+    // TIER 3: Load critical data first (today's + live games)
+    _loadCriticalDataFirst();
+
+    // TIER 4: Load secondary data (after critical data starts loading)
+    Future.delayed(Duration.zero, _loadSecondaryData);
+
+    // TIER 5: Load background data (after frame is built)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadBackgroundData();
+    });
+  }
+
+  /// Load critical data first - today's and live games
+  Future<void> _loadCriticalDataFirst() async {
+    await Future.wait([
+      _loadGamesData(), // Load games ASAP
+      _loadUserSportsPreferences(), // Needed for game filtering
+    ]);
+  }
+
+  /// Load secondary data - streams and non-critical features
+  void _loadSecondaryData() {
+    _loadGamesWithBets(); // Stream-based, non-blocking
+  }
+
+  /// Load background data - pools, services, and other features
+  void _loadBackgroundData() {
     _startBackgroundRefresh();
-    _loadGamesWithBets();
-    _loadUserSportsPreferences();
-    _loadGamesData();
     _loadPoolsData();
     _initializePurchaseService();
     _initializeSoundService();
-    
-    // Start pool management after authentication
     _startPoolManagement();
-
-    // Check if we should show standings card
     _checkShowStandingsCard();
-
-    // Check if we should show Welcome Back overlay
-    _checkWelcomeBackOverlay();
   }
 
   /// Check and show Welcome Back overlay if needed
@@ -944,8 +970,8 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Watch Live',
           ),
           BottomNavigationBarItem(
-            icon: Icon(PhosphorIconsRegular.lightning),
-            label: 'Edge',
+            icon: Icon(PhosphorIconsRegular.gameController),
+            label: 'Games',
           ),
           BottomNavigationBarItem(
             icon: Icon(PhosphorIconsRegular.dotsThreeOutline),
@@ -991,25 +1017,8 @@ class _HomeScreenState extends State<HomeScreen> {
           onRefresh: () async {
             await _loadGamesData(forceRefresh: true);
           },
-          child: _isLoadingGames
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 16),
-                      const Text('Loading games...'),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Fetching latest data from ESPN',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                )
+          child: _isLoadingGames && _allGames.isEmpty
+              ? _buildSkeletonLoader()
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -1045,6 +1054,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         itemCount: _liveGames.length,
+                        addAutomaticKeepAlives: false,
+                        addRepaintBoundaries: true,
                         itemBuilder: (context, index) {
                           return _buildLiveGameCard(_liveGames[index]);
                         },
@@ -2370,6 +2381,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         itemCount: _createdPools.length,
+                        addAutomaticKeepAlives: false,
+                        addRepaintBoundaries: true,
                         itemBuilder: (context, index) {
                           final pool = _createdPools[index];
                           return _buildCreatedPoolCard(
@@ -2396,6 +2409,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     itemCount: _joinedPools.length,
+                    addAutomaticKeepAlives: false,
+                    addRepaintBoundaries: true,
                     itemBuilder: (context, index) {
                       final pool = _joinedPools[index];
                       return _buildMyPoolCard(
@@ -3065,111 +3080,204 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Profile Header
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Theme.of(context).colorScheme.primary,
-                  Theme.of(context).colorScheme.secondary,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Colors.white,
-                  child: Icon(
-                    PhosphorIconsRegular.user,
-                    size: 40,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Player Name',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '@username',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withOpacity(0.8),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Text(
-                                'Level 12 • Pro Player',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppTheme.neonGreen.withOpacity(0.3),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: AppTheme.neonGreen,
-                                  width: 1,
-                                ),
-                              ),
-                              child: const Text(
-                                '🆓 FREE TIER',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      ),
+          // Profile Header with Real-time User Data
+          StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseAuth.instance.currentUser != null
+                ? FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(FirebaseAuth.instance.currentUser!.uid)
+                    .snapshots()
+                : null,
+            builder: (context, userSnapshot) {
+              // Extract user data
+              Map<String, dynamic>? userData;
+              if (userSnapshot.hasData && userSnapshot.data != null) {
+                userData = userSnapshot.data!.data() as Map<String, dynamic>?;
+              }
+
+              final displayName = userData?['displayName'] ?? 'Player';
+              final email = FirebaseAuth.instance.currentUser?.email ?? '';
+              final username = email.isNotEmpty ? email.split('@')[0] : 'username';
+              final isPremium = userData?['isPremium'] ?? false;
+
+              // Get avatar config
+              AvatarConfig? avatarConfig;
+              if (userData?['avatarConfig'] != null) {
+                try {
+                  avatarConfig = AvatarConfig.fromMap(
+                    Map<String, dynamic>.from(userData!['avatarConfig']),
+                  );
+                } catch (e) {
+                  // Ignore avatar config errors
+                }
+              }
+
+              return Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.secondary,
                     ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                IconButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/profile-edit');
-                  },
-                  icon: const Icon(
-                    PhosphorIconsRegular.pencil,
-                    color: Colors.white,
+                child: Row(
+                  children: [
+                    UserAvatar(
+                      userId: FirebaseAuth.instance.currentUser?.uid,
+                      photoURL: userData?['photoURL'],
+                      avatarConfig: avatarConfig,
+                      radius: 40,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: StreamBuilder<DocumentSnapshot>(
+                        stream: FirebaseAuth.instance.currentUser != null
+                            ? FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(FirebaseAuth.instance.currentUser!.uid)
+                                .collection('wallet')
+                                .doc('balance')
+                                .snapshots()
+                            : null,
+                        builder: (context, walletSnapshot) {
+                          Map<String, dynamic>? walletData;
+                          if (walletSnapshot.hasData && walletSnapshot.data != null) {
+                            walletData = walletSnapshot.data!.data() as Map<String, dynamic>?;
+                          }
+
+                          // Calculate level based on lifetime earned
+                          final lifetimeEarned = walletData?['lifetimeEarned'] ?? 0;
+                          int level = 1;
+                          String title = 'Rookie';
+
+                          if (lifetimeEarned < 1000) {
+                            level = 1;
+                            title = 'Rookie';
+                          } else if (lifetimeEarned < 5000) {
+                            level = 2;
+                            title = 'Amateur';
+                          } else if (lifetimeEarned < 10000) {
+                            level = 3;
+                            title = 'Semi-Pro';
+                          } else if (lifetimeEarned < 25000) {
+                            level = 4;
+                            title = 'Professional';
+                          } else if (lifetimeEarned < 50000) {
+                            level = 5;
+                            title = 'Expert';
+                          } else if (lifetimeEarned < 100000) {
+                            level = 6;
+                            title = 'Master';
+                          } else if (lifetimeEarned < 250000) {
+                            level = 7;
+                            title = 'Champion';
+                          } else if (lifetimeEarned < 500000) {
+                            level = 8;
+                            title = 'Legend';
+                          } else if (lifetimeEarned < 1000000) {
+                            level = 9;
+                            title = 'Hall of Famer';
+                          } else {
+                            level = 10;
+                            title = 'GOAT';
+                          }
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                displayName,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '@$username',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white.withOpacity(0.8),
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 8),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        'Level $level • $title',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: isPremium
+                                            ? AppTheme.primaryCyan.withOpacity(0.3)
+                                            : AppTheme.neonGreen.withOpacity(0.3),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: isPremium ? AppTheme.primaryCyan : AppTheme.neonGreen,
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        isPremium ? '⭐ PREMIUM' : '🆓 FREE TIER',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ProfileEditScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(
+                        PhosphorIconsRegular.pencil,
+                        color: Colors.white,
                   ),
                 ),
               ],
             ),
-          ),
-          
+          );
+        },
+      ),
+
           const SizedBox(height: 24),
           
           // Wallet Section
@@ -3724,6 +3832,8 @@ class _HomeScreenState extends State<HomeScreen> {
               child: ListView.builder(
                 padding: const EdgeInsets.all(16),
                 itemCount: games.length,
+                addAutomaticKeepAlives: false,
+                addRepaintBoundaries: true,
                 itemBuilder: (context, index) {
                   return _buildGameCard(games[index], showDate: true);
                 },
@@ -4583,6 +4693,125 @@ class _HomeScreenState extends State<HomeScreen> {
             child: const Text('Get BR'),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Build skeleton loader for games page
+  Widget _buildSkeletonLoader() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSkeletonSection('Live Now', 3),
+          const SizedBox(height: 24),
+          _buildSkeletonSection('Today', 5),
+          const SizedBox(height: 24),
+          _buildSkeletonSection('Tomorrow', 5),
+        ],
+      ),
+    );
+  }
+
+  /// Build a skeleton section with header and cards
+  Widget _buildSkeletonSection(String title, int cardCount) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section header skeleton
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildShimmerBox(width: 150, height: 24, borderRadius: 8),
+            _buildShimmerBox(width: 80, height: 20, borderRadius: 6),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Card skeletons
+        ...List.generate(
+          cardCount,
+          (index) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildSkeletonGameCard(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Build a skeleton game card
+  Widget _buildSkeletonGameCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[800]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Sport badge skeleton
+          _buildShimmerBox(width: 80, height: 20, borderRadius: 10),
+          const SizedBox(height: 12),
+          // Teams skeleton
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildShimmerBox(width: double.infinity, height: 16, borderRadius: 4),
+                    const SizedBox(height: 8),
+                    _buildShimmerBox(width: 100, height: 14, borderRadius: 4),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              _buildShimmerBox(width: 40, height: 40, borderRadius: 8),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    _buildShimmerBox(width: double.infinity, height: 16, borderRadius: 4),
+                    const SizedBox(height: 8),
+                    _buildShimmerBox(width: 100, height: 14, borderRadius: 4),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Time skeleton
+          _buildShimmerBox(width: 120, height: 14, borderRadius: 4),
+        ],
+      ),
+    );
+  }
+
+  /// Build a shimmer box with animation
+  Widget _buildShimmerBox({
+    required double width,
+    required double height,
+    required double borderRadius,
+  }) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(borderRadius),
+        gradient: LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [
+            Colors.grey[800]!,
+            Colors.grey[700]!,
+            Colors.grey[800]!,
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ),
       ),
     );
   }

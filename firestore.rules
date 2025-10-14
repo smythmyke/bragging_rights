@@ -138,6 +138,12 @@ service cloud.firestore {
       allow write: if true;  // Allow public writes for caching
     }
 
+    // Edge Intelligence cache for game intelligence cards
+    match /edge_intelligence/{document=**} {
+      allow read: if true;  // Public read for all users
+      allow write: if true;  // Allow public writes for caching
+    }
+
     // Props cache for odds and betting props
     match /props_cache/{document=**} {
       allow read: if true;
@@ -355,6 +361,59 @@ service cloud.firestore {
       allow create: if isAuthenticated();
       allow update: if false;
       allow delete: if false;
+    }
+
+    // Mini-games collection - PUBLIC READ for game metadata
+    match /mini-games/{gameId} {
+      allow read: if true;  // Public read for all users
+      allow write: if false; // Only admins/Cloud Functions can write
+    }
+
+    // Mini-game leaderboards - PUBLIC READ
+    match /mini-game-leaderboards/{leaderboardId} {
+      allow read: if true;  // Public read for leaderboards
+      allow write: if false; // Only Cloud Functions can write
+    }
+
+    // Mini-game scores - users can read all, write their own
+    match /mini-game-scores/{scoreId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
+      allow update: if false; // Scores cannot be updated once submitted
+      allow delete: if false; // Scores cannot be deleted
+    }
+
+    // Mini-game player stats - users can read all, system writes
+    match /mini-game-player-stats/{statId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Only Cloud Functions can write
+    }
+
+    // Game analytics - track playtime and sessions
+    match /game-analytics/{gameId}/sessions/{sessionId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
+      allow update: if false; // Sessions cannot be updated
+      allow delete: if false; // Sessions cannot be deleted
+    }
+
+    // Favorite avatars - users can save multiple avatar configurations
+    match /users/{userId}/favorite_avatars/{avatarId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+    }
+
+    // Favorite mini-games - users can favorite games
+    match /users/{userId}/favorites/{gameId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) &&
+        request.resource.data.gameId == gameId;
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
     }
   }
 }

@@ -26,11 +26,15 @@ class TeamLogoService {
     'soccer_ligue1': 'https://site.api.espn.com/apis/site/v2/sports/soccer/fra.1/teams',
     'soccer_mls': 'https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/teams',
 
-    // American sports leagues
+    // American professional sports leagues
     'nfl': 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams',
     'mlb': 'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/teams',
     'nba': 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams',
     'nhl': 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams',
+
+    // College sports
+    'ncaaf': 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/teams',
+    'ncaab': 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/teams',
   };
 
   // Team name variations for matching
@@ -235,14 +239,22 @@ class TeamLogoService {
   String _normalizeSportName(String sport) {
     final sportLower = sport.toLowerCase();
 
-    // Check for specific sports
-    if (sportLower.contains('nfl') || sportLower.contains('football') && !sportLower.contains('soccer')) {
+    // Check for college sports first (more specific)
+    if (sportLower.contains('ncaaf') || sportLower == 'college football') {
+      return 'ncaaf';
+    }
+    if (sportLower.contains('ncaab') || sportLower == 'college basketball') {
+      return 'ncaab';
+    }
+
+    // Check for professional sports
+    if (sportLower.contains('nfl') || (sportLower.contains('football') && !sportLower.contains('soccer') && !sportLower.contains('college'))) {
       return 'nfl';
     }
     if (sportLower.contains('mlb') || sportLower.contains('baseball')) {
       return 'mlb';
     }
-    if (sportLower.contains('nba') || sportLower.contains('basketball')) {
+    if (sportLower.contains('nba') || (sportLower.contains('basketball') && !sportLower.contains('college'))) {
       return 'nba';
     }
     if (sportLower.contains('nhl') || sportLower.contains('hockey')) {

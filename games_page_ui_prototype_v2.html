@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Games Page UI Prototype v2 - With Real Images - Bragging Rights</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(180deg, #0a0e27 0%, #1a1f3a 100%);
+            color: white;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* Filter/Category Tabs */
+        .categories {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            overflow-x: auto;
+            padding: 10px 0;
+        }
+
+        .category-btn {
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            color: white;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .category-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .category-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+        }
+
+        /* Games Grid */
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        /* Game Card */
+        .game-card {
+            background: linear-gradient(135deg, #1e2749 0%, #2d3561 100%);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+        }
+
+        .game-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+
+        .game-thumbnail {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .game-thumbnail-fallback {
+            position: relative;
+            z-index: 1;
+        }
+
+        .game-info {
+            padding: 20px;
+        }
+
+        .game-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: white;
+        }
+
+        .game-category {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(102, 126, 234, 0.3);
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #a8b5ff;
+            margin-bottom: 12px;
+        }
+
+        .game-stats {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .game-stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .play-button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #00f260 0%, #0575e6 100%);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .play-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 20px rgba(0, 242, 96, 0.4);
+        }
+
+        .cost-badge {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        /* Featured Game (Large Card) */
+        .featured-game {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .featured-game::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .featured-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .featured-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-bottom: 16px;
+            backdrop-filter: blur(10px);
+        }
+
+        .featured-title {
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .featured-description {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .featured-play-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 32px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .featured-play-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 30px rgba(255, 255, 255, 0.3);
+        }
+
+        .featured-preview {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+        }
+
+        .featured-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .games-grid {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                gap: 16px;
+            }
+
+            .featured-game {
+                grid-template-columns: 1fr;
+                padding: 30px 20px;
+            }
+
+            .featured-title {
+                font-size: 1.8rem;
+            }
+
+            .categories {
+                justify-content: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎮 Game Arena</h1>
+            <p>Play games, compete on leaderboards, win BR prizes!</p>
+        </div>
+
+        <!-- Category Filters -->
+        <div class="categories">
+            <button class="category-btn active">All Games</button>
+            <button class="category-btn">🏀 Basketball</button>
+            <button class="category-btn">⚽ Soccer</button>
+            <button class="category-btn">🏈 Football</button>
+            <button class="category-btn">⚾ Baseball</button>
+            <button class="category-btn">🧠 Trivia</button>
+            <button class="category-btn">🎯 Arcade</button>
+        </div>
+
+        <!-- Featured Game (Weekly/Special) - NOW WITH REAL IMAGE -->
+        <div class="featured-game">
+            <div class="featured-content">
+                <div class="featured-badge">⭐ FEATURED THIS WEEK</div>
+                <h2 class="featured-title">Marble Run - Ultimate Race!</h2>
+                <p class="featured-description">
+                    Guide your marble through colorful mazes and challenging tracks!
+                    Race against time, collect points, and master every twist and turn.
+                </p>
+                <div class="game-stats" style="margin-bottom: 20px;">
+                    <div class="game-stat">👥 1,523 players</div>
+                    <div class="game-stat">🏆 500 BR Prize</div>
+                    <div class="game-stat">⏱️ ~5 min</div>
+                </div>
+                <button class="featured-play-btn">
+                    <span>▶</span>
+                    <span>Play Now - 5 BR</span>
+                </button>
+            </div>
+            <div class="featured-preview">
+                <img src="game_assets/marble_run/banner.jpg" alt="Marble Run Banner">
+            </div>
+        </div>
+
+        <!-- Games Grid -->
+        <div class="games-grid">
+            <!-- Game Card 1 - MARBLE RUN WITH REAL IMAGE -->
+            <div class="game-card" data-game="marble-run">
+                <div class="game-thumbnail">
+                    <img src="game_assets/marble_run/thumbnail.jpg" alt="Marble Run"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="game-thumbnail-fallback" style="display: none;">🎱</div>
+                </div>
+                <div class="game-info">
+                    <div class="game-category">Arcade</div>
+                    <h3 class="game-title">Marble Run</h3>
+                    <div class="game-stats">
+                        <div class="game-stat">👥 1.5k</div>
+                        <div class="game-stat">⭐ 4.9</div>
+                        <div class="game-stat">⏱️ 5min</div>
+                    </div>
+                    <button class="play-button">
+                        <span>▶</span>
+                        <span>Play</span>
+                        <span class="cost-badge">5 BR</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Game Card 2 - SPORTS TRIVIA -->
+            <div class="game-card" data-game="sports-trivia">
+                <div class="game-thumbnail">
+                    <div class="game-thumbnail-fallback">🧠</div>
+                </div>
+                <div class="game-info">
+                    <div class="game-category">Trivia</div>
+                    <h3 class="game-title">Sports Trivia</h3>
+                    <div class="game-stats">
+                        <div class="game-stat">👥 2.8k</div>
+                        <div class="game-stat">⭐ 4.8</div>
+                        <div class="game-stat">⏱️ 3min</div>
+                    </div>
+                    <button class="play-button">
+                        <span>▶</span>
+                        <span>Play</span>
+                        <span class="cost-badge">5 BR</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Game Card 3 - BASKETBALL (Placeholder for future GD game) -->
+            <div class="game-card" data-game="basketball-stars">
+                <div class="game-thumbnail">
+                    <div class="game-thumbnail-fallback">🏀</div>
+                </div>
+                <div class="game-info">
+                    <div class="game-category">Basketball</div>
+                    <h3 class="game-title">Basketball Stars</h3>
+                    <div class="game-stats">
+                        <div class="game-stat">👥 1.2k</div>
+                        <div class="game-stat">⭐ 4.7</div>
+                        <div class="game-stat">⏱️ 5min</div>
+                    </div>
+                    <button class="play-button">
+                        <span>▶</span>
+                        <span>Play</span>
+                        <span class="cost-badge">5 BR</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Game Card 4 - SOCCER (Placeholder for future GD game) -->
+            <div class="game-card" data-game="penalty-shooters">
+                <div class="game-thumbnail">
+                    <div class="game-thumbnail-fallback">⚽</div>
+                </div>
+                <div class="game-info">
+                    <div class="game-category">Soccer</div>
+                    <h3 class="game-title">Penalty Shooters 2</h3>
+                    <div class="game-stats">
+                        <div class="game-stat">👥 980</div>
+                        <div class="game-stat">⭐ 4.6</div>
+                        <div class="game-stat">⏱️ 4min</div>
+                    </div>
+                    <button class="play-button">
+                        <span>▶</span>
+                        <span>Play</span>
+                        <span class="cost-badge">5 BR</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Game Card 5 - BASEBALL (Placeholder for future GD game) -->
+            <div class="game-card" data-game="baseball-pro">
+                <div class="game-thumbnail">
+                    <div class="game-thumbnail-fallback">⚾</div>
+                </div>
+                <div class="game-info">
+                    <div class="game-category">Baseball</div>
+                    <h3 class="game-title">Baseball Pro</h3>
+                    <div class="game-stats">
+                        <div class="game-stat">👥 750</div>
+                        <div class="game-stat">⭐ 4.5</div>
+                        <div class="game-stat">⏱️ 3min</div>
+                    </div>
+                    <button class="play-button">
+                        <span>▶</span>
+                        <span>Play</span>
+                        <span class="cost-badge">5 BR</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Game Card 6 - MEMORY MATCH (Placeholder for future game) -->
+            <div class="game-card" data-game="memory-match">
+                <div class="game-thumbnail">
+                    <div class="game-thumbnail-fallback">🧩</div>
+                </div>
+                <div class="game-info">
+                    <div class="game-category">Puzzle</div>
+                    <h3 class="game-title">Memory Match</h3>
+                    <div class="game-stats">
+                        <div class="game-stat">👥 890</div>
+                        <div class="game-stat">⭐ 4.7</div>
+                        <div class="game-stat">⏱️ 4min</div>
+                    </div>
+                    <button class="play-button">
+                        <span>▶</span>
+                        <span>Play</span>
+                        <span class="cost-badge">5 BR</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Section -->
+        <div style="text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.6);">
+            <p style="margin-bottom: 10px;">💡 <strong>Note:</strong> This is a UI prototype demonstrating the Games page layout.</p>
+            <p style="font-size: 0.9rem;">Marble Run images are live • Other games show placeholder emojis until assets are added</p>
+            <p style="font-size: 0.85rem; margin-top: 20px;">Images are loaded from: <code>game_assets/{game_name}/thumbnail.jpg</code></p>
+        </div>
+    </div>
+
+    <script>
+        // Category filter functionality
+        const categoryBtns = document.querySelectorAll('.category-btn');
+        categoryBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                categoryBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                console.log('Filter by:', btn.textContent);
+            });
+        });
+
+        // Game card click handlers
+        const gameCards = document.querySelectorAll('.game-card');
+        gameCards.forEach(card => {
+            card.addEventListener('click', (e) => {
+                if (!e.target.closest('.play-button')) {
+                    const title = card.querySelector('.game-title').textContent;
+                    const gameId = card.getAttribute('data-game');
+                    console.log('View details for:', title, '(ID:', gameId + ')');
+                }
+            });
+        });
+
+        // Play button handlers
+        const playButtons = document.querySelectorAll('.play-button, .featured-play-btn');
+        playButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const card = btn.closest('.game-card') || btn.closest('.featured-game');
+                const title = card.querySelector('.game-title, .featured-title').textContent;
+                console.log('Loading game:', title);
+                // In Flutter, this would:
+                // 1. Check user BR balance
+                // 2. Deduct 5 BR
+                // 3. Navigate to WebView with game iframe
+                // 4. Track play session
+            });
+        });
+
+        // Log page load
+        console.log('Games Page UI Prototype v2 Loaded');
+        console.log('- Marble Run images: LIVE (from game_assets/)');
+        console.log('- Other games: Using emoji fallbacks');
+        console.log('- Ready for GameDistribution integration');
+    </script>
+</body>
+</html>

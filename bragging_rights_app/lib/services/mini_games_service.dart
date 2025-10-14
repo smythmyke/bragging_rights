@@ -1,25 +1,39 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/mini_game_model.dart';
+import 'wallet_service.dart';
 
-/// Service for managing mini-games, leaderboards, and user stats
+/// Service for managing mini-games and playtime tracking
 class MiniGamesService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final WalletService _walletService = WalletService();
 
   /// Get all active mini-games for the current week
-  Stream<List<MiniGameModel>> getActiveGames() {
-    return _firestore
+  Stream<List<MiniGameModel>> getActiveGames() async* {
+    final user = _auth.currentUser;
+
+    await for (final snapshot in _firestore
         .collection('mini-games')
         .where('active', isEqualTo: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) {
+        .snapshots()) {
+
+      final games = snapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
         return MiniGameModel.fromMap(data);
       }).toList();
-    });
+
+      // Load favorites if user is logged in
+      if (user != null) {
+        final favorites = await _getUserFavorites(user.uid);
+        for (var game in games) {
+          game.isFavorited = favorites.contains(game.id);
+        }
+      }
+
+      yield games;
+    }
   }
 
   /// Get a specific game by ID
@@ -32,236 +46,190 @@ class MiniGamesService {
     return MiniGameModel.fromMap(data);
   }
 
-  /// Get current week's leaderboard for a game
-  Stream<GameLeaderboard?> getGameLeaderboard(String gameId) {
-    // Get current week number
-    final now = DateTime.now();
-    final weekNumber = _getWeekNumber(now);
-    final leaderboardId = '${gameId}_week_$weekNumber';
 
-    return _firestore
-        .collection('leaderboards')
-        .doc(leaderboardId)
-        .snapshots()
-        .map((snapshot) {
-      if (!snapshot.exists) return null;
-
-      final data = snapshot.data()!;
-      data['id'] = snapshot.id;
-      return GameLeaderboard.fromMap(data);
-    });
-  }
-
-  /// Submit a score to the leaderboard
-  Future<bool> submitScore({
-    required String gameId,
-    required int score,
-    required String username,
-  }) async {
+  /// Deduct BR for playing a game
+  Future<bool> deductEntryFee(String gameId, int brCost) async {
     final user = _auth.currentUser;
-    if (user == null) return false;
+    if (user == null) {
+      print('❌ [MiniGamesService] deductEntryFee: No user logged in');
+      return false;
+    }
+
+    print('');
+    print('┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓');
+    print('┃ [MiniGamesService] Deducting Entry Fee        ┃');
+    print('┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛');
+    print('🎮 Game ID: $gameId');
+    print('💰 BR Cost: $brCost');
 
     try {
-      final now = DateTime.now();
-      final weekNumber = _getWeekNumber(now);
-      final leaderboardId = '${gameId}_week_$weekNumber';
-
-      final entry = LeaderboardEntry(
-        userId: user.uid,
-        username: username,
-        score: score,
-        timestamp: now,
+      // Use WalletService to deduct BR (same as betting system)
+      final success = await _walletService.placeWager(
+        amount: brCost,
+        betId: 'mini_game_$gameId',
+        description: 'Mini-Game Entry Fee: $gameId',
       );
 
-      // Get or create leaderboard
-      final leaderboardRef = _firestore.collection('leaderboards').doc(leaderboardId);
-      final leaderboardDoc = await leaderboardRef.get();
-
-      if (!leaderboardDoc.exists) {
-        // Create new leaderboard for this week
-        final weekStart = _getWeekStart(now);
-        final weekEnd = weekStart.add(const Duration(days: 7));
-
-        await leaderboardRef.set({
-          'gameId': gameId,
-          'weekStart': Timestamp.fromDate(weekStart),
-          'weekEnd': Timestamp.fromDate(weekEnd),
-          'scores': [entry.toMap()],
-          'active': true,
-        });
+      if (success) {
+        print('✅ Entry fee deducted successfully');
       } else {
-        // Add score to existing leaderboard
-        await leaderboardRef.update({
-          'scores': FieldValue.arrayUnion([entry.toMap()]),
-        });
+        print('❌ Failed to deduct entry fee');
       }
 
-      // Update user stats
-      await _updateUserStats(gameId, score);
-
-      return true;
+      return success;
     } catch (e) {
-      print('Error submitting score: $e');
+      print('❌ Error deducting entry fee: $e');
       return false;
     }
   }
 
-  /// Get user statistics for a specific game
-  Stream<UserGameStats?> getUserGameStats(String gameId) {
-    final user = _auth.currentUser;
-    if (user == null) return Stream.value(null);
-
-    return _firestore
-        .collection('user-stats')
-        .doc(user.uid)
-        .collection('games')
-        .doc(gameId)
-        .snapshots()
-        .map((snapshot) {
-      if (!snapshot.exists) return null;
-
-      final data = snapshot.data()!;
-      data['userId'] = user.uid;
-      data['gameId'] = gameId;
-      return UserGameStats.fromMap(data);
-    });
-  }
-
-  /// Deduct BR for playing a game (5 BR entry fee)
-  Future<bool> deductEntryFee() async {
-    final user = _auth.currentUser;
-    if (user == null) return false;
-
-    try {
-      final userRef = _firestore.collection('users').doc(user.uid);
-      final userDoc = await userRef.get();
-
-      if (!userDoc.exists) return false;
-
-      final currentBR = userDoc.data()?['braggingRights'] ?? 0;
-
-      if (currentBR < 5) {
-        return false; // Not enough BR
-      }
-
-      await userRef.update({
-        'braggingRights': FieldValue.increment(-5),
-      });
-
-      return true;
-    } catch (e) {
-      print('Error deducting entry fee: $e');
-      return false;
-    }
-  }
-
-  /// Update user statistics after playing
-  Future<void> _updateUserStats(String gameId, int score) async {
+  /// Track game play events (started/ended) for analytics
+  Future<void> trackGamePlay(String gameId, String event, {Duration? duration}) async {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    final statsRef = _firestore
-        .collection('user-stats')
-        .doc(user.uid)
-        .collection('games')
-        .doc(gameId);
+    try {
+      final timestamp = DateTime.now();
 
-    final statsDoc = await statsRef.get();
+      // If game is starting, increment the playerCount in the game document
+      if (event == 'started') {
+        await _firestore.collection('mini-games').doc(gameId).update({
+          'playerCount': FieldValue.increment(1),
+        });
+        print('📊 [ANALYTICS] Incremented playerCount for $gameId');
+      }
 
-    if (!statsDoc.exists) {
-      // Create new stats
-      await statsRef.set({
-        'attempts': 1,
-        'bestScore': score,
-        'brSpent': 5,
-        'lastPlayed': Timestamp.now(),
-      });
-    } else {
-      // Update existing stats
-      final currentBest = statsDoc.data()?['bestScore'] ?? 0;
-      final newBest = score > currentBest ? score : currentBest;
+      // Create a session document in game-analytics collection
+      final sessionRef = _firestore
+          .collection('game-analytics')
+          .doc(gameId)
+          .collection('sessions')
+          .doc();
 
-      await statsRef.update({
-        'attempts': FieldValue.increment(1),
-        'bestScore': newBest,
-        'brSpent': FieldValue.increment(5),
-        'lastPlayed': Timestamp.now(),
-      });
+      final sessionData = {
+        'userId': user.uid,
+        'event': event, // 'started' or 'ended'
+        'timestamp': Timestamp.fromDate(timestamp),
+      };
+
+      if (duration != null) {
+        sessionData['durationSeconds'] = duration.inSeconds;
+        sessionData['durationMinutes'] = duration.inMinutes;
+      }
+
+      await sessionRef.set(sessionData);
+
+      print('📊 [ANALYTICS] Tracked $event event for $gameId${duration != null ? ' (${duration.inMinutes}m ${duration.inSeconds % 60}s)' : ''}');
+    } catch (e) {
+      print('❌ Error tracking game play: $e');
     }
   }
 
-  /// Get user's current BR balance
-  Future<int> getUserBRBalance() async {
+  /// Get user's favorite game IDs
+  Future<Set<String>> _getUserFavorites(String userId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('favorites')
+          .get();
+
+      return snapshot.docs.map((doc) => doc.id).toSet();
+    } catch (e) {
+      print('❌ Error getting favorites: $e');
+      return {};
+    }
+  }
+
+  /// Toggle favorite status for a game
+  Future<bool> toggleFavorite(String gameId) async {
     final user = _auth.currentUser;
-    if (user == null) return 0;
+    if (user == null) return false;
 
     try {
-      final userDoc = await _firestore.collection('users').doc(user.uid).get();
-      return userDoc.data()?['braggingRights'] ?? 0;
+      final favoriteRef = _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('favorites')
+          .doc(gameId);
+
+      final doc = await favoriteRef.get();
+
+      if (doc.exists) {
+        // Remove from favorites
+        await favoriteRef.delete();
+        print('💔 Removed $gameId from favorites');
+        return false;
+      } else {
+        // Add to favorites
+        await favoriteRef.set({
+          'gameId': gameId,
+          'addedAt': FieldValue.serverTimestamp(),
+        });
+        print('❤️ Added $gameId to favorites');
+        return true;
+      }
     } catch (e) {
-      print('Error getting BR balance: $e');
+      print('❌ Error toggling favorite: $e');
+      return false;
+    }
+  }
+
+  /// Check if a game is favorited
+  Future<bool> isFavorited(String gameId) async {
+    final user = _auth.currentUser;
+    if (user == null) return false;
+
+    try {
+      final doc = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('favorites')
+          .doc(gameId)
+          .get();
+
+      return doc.exists;
+    } catch (e) {
+      print('❌ Error checking favorite status: $e');
+      return false;
+    }
+  }
+
+  /// Get user's current BR balance using WalletService
+  Future<int> getUserBRBalance() async {
+    print('');
+    print('┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓');
+    print('┃ [MiniGamesService] getUserBRBalance() called   ┃');
+    print('┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛');
+
+    final user = _auth.currentUser;
+    print('👤 Current user: ${user?.uid}');
+    print('📧 User email: ${user?.email}');
+
+    if (user == null) {
+      print('❌ No user logged in - returning 0');
+      print('');
+      return 0;
+    }
+
+    try {
+      print('📡 Using WalletService to get balance...');
+      print('   Path: /users/${user.uid}/wallet/current');
+
+      // Use WalletService (same as betting, challenges, pools)
+      final balance = await _walletService.getCurrentBalance();
+
+      print('✅ Balance retrieved from wallet: $balance BR');
+      print('');
+
+      return balance;
+    } catch (e, stackTrace) {
+      print('❌ ERROR getting BR balance:');
+      print('   Error: $e');
+      print('   Stack trace: $stackTrace');
+      print('');
       return 0;
     }
   }
 
-  /// Get week number from date
-  int _getWeekNumber(DateTime date) {
-    final firstDayOfYear = DateTime(date.year, 1, 1);
-    final daysSinceFirstDay = date.difference(firstDayOfYear).inDays;
-    return (daysSinceFirstDay / 7).floor() + 1;
-  }
-
-  /// Get start of the week (Monday 00:00:00)
-  DateTime _getWeekStart(DateTime date) {
-    final weekday = date.weekday;
-    final daysToSubtract = weekday - 1; // Monday is 1
-    final weekStart = date.subtract(Duration(days: daysToSubtract));
-    return DateTime(weekStart.year, weekStart.month, weekStart.day);
-  }
-
-  /// Get user's rank in the leaderboard
-  Future<int?> getUserRank(String gameId) async {
-    final user = _auth.currentUser;
-    if (user == null) return null;
-
-    try {
-      final now = DateTime.now();
-      final weekNumber = _getWeekNumber(now);
-      final leaderboardId = '${gameId}_week_$weekNumber';
-
-      final leaderboardDoc = await _firestore
-          .collection('leaderboards')
-          .doc(leaderboardId)
-          .get();
-
-      if (!leaderboardDoc.exists) return null;
-
-      final data = leaderboardDoc.data()!;
-      data['id'] = leaderboardDoc.id;
-      final leaderboard = GameLeaderboard.fromMap(data);
-
-      final sortedScores = leaderboard.getSortedScores();
-
-      // Find user's best score
-      final userScores = sortedScores
-          .where((entry) => entry.userId == user.uid)
-          .toList();
-
-      if (userScores.isEmpty) return null;
-
-      final userBestScore = userScores.first.score;
-
-      // Find rank by counting how many unique users have better scores
-      final betterScores = sortedScores
-          .where((entry) => entry.score > userBestScore)
-          .map((entry) => entry.userId)
-          .toSet()
-          .length;
-
-      return betterScores + 1;
-    } catch (e) {
-      print('Error getting user rank: $e');
-      return null;
-    }
-  }
 }

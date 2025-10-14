@@ -21,7 +21,7 @@ class _WatchLiveScreenState extends State<WatchLiveScreen> {
   final AuthService _authService = AuthService();
   final WalletService _walletService = WalletService();
   final Set<String> _purchasedLinks = {}; // Track purchased links by URL
-  static const int _linkCostBR = 5; // Cost per link in BR
+  static const int _linkCostBR = 50; // Cost per link in BR
 
   @override
   void initState() {

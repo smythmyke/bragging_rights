@@ -86,6 +86,7 @@ dependencies:
   mesh_gradient: ^1.2.1  # Complex gradients
   cached_network_image: ^3.3.1  # Better image caching
   auto_size_text: ^3.0.0  # Responsive text
+  flutter_colorpicker: ^1.1.0  # Color picker for avatars
 
 dev_dependencies:
   flutter_test:

@@ -38,16 +38,29 @@ class EdgeIntelligenceService {
     required String awayTeam,
     required DateTime eventDate,
   }) async {
-    debugPrint('🧠 Gathering intelligence for $homeTeam vs $awayTeam...');
+    print('');
+    print('╔════════════════════════════════════════════════════════════╗');
+    print('║     🧠 EDGE INTELLIGENCE SERVICE - getEventIntelligence   ║');
+    print('╚════════════════════════════════════════════════════════════╝');
+    print('📍 Event ID: $eventId');
+    print('📍 Sport: $sport (normalized: ${sport.toLowerCase()})');
+    print('📍 Home Team: $homeTeam');
+    print('📍 Away Team: $awayTeam');
+    print('📍 Event Date: $eventDate');
 
     // Check cache first - if data exists and is fresh (< 5 min), return it
+    print('🔍 Checking cache...');
     final cachedIntelligence = await getCachedIntelligence(eventId);
     if (cachedIntelligence != null) {
-      debugPrint('✅ Using cached intelligence (saved API calls!)');
+      print('✅ Cache HIT - using cached intelligence (saved API calls!)');
+      print('   Cache age: ${DateTime.now().difference(cachedIntelligence.timestamp).inMinutes} minutes');
+      print('   Data points: ${cachedIntelligence.dataPoints.length}');
+      print('   Insights: ${cachedIntelligence.insights.length}');
+      print('');
       return cachedIntelligence;
     }
 
-    debugPrint('📥 Cache miss - fetching fresh intelligence from APIs');
+    print('❌ Cache MISS - fetching fresh intelligence from APIs...');
 
     // Create event match for normalization
     final eventMatch = await _matcher.matchEvent(
@@ -69,21 +82,31 @@ class EdgeIntelligenceService {
     );
 
     // Gather data based on sport
-    switch (sport.toLowerCase()) {
+    print('🔄 Gathering sport-specific intelligence...');
+    final sportLower = sport.toLowerCase();
+    print('   Sport switch: "$sportLower"');
+
+    switch (sportLower) {
       case 'nba':
+      case 'ncaab':
       case 'basketball':
+        print('   → Calling _gatherNbaIntelligence()');
         await _gatherNbaIntelligence(intelligence, eventId);
         break;
       case 'nfl':
+      case 'ncaaf':
       case 'football':
+        print('   → Calling _gatherNflIntelligence()');
         await _gatherNflIntelligence(intelligence, eventId);
         break;
       case 'mlb':
       case 'baseball':
+        print('   → Calling _gatherMlbIntelligence()');
         await _gatherMlbIntelligence(intelligence, eventId);
         break;
       case 'nhl':
       case 'hockey':
+        print('   → Calling _gatherNhlIntelligence()');
         await _gatherNhlIntelligence(intelligence, eventId);
         break;
       case 'mma':
@@ -92,26 +115,41 @@ class EdgeIntelligenceService {
       case 'pfl':
       case 'one':
       case 'bkfc':
+        print('   → Calling _gatherMmaIntelligence()');
         await _gatherMmaIntelligence(intelligence, eventId, sport);
         break;
       case 'boxing':
+        print('   → Calling _gatherBoxingIntelligence()');
         await _gatherBoxingIntelligence(intelligence, eventId);
         break;
       case 'tennis':
+        print('   → Calling _gatherTennisIntelligence()');
         await _gatherTennisIntelligence(intelligence, eventId);
         break;
       default:
-        debugPrint('⚠️ Sport $sport not yet supported');
+        print('   ⚠️  UNSUPPORTED SPORT: "$sport"');
+        print('   No intelligence gathering method for this sport!');
     }
 
     // Gather cross-sport data (weather, news, social)
+    print('🔄 Gathering universal intelligence (weather, news, social)...');
     await _gatherUniversalIntelligence(intelligence, eventMatch);
 
     // Calculate confidence scores
+    print('🔄 Calculating confidence scores...');
     intelligence.calculateConfidence();
+    print('   Overall Confidence: ${intelligence.overallConfidence}');
 
     // Save to Firestore for caching
+    print('💾 Saving intelligence to Firestore cache...');
     await _saveIntelligence(intelligence);
+
+    print('✅ Intelligence gathering complete!');
+    print('   Total Data Points: ${intelligence.dataPoints.length}');
+    print('   Total Insights: ${intelligence.insights.length}');
+    print('   Overall Confidence: ${intelligence.overallConfidence}');
+    print('═══════════════════════════════════════════════════════════');
+    print('');
 
     return intelligence;
   }
@@ -215,16 +253,28 @@ class EdgeIntelligenceService {
     EdgeIntelligence intelligence,
     String eventId,
   ) async {
-    debugPrint('🏈 Gathering NFL intelligence for ${intelligence.homeTeam} vs ${intelligence.awayTeam}');
-    
+    print('');
+    print('╔════════════════════════════════════════════════════════════╗');
+    print('║     🏈 NFL INTELLIGENCE GATHERING                         ║');
+    print('╚════════════════════════════════════════════════════════════╝');
+    print('📍 Home Team: ${intelligence.homeTeam}');
+    print('📍 Away Team: ${intelligence.awayTeam}');
+    print('📍 Event ID: $eventId');
+
     try {
       // Get ESPN NFL data (primary source for NFL)
+      print('🔄 Calling EspnNflService.getGameIntelligence()...');
       final espnData = await _espnNflService.getGameIntelligence(
         homeTeam: intelligence.homeTeam,
         awayTeam: intelligence.awayTeam,
       );
-      
+
+      print('✅ ESPN NFL Service returned');
+      print('   Data empty: ${espnData.isEmpty}');
+      print('   Keys: ${espnData.keys.toList()}');
+
       if (espnData.isNotEmpty) {
+        print('📊 Processing ESPN NFL data...');
         // Add betting odds
         if (espnData['odds'] != null && espnData['odds'].isNotEmpty) {
           intelligence.addDataPoint(
@@ -316,16 +366,17 @@ class EdgeIntelligenceService {
         
         // Add team stats and recent form
         if (espnData['teamStats'] != null) {
+          final teamStatsData = Map<String, dynamic>.from(espnData['teamStats'] as Map);
           intelligence.addDataPoint(
             source: 'ESPN NFL',
             type: 'team_statistics',
-            data: espnData['teamStats'],
+            data: teamStatsData,
             confidence: 0.85,
           );
-          
+
           // Analyze offensive efficiency
-          final homeStats = espnData['teamStats']['home'] ?? {};
-          final awayStats = espnData['teamStats']['away'] ?? {};
+          final homeStats = Map<String, dynamic>.from((teamStatsData['home'] as Map?) ?? {});
+          final awayStats = Map<String, dynamic>.from((teamStatsData['away'] as Map?) ?? {});
           
           if (homeStats['pointsPerGame'] != null) {
             final ppg = homeStats['pointsPerGame'];
@@ -487,9 +538,25 @@ class EdgeIntelligenceService {
       
       intelligence.predictions['suggestedBets'] = suggestions;
       intelligence.predictions['confidence'] = intelligence.overallConfidence;
-      
-    } catch (e) {
-      debugPrint('Error gathering NFL intelligence: $e');
+
+      print('✅ NFL intelligence gathering complete');
+      print('   Data points added: ${intelligence.dataPoints.length}');
+      print('   Insights added: ${intelligence.insights.length}');
+      print('   Suggested bets: ${suggestions.length}');
+      print('═══════════════════════════════════════════════════════════');
+      print('');
+
+    } catch (e, stackTrace) {
+      print('');
+      print('╔════════════════════════════════════════════════════════════╗');
+      print('║     ❌ ERROR GATHERING NFL INTELLIGENCE                   ║');
+      print('╚════════════════════════════════════════════════════════════╝');
+      print('Error: $e');
+      print('Stack Trace:');
+      print(stackTrace);
+      print('═══════════════════════════════════════════════════════════');
+      print('');
+
       intelligence.addDataPoint(
         source: 'System',
         type: 'error',

@@ -12,6 +12,12 @@ class UserModel {
   final bool isPremium;
   final bool isActive;
 
+  // Avatar customization fields
+  final String? avatarStyle;        // e.g., 'adventurer', 'bottts'
+  final String? avatarSeed;         // Custom seed for consistency
+  final Map<String, dynamic>? avatarConfig;  // Full avatar configuration
+  final List<String>? unlockedStyles;  // Achievement-unlocked avatar styles
+
   // Wallet information (from subcollection)
   final int? brBalance;
   final int? lifetimeEarned;
@@ -42,6 +48,10 @@ class UserModel {
     required this.lastLoginAt,
     required this.isPremium,
     required this.isActive,
+    this.avatarStyle,
+    this.avatarSeed,
+    this.avatarConfig,
+    this.unlockedStyles,
     this.brBalance,
     this.lifetimeEarned,
     this.lifetimeWagered,
@@ -76,6 +86,15 @@ class UserModel {
       lastLoginAt: (data['lastLoginAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       isPremium: data['isPremium'] ?? false,
       isActive: data['isActive'] ?? true,
+      // Avatar data
+      avatarStyle: data['avatarStyle'],
+      avatarSeed: data['avatarSeed'],
+      avatarConfig: data['avatarConfig'] != null
+          ? Map<String, dynamic>.from(data['avatarConfig'])
+          : null,
+      unlockedStyles: data['unlockedStyles'] != null
+          ? List<String>.from(data['unlockedStyles'])
+          : null,
       // Wallet data
       brBalance: walletData?['balance'],
       lifetimeEarned: walletData?['lifetimeEarned'],
@@ -110,6 +129,10 @@ class UserModel {
       'lastLoginAt': Timestamp.fromDate(lastLoginAt),
       'isPremium': isPremium,
       'isActive': isActive,
+      'avatarStyle': avatarStyle,
+      'avatarSeed': avatarSeed,
+      'avatarConfig': avatarConfig,
+      'unlockedStyles': unlockedStyles,
     };
   }
 
@@ -125,6 +148,10 @@ class UserModel {
     DateTime? lastLoginAt,
     bool? isPremium,
     bool? isActive,
+    String? avatarStyle,
+    String? avatarSeed,
+    Map<String, dynamic>? avatarConfig,
+    List<String>? unlockedStyles,
     int? brBalance,
     int? lifetimeEarned,
     int? lifetimeWagered,
@@ -150,6 +177,10 @@ class UserModel {
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
       isPremium: isPremium ?? this.isPremium,
       isActive: isActive ?? this.isActive,
+      avatarStyle: avatarStyle ?? this.avatarStyle,
+      avatarSeed: avatarSeed ?? this.avatarSeed,
+      avatarConfig: avatarConfig ?? this.avatarConfig,
+      unlockedStyles: unlockedStyles ?? this.unlockedStyles,
       brBalance: brBalance ?? this.brBalance,
       lifetimeEarned: lifetimeEarned ?? this.lifetimeEarned,
       lifetimeWagered: lifetimeWagered ?? this.lifetimeWagered,

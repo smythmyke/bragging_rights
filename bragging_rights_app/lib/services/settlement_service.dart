@@ -108,12 +108,13 @@ class SettlementService {
               },
             );
 
-            // Update wallet balance
+            // Update wallet balance (correct path: users/{uid}/wallet/current)
             batch.update(
-              _firestore.collection('wallets').doc(userId),
+              _firestore.collection('users').doc(userId).collection('wallet').doc('current'),
               {
                 'balance': FieldValue.increment(evaluation.payout),
-                'totalWinnings': FieldValue.increment(evaluation.payout),
+                'lifetimeEarned': FieldValue.increment(evaluation.payout),
+                'lastTransaction': FieldValue.serverTimestamp(),
               },
             );
 
@@ -358,12 +359,13 @@ class SettlementService {
             final userId = wagerData['userId'];
             final payout = wagerData['actualPayout'];
 
-            // Deduct from wallet
+            // Deduct from wallet (correct path: users/{uid}/wallet/current)
             transaction.update(
-              _firestore.collection('wallets').doc(userId),
+              _firestore.collection('users').doc(userId).collection('wallet').doc('current'),
               {
                 'balance': FieldValue.increment(-payout),
-                'totalWinnings': FieldValue.increment(-payout),
+                'lifetimeEarned': FieldValue.increment(-payout),
+                'lastTransaction': FieldValue.serverTimestamp(),
               },
             );
 

@@ -81,6 +81,25 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
   void initState() {
     super.initState();
 
+    print('');
+    print('╔════════════════════════════════════════════════════════════╗');
+    print('║     📱 GAME DETAILS SCREEN - initState()                  ║');
+    print('╚════════════════════════════════════════════════════════════╝');
+    print('📍 Sport: ${widget.sport}');
+    print('📍 Game ID: ${widget.gameId}');
+    print('📍 widget.gameData passed: ${widget.gameData != null}');
+
+    if (widget.gameData != null) {
+      print('✅ Game data provided:');
+      print('   Home: ${widget.gameData!.homeTeam}');
+      print('   Away: ${widget.gameData!.awayTeam}');
+      print('   Time: ${widget.gameData!.gameTime}');
+    } else {
+      print('❌ WARNING: widget.gameData is NULL!');
+      print('   This will cause Edge cards to fail loading');
+      print('   Check where GameDetailsScreen is navigated to');
+    }
+
     // Initialize pulse animation for "Earn BR" button
     _pulseController = AnimationController(
       duration: const Duration(milliseconds: 1500),
@@ -114,10 +133,20 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         _selectedTabIndex = _tabController.index;
       });
     });
+
+    print('🔄 Setting _game from widget.gameData...');
     _game = widget.gameData;
+    print('   _game is now: ${_game != null ? 'SET' : 'NULL'}');
+
+    print('🔄 Calling initialization methods...');
+    print('   1. _loadEventDetails()');
     _loadEventDetails();
+    print('   2. _loadUnlockedCards()');
     _loadUnlockedCards();
+    print('   3. _loadEdgeCards()');
     _loadEdgeCards();
+    print('═══════════════════════════════════════════════════════════');
+    print('');
   }
 
   @override
@@ -195,14 +224,37 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
 
   /// Load Edge Intelligence cards for this game
   Future<void> _loadEdgeCards() async {
-    if (_game == null) return;
+    print('');
+    print('╔════════════════════════════════════════════════════════════╗');
+    print('║     🎴 EDGE CARDS LOADING - DEBUG TRACE                   ║');
+    print('╚════════════════════════════════════════════════════════════╝');
+    print('📍 Method: _loadEdgeCards()');
+    print('📍 Sport: ${widget.sport}');
+    print('📍 Game ID: ${widget.gameId}');
+    print('📍 _game is null: ${_game == null}');
+
+    if (_game != null) {
+      print('📍 Home Team: ${_game!.homeTeam}');
+      print('📍 Away Team: ${_game!.awayTeam}');
+      print('📍 Game Time: ${_game!.gameTime}');
+    } else {
+      print('❌ CRITICAL: _game is NULL - cannot load Edge cards!');
+      print('❌ This means widget.gameData was not passed to GameDetailsScreen');
+      print('');
+      return;
+    }
 
     setState(() {
       _isLoadingCards = true;
     });
 
     try {
-      debugPrint('🎴 Loading Edge cards for ${_game!.homeTeam} vs ${_game!.awayTeam}');
+      print('🔄 Calling EdgeIntelligenceService.getEventIntelligence()...');
+      print('   eventId: ${widget.gameId}');
+      print('   sport: ${widget.sport}');
+      print('   homeTeam: ${_game!.homeTeam}');
+      print('   awayTeam: ${_game!.awayTeam}');
+      print('   eventDate: ${_game!.gameTime}');
 
       // Get intelligence data from backend
       final intelligence = await _intelligenceService.getEventIntelligence(
@@ -213,22 +265,61 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         eventDate: _game!.gameTime,
       );
 
-      debugPrint('✅ Intelligence gathered with ${intelligence.dataPoints.length} data points');
+      print('✅ EdgeIntelligenceService returned successfully');
+      print('   Data Points: ${intelligence.dataPoints.length}');
+      print('   Insights: ${intelligence.insights.length}');
+      print('   Overall Confidence: ${intelligence.overallConfidence}');
+
+      if (intelligence.dataPoints.isEmpty) {
+        print('⚠️  WARNING: No data points returned from intelligence service!');
+      } else {
+        print('📊 Data Point Sources:');
+        for (var dp in intelligence.dataPoints) {
+          print('   - ${dp.source} (${dp.type}): confidence ${dp.confidence}');
+        }
+      }
 
       // Build card models from intelligence
+      print('🔄 Building Edge cards from intelligence...');
       final cards = await _cardBuilder.buildCardsFromIntelligence(
         intelligence: intelligence,
         gameTime: _game!.gameTime,
       );
 
-      debugPrint('✅ Built ${cards.length} Edge cards');
+      print('✅ Card builder returned ${cards.length} cards');
+
+      if (cards.isEmpty) {
+        print('⚠️  WARNING: No cards built from intelligence!');
+        print('   This could mean:');
+        print('   1. Not enough data points to generate cards');
+        print('   2. Card builder filters excluded all potential cards');
+        print('   3. Intelligence confidence too low');
+      } else {
+        print('📋 Cards built:');
+        for (var card in cards) {
+          print('   - ${card.category}: ${card.title}');
+        }
+      }
 
       setState(() {
         _edgeCards = cards;
         _isLoadingCards = false;
       });
-    } catch (e) {
-      debugPrint('❌ Error loading Edge cards: $e');
+
+      print('✅ Edge cards loaded successfully and state updated');
+      print('═══════════════════════════════════════════════════════════');
+      print('');
+    } catch (e, stackTrace) {
+      print('');
+      print('╔════════════════════════════════════════════════════════════╗');
+      print('║     ❌ ERROR LOADING EDGE CARDS                           ║');
+      print('╚════════════════════════════════════════════════════════════╝');
+      print('Error: $e');
+      print('Stack Trace:');
+      print(stackTrace);
+      print('═══════════════════════════════════════════════════════════');
+      print('');
+
       setState(() {
         _isLoadingCards = false;
       });

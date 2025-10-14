@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class MiniGameModel {
   final String id;
   final String name;
+  final String title; // Display title (can be different from name/id)
   final String embedUrl;
   final String platform; // 'html5_free', 'gamedistribution', 'native'
   final int weekNumber;
@@ -12,10 +13,26 @@ class MiniGameModel {
   final String sportType;
   final String description;
   final int maxScore;
+  final String? thumbnailUrl; // URL for game preview image
+  final String? bannerUrl; // URL for banner/header image
+  final int brCost; // BR cost to play (default 15)
+
+  // NEW FIELDS FOR GAMES PAGE IMPROVEMENTS
+  final bool featured; // Is this the featured game?
+  final DateTime? featuredUntil; // When to unfeature
+  final String longDescription; // 2-3 sentences for featured card
+  final int playerCount; // Total plays this week
+  final int averageDuration; // Minutes per game session
+  final int topPrize; // BR amount for 1st place (deprecated - not used)
+  final String category; // "Trivia", "Sports", "Arcade", "Puzzle", etc.
+
+  // Runtime property - not stored in Firestore
+  bool isFavorited; // Set at runtime based on user's favorites
 
   MiniGameModel({
     required this.id,
     required this.name,
+    required this.title,
     required this.embedUrl,
     required this.platform,
     required this.weekNumber,
@@ -24,12 +41,24 @@ class MiniGameModel {
     required this.sportType,
     required this.description,
     required this.maxScore,
+    this.thumbnailUrl,
+    this.bannerUrl,
+    this.brCost = 15,
+    this.featured = false,
+    this.featuredUntil,
+    this.longDescription = '',
+    this.playerCount = 0,
+    this.averageDuration = 5,
+    this.topPrize = 500,
+    this.category = 'General',
+    this.isFavorited = false,
   });
 
   factory MiniGameModel.fromMap(Map<String, dynamic> map) {
     return MiniGameModel(
       id: map['id'] ?? '',
-      name: map['name'] ?? '',
+      name: map['name'] ?? map['title'] ?? '',
+      title: map['title'] ?? map['name'] ?? '',
       embedUrl: map['embedUrl'] ?? '',
       platform: map['platform'] ?? 'html5_free',
       weekNumber: map['weekNumber'] ?? 1,
@@ -38,13 +67,48 @@ class MiniGameModel {
       sportType: map['sportType'] ?? 'general',
       description: map['description'] ?? '',
       maxScore: map['maxScore'] ?? 10000,
+      thumbnailUrl: map['thumbnailUrl'],
+      bannerUrl: map['bannerUrl'],
+      brCost: map['brCost'] ?? 15,
+      // New fields
+      featured: map['featured'] ?? false,
+      featuredUntil: map['featuredUntil'] != null
+          ? (map['featuredUntil'] as Timestamp).toDate()
+          : null,
+      longDescription: map['longDescription'] ?? map['description'] ?? '',
+      playerCount: map['playerCount'] ?? 0,
+      averageDuration: map['averageDuration'] ?? 5,
+      topPrize: map['topPrize'] ?? 500,
+      category: map['category'] ?? _inferCategoryFromSportType(map['sportType'] ?? 'general'),
+      isFavorited: false, // Will be set at runtime
     );
+  }
+
+  /// Helper method to infer category from sportType if category not provided
+  static String _inferCategoryFromSportType(String sportType) {
+    switch (sportType.toLowerCase()) {
+      case 'basketball':
+      case 'football':
+      case 'soccer':
+      case 'baseball':
+        return 'Sports';
+      case 'trivia':
+      case 'quiz':
+        return 'Trivia';
+      case 'puzzle':
+        return 'Puzzle';
+      case 'arcade':
+        return 'Arcade';
+      default:
+        return 'General';
+    }
   }
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'name': name,
+      'title': title,
       'embedUrl': embedUrl,
       'platform': platform,
       'weekNumber': weekNumber,
@@ -53,144 +117,19 @@ class MiniGameModel {
       'sportType': sportType,
       'description': description,
       'maxScore': maxScore,
+      'thumbnailUrl': thumbnailUrl,
+      'bannerUrl': bannerUrl,
+      'brCost': brCost,
+      // New fields
+      'featured': featured,
+      'featuredUntil': featuredUntil != null ? Timestamp.fromDate(featuredUntil!) : null,
+      'longDescription': longDescription,
+      'playerCount': playerCount,
+      'averageDuration': averageDuration,
+      'topPrize': topPrize,
+      'category': category,
     };
   }
 }
 
-/// Represents a leaderboard entry
-class LeaderboardEntry {
-  final String userId;
-  final String username;
-  final int score;
-  final DateTime timestamp;
-  final String? avatarUrl;
-
-  LeaderboardEntry({
-    required this.userId,
-    required this.username,
-    required this.score,
-    required this.timestamp,
-    this.avatarUrl,
-  });
-
-  factory LeaderboardEntry.fromMap(Map<String, dynamic> map) {
-    return LeaderboardEntry(
-      userId: map['userId'] ?? '',
-      username: map['username'] ?? 'Anonymous',
-      score: map['score'] ?? 0,
-      timestamp: (map['timestamp'] as Timestamp).toDate(),
-      avatarUrl: map['avatarUrl'],
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'userId': userId,
-      'username': username,
-      'score': score,
-      'timestamp': Timestamp.fromDate(timestamp),
-      'avatarUrl': avatarUrl,
-    };
-  }
-}
-
-/// Represents a weekly leaderboard for a specific game
-class GameLeaderboard {
-  final String id;
-  final String gameId;
-  final DateTime weekStart;
-  final DateTime weekEnd;
-  final List<LeaderboardEntry> scores;
-  final bool active;
-
-  GameLeaderboard({
-    required this.id,
-    required this.gameId,
-    required this.weekStart,
-    required this.weekEnd,
-    required this.scores,
-    required this.active,
-  });
-
-  factory GameLeaderboard.fromMap(Map<String, dynamic> map) {
-    final scoresList = (map['scores'] as List<dynamic>?)?.map((scoreMap) {
-      return LeaderboardEntry.fromMap(scoreMap as Map<String, dynamic>);
-    }).toList() ?? [];
-
-    return GameLeaderboard(
-      id: map['id'] ?? '',
-      gameId: map['gameId'] ?? '',
-      weekStart: (map['weekStart'] as Timestamp).toDate(),
-      weekEnd: (map['weekEnd'] as Timestamp).toDate(),
-      scores: scoresList,
-      active: map['active'] ?? true,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'gameId': gameId,
-      'weekStart': Timestamp.fromDate(weekStart),
-      'weekEnd': Timestamp.fromDate(weekEnd),
-      'scores': scores.map((entry) => entry.toMap()).toList(),
-      'active': active,
-    };
-  }
-
-  /// Get sorted leaderboard (highest scores first)
-  List<LeaderboardEntry> getSortedScores() {
-    final sortedScores = List<LeaderboardEntry>.from(scores);
-    sortedScores.sort((a, b) => b.score.compareTo(a.score));
-    return sortedScores;
-  }
-
-  /// Get top N players
-  List<LeaderboardEntry> getTopPlayers(int n) {
-    final sorted = getSortedScores();
-    return sorted.take(n).toList();
-  }
-}
-
-/// Represents user statistics for a specific game
-class UserGameStats {
-  final String userId;
-  final String gameId;
-  final int attempts;
-  final int bestScore;
-  final int brSpent;
-  final DateTime? lastPlayed;
-
-  UserGameStats({
-    required this.userId,
-    required this.gameId,
-    required this.attempts,
-    required this.bestScore,
-    required this.brSpent,
-    this.lastPlayed,
-  });
-
-  factory UserGameStats.fromMap(Map<String, dynamic> map) {
-    return UserGameStats(
-      userId: map['userId'] ?? '',
-      gameId: map['gameId'] ?? '',
-      attempts: map['attempts'] ?? 0,
-      bestScore: map['bestScore'] ?? 0,
-      brSpent: map['brSpent'] ?? 0,
-      lastPlayed: map['lastPlayed'] != null
-          ? (map['lastPlayed'] as Timestamp).toDate()
-          : null,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'userId': userId,
-      'gameId': gameId,
-      'attempts': attempts,
-      'bestScore': bestScore,
-      'brSpent': brSpent,
-      'lastPlayed': lastPlayed != null ? Timestamp.fromDate(lastPlayed!) : null,
-    };
-  }
-}
+// Leaderboard classes removed - not using score tracking system
