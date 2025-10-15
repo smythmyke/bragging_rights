@@ -100,7 +100,7 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
       // Always show ALL supported sports, regardless of whether they have games
       // This ensures Boxing and other sports are always visible
       // Note: NCAAF and NCAAB are merged with NFL/NBA respectively, so don't show them separately
-      _availableSports = ['nfl', 'nba', 'nhl', 'mlb', 'boxing', 'mma', 'soccer'];
+      _availableSports = ['nfl', 'nba', 'nhl', 'mlb', 'boxing', 'mma', 'soccer', 'tennis'];
       debugPrint('OptimizedGamesScreen: Available sports: $_availableSports (showing all supported sports)');
       
       // Initialize tab controller with actual sports found
@@ -494,71 +494,113 @@ class _OptimizedGamesScreenState extends State<OptimizedGamesScreen>
       displayName = sportUpper;
     }
 
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
+    // Get neon glow color for this sport
+    Color glowColor;
+    if (isAllSports) {
+      glowColor = Colors.purple;
+    } else {
+      glowColor = _getSportColor(sportUpper);
+    }
+
+    return Container(
+      decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-      ),
-      child: InkWell(
-        onTap: () async {
-          if (isAllSports) {
-            setState(() {
-              _selectedSport = 'all';  // Set to 'all' instead of null for All Sports
-              _leagueFilter = 'both';  // Reset filter when changing sport
-            });
-          } else {
-            setState(() {
-              _selectedSport = sport.toLowerCase();
-              _loadingMore = true;
-              _leagueFilter = 'both';  // Reset filter when changing sport
-            });
-            await _loadAllGamesForSport(sport.toLowerCase());
-          }
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isAllSports
-                  ? [Colors.purple.shade400, Colors.purple.shade700]
-                  : [
-                      _getSportColor(sportUpper).withOpacity(0.8),
-                      _getSportColor(sportUpper),
-                    ],
-            ),
+        color: const Color(0xFF141428),
+        border: Border.all(
+          color: glowColor.withOpacity(0.3),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: glowColor.withOpacity(0.2),
+            blurRadius: 20,
+            spreadRadius: 0,
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: Icon(
-                    isAllSports ? Icons.sports : _getSportIcon(sportUpper),
-                    size: 36,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Flexible(
-                  child: Text(
-                    displayName,
-                    style: const TextStyle(
+          BoxShadow(
+            color: glowColor.withOpacity(0.05),
+            blurRadius: 20,
+            spreadRadius: 0,
+            offset: const Offset(0, 0),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () async {
+            if (isAllSports) {
+              setState(() {
+                _selectedSport = 'all';
+                _leagueFilter = 'both';
+              });
+            } else {
+              setState(() {
+                _selectedSport = sport.toLowerCase();
+                _loadingMore = true;
+                _leagueFilter = 'both';
+              });
+              await _loadAllGamesForSport(sport.toLowerCase());
+            }
+          },
+          borderRadius: BorderRadius.circular(16),
+          splashColor: glowColor.withOpacity(0.2),
+          highlightColor: glowColor.withOpacity(0.1),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: isAllSports
+                  ? LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.purple.withOpacity(0.3),
+                        Colors.purple.shade700.withOpacity(0.3),
+                      ],
+                    )
+                  : null,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Icon(
+                      isAllSports ? Icons.sports : _getSportIcon(sportUpper),
+                      size: 36,
                       color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
+                      shadows: [
+                        Shadow(
+                          color: glowColor.withOpacity(0.5),
+                          blurRadius: 10,
+                        ),
+                      ],
                     ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Flexible(
+                    child: Text(
+                      displayName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black54,
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
