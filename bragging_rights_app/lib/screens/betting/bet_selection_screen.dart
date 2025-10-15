@@ -22,6 +22,17 @@ import '../../theme/app_theme.dart';
 import '../../widgets/team_bet_card.dart' as team_card;
 import '../../services/bet_tracking_service.dart';
 import '../watch/watch_live_screen.dart';
+// Simple betting imports
+import '../../models/simple_bet.dart';
+import '../../models/simple_bet_slip.dart';
+import '../../widgets/simple_bet_card.dart';
+import '../../config/bets/nba_simple_bets.dart';
+import '../../config/bets/nhl_simple_bets.dart';
+import '../../config/bets/mlb_simple_bets.dart';
+import '../../config/bets/soccer_simple_bets.dart';
+import '../../config/bets/tennis_simple_bets.dart';
+import '../../config/bets/ncaaf_simple_bets.dart';
+import '../../config/bets/ncaab_simple_bets.dart';
 
 class BetSelectionScreen extends StatefulWidget {
   final String gameTitle;
@@ -117,6 +128,11 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   bool _isLoadingProps = false;
   bool _hasAttemptedPropsLoad = false;
   String _propsSearchQuery = '';
+
+  // Simple betting state
+  Map<String, SimpleBet> _selectedSimpleBets = {};
+  SimpleBet? _winnerBet;
+  List<BetTabConfig> _simpleBetTabs = [];
 
   // Error message for odds loading
   String? _oddsErrorMessage;
@@ -710,36 +726,102 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   TabController _getSportSpecificTabController() {
     // Clean up the sport string and check for keywords
     final sportUpper = widget.sport.toUpperCase().trim();
-    
+
     print('Getting tab controller for sport: "$sportUpper"');
-    
-    // Check for NBA, NFL, NHL, MLB - Now 5 tabs WITH Props
-    if (sportUpper.contains('NBA') || sportUpper.contains('NCAAB') || sportUpper.contains('BASKETBALL') ||
-        sportUpper.contains('NFL') || sportUpper.contains('NCAAF') || sportUpper.contains('FOOTBALL') ||
-        sportUpper.contains('NHL') || sportUpper.contains('HOCKEY') ||
-        sportUpper.contains('MLB') || sportUpper.contains('BASEBALL')) {
-      print('Creating 5-tab controller for team sports with props');
-      return TabController(length: 5, vsync: this); // Winner, Spread, Totals, Props, Live
-    }
-    
-    // Check for MMA/Boxing - Keep as is since no props tab
-    if (sportUpper.contains('MMA') || sportUpper.contains('UFC') || 
+
+    // Check for combat sports first (they already use simple betting)
+    if (sportUpper.contains('MMA') || sportUpper.contains('UFC') ||
         sportUpper.contains('BOXING') || sportUpper.contains('FIGHT')) {
       print('Creating 3-tab controller for combat sports');
       return TabController(length: 3, vsync: this); // Winner, Method, Rounds (no live for now)
     }
-    
-    // Check for Tennis
-    if (sportUpper.contains('TENNIS')) {
-      print('Creating 3-tab controller for tennis');
-      return TabController(length: 3, vsync: this); // Match, Sets, Games (no live for now)
+
+    // Check for NBA, NHL, MLB, Soccer, Tennis - these will use simple betting tabs
+    if (sportUpper.contains('NBA') || sportUpper.contains('BASKETBALL') ||
+        sportUpper.contains('NHL') || sportUpper.contains('HOCKEY') ||
+        sportUpper.contains('MLB') || sportUpper.contains('BASEBALL') ||
+        sportUpper.contains('SOCCER') ||
+        sportUpper.contains('TENNIS')) {
+      // Load simple betting tabs to get count
+      _loadSimpleBettingTabs();
+      final tabCount = _simpleBetTabs.length;
+      print('Creating $tabCount-tab controller for simple betting');
+      return TabController(length: tabCount, vsync: this);
     }
-    
+
+    // Check for NCAAF - uses simple betting system
+    if (sportUpper.contains('NCAAF')) {
+      _loadSimpleBettingTabs();
+      final tabCount = _simpleBetTabs.length;
+      print('Creating $tabCount-tab controller for NCAAF simple betting');
+      return TabController(length: tabCount, vsync: this);
+    }
+
+    // Check for NCAAB - uses simple betting system
+    if (sportUpper.contains('NCAAB')) {
+      _loadSimpleBettingTabs();
+      final tabCount = _simpleBetTabs.length;
+      print('Creating $tabCount-tab controller for NCAAB simple betting');
+      return TabController(length: tabCount, vsync: this);
+    }
+
+    // Check for NFL - will use odds tabs (5 tabs) or fallback to simple betting
+    if (sportUpper.contains('NFL') || sportUpper.contains('FOOTBALL')) {
+      print('Creating 5-tab controller for NFL with odds (or will switch to simple if no odds)');
+      return TabController(length: 5, vsync: this); // Winner, Spread, Totals, Props, Live
+    }
+
     // Default fallback
     print('Creating default 2-tab controller');
     return TabController(length: 2, vsync: this); // Main, Live
   }
-  
+
+  bool _useSimpleBetting() {
+    final sportUpper = widget.sport.toUpperCase().trim();
+
+    // NCAAF always uses simple betting
+    if (sportUpper.contains('NCAAF')) {
+      return true;
+    }
+
+    // NCAAB always uses simple betting
+    if (sportUpper.contains('NCAAB')) {
+      return true;
+    }
+
+    // NFL uses odds as primary, simple as fallback
+    if (sportUpper.contains('NFL') || sportUpper.contains('FOOTBALL')) {
+      // Check if odds data is available (homeMoneyline and awayMoneyline should exist)
+      return _oddsData == null ||
+             (_oddsData?.homeMoneyline == null && _oddsData?.awayMoneyline == null);
+    }
+
+    // All other sports use simple betting as primary
+    return true;
+  }
+
+  void _loadSimpleBettingTabs() {
+    final sportUpper = widget.sport.toUpperCase().trim();
+
+    if (sportUpper.contains('NBA') || sportUpper.contains('BASKETBALL')) {
+      _simpleBetTabs = NbaSimpleBets.getTabs();
+    } else if (sportUpper.contains('NCAAB')) {
+      _simpleBetTabs = NcaabSimpleBets.getTabs();
+    } else if (sportUpper.contains('NHL') || sportUpper.contains('HOCKEY')) {
+      _simpleBetTabs = NhlSimpleBets.getTabs();
+    } else if (sportUpper.contains('MLB') || sportUpper.contains('BASEBALL')) {
+      _simpleBetTabs = MlbSimpleBets.getTabs();
+    } else if (sportUpper.contains('NCAAF')) {
+      _simpleBetTabs = NcaafSimpleBets.getTabs();
+    } else if (sportUpper.contains('SOCCER') || (sportUpper.contains('FOOTBALL') && !sportUpper.contains('NFL'))) {
+      _simpleBetTabs = SoccerSimpleBets.getTabs();
+    } else if (sportUpper.contains('TENNIS')) {
+      _simpleBetTabs = TennisSimpleBets.getTabs();
+    }
+
+    setState(() {});
+  }
+
   void _startCountdownTimer() {
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
@@ -1051,25 +1133,44 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   
   Widget _buildBetTypeTabs() {
     final sportUpper = widget.sport.toUpperCase().trim();
-    
-    if (sportUpper.contains('NHL') || sportUpper.contains('HOCKEY')) {
-      // NHL uses simple tabs like soccer for better visibility
+
+    // Combat sports - keep existing tabs
+    if (sportUpper.contains('MMA') || sportUpper.contains('UFC') ||
+        sportUpper.contains('BOXING') || sportUpper.contains('FIGHT')) {
       return TabBar(
         controller: _betTypeController,
-        isScrollable: true,
         tabs: const [
           Tab(text: 'Winner'),
-          Tab(text: 'Spread'),
-          Tab(text: 'Totals'),
-          Tab(text: 'Props'),
-          Tab(text: 'Live'),
+          Tab(text: 'Method'),
+          Tab(text: 'Rounds'),
         ],
       );
     }
 
-    if (sportUpper.contains('NBA') || sportUpper.contains('NCAAB') || sportUpper.contains('BASKETBALL') ||
-        sportUpper.contains('NFL') || sportUpper.contains('NCAAF') || sportUpper.contains('FOOTBALL') ||
-        sportUpper.contains('MLB') || sportUpper.contains('BASEBALL')) {
+    // NBA, NHL, MLB, Soccer, Tennis - use simple betting tabs
+    if (sportUpper.contains('NBA') || sportUpper.contains('BASKETBALL') ||
+        sportUpper.contains('NHL') || sportUpper.contains('HOCKEY') ||
+        sportUpper.contains('MLB') || sportUpper.contains('BASEBALL') ||
+        sportUpper.contains('SOCCER') ||
+        sportUpper.contains('TENNIS')) {
+      return TabBar(
+        controller: _betTypeController,
+        isScrollable: true,
+        tabs: _simpleBetTabs.map((tab) => Tab(text: tab.name)).toList(),
+      );
+    }
+
+    // NFL - use odds tabs (or will fallback to simple betting if no odds)
+    if (sportUpper.contains('NFL') || sportUpper.contains('NCAAF') || sportUpper.contains('FOOTBALL')) {
+      if (_useSimpleBetting()) {
+        // Show simple betting tabs
+        return TabBar(
+          controller: _betTypeController,
+          isScrollable: true,
+          tabs: _simpleBetTabs.map((tab) => Tab(text: tab.name)).toList(),
+        );
+      }
+      // Show odds-based tabs
       return TabBar(
         controller: _betTypeController,
         isScrollable: true,
@@ -1117,30 +1218,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         ],
       );
     }
-    
-    if (sportUpper.contains('MMA') || sportUpper.contains('UFC') || 
-        sportUpper.contains('BOXING') || sportUpper.contains('FIGHT')) {
-      return TabBar(
-        controller: _betTypeController,
-        tabs: const [
-          Tab(text: 'Winner'),
-          Tab(text: 'Method'),
-          Tab(text: 'Rounds'),
-        ],
-      );
-    }
-    
-    if (sportUpper.contains('TENNIS')) {
-      return TabBar(
-        controller: _betTypeController,
-        tabs: const [
-          Tab(text: 'Match'),
-          Tab(text: 'Sets'),
-          Tab(text: 'Games'),
-        ],
-      );
-    }
-    
+
     // Default
     return TabBar(
       controller: _betTypeController,
@@ -1153,11 +1231,33 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   
   List<Widget> _buildSportSpecificTabs() {
     final sportUpper = widget.sport.toUpperCase().trim();
-    
-    if (sportUpper.contains('NBA') || sportUpper.contains('NCAAB') || sportUpper.contains('BASKETBALL') ||
-        sportUpper.contains('NFL') || sportUpper.contains('NCAAF') || sportUpper.contains('FOOTBALL') ||
+
+    // Combat sports - keep existing implementation
+    if (sportUpper.contains('MMA') || sportUpper.contains('UFC') ||
+        sportUpper.contains('BOXING') || sportUpper.contains('FIGHT')) {
+      return [
+        _buildMoneylineTab(),
+        _buildMethodOfVictoryTab(),
+        _buildRoundBettingTab(),
+      ];
+    }
+
+    // NBA, NHL, MLB, Soccer, Tennis - use simple betting tabs
+    if (sportUpper.contains('NBA') || sportUpper.contains('BASKETBALL') ||
         sportUpper.contains('NHL') || sportUpper.contains('HOCKEY') ||
-        sportUpper.contains('MLB') || sportUpper.contains('BASEBALL')) {
+        sportUpper.contains('MLB') || sportUpper.contains('BASEBALL') ||
+        sportUpper.contains('SOCCER') ||
+        sportUpper.contains('TENNIS')) {
+      // Build simple betting tabs
+      return _simpleBetTabs.map((tab) => _buildSimpleBettingTab(tab)).toList();
+    }
+
+    // NFL - use odds if available, otherwise simple betting
+    if (sportUpper.contains('NFL') || sportUpper.contains('NCAAF') || sportUpper.contains('FOOTBALL')) {
+      if (_useSimpleBetting()) {
+        // Fallback to simple betting if no odds
+        return _simpleBetTabs.map((tab) => _buildSimpleBettingTab(tab)).toList();
+      }
       return [
         _buildMoneylineTab(),
         _buildSpreadTab(),
@@ -1166,24 +1266,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
         _buildLiveBettingTab(),
       ];
     }
-    
-    if (sportUpper.contains('MMA') || sportUpper.contains('UFC') || 
-        sportUpper.contains('BOXING') || sportUpper.contains('FIGHT')) {
-      return [
-        _buildMoneylineTab(),
-        _buildMethodOfVictoryTab(),
-        _buildRoundBettingTab(),
-      ];
-    }
-    
-    if (sportUpper.contains('TENNIS')) {
-      return [
-        _buildMoneylineTab(),
-        _buildSetsTab(),
-        _buildGamesTab(),
-      ];
-    }
-    
+
     // Default
     return [
       _buildMoneylineTab(),
@@ -2370,7 +2453,122 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       ],
     );
   }
-  
+
+  // Simple betting tab builder
+  Widget _buildSimpleBettingTab(BetTabConfig tabConfig) {
+    if (_isLoadingData || _homeTeam == null || _awayTeam == null) {
+      return Container(
+        padding: const EdgeInsets.all(32),
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // Tab header with description
+        if (tabConfig.description != null) ...[
+          InfoEdgeCarousel(
+            title: tabConfig.name,
+            description: tabConfig.description!,
+            icon: tabConfig.icon,
+            onEdgePressed: _navigateToEdge,
+            autoScrollDelay: const Duration(seconds: 3),
+          ),
+          const SizedBox(height: 16),
+        ],
+
+        // Build bet cards from templates
+        ...tabConfig.bets.map((template) {
+          // Create bet instance from template
+          final betId = '${tabConfig.name}_${template.betType}_${template.team ?? ''}_${template.statType ?? ''}_${template.threshold ?? ''}';
+          final bet = template.createBet(
+            id: betId,
+            homeTeam: _homeTeam!,
+            awayTeam: _awayTeam!,
+            confidence: _selectedSimpleBets[betId]?.confidence ?? 1,
+          );
+
+          // Check if this bet is selected
+          final isSelected = _selectedSimpleBets.containsKey(betId);
+
+          // For winner bets, check if one is already selected
+          final isWinnerBet = template.isRequired;
+          final otherWinnerSelected = isWinnerBet && _winnerBet != null && _winnerBet!.id != betId;
+
+          return SimpleBetCard(
+            bet: bet,
+            isSelected: isSelected,
+            isRequired: template.isRequired,
+            onSelectionChanged: (selected) {
+              setState(() {
+                if (selected) {
+                  // If this is a winner bet, clear the other winner selection
+                  if (isWinnerBet && _winnerBet != null) {
+                    _selectedSimpleBets.remove(_winnerBet!.id);
+                  }
+
+                  _selectedSimpleBets[betId] = bet;
+
+                  if (isWinnerBet) {
+                    _winnerBet = bet;
+                  }
+                } else {
+                  _selectedSimpleBets.remove(betId);
+
+                  if (isWinnerBet && _winnerBet?.id == betId) {
+                    _winnerBet = null;
+                  }
+                }
+              });
+            },
+            onConfidenceChanged: (confidence) {
+              setState(() {
+                final updatedBet = bet.copyWith(
+                  confidence: confidence,
+                  multiplier: SimpleBet.getMultiplier(confidence),
+                );
+                _selectedSimpleBets[betId] = updatedBet;
+
+                if (isWinnerBet && _winnerBet?.id == betId) {
+                  _winnerBet = updatedBet;
+                }
+              });
+            },
+            accentColor: template.isRequired ? AppTheme.errorPink : AppTheme.primaryCyan,
+          );
+        }).toList(),
+
+        // Show helper text if this is the winner tab
+        if (tabConfig.hasRequiredBet) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.errorPink.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppTheme.errorPink.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: AppTheme.errorPink, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'You must select a winner to place your bet',
+                    style: TextStyle(fontSize: 12, color: AppTheme.errorPink),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   // Tennis Sets betting
   Widget _buildSetsTab() {
     return ListView(

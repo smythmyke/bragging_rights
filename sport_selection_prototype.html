@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sport Selection - 5 Design Options</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .design-selector {
+            max-width: 1200px;
+            margin: 0 auto 40px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+
+        .design-btn {
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .design-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .design-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #764ba2;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            display: none;
+        }
+
+        .container.active {
+            display: block;
+        }
+
+        .header {
+            text-align: left;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .sports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+        }
+
+        /* ==================== DESIGN 1: SILVER METALLIC ==================== */
+        #design1 .sport-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            border: 2px solid transparent;
+            box-shadow:
+                0 4px 6px rgba(0, 0, 0, 0.1),
+                0 2px 4px rgba(0, 0, 0, 0.06),
+                inset 0 0 0 2px rgba(192, 192, 192, 0.3);
+        }
+
+        #design1 .sport-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg,
+                rgba(255, 255, 255, 0.4) 0%,
+                rgba(255, 255, 255, 0) 50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        #design1 .sport-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow:
+                0 12px 24px rgba(0, 0, 0, 0.15),
+                0 6px 12px rgba(0, 0, 0, 0.1),
+                inset 0 0 0 2px rgba(192, 192, 192, 0.6),
+                0 0 0 3px rgba(192, 192, 192, 0.3);
+            border-color: rgba(192, 192, 192, 0.5);
+        }
+
+        #design1 .sport-card:hover::before {
+            opacity: 1;
+        }
+
+        #design1 .sport-card:active {
+            transform: translateY(-2px) scale(0.98);
+            box-shadow:
+                0 4px 8px rgba(0, 0, 0, 0.2),
+                0 2px 4px rgba(0, 0, 0, 0.15),
+                inset 0 0 0 2px rgba(192, 192, 192, 0.8),
+                inset 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        #design1 .sport-card.all-sports {
+            background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+            animation: pulse1 2s ease-in-out infinite;
+        }
+
+        #design1 .sport-card.all-sports .sport-name {
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        @keyframes pulse1 {
+            0%, 100% { box-shadow: 0 6px 12px rgba(168, 85, 247, 0.3); }
+            50% { box-shadow: 0 8px 16px rgba(168, 85, 247, 0.5); }
+        }
+
+        /* ==================== DESIGN 2: NEON GLOW ==================== */
+        #design2 .sport-card {
+            background: rgba(20, 20, 40, 0.9);
+            border-radius: 16px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            border: 2px solid rgba(100, 200, 255, 0.3);
+            box-shadow:
+                0 0 20px rgba(100, 200, 255, 0.2),
+                inset 0 0 20px rgba(100, 200, 255, 0.05);
+        }
+
+        #design2 .sport-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(100, 200, 255, 0.8);
+            box-shadow:
+                0 0 30px rgba(100, 200, 255, 0.6),
+                0 5px 20px rgba(0, 0, 0, 0.3),
+                inset 0 0 30px rgba(100, 200, 255, 0.1);
+        }
+
+        #design2 .sport-card.nfl:hover { border-color: #3b82f6; box-shadow: 0 0 30px #3b82f6; }
+        #design2 .sport-card.nba:hover { border-color: #f97316; box-shadow: 0 0 30px #f97316; }
+        #design2 .sport-card.nhl:hover { border-color: #06b6d4; box-shadow: 0 0 30px #06b6d4; }
+        #design2 .sport-card.mlb:hover { border-color: #ef4444; box-shadow: 0 0 30px #ef4444; }
+        #design2 .sport-card.boxing:hover { border-color: #f59e0b; box-shadow: 0 0 30px #f59e0b; }
+        #design2 .sport-card.mma:hover { border-color: #f43f5e; box-shadow: 0 0 30px #f43f5e; }
+        #design2 .sport-card.soccer:hover { border-color: #14b8a6; box-shadow: 0 0 30px #14b8a6; }
+        #design2 .sport-card.tennis:hover { border-color: #22c55e; box-shadow: 0 0 30px #22c55e; }
+
+        #design2 .sport-card.all-sports {
+            background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+            border-color: #a855f7;
+            box-shadow: 0 0 30px rgba(168, 85, 247, 0.5);
+        }
+
+        #design2 .sport-name {
+            color: white;
+        }
+
+        /* ==================== DESIGN 3: GRADIENT CARDS ==================== */
+        #design3 .sport-card {
+            border-radius: 20px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            border: 3px solid white;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        #design3 .sport-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.3) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #design3 .sport-card:hover::before {
+            opacity: 1;
+        }
+
+        #design3 .sport-card:hover {
+            transform: scale(1.08) rotate(-2deg);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        #design3 .sport-card:active {
+            transform: scale(1.02);
+        }
+
+        #design3 .sport-card.nfl { background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); }
+        #design3 .sport-card.nba { background: linear-gradient(135deg, #f97316 0%, #c2410c 100%); }
+        #design3 .sport-card.nhl { background: linear-gradient(135deg, #06b6d4 0%, #0e7490 100%); }
+        #design3 .sport-card.mlb { background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); }
+        #design3 .sport-card.boxing { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        #design3 .sport-card.mma { background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); }
+        #design3 .sport-card.soccer { background: linear-gradient(135deg, #14b8a6 0%, #0f766e 100%); }
+        #design3 .sport-card.tennis { background: linear-gradient(135deg, #22c55e 0%, #15803d 100%); }
+        #design3 .sport-card.all-sports { background: linear-gradient(135deg, #a855f7 0%, #6b21a8 100%); }
+
+        #design3 .sport-name {
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        #design3 .sport-icon {
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+        }
+
+        /* ==================== DESIGN 4: GLASSMORPHISM ==================== */
+        #design4 .sport-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        #design4 .sport-card:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        #design4 .sport-card:active {
+            transform: translateY(-2px) scale(0.98);
+        }
+
+        #design4 .sport-card.all-sports {
+            background: rgba(168, 85, 247, 0.3);
+            border: 2px solid rgba(168, 85, 247, 0.5);
+        }
+
+        #design4 .sport-card.all-sports:hover {
+            background: rgba(168, 85, 247, 0.4);
+        }
+
+        #design4 .sport-name {
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        /* ==================== DESIGN 5: 3D CARDS ==================== */
+        #design5 .sport-card {
+            background: linear-gradient(145deg, #2a2a3e, #1f1f2e);
+            border-radius: 16px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            border: 2px solid #3a3a4e;
+            box-shadow:
+                8px 8px 16px rgba(0, 0, 0, 0.5),
+                -8px -8px 16px rgba(60, 60, 80, 0.3);
+        }
+
+        #design5 .sport-card:hover {
+            transform: translateY(-8px) translateX(4px);
+            box-shadow:
+                12px 12px 24px rgba(0, 0, 0, 0.6),
+                -4px -4px 12px rgba(60, 60, 80, 0.4);
+        }
+
+        #design5 .sport-card:active {
+            box-shadow:
+                4px 4px 8px rgba(0, 0, 0, 0.5),
+                -4px -4px 8px rgba(60, 60, 80, 0.2);
+            transform: translateY(-2px);
+        }
+
+        #design5 .sport-card.all-sports {
+            background: linear-gradient(145deg, #9333ea, #7e22ce);
+            border-color: #a855f7;
+            box-shadow:
+                8px 8px 16px rgba(147, 51, 234, 0.4),
+                -8px -8px 16px rgba(168, 85, 247, 0.2);
+        }
+
+        #design5 .sport-card.all-sports:hover {
+            box-shadow:
+                12px 12px 24px rgba(147, 51, 234, 0.5),
+                -4px -4px 12px rgba(168, 85, 247, 0.3);
+        }
+
+        #design5 .sport-name {
+            color: white;
+        }
+
+        #design5 .sport-icon {
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+        }
+
+        /* Common styles for all designs */
+        .sport-card-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .sport-icon {
+            font-size: 48px;
+            transition: transform 0.3s ease;
+        }
+
+        .sport-card:hover .sport-icon {
+            transform: scale(1.1);
+        }
+
+        .sport-name {
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        #design1 .sport-name {
+            color: #333;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+        }
+
+        /* Color accents for each sport (used in Design 1) */
+        #design1 .sport-card.nfl .sport-icon { color: #3b82f6; }
+        #design1 .sport-card.nba .sport-icon { color: #f97316; }
+        #design1 .sport-card.nhl .sport-icon { color: #06b6d4; }
+        #design1 .sport-card.mlb .sport-icon { color: #ef4444; }
+        #design1 .sport-card.boxing .sport-icon { color: #f59e0b; }
+        #design1 .sport-card.mma .sport-icon { color: #f43f5e; }
+        #design1 .sport-card.soccer .sport-icon { color: #14b8a6; }
+        #design1 .sport-card.tennis .sport-icon { color: #22c55e; }
+        #design1 .sport-card.all-sports .sport-icon { color: white; }
+
+        /* White icons for designs 2, 4, 5 */
+        #design2 .sport-icon,
+        #design3 .sport-icon,
+        #design4 .sport-icon,
+        #design5 .sport-icon {
+            color: white;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+
+        /* Responsive design */
+        @media (max-width: 600px) {
+            .sports-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .sport-card {
+                padding: 20px;
+            }
+
+            .sport-icon {
+                font-size: 40px;
+            }
+
+            .sport-name {
+                font-size: 14px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .header p {
+                font-size: 14px;
+            }
+
+            .design-btn {
+                padding: 10px 16px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Design Selector -->
+    <div class="design-selector">
+        <button class="design-btn active" onclick="switchDesign(1)">Design 1: Silver Metallic</button>
+        <button class="design-btn" onclick="switchDesign(2)">Design 2: Neon Glow</button>
+        <button class="design-btn" onclick="switchDesign(3)">Design 3: Gradient Cards</button>
+        <button class="design-btn" onclick="switchDesign(4)">Design 4: Glassmorphism</button>
+        <button class="design-btn" onclick="switchDesign(5)">Design 5: 3D Neumorphism</button>
+    </div>
+
+    <!-- Design 1: Silver Metallic -->
+    <div id="design1" class="container active">
+        <div class="header">
+            <h1>Select a Sport</h1>
+            <p>Design 1: Silver Metallic - Elegant with silver borders and shine effects</p>
+        </div>
+        <div class="sports-grid">
+            <div class="sport-card all-sports">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">⚡</div>
+                    <div class="sport-name">ALL SPORTS</div>
+                </div>
+            </div>
+            <div class="sport-card nfl">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🏈</div>
+                    <div class="sport-name">NFL/NCAAF</div>
+                </div>
+            </div>
+            <div class="sport-card nba">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🏀</div>
+                    <div class="sport-name">NBA/NCAAB</div>
+                </div>
+            </div>
+            <div class="sport-card nhl">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🏒</div>
+                    <div class="sport-name">NHL</div>
+                </div>
+            </div>
+            <div class="sport-card mlb">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">⚾</div>
+                    <div class="sport-name">MLB</div>
+                </div>
+            </div>
+            <div class="sport-card boxing">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🥊</div>
+                    <div class="sport-name">BOXING</div>
+                </div>
+            </div>
+            <div class="sport-card mma">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🥋</div>
+                    <div class="sport-name">MMA</div>
+                </div>
+            </div>
+            <div class="sport-card soccer">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">⚽</div>
+                    <div class="sport-name">SOCCER</div>
+                </div>
+            </div>
+            <div class="sport-card tennis">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🎾</div>
+                    <div class="sport-name">TENNIS</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Design 2: Neon Glow -->
+    <div id="design2" class="container">
+        <div class="header">
+            <h1>Select a Sport</h1>
+            <p>Design 2: Neon Glow - Dark theme with glowing neon borders</p>
+        </div>
+        <div class="sports-grid">
+            <div class="sport-card all-sports">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">⚡</div>
+                    <div class="sport-name">ALL SPORTS</div>
+                </div>
+            </div>
+            <div class="sport-card nfl">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🏈</div>
+                    <div class="sport-name">NFL/NCAAF</div>
+                </div>
+            </div>
+            <div class="sport-card nba">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🏀</div>
+                    <div class="sport-name">NBA/NCAAB</div>
+                </div>
+            </div>
+            <div class="sport-card nhl">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🏒</div>
+                    <div class="sport-name">NHL</div>
+                </div>
+            </div>
+            <div class="sport-card mlb">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">⚾</div>
+                    <div class="sport-name">MLB</div>
+                </div>
+            </div>
+            <div class="sport-card boxing">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🥊</div>
+                    <div class="sport-name">BOXING</div>
+                </div>
+            </div>
+            <div class="sport-card mma">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🥋</div>
+                    <div class="sport-name">MMA</div>
+                </div>
+            </div>
+            <div class="sport-card soccer">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">⚽</div>
+                    <div class="sport-name">SOCCER</div>
+                </div>
+            </div>
+            <div class="sport-card tennis">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🎾</div>
+                    <div class="sport-name">TENNIS</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Design 3: Gradient Cards -->
+    <div id="design3" class="container">
+        <div class="header">
+            <h1>Select a Sport</h1>
+            <p>Design 3: Gradient Cards - Bold colors with gradient backgrounds</p>
+        </div>
+        <div class="sports-grid">
+            <div class="sport-card all-sports">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">⚡</div>
+                    <div class="sport-name">ALL SPORTS</div>
+                </div>
+            </div>
+            <div class="sport-card nfl">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🏈</div>
+                    <div class="sport-name">NFL/NCAAF</div>
+                </div>
+            </div>
+            <div class="sport-card nba">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🏀</div>
+                    <div class="sport-name">NBA/NCAAB</div>
+                </div>
+            </div>
+            <div class="sport-card nhl">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🏒</div>
+                    <div class="sport-name">NHL</div>
+                </div>
+            </div>
+            <div class="sport-card mlb">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">⚾</div>
+                    <div class="sport-name">MLB</div>
+                </div>
+            </div>
+            <div class="sport-card boxing">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🥊</div>
+                    <div class="sport-name">BOXING</div>
+                </div>
+            </div>
+            <div class="sport-card mma">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🥋</div>
+                    <div class="sport-name">MMA</div>
+                </div>
+            </div>
+            <div class="sport-card soccer">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">⚽</div>
+                    <div class="sport-name">SOCCER</div>
+                </div>
+            </div>
+            <div class="sport-card tennis">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🎾</div>
+                    <div class="sport-name">TENNIS</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Design 4: Glassmorphism -->
+    <div id="design4" class="container">
+        <div class="header">
+            <h1>Select a Sport</h1>
+            <p>Design 4: Glassmorphism - Modern frosted glass effect with blur</p>
+        </div>
+        <div class="sports-grid">
+            <div class="sport-card all-sports">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">⚡</div>
+                    <div class="sport-name">ALL SPORTS</div>
+                </div>
+            </div>
+            <div class="sport-card nfl">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🏈</div>
+                    <div class="sport-name">NFL/NCAAF</div>
+                </div>
+            </div>
+            <div class="sport-card nba">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🏀</div>
+                    <div class="sport-name">NBA/NCAAB</div>
+                </div>
+            </div>
+            <div class="sport-card nhl">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🏒</div>
+                    <div class="sport-name">NHL</div>
+                </div>
+            </div>
+            <div class="sport-card mlb">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">⚾</div>
+                    <div class="sport-name">MLB</div>
+                </div>
+            </div>
+            <div class="sport-card boxing">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🥊</div>
+                    <div class="sport-name">BOXING</div>
+                </div>
+            </div>
+            <div class="sport-card mma">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🥋</div>
+                    <div class="sport-name">MMA</div>
+                </div>
+            </div>
+            <div class="sport-card soccer">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">⚽</div>
+                    <div class="sport-name">SOCCER</div>
+                </div>
+            </div>
+            <div class="sport-card tennis">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🎾</div>
+                    <div class="sport-name">TENNIS</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Design 5: 3D Neumorphism -->
+    <div id="design5" class="container">
+        <div class="header">
+            <h1>Select a Sport</h1>
+            <p>Design 5: 3D Neumorphism - Soft 3D depth with shadow effects</p>
+        </div>
+        <div class="sports-grid">
+            <div class="sport-card all-sports">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">⚡</div>
+                    <div class="sport-name">ALL SPORTS</div>
+                </div>
+            </div>
+            <div class="sport-card nfl">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🏈</div>
+                    <div class="sport-name">NFL/NCAAF</div>
+                </div>
+            </div>
+            <div class="sport-card nba">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🏀</div>
+                    <div class="sport-name">NBA/NCAAB</div>
+                </div>
+            </div>
+            <div class="sport-card nhl">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🏒</div>
+                    <div class="sport-name">NHL</div>
+                </div>
+            </div>
+            <div class="sport-card mlb">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">⚾</div>
+                    <div class="sport-name">MLB</div>
+                </div>
+            </div>
+            <div class="sport-card boxing">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🥊</div>
+                    <div class="sport-name">BOXING</div>
+                </div>
+            </div>
+            <div class="sport-card mma">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🥋</div>
+                    <div class="sport-name">MMA</div>
+                </div>
+            </div>
+            <div class="sport-card soccer">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">⚽</div>
+                    <div class="sport-name">SOCCER</div>
+                </div>
+            </div>
+            <div class="sport-card tennis">
+                <div class="sport-card-inner">
+                    <div class="sport-icon">🎾</div>
+                    <div class="sport-name">TENNIS</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchDesign(designNumber) {
+            // Hide all containers
+            document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
+
+            // Show selected container
+            document.getElementById('design' + designNumber).classList.add('active');
+
+            // Update button states
+            document.querySelectorAll('.design-btn').forEach((btn, index) => {
+                if (index === designNumber - 1) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        // Add click feedback to all sport cards
+        document.querySelectorAll('.sport-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const sportName = this.querySelector('.sport-name').textContent;
+                console.log(`Selected: ${sportName}`);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'wallet_service.dart';
+import '../models/simple_bet.dart';
+import '../models/simple_bet_slip.dart';
 
 class BetService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -69,6 +71,74 @@ class BetService {
       return betId;
     } catch (e) {
       throw Exception('Failed to place bet: $e');
+    }
+  }
+
+  // Place a simple bet (point-based betting without odds)
+  Future<String> placeSimpleBet({
+    required String gameId,
+    required String gameTitle,
+    required String sport,
+    required String poolName,
+    required SimpleBetSlip betSlip,
+    required int wagerAmount,
+    String? gameTime,
+  }) async {
+    if (_userId == null) throw Exception('User not logged in');
+
+    try {
+      // First, deduct the wager from wallet
+      final betSlipId = _firestore.collection('simple_bet_slips').doc().id;
+
+      await _walletService.placeWager(
+        amount: wagerAmount,
+        betId: betSlipId,
+        description: 'Simple Bet on $gameTitle',
+      );
+
+      // Create the simple bet slip document
+      await _firestore.collection('simple_bet_slips').doc(betSlipId).set({
+        'userId': _userId,
+        'gameId': gameId,
+        'gameTitle': gameTitle,
+        'sport': sport.toUpperCase(),
+        'poolName': poolName,
+        'winnerBet': betSlip.winnerBet.toMap(),
+        'optionalBets': betSlip.optionalBets.map((b) => b.toMap()).toList(),
+        'wagerAmount': wagerAmount,
+        'totalPotentialPoints': betSlip.totalPotentialPoints,
+        'status': 'pending', // pending, settled, cancelled
+        'placedAt': FieldValue.serverTimestamp(),
+        'gameTime': gameTime,
+      });
+
+      // Update user's bet history
+      await _firestore
+          .collection('users')
+          .doc(_userId)
+          .collection('bets')
+          .doc(betSlipId)
+          .set({
+        'betId': betSlipId,
+        'gameId': gameId,
+        'gameTitle': gameTitle,
+        'placedAt': FieldValue.serverTimestamp(),
+        'status': 'pending',
+        'betType': 'simple', // Mark as simple bet
+      });
+
+      // Mark game as having a bet
+      await _markGameAsHavingBet(gameId, gameTitle);
+
+      print('✅ [BET SERVICE] Simple bet placed: $betSlipId');
+      print('   Game: $gameTitle');
+      print('   Wager: $wagerAmount BR');
+      print('   Potential Points: ${betSlip.totalPotentialPoints.toStringAsFixed(1)}');
+
+      return betSlipId;
+    } catch (e) {
+      print('❌ [BET SERVICE] Failed to place simple bet: $e');
+      throw Exception('Failed to place simple bet: $e');
     }
   }
 
@@ -154,6 +224,30 @@ class BetService {
 
           return snapshot.docs
               .map((doc) => BetModel.fromFirestore(doc))
+              .toList();
+        });
+  }
+
+  // Get active simple bet slips (pending status)
+  Stream<List<SimpleBetSlipModel>> getActiveSimpleBets() {
+    if (_userId == null) {
+      print('⚠️ [BET SERVICE] getActiveSimpleBets() - No user logged in');
+      return Stream.value([]);
+    }
+
+    print('🔍 [BET SERVICE] getActiveSimpleBets() - Querying for userId: $_userId, status: pending');
+
+    return _firestore
+        .collection('simple_bet_slips')
+        .where('userId', isEqualTo: _userId)
+        .where('status', isEqualTo: 'pending')
+        .orderBy('placedAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+          print('📦 [BET SERVICE] getActiveSimpleBets() - Received ${snapshot.docs.length} active simple bets');
+
+          return snapshot.docs
+              .map((doc) => SimpleBetSlipModel.fromFirestore(doc))
               .toList();
         });
   }
@@ -396,6 +490,84 @@ class BetModel {
       placedAt: (data['placedAt'] as Timestamp).toDate(),
       isParlay: data['isParlay'] ?? false,
       settledAt: data['settledAt'] != null ? (data['settledAt'] as Timestamp).toDate() : null,
+    );
+  }
+}
+
+// Simple Bet Slip Model (for Firestore)
+class SimpleBetSlipModel {
+  final String id;
+  final String userId;
+  final String gameId;
+  final String gameTitle;
+  final String sport;
+  final String poolName;
+  final SimpleBet winnerBet;
+  final List<SimpleBet> optionalBets;
+  final int wagerAmount;
+  final double totalPotentialPoints;
+  final String status;
+  final DateTime placedAt;
+  final DateTime? settledAt;
+  final double? totalPointsEarned;
+
+  SimpleBetSlipModel({
+    required this.id,
+    required this.userId,
+    required this.gameId,
+    required this.gameTitle,
+    required this.sport,
+    required this.poolName,
+    required this.winnerBet,
+    required this.optionalBets,
+    required this.wagerAmount,
+    required this.totalPotentialPoints,
+    required this.status,
+    required this.placedAt,
+    this.settledAt,
+    this.totalPointsEarned,
+  });
+
+  factory SimpleBetSlipModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+
+    return SimpleBetSlipModel(
+      id: doc.id,
+      userId: data['userId'],
+      gameId: data['gameId'],
+      gameTitle: data['gameTitle'],
+      sport: data['sport'],
+      poolName: data['poolName'],
+      winnerBet: SimpleBet.fromMap(data['winnerBet']),
+      optionalBets: (data['optionalBets'] as List)
+          .map((b) => SimpleBet.fromMap(b))
+          .toList(),
+      wagerAmount: data['wagerAmount'],
+      totalPotentialPoints: (data['totalPotentialPoints'] is double)
+          ? data['totalPotentialPoints']
+          : (data['totalPotentialPoints'] as num).toDouble(),
+      status: data['status'],
+      placedAt: (data['placedAt'] as Timestamp).toDate(),
+      settledAt: data['settledAt'] != null ? (data['settledAt'] as Timestamp).toDate() : null,
+      totalPointsEarned: data['totalPointsEarned']?.toDouble(),
+    );
+  }
+
+  SimpleBetSlip toBetSlip() {
+    return SimpleBetSlip(
+      id: id,
+      gameId: gameId,
+      userId: userId,
+      sport: sport,
+      homeTeam: '', // Not stored in SimpleBetSlipModel
+      awayTeam: '', // Not stored in SimpleBetSlipModel
+      gameTime: placedAt, // Use placedAt as gameTime fallback
+      winnerBet: winnerBet,
+      optionalBets: optionalBets,
+      wagerAmount: wagerAmount,
+      submittedAt: placedAt,
+      settled: status == 'settled',
+      settledAt: settledAt,
     );
   }
 }

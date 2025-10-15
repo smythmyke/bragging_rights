@@ -44,6 +44,7 @@ import '../../services/api_call_tracker.dart';
 import '../../services/welcome_back_service.dart';
 import '../../models/welcome_back_data.dart';
 import '../mini_games/mini_games_lobby_screen.dart';
+import '../../services/game_status_updater.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -74,6 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final SoundService _soundService = SoundService();
   final FriendService _friendService = FriendService();
   final WelcomeBackService _welcomeBackService = WelcomeBackService();
+  final GameStatusUpdater _gameStatusUpdater = GameStatusUpdater();
 
   // Feature flag for optimized loading
   static const bool USE_OPTIMIZED_GAMES = true;
@@ -158,6 +160,18 @@ class _HomeScreenState extends State<HomeScreen> {
     _initializeSoundService();
     _startPoolManagement();
     _checkShowStandingsCard();
+    _startGameStatusMonitoring(); // Start checking for completed games
+  }
+
+  /// Start the game status monitoring service
+  void _startGameStatusMonitoring() {
+    try {
+      debugPrint('🎮 [HOME] Starting game status monitoring service...');
+      _gameStatusUpdater.startMonitoring();
+      debugPrint('✅ [HOME] Game status monitoring started');
+    } catch (e) {
+      debugPrint('❌ [HOME] Error starting game status monitoring: $e');
+    }
   }
 
   /// Check and show Welcome Back overlay if needed
@@ -508,14 +522,6 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       });
     });
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    _countdownTimer?.cancel();
-    _backgroundRefreshTimer?.cancel();
-    super.dispose();
   }
 
   void _showPurchaseOptions(BuildContext context) {
@@ -4814,5 +4820,14 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _gameStatusUpdater.stopMonitoring();
+    _countdownTimer?.cancel();
+    _backgroundRefreshTimer?.cancel();
+    _pageController.dispose();
+    super.dispose();
   }
 }

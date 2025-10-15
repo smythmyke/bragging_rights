@@ -9,6 +9,8 @@ import 'edge/sports/espn_nfl_service.dart';
 import 'edge/sports/espn_nba_service.dart';
 import 'edge/sports/espn_nhl_service.dart';
 import 'edge/sports/espn_mlb_service.dart';
+import 'edge/sports/espn_ncaaf_service.dart';
+import 'edge/sports/espn_ncaab_service.dart';
 import 'game_odds_enrichment_service.dart';
 import 'odds_api_service.dart';
 import 'firestore_cache_service.dart';
@@ -35,6 +37,8 @@ class OptimizedGamesService {
   final EspnNbaService _nbaService = EspnNbaService();
   final EspnNhlService _nhlService = EspnNhlService();
   final EspnMlbService _mlbService = EspnMlbService();
+  final EspnNcaafService _ncaafService = EspnNcaafService();
+  final EspnNcaabService _ncaabService = EspnNcaabService();
   
   // All available sports
   static const List<String> ALL_SPORTS = ['NFL', 'NCAAF', 'NBA', 'NCAAB', 'NHL', 'MLB', 'BOXING', 'MMA', 'SOCCER', 'TENNIS'];
@@ -442,9 +446,13 @@ class OptimizedGamesService {
       case 'nfl':
       case 'football':
         return _loadNflGamesWithRange(daysAhead: daysAhead);
+      case 'ncaaf':
+        return _loadNcaafGamesWithRange(daysAhead: daysAhead);
       case 'nba':
       case 'basketball':
         return _loadNbaGamesWithRange(daysAhead: daysAhead);
+      case 'ncaab':
+        return _loadNcaabGamesWithRange(daysAhead: daysAhead);
       case 'nhl':
       case 'hockey':
         return _loadNhlGamesWithRange(daysAhead: daysAhead);
@@ -717,6 +725,62 @@ class OptimizedGamesService {
     }
 
     debugPrint('✅ MLB: Kept ${games.length} future/live games from ${scoreboard.events.length} total ESPN events');
+    return games;
+  }
+
+  /// Load NCAAF games with configurable date range
+  Future<List<GameModel>> _loadNcaafGamesWithRange({int daysAhead = INITIAL_DAYS_AHEAD}) async {
+    final scoreboard = await _ncaafService.getGamesForDateRange(daysAhead: daysAhead);
+    if (scoreboard == null) return [];
+
+    final games = <GameModel>[];
+    final now = DateTime.now();
+
+    for (final event in scoreboard.events) {
+      try {
+        final game = await _convertEspnEventToGame(event, 'NCAAF');
+        if (game != null) {
+          // Filter out past games - only include games that haven't started yet or are currently live
+          if (game.gameTime.isAfter(now) || game.status == 'live') {
+            games.add(game);
+          } else {
+            debugPrint('🚫 Filtering out past NCAAF game: ${game.awayTeam} @ ${game.homeTeam} at ${game.gameTime}');
+          }
+        }
+      } catch (e) {
+        debugPrint('Error converting NCAAF event: $e');
+      }
+    }
+
+    debugPrint('✅ NCAAF: Kept ${games.length} future/live games from ${scoreboard.events.length} total ESPN events');
+    return games;
+  }
+
+  /// Load NCAAB games with configurable date range
+  Future<List<GameModel>> _loadNcaabGamesWithRange({int daysAhead = INITIAL_DAYS_AHEAD}) async {
+    final scoreboard = await _ncaabService.getGamesForDateRange(daysAhead: daysAhead);
+    if (scoreboard == null) return [];
+
+    final games = <GameModel>[];
+    final now = DateTime.now();
+
+    for (final event in scoreboard.events) {
+      try {
+        final game = await _convertEspnEventToGame(event, 'NCAAB');
+        if (game != null) {
+          // Filter out past games - only include games that haven't started yet or are currently live
+          if (game.gameTime.isAfter(now) || game.status == 'live') {
+            games.add(game);
+          } else {
+            debugPrint('🚫 Filtering out past NCAAB game: ${game.awayTeam} @ ${game.homeTeam} at ${game.gameTime}');
+          }
+        }
+      } catch (e) {
+        debugPrint('Error converting NCAAB event: $e');
+      }
+    }
+
+    debugPrint('✅ NCAAB: Kept ${games.length} future/live games from ${scoreboard.events.length} total ESPN events');
     return games;
   }
 
