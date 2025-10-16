@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math' as Math;
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/bet_service.dart';
 import '../../services/wallet_service.dart';
 import '../../services/bet_storage_service.dart';
@@ -4610,7 +4611,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
 
   /// Load user's wallet balance
   Future<void> _loadUserBalance() async {
-    final userId = await _betStorage.getUserId();
+    final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;
 
     try {
@@ -4797,7 +4798,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   Future<void> _handleBetSubmission() async {
     if (_winnerBet == null) return;
 
-    final userId = await _betStorage.getUserId();
+    final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) {
       _showErrorDialog('User not found. Please log in again.');
       return;

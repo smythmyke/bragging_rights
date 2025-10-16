@@ -13,6 +13,12 @@ class AppTheme {
   static const Color errorPink = Color(0xFFFF0066);
   static const Color warningAmber = Color(0xFFFFB700);
   static const Color successGreen = Color(0xFF00FF88);
+
+  // Additional colors for betting UI
+  static const Color textLight = Colors.white;
+  static const Color surfaceDark = Color(0xFF0D1117);
+  static const Color accentGold = Color(0xFFFFD700);
+  static const Color errorRed = Color(0xFFFF0066);
   
   // Gradient definitions
   static const LinearGradient primaryGradient = LinearGradient(
