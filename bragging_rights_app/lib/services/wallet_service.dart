@@ -666,6 +666,41 @@ class WalletService {
       'monthlyCap': VictoryCoinModel.MONTHLY_CAP,
     };
   }
+
+  // ========================================
+  // SIMPLE BET SUBMISSION METHODS
+  // ========================================
+
+  /// Get user balance for a specific user ID (used by submission service)
+  Future<double> getUserBalance(String userId) async {
+    final balance = await getBalance(userId);
+    return balance.toDouble();
+  }
+
+  /// Deduct balance from user's wallet (used by submission service)
+  /// Returns true if successful, false if insufficient funds
+  Future<bool> deductBalance(String userId, int amount, String reason) async {
+    try {
+      await deductFromWallet(userId, amount, reason);
+      return true;
+    } catch (e) {
+      print('Failed to deduct balance: $e');
+      return false;
+    }
+  }
+
+  /// Add transaction record (used by submission service)
+  /// This is already handled by deductFromWallet, but keeping for compatibility
+  Future<void> addTransaction(
+    String userId,
+    int amount,
+    String type,
+    String description,
+  ) async {
+    // Transactions are automatically created by deductFromWallet and addToWallet
+    // This method exists for API compatibility
+    print('Transaction logged via deductFromWallet: $description');
+  }
 }
 
 // Transaction model

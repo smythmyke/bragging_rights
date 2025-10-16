@@ -33,6 +33,7 @@ import '../../config/bets/soccer_simple_bets.dart';
 import '../../config/bets/tennis_simple_bets.dart';
 import '../../config/bets/ncaaf_simple_bets.dart';
 import '../../config/bets/ncaab_simple_bets.dart';
+import '../../services/simple_bet_submission_service.dart';
 
 class BetSelectionScreen extends StatefulWidget {
   final String gameTitle;
@@ -138,6 +139,11 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
   String? _oddsErrorMessage;
   bool _showHomeTeamProps = true;
   bool _isBetSlipMinimized = false;
+
+  // Simple bet submission state
+  double _userBalance = 0.0;
+  bool _isSubmitting = false;
+  final SimpleBetSubmissionService _submissionService = SimpleBetSubmissionService();
   String _currentTabName = 'Winner';
   final Map<String, bool> _expandedPlayers = {};
   final Map<String, bool> _expandedPositions = {};
@@ -174,6 +180,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
       _loadExistingBets();
       _loadGameAndOddsData();
       _checkForInjuries(); // Check for NBA injuries
+      _loadUserBalance(); // Load user balance for simple betting
     } catch (e, stackTrace) {
       print('[BOXING ERROR] Failed to initialize bet selection screen: $e');
       print('[BOXING ERROR] Stack trace: $stackTrace');
@@ -1128,6 +1135,7 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
           _buildLockInBetsButton(),
         ],
       ),
+      bottomNavigationBar: _buildFloatingSubmitButton(),
     );
   }
   
@@ -4593,6 +4601,367 @@ class _BetSelectionScreenState extends State<BetSelectionScreen> with TickerProv
               ),
             )
           : const SizedBox.shrink(),
+    );
+  }
+
+  // ========================================
+  // SIMPLE BET SUBMISSION METHODS
+  // ========================================
+
+  /// Load user's wallet balance
+  Future<void> _loadUserBalance() async {
+    final userId = await _betStorage.getUserId();
+    if (userId == null) return;
+
+    try {
+      final balance = await _walletService.getUserBalance(userId);
+      if (mounted) {
+        setState(() {
+          _userBalance = balance;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user balance: $e');
+    }
+  }
+
+  /// Build floating submit button for simple betting
+  Widget _buildFloatingSubmitButton() {
+    // Only show for simple betting sports
+    if (!_useSimpleBetting()) return const SizedBox.shrink();
+
+    // Don't show if no winner selected
+    if (_winnerBet == null) return const SizedBox.shrink();
+
+    // Calculate total potential points
+    double totalPotentialPoints = _winnerBet!.basePoints * _winnerBet!.multiplier;
+    for (var bet in _selectedSimpleBets.values) {
+      if (!bet.isRequired) {
+        totalPotentialPoints += bet.basePoints * bet.multiplier;
+      }
+    }
+
+    // Check if user has sufficient balance
+    final hasSufficientBalance = _userBalance >= _wagerAmount;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceBlue,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+        border: Border(
+          top: BorderSide(color: AppTheme.borderCyan.withOpacity(0.3)),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, -3),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Wager selector
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Wager: ',
+                  style: TextStyle(
+                    color: AppTheme.textLight,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ...[25, 50, 100, 200].map((amount) {
+                  final isSelected = _wagerAmount == amount;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: GestureDetector(
+                      onTap: _isSubmitting
+                          ? null
+                          : () {
+                              setState(() {
+                                _wagerAmount = amount;
+                              });
+                            },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppTheme.primaryCyan.withOpacity(0.3)
+                              : AppTheme.surfaceDark,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppTheme.primaryCyan
+                                : AppTheme.borderCyan.withOpacity(0.3),
+                            width: isSelected ? 2 : 1,
+                          ),
+                        ),
+                        child: Text(
+                          '$amount',
+                          style: TextStyle(
+                            color: isSelected
+                                ? AppTheme.primaryCyan
+                                : AppTheme.textLight,
+                            fontSize: 14,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Potential points + Balance
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Potential: ${totalPotentialPoints.toStringAsFixed(1)} pts',
+                  style: TextStyle(
+                    color: AppTheme.accentGold,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  'Balance: ${_userBalance.toStringAsFixed(0)} BR',
+                  style: TextStyle(
+                    color: hasSufficientBalance
+                        ? AppTheme.successGreen
+                        : AppTheme.errorRed,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Place Bet button
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: (_isSubmitting || !hasSufficientBalance)
+                    ? null
+                    : _handleBetSubmission,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryCyan,
+                  disabledBackgroundColor: AppTheme.surfaceDark,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: _isSubmitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        'Place Bet',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Handle bet submission
+  Future<void> _handleBetSubmission() async {
+    if (_winnerBet == null) return;
+
+    final userId = await _betStorage.getUserId();
+    if (userId == null) {
+      _showErrorDialog('User not found. Please log in again.');
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      // Collect optional bets
+      final optionalBets = _selectedSimpleBets.values
+          .where((bet) => !bet.isRequired)
+          .toList();
+
+      // Call submission service
+      final betSlipId = await _submissionService.submitBetSlip(
+        userId: userId,
+        gameId: widget.gameId ?? '',
+        sport: widget.sport,
+        homeTeam: _homeTeam ?? '',
+        awayTeam: _awayTeam ?? '',
+        gameTime: widget.gameTime ?? DateTime.now(),
+        winnerBet: _winnerBet!,
+        optionalBets: optionalBets,
+        wagerAmount: _wagerAmount,
+      );
+
+      if (betSlipId != null) {
+        // Success!
+        await _showSuccessDialog(betSlipId);
+
+        // Clear bet slip
+        _clearAllBets();
+
+        // Refresh wallet balance
+        await _loadUserBalance();
+
+        // Navigate back
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      } else {
+        // Failed
+        await _showErrorDialog(
+          'Failed to place bet. Please check your balance and try again.',
+        );
+      }
+    } catch (e) {
+      debugPrint('Error submitting bet: $e');
+      await _showErrorDialog('An error occurred. Please try again.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  /// Clear all selected bets
+  void _clearAllBets() {
+    setState(() {
+      _selectedSimpleBets.clear();
+      _winnerBet = null;
+    });
+  }
+
+  /// Show success dialog
+  Future<void> _showSuccessDialog(String betSlipId) async {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surfaceBlue,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: AppTheme.borderCyan.withOpacity(0.3)),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.check_circle, color: AppTheme.successGreen, size: 28),
+            const SizedBox(width: 12),
+            Text(
+              'Bet Placed!',
+              style: TextStyle(
+                color: AppTheme.textLight,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Your bet has been placed successfully.\n\nGood luck!',
+          style: TextStyle(
+            color: AppTheme.textLight,
+            fontSize: 14,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close dialog
+            },
+            child: Text(
+              'OK',
+              style: TextStyle(
+                color: AppTheme.primaryCyan,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show error dialog
+  Future<void> _showErrorDialog(String message) async {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surfaceBlue,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: AppTheme.borderCyan.withOpacity(0.3)),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.error_outline, color: AppTheme.errorRed, size: 28),
+            const SizedBox(width: 12),
+            Text(
+              'Error',
+              style: TextStyle(
+                color: AppTheme.textLight,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          message,
+          style: TextStyle(
+            color: AppTheme.textLight,
+            fontSize: 14,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'OK',
+              style: TextStyle(
+                color: AppTheme.primaryCyan,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

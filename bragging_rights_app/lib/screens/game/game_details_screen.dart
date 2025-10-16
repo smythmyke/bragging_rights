@@ -544,20 +544,18 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
       }
 
       // Fetch scoreboard for additional data like probables
-      // Parse the game date from the header if available, otherwise use game time
-      DateTime? gameDate;
-      if (_eventDetails?['header']?['competitions']?[0]?['date'] != null) {
-        try {
-          gameDate = DateTime.parse(_eventDetails!['header']['competitions'][0]['date']);
-        } catch (e) {
-          print('Error parsing date from header: $e');
-        }
-      }
-      gameDate ??= _game?.gameTime ?? DateTime.now();
+      // FIXED: Use game time directly to avoid timezone issues with ESPN header date
+      // The game time from Firestore is already in local timezone
+      final gameDate = _game?.gameTime ?? DateTime.now();
+
+      print('Game date for scoreboard: $gameDate');
+      print('  - Year: ${gameDate.year}');
+      print('  - Month: ${gameDate.month}');
+      print('  - Day: ${gameDate.day}');
 
       final dateString = '${gameDate.year}${gameDate.month.toString().padLeft(2, '0')}${gameDate.day.toString().padLeft(2, '0')}';
       final scoreboardUrl = 'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard?dates=$dateString';
-      print('\nFetching scoreboard from: $scoreboardUrl');
+      print('Fetching scoreboard from: $scoreboardUrl');
 
       final scoreboardResponse = await http.get(Uri.parse(scoreboardUrl));
       print('Scoreboard response status: ${scoreboardResponse.statusCode}');
@@ -601,14 +599,11 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
 
             // Merge scoreboard data with existing event details
             setState(() {
-              // Preserve summary data and merge with scoreboard data
+              // Preserve summary data and merge with scoreboard event data
+              // The scoreboard has the probables in competitors[].probables
               _eventDetails = {
                 ..._eventDetails ?? {},
                 ...event,
-                'competitions': [{
-                  ...competition,
-                  'probables': competition['probables'] ?? [],
-                }],
               };
             });
             break;
@@ -2820,10 +2815,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
     print('Event details available: ${_eventDetails != null}');
 
     final competition = _eventDetails?['competitions']?[0];
-    final probables = competition?['probables'] as List? ?? [];
     final competitors = competition?['competitors'] as List? ?? [];
-
-    print('Probables count: ${probables.length}');
 
     Map<String, dynamic>? awayPitcher;
     Map<String, dynamic>? homePitcher;
@@ -2832,7 +2824,8 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
     String? awayLogoUrl;
     String? homeLogoUrl;
 
-    // Get team names and logos from competitors
+    // Get team names, logos, and probables from competitors
+    // NOTE: Probables are in competitors[].probables, not in competition.probables
     for (final team in competitors) {
       if (team['homeAway'] == 'away') {
         awayTeamName = team['team']?['displayName'];
@@ -2841,6 +2834,13 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         if (logos != null && logos.isNotEmpty) {
           awayLogoUrl = logos[0]['href'];
         }
+
+        // Get probable pitcher for away team
+        final awayProbables = team['probables'] as List? ?? [];
+        if (awayProbables.isNotEmpty) {
+          awayPitcher = awayProbables[0] as Map<String, dynamic>;
+          print('  Away probable pitcher: ${awayPitcher?['athlete']?['fullName']}');
+        }
       } else {
         homeTeamName = team['team']?['displayName'];
         // Try to get logo URL directly from API response
@@ -2848,8 +2848,17 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
         if (logos != null && logos.isNotEmpty) {
           homeLogoUrl = logos[0]['href'];
         }
+
+        // Get probable pitcher for home team
+        final homeProbables = team['probables'] as List? ?? [];
+        if (homeProbables.isNotEmpty) {
+          homePitcher = homeProbables[0] as Map<String, dynamic>;
+          print('  Home probable pitcher: ${homePitcher?['athlete']?['fullName']}');
+        }
       }
     }
+
+    print('Probables found - Away: ${awayPitcher != null}, Home: ${homePitcher != null}');
 
     // Fallback to game data if team names not found
     awayTeamName ??= _game?.awayTeam;
@@ -2870,14 +2879,6 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
             }
           }
         }
-      }
-    }
-
-    for (final probable in probables) {
-      if (probable['homeAway'] == 'away') {
-        awayPitcher = probable;
-      } else {
-        homePitcher = probable;
       }
     }
 

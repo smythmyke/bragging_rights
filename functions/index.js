@@ -1516,4 +1516,299 @@ exports.manualRotateFeaturedGame = functions.https.onCall(async (data, context) 
   }
 });
 
+// ============================================
+// GAME STATUS UPDATER - SCHEDULED FUNCTION
+// ============================================
+
+/**
+ * Scheduled function to update game statuses from ESPN API
+ * Replaces client-side polling for better efficiency and reliability
+ *
+ * Runs every 5 minutes to check active games and update their status to 'final'
+ * when completed, which triggers the existing settleGameBets function
+ */
+exports.updateGameStatuses = functions.pubsub
+  .schedule('every 5 minutes')
+  .timeZone('America/Los_Angeles')
+  .onRun(async (context) => {
+    console.log('\n🔄 [GAME STATUS UPDATER] Starting scheduled game status check...');
+    console.log('═══════════════════════════════════════════════════════════');
+
+    try {
+      const now = new Date();
+      const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+      // Get all games that might need status updates
+      // (scheduled or live games from the past 24 hours)
+      const gamesSnapshot = await db.collection('games')
+        .where('status', 'in', ['scheduled', 'live'])
+        .where('gameTime', '<', admin.firestore.Timestamp.fromDate(now))
+        .where('gameTime', '>', admin.firestore.Timestamp.fromDate(yesterday))
+        .get();
+
+      if (gamesSnapshot.empty) {
+        console.log('✅ [GAME STATUS UPDATER] No active games to check');
+        return { gamesChecked: 0, gamesUpdated: 0 };
+      }
+
+      console.log(`📊 [GAME STATUS UPDATER] Found ${gamesSnapshot.docs.length} games to check`);
+
+      // Group games by sport for efficient ESPN API queries
+      const gamesBySport = {};
+      for (const doc of gamesSnapshot.docs) {
+        const data = doc.data();
+        const sport = (data.sport || '').toString().toUpperCase();
+        if (!sport) continue;
+
+        if (!gamesBySport[sport]) {
+          gamesBySport[sport] = [];
+        }
+
+        gamesBySport[sport].push({
+          id: doc.id,
+          data: data
+        });
+      }
+
+      // Update each sport
+      let totalUpdated = 0;
+      for (const [sport, games] of Object.entries(gamesBySport)) {
+        console.log(`\n🏈 [GAME STATUS UPDATER] Checking ${games.length} ${sport} games...`);
+        const updated = await updateSportGamesStatus(sport, games);
+        totalUpdated += updated;
+      }
+
+      console.log(`\n✅ [GAME STATUS UPDATER] Update complete: ${totalUpdated} games marked as final`);
+      console.log('═══════════════════════════════════════════════════════════\n');
+
+      return {
+        gamesChecked: gamesSnapshot.docs.length,
+        gamesUpdated: totalUpdated
+      };
+
+    } catch (error) {
+      console.error('❌ [GAME STATUS UPDATER] Error:', error);
+      throw error;
+    }
+  });
+
+/**
+ * Update games for a specific sport using ESPN API
+ */
+async function updateSportGamesStatus(sport, games) {
+  let updatedCount = 0;
+
+  try {
+    // Fetch latest ESPN data for the sport
+    const espnEvents = await fetchESPNEventsForSport(sport);
+    if (!espnEvents || espnEvents.length === 0) {
+      console.log(`⚠️ [GAME STATUS UPDATER] No ESPN data available for ${sport}`);
+      return 0;
+    }
+
+    console.log(`📡 [GAME STATUS UPDATER] Fetched ${espnEvents.length} ESPN events for ${sport}`);
+
+    // Check each game against ESPN data
+    for (const game of games) {
+      const gameId = game.id;
+      const gameData = game.data;
+      const espnId = gameData.espnId?.toString();
+      const homeTeam = gameData.homeTeam?.toString() || '';
+      const awayTeam = gameData.awayTeam?.toString() || '';
+
+      // Try to find matching ESPN event
+      let matchingEvent = null;
+
+      // First, try matching by ESPN ID if available
+      if (espnId) {
+        matchingEvent = espnEvents.find(event => event.id?.toString() === espnId);
+      }
+
+      // If no ESPN ID match, try matching by team names
+      if (!matchingEvent) {
+        matchingEvent = findEventByTeams(espnEvents, homeTeam, awayTeam);
+      }
+
+      if (!matchingEvent) {
+        console.log(`⚠️ [GAME STATUS UPDATER] Could not find ESPN data for: ${awayTeam} @ ${homeTeam}`);
+        continue;
+      }
+
+      // Check ESPN status
+      const competition = matchingEvent.competitions?.[0];
+      if (!competition) continue;
+
+      const espnStatus = competition.status?.type?.name?.toString() || '';
+      const isCompleted = competition.status?.type?.completed === true;
+      const isFinal = espnStatus.toLowerCase().includes('final') || isCompleted;
+
+      if (isFinal) {
+        // Game is complete! Update Firestore
+        console.log(`🎯 [GAME STATUS UPDATER] Game completed: ${awayTeam} @ ${homeTeam}`);
+
+        // Get scores
+        const competitors = competition.competitors || [];
+        let homeScore = null;
+        let awayScore = null;
+
+        for (const competitor of competitors) {
+          const isHome = competitor.homeAway === 'home';
+          const score = parseInt(competitor.score?.toString() || '0', 10);
+
+          if (isHome) {
+            homeScore = score;
+          } else {
+            awayScore = score;
+          }
+        }
+
+        // Update game in Firestore
+        await db.collection('games').doc(gameId).update({
+          status: 'final',
+          homeScore: homeScore,
+          awayScore: awayScore,
+          completedAt: FieldValue.serverTimestamp(),
+          lastStatusCheck: FieldValue.serverTimestamp(),
+        });
+
+        console.log(`   ✅ Updated to final - Score: ${awayScore} - ${homeScore}`);
+        console.log(`   🎰 This will trigger bet settlement Cloud Function`);
+        updatedCount++;
+      } else {
+        // Game still in progress or not started
+        console.log(`   ⏳ Game not finished yet: ${awayTeam} @ ${homeTeam} (status: ${espnStatus})`);
+
+        // Update last check timestamp so we know we checked it
+        await db.collection('games').doc(gameId).update({
+          lastStatusCheck: FieldValue.serverTimestamp(),
+        });
+      }
+    }
+
+  } catch (error) {
+    console.error(`❌ [GAME STATUS UPDATER] Error updating ${sport} games:`, error);
+  }
+
+  return updatedCount;
+}
+
+/**
+ * Fetch ESPN events for a specific sport
+ * Uses public ESPN Scoreboard API (no authentication required)
+ */
+async function fetchESPNEventsForSport(sport) {
+  const axios = require('axios');
+
+  try {
+    let espnSport;
+    switch (sport.toUpperCase()) {
+      case 'NFL':
+      case 'FOOTBALL':
+        espnSport = 'football/nfl';
+        break;
+      case 'NBA':
+      case 'BASKETBALL':
+        espnSport = 'basketball/nba';
+        break;
+      case 'NHL':
+      case 'HOCKEY':
+        espnSport = 'hockey/nhl';
+        break;
+      case 'MLB':
+      case 'BASEBALL':
+        espnSport = 'baseball/mlb';
+        break;
+      case 'NCAAF':
+        espnSport = 'football/college-football';
+        break;
+      case 'NCAAB':
+        espnSport = 'basketball/mens-college-basketball';
+        break;
+      case 'SOCCER':
+      case 'MLS':
+        espnSport = 'soccer/usa.1';
+        break;
+      default:
+        console.log(`⚠️ [GAME STATUS UPDATER] Unsupported sport: ${sport}`);
+        return null;
+    }
+
+    const url = `https://site.api.espn.com/apis/site/v2/sports/${espnSport}/scoreboard`;
+    console.log(`📡 [GAME STATUS UPDATER] Fetching from ESPN: ${url}`);
+
+    const response = await axios.get(url, {
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Bragging-Rights-App/1.0'
+      }
+    });
+
+    if (response.data && response.data.events) {
+      return response.data.events;
+    }
+
+    return [];
+  } catch (error) {
+    console.error(`❌ [GAME STATUS UPDATER] Error fetching ESPN data for ${sport}:`, error.message);
+    return [];
+  }
+}
+
+/**
+ * Find ESPN event by matching team names
+ */
+function findEventByTeams(events, homeTeam, awayTeam) {
+  for (const event of events) {
+    const competition = event.competitions?.[0];
+    if (!competition) continue;
+
+    const competitors = competition.competitors || [];
+    if (competitors.length < 2) continue;
+
+    let eventHomeTeam = null;
+    let eventAwayTeam = null;
+
+    for (const competitor of competitors) {
+      const teamName = competitor.team?.displayName?.toString() || '';
+      if (competitor.homeAway === 'home') {
+        eventHomeTeam = teamName;
+      } else {
+        eventAwayTeam = teamName;
+      }
+    }
+
+    // Check if teams match (case-insensitive)
+    if (eventHomeTeam && eventAwayTeam) {
+      if (teamsMatch(homeTeam, eventHomeTeam) && teamsMatch(awayTeam, eventAwayTeam)) {
+        return event;
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Check if two team names match (handles variations)
+ */
+function teamsMatch(team1, team2) {
+  const t1 = team1.toLowerCase().trim();
+  const t2 = team2.toLowerCase().trim();
+
+  // Exact match
+  if (t1 === t2) return true;
+
+  // Contains match (handles "LA Lakers" vs "Lakers")
+  if (t1.includes(t2) || t2.includes(t1)) return true;
+
+  // Split and check last word (team name)
+  const t1Parts = t1.split(' ');
+  const t2Parts = t2.split(' ');
+  if (t1Parts.length > 0 && t2Parts.length > 0) {
+    if (t1Parts[t1Parts.length - 1] === t2Parts[t2Parts.length - 1]) return true;
+  }
+
+  return false;
+}
+
 console.log('Cloud Functions initialized for Bragging Rights');
